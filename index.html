@@ -133,6 +133,9 @@ label input:focus,label textarea:focus{border-color:var(--hull);outline:none}
 .setrow{display:flex;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid #F0EEE7}
 .setrow input{flex:1;min-width:0;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .setrow .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:0 4px}
+.setrow .mv{color:var(--hull);font-size:11px;line-height:1.1;padding:1px 4px}
+.setrow .mv:disabled{opacity:.25}
+.setrow .scope{flex:0 0 auto;font-size:13px;color:var(--muted)}
 .setadd{padding:12px 14px}
 .setadd input{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
   background:#fff;margin-bottom:8px}
@@ -212,6 +215,7 @@ const LAB = {
 };
 
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
+let USERS=[], SHARES=[];
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
 
 const $  = id => document.getElementById(id);
@@ -221,7 +225,8 @@ const arr = v => Array.isArray(v) ? v : [];
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
   d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
 
-function fullName(c){return [c.first_name,c.last_name].filter(Boolean).join(' ')||'(no name)';}
+function fullName(c){if(c.is_organisation&&c.company)return c.company;
+  return [c.first_name,c.last_name].filter(Boolean).join(' ')||c.company||'(no name)';}
 function fmtDate(d){if(!d)return'';const [y,m,day]=d.split('-').map(Number);
   return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
 function ageOf(c){if(!c.birth_date)return null;
@@ -239,15 +244,18 @@ function w3wUrl(w){return 'https://what3words.com/'+String(w).replace(/^\/+/,'')
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,s,k,c,l]=await Promise.all([
+  const [g,s,k,c,l,u,sh]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
     sb.from('contacts').select('*, contact_groups(group_id)'),
-    sb.from('relationships').select('*')
+    sb.from('relationships').select('*'),
+    sb.from('profiles').select('*'),
+    sb.from('contact_shares').select('*')
   ]);
-  for(const r of [g,s,k,c,l]) if(r.error){toast('Could not load data');console.error(r.error);return;}
+  for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
+  USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
   renderChips();render();
 }
@@ -446,14 +454,47 @@ function openDetail(id){
         <input id="linkSearch" placeholder="Search for the other person" autocomplete="off">
         <div class="results hidden" id="linkResults"></div>
       </div></div>
-    ${c.notes?`<div class="card"><h3>Notes</h3><div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div></div>`:''}`;
+    ${c.notes?`<div class="card"><h3>Notes</h3><div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div></div>`:''}
+    ${shareCard(c)}`;
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
+  $('detBody').querySelectorAll('[data-share]').forEach(b=>
+    b.onchange=()=>toggleShare(b.dataset.share,b.checked));
   wireLinkSearch();
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
   $('detail').classList.remove('hidden');$('detail').scrollTop=0;
+}
+
+function shareCard(c){
+  if(c.created_by!==ME.id)
+    return `<div class="card"><h3>Sharing</h3><div class="field"><dd>Shared with you by someone else.
+      You can edit it, but only its owner can delete it or change who sees it.</dd></div></div>`;
+  if(!USERS.length)
+    return `<div class="card"><h3>Sharing</h3><div class="field"><dd>No one else has an account yet.</dd></div></div>`;
+  return `<div class="card"><h3>Sharing</h3>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Only you can see this unless you tick someone here.</dd></div>
+    ${USERS.map(u=>{
+      const on=SHARES.some(s=>s.contact_id===c.id&&s.user_id===u.id);
+      return `<div class="setrow"><label style="margin:0;display:flex;gap:10px;align-items:center;color:var(--ink);flex:1">
+        <input type="checkbox" style="width:auto;margin:0" data-share="${u.id}" ${on?'checked':''}>
+        ${esc(u.display_name||u.email)}</label></div>`;
+    }).join('')}</div>`;
+}
+
+async function toggleShare(uid,on){
+  if(on){
+    const {error}=await sb.from('contact_shares').insert({contact_id:CURRENT.id,user_id:uid,can_edit:true});
+    if(error){toast('Could not share');return;}
+  }else{
+    const {error}=await sb.from('contact_shares').delete()
+      .eq('contact_id',CURRENT.id).eq('user_id',uid);
+    if(error){toast('Could not stop sharing');return;}
+  }
+  const {data}=await sb.from('contact_shares').select('*');SHARES=data||[];
+  toast(on?'Shared':'No longer shared');
 }
 
 function wireLinkSearch(){
@@ -515,6 +556,9 @@ function openEditor(c){
   $('edTitle').textContent=isNew?'Add a contact':'Edit '+fullName(c);
   $('edBody').innerHTML=`<form id="edForm">
     <fieldset><legend>Name</legend>
+      <div class="checks"><label><input type="checkbox" name="is_organisation">
+        This is a business or organisation</label></div>
+      <label>Business or company name<input name="company"></label>
       <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
       ${F('Given names','given_names')}${F('Nickname','nickname')}
     </fieldset>
@@ -537,6 +581,7 @@ function openEditor(c){
       ${F('Country','country')}
       <label>what3words, e.g. filled.count.soap<input name="what3words"></label>
       <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
+      <p class="coords">Fills itself from the address above &mdash; edit it if the pin lands wide.</p>
       <div id="homeMap" class="map"></div>
       <p class="coords" id="homeCoords"></p>
     </fieldset>
@@ -544,7 +589,7 @@ function openEditor(c){
       <div class="two">${F('Boat name','boat_name')}${F('Index number','boat_number')}</div>
     </fieldset>
     <fieldset><legend>Work</legend>
-      ${F('Company','company')}${F('Department','department')}${F('Job title','job_title')}
+      ${F('Department','department')}${F('Job title','job_title')}
     </fieldset>
     <fieldset><legend>How we met</legend>
       ${F('Where we met','met_where')}${F('When we met','met_date','date')}
@@ -564,9 +609,17 @@ function openEditor(c){
     Object.keys(c).forEach(k=>{
       if(f.elements[k]&&k!=='id'&&typeof c[k]!=='object')f.elements[k].value=c[k]??'';});
     f.elements['status_id'].value=c.status_id??'';
+    f.elements['is_organisation'].checked=!!c.is_organisation;
     (TAGS[c.id]||[]).forEach(g=>{const b=f.querySelector(`input[name="grp"][value="${g}"]`);if(b)b.checked=true;});
     $('edDelete').onclick=()=>deleteContact(c);
   }
+
+  // keep the address-search box in step with the address fields
+  const addrParts=['address','town','postcode','country'];
+  const buildAddr=()=>addrParts.map(k=>f.elements[k].value.trim()).filter(Boolean).join(', ');
+  let addrTouched=false;
+  const syncAddr=()=>{if(!addrTouched)$('geoQ').value=buildAddr();};
+  addrParts.forEach(k=>f.elements[k].addEventListener('input',syncAddr));
 
   Object.keys(LAB).forEach(drawMulti);
   $('edBody').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
@@ -586,7 +639,9 @@ function openEditor(c){
   setTimeout(()=>{
     const hm=showMap('homeMap',DRAFT.lat,DRAFT.lng,(la,ln)=>{DRAFT.lat=la;DRAFT.lng=ln;showCoords();});
     const mm=showMap('metEditMap',DRAFT.mlat,DRAFT.mlng,(la,ln)=>{DRAFT.mlat=la;DRAFT.mlng=ln;showCoords();});
-    $('geoGo').onclick=()=>geocode($('geoQ').value,hm);
+    $('geoQ').value=buildAddr();
+    $('geoQ').addEventListener('input',()=>{addrTouched=true;});
+    $('geoGo').onclick=()=>geocode($('geoQ').value.trim()||buildAddr(),hm);
     $('metGo').onclick=()=>geocode($('metQ').value,mm);
   },100);
 
@@ -605,7 +660,9 @@ async function saveContact(existing){
   data.latitude=DRAFT.lat;data.longitude=DRAFT.lng;
   data.met_latitude=DRAFT.mlat;data.met_longitude=DRAFT.mlng;
 
-  if(!data.first_name&&!data.last_name){toast('Give them a first or last name');return;}
+  data.is_organisation=f.elements['is_organisation'].checked;
+  if(!data.first_name&&!data.last_name&&!data.company){
+    toast(data.is_organisation?'Give the business a name':'Give them a name, or tick "business"');return;}
   const chosen=[...f.querySelectorAll('input[name="grp"]:checked')].map(b=>Number(b.value));
   if(!chosen.length){toast('Pick at least one group, or only you will see them');return;}
 
@@ -616,14 +673,17 @@ async function saveContact(existing){
     id=existing.id;
     const before=TAGS[id]||[];
     const add=chosen.filter(g=>!before.includes(g)),go=before.filter(g=>!chosen.includes(g));
-    if(add.length)await sb.from('contact_groups').insert(add.map(g=>({contact_id:id,group_id:g})));
-    for(const g of go)await sb.from('contact_groups').delete().eq('contact_id',id).eq('group_id',g);
+    if(add.length)await sb.from('contact_groups')
+      .insert(add.map(g=>({contact_id:id,group_id:g,user_id:ME.id})));
+    for(const g of go)await sb.from('contact_groups').delete()
+      .eq('contact_id',id).eq('group_id',g).eq('user_id',ME.id);
   }else{
     data.created_by=ME.id;
     const {data:ins,error}=await sb.from('contacts').insert(data).select().single();
     if(error){toast('Could not save');console.error(error);$('edSave').disabled=false;return;}
     id=ins.id;
-    await sb.from('contact_groups').insert(chosen.map(g=>({contact_id:id,group_id:g})));
+    await sb.from('contact_groups')
+      .insert(chosen.map(g=>({contact_id:id,group_id:g,user_id:ME.id})));
   }
   $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');
   await loadAll();toast('Saved');openDetail(id);
@@ -639,22 +699,40 @@ async function deleteContact(c){
 
 /* ---------- settings ---------- */
 function openSettings(){
-  const block=(table,title,one,rows,fields,hint)=>`
+  const block=(table,title,one,rows,fields,hint,extra)=>`
     <div class="card"><h3>${title}</h3>
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
-      ${rows.map(r=>`<div class="setrow">
+      ${rows.map((r,i)=>`<div class="setrow">
+        <span style="display:flex;flex-direction:column;gap:2px">
+          <button class="mv" data-mv="${table}:${r.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+          <button class="mv" data-mv="${table}:${r.id}:down" ${i===rows.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+        </span>
         ${fields.map(fd=>`<input data-edit="${table}:${r.id}:${fd}" value="${esc(r[fd]??'')}">`).join('')}
+        ${table==='groups'?`<span class="scope">${r.owner_id?'mine':'shared'}</span>`:''}
         <button class="x" data-drop="${table}:${r.id}" aria-label="Remove">&times;</button></div>`).join('')}
       <div class="setadd">
         ${fields.map(fd=>`<input data-new="${table}:${fd}" placeholder="${fd==='inverse_name'?'Its opposite, e.g. Child of':'New '+one}">`).join('')}
+        ${extra||''}
         <button class="btn primary" data-addrow="${table}">Add ${one}</button>
       </div></div>`;
 
   $('setBody').innerHTML=
-     block('groups','Groups','group',GROUPS,['name'])
+     block('groups','Groups','group',GROUPS,['name'],
+       'Shared groups are used by everyone. Your own are private \u2014 no one else sees them, '
+       +'and a contact someone shares with you is filed under your groups, not theirs.',
+       `<div class="checks" style="margin:0 0 10px"><label>
+          <input type="checkbox" id="grpShared"> Everyone can use this group</label></div>`)
    + block('statuses','Relationship statuses','status',STATUSES,['name'])
    + block('link_kinds','Connection types','type',KINDS,['name','inverse_name'],
        'Each type has an opposite. Store "Parent of" once and the other person\u2019s record shows "Child of" automatically.')
+   + `<div class="card"><h3>Share everything</h3>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Gives someone every contact you own, including ones you add later only if you repeat this.</dd></div>
+      ${USERS.length?USERS.map(u=>`<div class="setrow">
+        <span style="flex:1">${esc(u.display_name||u.email)}</span>
+        <button class="addmore" data-shareall="${u.id}">Share all</button></div>`).join('')
+        :'<div class="field"><dd>No one else has an account yet.</dd></div>'}
+      </div>`
    + `<div class="card"><h3>People who can sign in</h3>
       <div class="field"><dd>Accounts are created in the Supabase dashboard under
       Authentication &rsaquo; Users, then given group access with one line of SQL.
@@ -674,12 +752,41 @@ function openSettings(){
     if(error){toast('Could not remove \u2014 it may still be in use');return;}
     await loadAll();openSettings();toast('Removed');
   });
+  $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
+    const [t,id,dir]=b.dataset.mv.split(':');
+    const rows = t==='groups'?GROUPS:t==='statuses'?STATUSES:KINDS;
+    const i=rows.findIndex(r=>r.id===Number(id));
+    const j=dir==='up'?i-1:i+1;
+    if(j<0||j>=rows.length)return;
+    const a=rows[i],c2=rows[j];
+    const oa=a.sort_order??(i*10), ob=c2.sort_order??(j*10);
+    const [e1,e2]=await Promise.all([
+      sb.from(t).update({sort_order:ob}).eq('id',a.id),
+      sb.from(t).update({sort_order:oa}).eq('id',c2.id)]);
+    if(e1.error||e2.error){toast('Could not reorder');return;}
+    await loadAll();openSettings();
+  });
+
+  $('setBody').querySelectorAll('[data-shareall]').forEach(b=>b.onclick=async()=>{
+    const uid=b.dataset.shareall;
+    const mineIds=CONTACTS.filter(c=>c.created_by===ME.id).map(c=>c.id);
+    if(!mineIds.length){toast('You have no contacts of your own yet');return;}
+    if(!confirm('Share all '+mineIds.length+' of your contacts with this person?'))return;
+    const {error}=await sb.from('contact_shares')
+      .upsert(mineIds.map(id=>({contact_id:id,user_id:uid,can_edit:true})),
+              {onConflict:'contact_id,user_id'});
+    if(error){toast('Could not share them all');console.error(error);return;}
+    const {data}=await sb.from('contact_shares').select('*');SHARES=data||[];
+    toast('Shared '+mineIds.length+' contacts');
+  });
+
   $('setBody').querySelectorAll('[data-addrow]').forEach(b=>b.onclick=async()=>{
     const t=b.dataset.addrow,rec={};
     $('setBody').querySelectorAll('[data-new^="'+t+':"]').forEach(inp=>{
       rec[inp.dataset.new.split(':')[1]]=inp.value.trim();});
     if(!rec.name){toast('Give it a name');return;}
     if(t==='link_kinds'&&!rec.inverse_name)rec.inverse_name=rec.name;
+    if(t==='groups')rec.owner_id=$('grpShared').checked?null:ME.id;
     const {error}=await sb.from(t).insert(rec);
     if(error){toast('Could not add \u2014 that name may already exist');return;}
     await loadAll();openSettings();toast('Added');

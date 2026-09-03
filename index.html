@@ -211,11 +211,12 @@ const LAB = {
   phones:  ['Mobile','Home','Work','Boat','Other'],
   emails:  ['Personal','Work','Other'],
   websites:['Website','Blog','Business','Other'],
-  socials: ['Facebook','Instagram','Bluesky','X','LinkedIn','YouTube','WhatsApp','TikTok','Other']
+  socials: ['Facebook','Instagram','Bluesky','X','LinkedIn','YouTube','WhatsApp','TikTok','Other'],
+  pets:    ['Dog']   // replaced from the pet_types table on load
 };
 
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
-let USERS=[], SHARES=[];
+let USERS=[], SHARES=[], PETS=[], PENDING=null;
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
 
 const $  = id => document.getElementById(id);
@@ -244,18 +245,21 @@ function w3wUrl(w){return 'https://what3words.com/'+String(w).replace(/^\/+/,'')
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,s,k,c,l,u,sh]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
     sb.from('contacts').select('*, contact_groups(group_id)'),
     sb.from('relationships').select('*'),
     sb.from('profiles').select('*'),
-    sb.from('contact_shares').select('*')
+    sb.from('contact_shares').select('*'),
+    sb.from('pet_types').select('*').order('sort_order')
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
+  PETS=pt.data||[];
+  if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
   renderChips();render();
 }
@@ -272,8 +276,10 @@ function renderChips(){
 function matches(c,q){
   if(!q)return true;
   const bits=[c.first_name,c.last_name,c.given_names,c.nickname,c.boat_name,c.boat_number,
-    c.town,c.country,c.company,c.department,c.job_title,c.met_where,c.notes,c.address,c.postcode];
-  ['emails','phones','websites','socials'].forEach(f=>arr(c[f]).forEach(e=>bits.push(e.value)));
+    c.town,c.county,c.country,c.company,c.department,c.job_title,c.met_where,c.notes,
+    c.address,c.address_2,c.postcode,c.boat_notes];
+  ['emails','phones','websites','socials','pets'].forEach(f=>
+    arr(c[f]).forEach(e=>{bits.push(e.value);bits.push(e.label);}));
   const hay=bits.filter(Boolean).join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w));
 }
@@ -347,9 +353,15 @@ function wireRows(){
 /* ---------- maps ---------- */
 function killMaps(){MAPS.forEach(m=>{try{m.remove();}catch(e){}});MAPS=[];}
 
-function showMap(elId,lat,lng,onMove){
+function showMap(elId,lat,lng,onMove,useHere){
   if(!$(elId))return null;
-  const m=L.map(elId,{scrollWheelZoom:false}).setView([lat??52.5,lng??-2.0],lat?14:6);
+  const locked = !onMove;   // a saved record shows a still map, so scrolling works
+  const m=L.map(elId,{
+    scrollWheelZoom:false,
+    dragging:!locked, touchZoom:!locked, doubleClickZoom:!locked,
+    boxZoom:!locked, keyboard:!locked, zoomControl:!locked
+  }).setView([lat??52.5,lng??-2.0],lat?14:6);
+  if(locked&&m.tap)m.tap.disable();
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
   let marker=null;
@@ -365,6 +377,12 @@ function showMap(elId,lat,lng,onMove){
   if(onMove)m.on('click',e=>drop(e.latlng.lat,e.latlng.lng,true));
   MAPS.push(m);
   setTimeout(()=>m.invalidateSize(),150);
+  // With nothing recorded yet, start where you are rather than over the Midlands.
+  if(!lat&&useHere&&navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{ if(MAPS.includes(m)) m.setView([pos.coords.latitude,pos.coords.longitude],17); },
+      ()=>{}, {timeout:8000, maximumAge:300000});
+  }
   return {map:m,drop:drop};
 }
 
@@ -410,20 +428,22 @@ function openDetail(id){
     +R('Born',c.birth_date?esc(fmtDate(c.birth_date))+(age!==null?' \u00b7 '+age:''):'')
     +R('Next birthday',d!==null?bdayLabel(d):'')
     +R('Died',c.death_date?esc(fmtDate(c.death_date)):'')
-    +R('Pets',esc(c.pet_names));
+    +arr(c.pets).map(pt=>R(esc(pt.label||'Pet'),esc(pt.value))).join('');
 
   const touch=chan(c.phones,e=>`<a href="tel:${esc(e.value)}">${esc(e.value)}</a>`)
     +chan(c.emails,e=>`<a href="mailto:${esc(e.value)}">${esc(e.value)}</a>`)
     +chan(c.websites,e=>link(webUrl(e.value),e.value))
     +chan(c.socials,e=>/^https?:/i.test(e.value)?link(e.value,e.value):esc(e.value));
 
-  const where=R('Address',esc(c.address))+R('Town',esc(c.town))
+  const where=R('Address',[c.address,c.address_2].filter(Boolean).map(esc).join('<br>'))
+    +R('Town',esc(c.town))+R('County',esc(c.county))
     +R('Postcode',esc(c.postcode))+R('Country',esc(c.country))
     +R('what3words',c.what3words?link(w3wUrl(c.what3words),'///'+c.what3words):'')
     +(c.latitude&&c.longitude?'<div id="detMap" class="map detail"></div>':'');
 
   const work=R('Company',esc(c.company))+R('Department',esc(c.department))+R('Job title',esc(c.job_title));
-  const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number));
+  const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number))
+    +R('Notes',c.boat_notes?esc(c.boat_notes).replace(/\n/g,'<br>'):'');
   const met=R('Where',esc(c.met_where))+R('When',c.met_date?esc(fmtDate(c.met_date)):'')
     +R('what3words',c.met_what3words?link(w3wUrl(c.met_what3words),'///'+c.met_what3words):'')
     +(c.met_latitude&&c.met_longitude?'<div id="metMap" class="map detail"></div>':'');
@@ -503,12 +523,24 @@ function wireLinkSearch(){
     const q=box.value.trim();
     if(q.length<2){res.classList.add('hidden');return;}
     const hits=CONTACTS.filter(c=>c.id!==CURRENT.id&&matches(c,q)).sort(byName).slice(0,12);
-    res.innerHTML=hits.length?hits.map(c=>`<button data-pick="${c.id}">${esc(fullName(c))}</button>`).join('')
-      :'<button disabled>No one matches</button>';
+    res.innerHTML=hits.map(c=>`<button data-pick="${c.id}">${esc(fullName(c))}</button>`).join('')
+      + `<button data-new-link style="color:var(--hull);font-weight:700">
+           + Add &ldquo;${esc(q)}&rdquo; as a new contact</button>`;
     res.classList.remove('hidden');
     res.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>addLink(Number(b.dataset.pick)));
+    const nb=res.querySelector('[data-new-link]');
+    if(nb)nb.onclick=()=>startLinkedContact(q);
   };
 }
+function startLinkedContact(q){
+  PENDING={from:CURRENT.id,kind:$('linkKind').value};
+  const bits=q.trim().split(/\s+/);
+  openEditor(null);
+  const f=$('edForm');
+  f.elements['first_name'].value=bits[0]||'';
+  f.elements['last_name'].value=bits.slice(1).join(' ');
+}
+
 async function addLink(other){
   const kind=$('linkKind').value;
   const {error}=await sb.from('relationships').insert({from_contact:CURRENT.id,to_contact:other,kind});
@@ -549,7 +581,7 @@ function openEditor(c){
   const copy=v=>JSON.parse(JSON.stringify(arr(v)));
   DRAFT={
     phones:copy(c&&c.phones), emails:copy(c&&c.emails),
-    websites:copy(c&&c.websites), socials:copy(c&&c.socials),
+    websites:copy(c&&c.websites), socials:copy(c&&c.socials), pets:copy(c&&c.pets),
     lat:c?c.latitude:null, lng:c?c.longitude:null,
     mlat:c?c.met_latitude:null, mlng:c?c.met_longitude:null
   };
@@ -559,26 +591,29 @@ function openEditor(c){
       <div class="checks"><label><input type="checkbox" name="is_organisation">
         This is a business or organisation</label></div>
       <label>Business or company name<input name="company"></label>
-      <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
-      ${F('Given names','given_names')}${F('Nickname','nickname')}
+      <div id="personNames">
+        <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
+        ${F('Given names','given_names')}${F('Nickname','nickname')}
+      </div>
     </fieldset>
     <fieldset><legend>Groups</legend>
       <div class="checks">${GROUPS.map(g=>`<label><input type="checkbox" name="grp" value="${g.id}">${esc(g.name)}</label>`).join('')}</div>
     </fieldset>
-    <fieldset><legend>Status and dates</legend>
+    <fieldset id="fsPerson"><legend>Status and dates</legend>
       <label>Relationship status<select name="status_id"><option value="">&mdash;</option>
         ${STATUSES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>
       <div class="two">${F('Born','birth_date','date')}${F('Died','death_date','date')}</div>
-      ${F('Pets','pet_names')}
     </fieldset>
+    <fieldset><legend>Pets</legend>${multiBlock('pets','a pet')}</fieldset>
     <fieldset><legend>Phones</legend>${multiBlock('phones','a phone')}</fieldset>
     <fieldset><legend>Emails</legend>${multiBlock('emails','an email')}</fieldset>
     <fieldset><legend>Websites</legend>${multiBlock('websites','a website')}</fieldset>
     <fieldset><legend>Social</legend>${multiBlock('socials','a social account')}</fieldset>
     <fieldset><legend>Where they are</legend>
-      ${F('Address','address')}
-      <div class="two">${F('Town','town')}${F('Postcode','postcode')}</div>
-      ${F('Country','country')}
+      ${F('Address line 1','address')}
+      ${F('Address line 2','address_2')}
+      <div class="two">${F('Town or city','town')}${F('County or region','county')}</div>
+      <div class="two">${F('Postcode','postcode')}${F('Country','country')}</div>
       <label>what3words, e.g. filled.count.soap<input name="what3words"></label>
       <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
       <p class="coords">Fills itself from the address above &mdash; edit it if the pin lands wide.</p>
@@ -587,6 +622,7 @@ function openEditor(c){
     </fieldset>
     <fieldset><legend>Boat</legend>
       <div class="two">${F('Boat name','boat_name')}${F('Index number','boat_number')}</div>
+      <label>Boat notes<textarea name="boat_notes" rows="3"></textarea></label>
     </fieldset>
     <fieldset><legend>Work</legend>
       ${F('Department','department')}${F('Job title','job_title')}
@@ -614,13 +650,22 @@ function openEditor(c){
     $('edDelete').onclick=()=>deleteContact(c);
   }
 
+  const orgBox=f.elements['is_organisation'];
+  const applyOrg=()=>{
+    const org=orgBox.checked;
+    $('personNames').style.display = org?'none':'';
+    $('fsPerson').style.display    = org?'none':'';
+  };
+  orgBox.addEventListener('change',applyOrg);
+
   // keep the address-search box in step with the address fields
-  const addrParts=['address','town','postcode','country'];
+  const addrParts=['address','address_2','town','county','postcode','country'];
   const buildAddr=()=>addrParts.map(k=>f.elements[k].value.trim()).filter(Boolean).join(', ');
   let addrTouched=false;
   const syncAddr=()=>{if(!addrTouched)$('geoQ').value=buildAddr();};
   addrParts.forEach(k=>f.elements[k].addEventListener('input',syncAddr));
 
+  applyOrg();
   Object.keys(LAB).forEach(drawMulti);
   $('edBody').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
     const k=b.dataset.add;DRAFT[k].push({label:LAB[k][0],value:''});drawMulti(k);});
@@ -631,14 +676,15 @@ function openEditor(c){
       : 'Tap the map to drop a pin.';
     $('metCoords').textContent=DRAFT.mlat
       ? (+DRAFT.mlat).toFixed(6)+', '+(+DRAFT.mlng).toFixed(6)+' — drag the pin to adjust'
-      : 'Tap the map to drop a pin.';
+      : 'Centred on where you are. Tap the map to drop a pin.';
   };
   showCoords();
   $('editor').classList.remove('hidden');$('editor').scrollTop=0;
 
   setTimeout(()=>{
     const hm=showMap('homeMap',DRAFT.lat,DRAFT.lng,(la,ln)=>{DRAFT.lat=la;DRAFT.lng=ln;showCoords();});
-    const mm=showMap('metEditMap',DRAFT.mlat,DRAFT.mlng,(la,ln)=>{DRAFT.mlat=la;DRAFT.mlng=ln;showCoords();});
+    const mm=showMap('metEditMap',DRAFT.mlat,DRAFT.mlng,
+      (la,ln)=>{DRAFT.mlat=la;DRAFT.mlng=ln;showCoords();}, true);
     $('geoQ').value=buildAddr();
     $('geoQ').addEventListener('input',()=>{addrTouched=true;});
     $('geoGo').onclick=()=>geocode($('geoQ').value.trim()||buildAddr(),hm);
@@ -650,9 +696,9 @@ function openEditor(c){
 
 async function saveContact(existing){
   const f=$('edForm'),data={};
-  ['first_name','last_name','given_names','nickname','birth_date','death_date','address','town',
-   'postcode','country','company','department','job_title','boat_name','boat_number','pet_names',
-   'met_where','met_date','notes','what3words','met_what3words'].forEach(k=>{
+  ['first_name','last_name','given_names','nickname','birth_date','death_date','address','address_2',
+   'town','county','postcode','country','company','department','job_title','boat_name','boat_number',
+   'met_where','met_date','notes','what3words','met_what3words','boat_notes'].forEach(k=>{
     const v=f.elements[k].value.trim();data[k]=v===''?null:v;});
   data.status_id=f.elements['status_id'].value?Number(f.elements['status_id'].value):null;
   Object.keys(LAB).forEach(k=>
@@ -661,6 +707,11 @@ async function saveContact(existing){
   data.met_latitude=DRAFT.mlat;data.met_longitude=DRAFT.mlng;
 
   data.is_organisation=f.elements['is_organisation'].checked;
+  if(data.is_organisation){
+    ['first_name','last_name','given_names','nickname','birth_date','death_date']
+      .forEach(k=>data[k]=null);
+    data.status_id=null;
+  }
   if(!data.first_name&&!data.last_name&&!data.company){
     toast(data.is_organisation?'Give the business a name':'Give them a name, or tick "business"');return;}
   const chosen=[...f.querySelectorAll('input[name="grp"]:checked')].map(b=>Number(b.value));
@@ -685,8 +736,13 @@ async function saveContact(existing){
     await sb.from('contact_groups')
       .insert(chosen.map(g=>({contact_id:id,group_id:g,user_id:ME.id})));
   }
+  if(PENDING&&!existing){
+    await sb.from('relationships').insert({from_contact:PENDING.from,to_contact:id,kind:PENDING.kind});
+  }
+  const back = PENDING&&!existing ? PENDING.from : id;
+  PENDING=null;
   $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');
-  await loadAll();toast('Saved');openDetail(id);
+  await loadAll();toast('Saved');openDetail(back);
 }
 
 async function deleteContact(c){
@@ -723,6 +779,7 @@ function openSettings(){
        `<div class="checks" style="margin:0 0 10px"><label>
           <input type="checkbox" id="grpShared"> Everyone can use this group</label></div>`)
    + block('statuses','Relationship statuses','status',STATUSES,['name'])
+   + block('pet_types','Kinds of pet','kind',PETS,['name'])
    + block('link_kinds','Connection types','type',KINDS,['name','inverse_name'],
        'Each type has an opposite. Store "Parent of" once and the other person\u2019s record shows "Child of" automatically.')
    + `<div class="card"><h3>Share everything</h3>
@@ -754,7 +811,7 @@ function openSettings(){
   });
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
     const [t,id,dir]=b.dataset.mv.split(':');
-    const rows = t==='groups'?GROUPS:t==='statuses'?STATUSES:KINDS;
+    const rows = t==='groups'?GROUPS:t==='statuses'?STATUSES:t==='pet_types'?PETS:KINDS;
     const i=rows.findIndex(r=>r.id===Number(id));
     const j=dir==='up'?i-1:i+1;
     if(j<0||j>=rows.length)return;
@@ -808,7 +865,7 @@ $('search').oninput=render;
 $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');};
 $('detEdit').onclick=()=>openEditor(CURRENT);
-$('edCancel').onclick=()=>{killMaps();$('editor').classList.add('hidden');};
+$('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');};
 $('setBtn').onclick=openSettings;
 $('setBack').onclick=()=>$('settings').classList.add('hidden');
 $('sortBtn').onclick=()=>{

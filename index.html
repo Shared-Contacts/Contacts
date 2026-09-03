@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -7,78 +8,53 @@
 <title>Contacts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 :root{
-  --ink:#10231C;
-  --hull:#1D4A3A;
-  --hull-dark:#14342B;
-  --red:#B3322A;
-  --brass:#8A6D12;
-  --paper:#FBFAF7;
-  --panel:#FFFFFF;
-  --rule:#E3E1D8;
-  --muted:#5F6B65;
-  --radius:10px;
+  --ink:#10231C; --hull:#1D4A3A; --hull-dark:#14342B; --red:#B3322A;
+  --brass:#8A6D12; --paper:#FBFAF7; --panel:#FFF; --rule:#E3E1D8;
+  --muted:#5F6B65; --radius:10px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
-body{
-  background:var(--paper);color:var(--ink);
+body{background:var(--paper);color:var(--ink);
   font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  font-size:17px;line-height:1.45;
-  padding-bottom:env(safe-area-inset-bottom);
-}
+  font-size:17px;line-height:1.45;padding-bottom:env(safe-area-inset-bottom)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}
 a{color:var(--hull)}
 :focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .hidden{display:none !important}
 
-/* ---------- nameplate header ---------- */
-.plate{
-  background:var(--hull);color:#F2EFE4;
-  padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
-  display:flex;align-items:center;gap:12px;
-  border-bottom:3px solid var(--brass);
-}
-.plate h1{
-  margin:0;font-size:20px;font-weight:700;letter-spacing:.14em;
-  text-transform:uppercase;
-}
-.plate .spacer{margin-left:auto}
-.plate button{color:#F2EFE4;font-size:15px;padding:8px;border-radius:8px}
+.plate{background:var(--hull);color:#F2EFE4;padding:calc(14px + env(safe-area-inset-top)) 12px 14px;
+  display:flex;align-items:center;gap:4px;border-bottom:3px solid var(--brass)}
+.plate h1{margin:0 auto 0 4px;font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
 .plate button:hover{background:rgba(255,255,255,.12)}
 
-/* ---------- search ---------- */
-.searchwrap{
-  position:sticky;top:0;z-index:20;
-  background:var(--paper);border-bottom:1px solid var(--rule);
-  padding:12px 16px 8px;
-}
-.searchwrap input{
-  width:100%;padding:14px 16px;font-size:18px;
-  border:2px solid var(--rule);border-radius:var(--radius);
-  background:var(--panel);
-}
+.searchwrap{position:sticky;top:0;z-index:20;background:var(--paper);
+  border-bottom:1px solid var(--rule);padding:12px 16px 8px}
+.searchwrap input{width:100%;padding:14px 16px;font-size:18px;
+  border:2px solid var(--rule);border-radius:var(--radius);background:var(--panel)}
 .searchwrap input:focus{border-color:var(--hull);outline:none}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{
-  flex:0 0 auto;padding:7px 14px;border-radius:999px;
-  border:1.5px solid var(--rule);background:var(--panel);
-  font-size:15px;white-space:nowrap;color:var(--muted);
-}
+.chip{flex:0 0 auto;padding:7px 14px;border-radius:999px;border:1.5px solid var(--rule);
+  background:var(--panel);font-size:15px;white-space:nowrap;color:var(--muted)}
 .chip[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:#F2EFE4;font-weight:600}
 
-/* ---------- list ---------- */
 .count{padding:10px 16px 4px;color:var(--muted);font-size:15px}
-ul.list{list-style:none;margin:0;padding:0 0 90px}
+ul.list{list-style:none;margin:0;padding:0 0 96px}
 ul.list li{border-bottom:1px solid var(--rule)}
-.row{
-  width:100%;display:flex;align-items:baseline;gap:12px;
-  padding:15px 16px;text-align:left;
-}
+.grouphd,.countryhd{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:13px 16px}
+.grouphd{background:#EDEFEA;font-weight:700}
+.countryhd{background:#F5F4EE;padding-left:32px;font-weight:600;color:var(--muted);font-size:15px}
+.grouphd .n,.countryhd .n{margin-left:auto;color:var(--muted);font-weight:400;font-size:15px}
+.caret{display:inline-block;width:12px}
+.open .caret{transform:rotate(90deg)}
+.row{width:100%;display:flex;align-items:baseline;gap:12px;padding:15px 16px;text-align:left}
+.row.nested{padding-left:32px}
 .row:active{background:#F1EFE8}
 .row .who{flex:1;min-width:0}
 .row .name{font-size:19px;font-weight:600;display:block}
@@ -87,23 +63,13 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .row .bday.soon{color:var(--red)}
 .empty{padding:48px 24px;text-align:center;color:var(--muted)}
 
-/* ---------- floating add ---------- */
-.fab{
-  position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));
   width:60px;height:60px;border-radius:50%;background:var(--red);color:#fff;
-  font-size:32px;line-height:1;box-shadow:0 4px 14px rgba(16,35,28,.3);z-index:30;
-}
+  font-size:32px;line-height:1;box-shadow:0 4px 14px rgba(16,35,28,.3);z-index:30}
 
-/* ---------- sheet ---------- */
-.sheet{
-  position:fixed;inset:0;z-index:40;background:var(--paper);
-  overflow-y:auto;-webkit-overflow-scrolling:touch;
-}
-.sheetbar{
-  position:sticky;top:0;background:var(--hull);color:#F2EFE4;
-  display:flex;align-items:center;gap:10px;
-  padding:calc(12px + env(safe-area-inset-top)) 12px 12px;
-}
+.sheet{position:fixed;inset:0;z-index:40;background:var(--paper);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sheetbar{position:sticky;top:0;z-index:5;background:var(--hull);color:#F2EFE4;
+  display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 12px 12px}
 .sheetbar button{color:#F2EFE4;padding:8px 10px;border-radius:8px;font-size:16px}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheetbody{padding:16px 16px 100px;max-width:640px;margin:0 auto}
@@ -114,7 +80,8 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .tag{background:#E8EFEA;color:var(--hull);border-radius:999px;padding:4px 11px;font-size:14px;font-weight:600}
 
 .card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--radius);margin-bottom:16px;overflow:hidden}
-.card h3{margin:0;padding:11px 14px;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#F4F2EB;border-bottom:1px solid var(--rule)}
+.card h3{margin:0;padding:11px 14px;font-size:14px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);background:#F4F2EB;border-bottom:1px solid var(--rule)}
 .field{display:flex;gap:12px;padding:11px 14px;border-bottom:1px solid #F0EEE7}
 .card .field:last-child{border-bottom:none}
 .field dt{flex:0 0 38%;color:var(--muted);font-size:15px;margin:0}
@@ -126,379 +93,468 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .linkrow .kind{flex:0 0 38%;color:var(--muted);font-size:15px}
 .linkrow .to{flex:1;font-weight:600;text-align:left}
 .linkrow .del{color:var(--red);font-size:22px;padding:0 6px}
-
 .addlink{padding:12px 14px;display:grid;gap:8px}
 .addlink select,.addlink input{padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff;width:100%}
 .results{border:1.5px solid var(--rule);border-radius:8px;max-height:180px;overflow-y:auto}
 .results button{display:block;width:100%;text-align:left;padding:10px 12px;border-bottom:1px solid #F0EEE7}
 .results button:last-child{border-bottom:none}
 
-/* ---------- form ---------- */
-form.edit{max-width:640px;margin:0 auto}
 fieldset{border:1px solid var(--rule);border-radius:var(--radius);background:var(--panel);margin:0 0 16px;padding:6px 14px 14px}
 legend{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 6px}
 label{display:block;margin-top:12px;font-size:15px;color:var(--muted)}
-label input,label textarea,label select{
-  display:block;width:100%;margin-top:4px;padding:11px 12px;
-  border:1.5px solid var(--rule);border-radius:8px;background:#fff;
-}
+label input,label textarea,label select{display:block;width:100%;margin-top:4px;padding:11px 12px;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 label input:focus,label textarea:focus{border-color:var(--hull);outline:none}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.checks label{margin:0;display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border:1.5px solid var(--rule);border-radius:999px;background:#fff;color:var(--ink)}
+.checks label{margin:0;display:inline-flex;align-items:center;gap:7px;padding:8px 13px;
+  border:1.5px solid var(--rule);border-radius:999px;background:#fff;color:var(--ink)}
 .checks input{width:auto;margin:0}
+
+.multi{margin-top:10px}
+.mrow{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.mrow select{flex:0 0 34%;min-width:0;padding:11px 6px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.mrow input{flex:1;min-width:0;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.mrow .x{flex:0 0 auto;color:var(--red);font-size:24px;padding:0 6px}
+.addmore{color:var(--hull);font-weight:700;padding:8px 0;font-size:16px}
+
+.map{height:220px;border-radius:8px;border:1.5px solid var(--rule);margin-top:10px}
+.map.detail{height:170px;margin:0;border:none;border-radius:0}
+.leaflet-container{z-index:0}
+.geo{display:flex;gap:8px;margin-top:12px}
+.geo input{flex:1;min-width:0;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.geo button{flex:0 0 auto;padding:11px 16px;border-radius:8px;background:var(--hull);color:#F2EFE4;font-weight:600}
+.coords{margin:8px 0 0;font-size:14px;color:var(--muted)}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
 .btn.danger{background:none;color:var(--red);border:1.5px solid var(--red);margin-top:12px}
 .btn:disabled{opacity:.5}
 
-/* ---------- sign in ---------- */
+.setrow{display:flex;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid #F0EEE7}
+.setrow input{flex:1;min-width:0;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.setrow .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:0 4px}
+.setadd{padding:12px 14px}
+.setadd input{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
+  background:#fff;margin-bottom:8px}
+
 .signin{max-width:380px;margin:0 auto;padding:56px 24px}
 .signin h2{font-size:24px;margin:0 0 6px}
 .signin p{color:var(--muted);margin:0 0 24px}
 .msg{padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:16px}
 .msg.error{background:#FBE9E7;color:#7E241E}
-.toast{
-  position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(24px + env(safe-area-inset-bottom));
-  background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;
-  z-index:60;font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3);
-}
-@media (prefers-reduced-motion:no-preference){
-  .toast{animation:rise .2s ease-out}
-  @keyframes rise{from{opacity:0;transform:translate(-50%,10px)}}
-}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));
+  background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;z-index:60;
+  font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3)}
 </style>
 </head>
 <body>
 
-<!-- ================= SIGN IN ================= -->
 <div id="signin" class="signin">
   <h2>Contacts</h2>
   <p>Sign in to continue.</p>
   <div id="signinMsg"></div>
   <label>Email<input id="email" type="email" autocomplete="username" inputmode="email"></label>
   <label>Password<input id="password" type="password" autocomplete="current-password"></label>
-  <br>
-  <button class="btn primary" id="signinBtn">Sign in</button>
+  <br><button class="btn primary" id="signinBtn">Sign in</button>
 </div>
 
-<!-- ================= MAIN ================= -->
 <div id="app" class="hidden">
   <header class="plate">
     <h1>Contacts</h1>
-    <span class="spacer"></span>
-    <button id="bdayBtn">Birthdays</button>
+    <button id="sortBtn">Grouped</button>
+    <button id="setBtn">Settings</button>
     <button id="signoutBtn">Sign out</button>
   </header>
-
   <div class="searchwrap">
     <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
     <div class="chips" id="chips"></div>
   </div>
-
   <p class="count" id="count"></p>
   <ul class="list" id="list"></ul>
   <button class="fab" id="addBtn" aria-label="Add a contact">+</button>
 </div>
 
-<!-- ================= SHEETS ================= -->
 <div id="detail" class="sheet hidden">
-  <div class="sheetbar">
-    <button id="detBack">Back</button>
-    <span class="title" id="detTitle"></span>
-    <button id="detEdit">Edit</button>
-  </div>
+  <div class="sheetbar"><button id="detBack">Back</button>
+    <span class="title" id="detTitle"></span><button id="detEdit">Edit</button></div>
   <div class="sheetbody" id="detBody"></div>
 </div>
 
 <div id="editor" class="sheet hidden">
-  <div class="sheetbar">
-    <button id="edCancel">Cancel</button>
-    <span class="title" id="edTitle">Add a contact</span>
-    <button id="edSave">Save</button>
-  </div>
+  <div class="sheetbar"><button id="edCancel">Cancel</button>
+    <span class="title" id="edTitle">Add a contact</span><button id="edSave">Save</button></div>
   <div class="sheetbody" id="edBody"></div>
 </div>
 
+<div id="settings" class="sheet hidden">
+  <div class="sheetbar"><button id="setBack">Back</button>
+    <span class="title">Settings</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="setBody"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 /* ============================================================
    SETTINGS — paste your two values here.
-   Supabase dashboard: Project Settings > API
-   The anon key is designed to be public; your security rules
-   are what protect the data.
    ============================================================ */
-const SUPABASE_URL = 'https://uloptfmzydaxymhecuub.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
+const SUPABASE_URL = 'PASTE_YOUR_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
 /* ========================================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const LINK_KINDS = ['partner','spouse','ex-partner','parent of','child of','sibling of',
-  'works for','employs','colleague of','crew on','moors near','friend of','met through'];
+const LAB = {
+  phones:  ['Mobile','Home','Work','Boat','Other'],
+  emails:  ['Personal','Work','Other'],
+  websites:['Website','Blog','Business','Other'],
+  socials: ['Facebook','Instagram','Bluesky','X','LinkedIn','YouTube','WhatsApp','TikTok','Other']
+};
 
-let ME=null, GROUPS=[], CONTACTS=[], LINKS=[], TAGS={}, FILTER=null, VIEW='all', CURRENT=null;
+let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
+let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
 
-const $ = id => document.getElementById(id);
-const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $  = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const arr = v => Array.isArray(v) ? v : [];
 
-function toast(text){
-  const t=document.createElement('div');
-  t.className='toast'; t.textContent=text; t.setAttribute('role','status');
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),2600);
-}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
+  d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
 
-/* ---------- dates ---------- */
-function fullName(c){ return [c.first_name,c.last_name].filter(Boolean).join(' ') || '(no name)'; }
-function fmtDate(d){
-  if(!d) return '';
-  const [y,m,day]=d.split('-').map(Number);
-  return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-}
-function ageOf(c){
-  if(!c.birth_date) return null;
-  const b=new Date(c.birth_date), end=c.death_date?new Date(c.death_date):new Date();
-  let a=end.getFullYear()-b.getFullYear();
-  const m=end.getMonth()-b.getMonth();
-  if(m<0||(m===0&&end.getDate()<b.getDate())) a--;
-  return a;
-}
-function daysToBirthday(c){
-  if(!c.birth_date||c.death_date) return null;
-  const b=new Date(c.birth_date), now=new Date();
-  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  let next=new Date(today.getFullYear(),b.getMonth(),b.getDate());
-  if(next<today) next=new Date(today.getFullYear()+1,b.getMonth(),b.getDate());
-  return Math.round((next-today)/86400000);
-}
-function bdayLabel(n){
-  if(n===null) return '';
-  if(n===0) return 'Today';
-  if(n===1) return 'Tomorrow';
-  return n+' days';
-}
+function fullName(c){return [c.first_name,c.last_name].filter(Boolean).join(' ')||'(no name)';}
+function fmtDate(d){if(!d)return'';const [y,m,day]=d.split('-').map(Number);
+  return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
+function ageOf(c){if(!c.birth_date)return null;
+  const b=new Date(c.birth_date),e=c.death_date?new Date(c.death_date):new Date();
+  let a=e.getFullYear()-b.getFullYear();const m=e.getMonth()-b.getMonth();
+  if(m<0||(m===0&&e.getDate()<b.getDate()))a--;return a;}
+function daysToBirthday(c){if(!c.birth_date||c.death_date)return null;
+  const b=new Date(c.birth_date),n=new Date();
+  const t=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  let x=new Date(t.getFullYear(),b.getMonth(),b.getDate());
+  if(x<t)x=new Date(t.getFullYear()+1,b.getMonth(),b.getDate());
+  return Math.round((x-t)/86400000);}
+function bdayLabel(n){return n===null?'':n===0?'Today':n===1?'Tomorrow':n+' days';}
+function w3wUrl(w){return 'https://what3words.com/'+String(w).replace(/^\/+/,'');}
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,c,l] = await Promise.all([
+  const [g,s,k,c,l]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
-    sb.from('contacts').select('*, contact_groups(group_id)').order('last_name',{nullsFirst:false}),
+    sb.from('statuses').select('*').order('sort_order'),
+    sb.from('link_kinds').select('*').order('sort_order'),
+    sb.from('contacts').select('*, contact_groups(group_id)'),
     sb.from('relationships').select('*')
   ]);
-  if(c.error){ toast('Could not load contacts'); console.error(c.error); return; }
-  GROUPS=g.data||[]; CONTACTS=c.data||[]; LINKS=l.data||[];
-  TAGS={}; CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
-  renderChips(); render();
+  for(const r of [g,s,k,c,l]) if(r.error){toast('Could not load data');console.error(r.error);return;}
+  GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
+  TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
+  renderChips();render();
 }
 
 function renderChips(){
-  const chips=$('chips'); chips.innerHTML='';
-  const add=(label,val)=>{
-    const b=document.createElement('button');
-    b.className='chip'; b.textContent=label;
-    b.setAttribute('aria-pressed', FILTER===val);
-    b.onclick=()=>{FILTER=val; renderChips(); render();};
-    chips.appendChild(b);
-  };
-  add('Everyone',null);
-  GROUPS.forEach(g=>add(g.name,g.id));
+  const w=$('chips');w.innerHTML='';
+  const add=(t,v)=>{const b=document.createElement('button');b.className='chip';b.textContent=t;
+    b.setAttribute('aria-pressed',FILTER===v);
+    b.onclick=()=>{FILTER=v;renderChips();render();};w.appendChild(b);};
+  add('Everyone',null);GROUPS.forEach(g=>add(g.name,g.id));
 }
 
 /* ---------- list ---------- */
 function matches(c,q){
-  if(!q) return true;
-  const hay=[c.first_name,c.last_name,c.given_names,c.nickname,c.boat_name,c.boat_number,
-    c.town,c.country,c.employer,c.job_title,c.met_where,c.notes,c.email,c.mobile,c.address]
-    .filter(Boolean).join(' ').toLowerCase();
+  if(!q)return true;
+  const bits=[c.first_name,c.last_name,c.given_names,c.nickname,c.boat_name,c.boat_number,
+    c.town,c.country,c.company,c.department,c.job_title,c.met_where,c.notes,c.address,c.postcode];
+  ['emails','phones','websites','socials'].forEach(f=>arr(c[f]).forEach(e=>bits.push(e.value)));
+  const hay=bits.filter(Boolean).join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w));
+}
+const byName=(a,b)=>fullName(a).localeCompare(fullName(b),'en-GB',{sensitivity:'base'});
+
+function rowHtml(c,nested){
+  const d=daysToBirthday(c);
+  const sub=[c.nickname&&'"'+c.nickname+'"',c.boat_name,c.town,c.company].filter(Boolean).join(' \u00b7 ');
+  return `<li><button class="row ${nested?'nested':''}" data-id="${c.id}">
+    <span class="who"><span class="name">${esc(fullName(c))}</span>
+    ${sub?`<span class="sub">${esc(sub)}</span>`:''}</span>
+    ${d!==null&&d<=45?`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`:''}
+  </button></li>`;
 }
 
 function render(){
   const q=$('search').value.trim();
   let rows=CONTACTS.filter(c=>matches(c,q));
-  if(FILTER) rows=rows.filter(c=>(TAGS[c.id]||[]).includes(FILTER));
-
-  if(VIEW==='birthdays'){
-    rows=rows.filter(c=>c.birth_date&&!c.death_date)
-             .sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
-  }else{
-    rows.sort((a,b)=>fullName(a).localeCompare(fullName(b),'en-GB',{sensitivity:'base'}));
-  }
-
-  $('count').textContent = rows.length + (rows.length===1?' contact':' contacts')
-    + (VIEW==='birthdays'?', by next birthday':'');
-
+  if(FILTER)rows=rows.filter(c=>(TAGS[c.id]||[]).includes(FILTER));
   const list=$('list');
+
   if(!rows.length){
+    $('count').textContent='0 contacts';
     list.innerHTML='<li class="empty">'+(q?'Nothing matches that search.':'No contacts yet. Tap + to add the first one.')+'</li>';
     return;
   }
-  list.innerHTML = rows.map(c=>{
-    const d=daysToBirthday(c);
-    const sub=[c.nickname&&'"'+c.nickname+'"', c.boat_name, c.town, c.employer].filter(Boolean).join(' · ');
-    const show = VIEW==='birthdays' || (d!==null && d<=45);
-    return `<li><button class="row" data-id="${c.id}">
-      <span class="who">
-        <span class="name">${esc(fullName(c))}</span>
-        ${sub?`<span class="sub">${esc(sub)}</span>`:''}
-      </span>
-      ${show?`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`:''}
-    </button></li>`;
-  }).join('');
-  list.querySelectorAll('.row').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.id)));
+
+  if(q||MODE!=='grouped'){
+    if(MODE==='birthdays'&&!q)
+      rows=rows.filter(c=>c.birth_date&&!c.death_date).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
+    else rows.sort(byName);
+    $('count').textContent=rows.length+(rows.length===1?' contact':' contacts');
+    list.innerHTML=rows.map(c=>rowHtml(c,false)).join('');
+    wireRows();return;
+  }
+
+  $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')+', by group and country';
+  let html='';
+  GROUPS.forEach(g=>{
+    const inG=rows.filter(c=>(TAGS[c.id]||[]).includes(g.id));
+    if(!inG.length)return;
+    const gk='g'+g.id, gOpen=OPEN.has(gk);
+    html+=`<li><button class="grouphd ${gOpen?'open':''}" data-open="${gk}">
+      <span class="caret">&#9656;</span>${esc(g.name)}<span class="n">${inG.length}</span></button></li>`;
+    if(!gOpen)return;
+    const countries=[...new Set(inG.map(c=>c.country||'No country'))]
+      .sort((a,b)=>a==='No country'?1:b==='No country'?-1:a.localeCompare(b));
+    countries.forEach(ct=>{
+      const inC=inG.filter(c=>(c.country||'No country')===ct).sort(byName);
+      const ck=gk+'|'+ct, cOpen=OPEN.has(ck);
+      html+=`<li><button class="countryhd ${cOpen?'open':''}" data-open="${esc(ck)}">
+        <span class="caret">&#9656;</span>${esc(ct)}<span class="n">${inC.length}</span></button></li>`;
+      if(cOpen)html+=inC.map(c=>rowHtml(c,true)).join('');
+    });
+  });
+  const none=rows.filter(c=>!(TAGS[c.id]||[]).length);
+  if(none.length){
+    html+=`<li><button class="grouphd ${OPEN.has('none')?'open':''}" data-open="none">
+      <span class="caret">&#9656;</span>No group<span class="n">${none.length}</span></button></li>`;
+    if(OPEN.has('none'))html+=none.sort(byName).map(c=>rowHtml(c,true)).join('');
+  }
+  list.innerHTML=html;
+  list.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.open;OPEN.has(k)?OPEN.delete(k):OPEN.add(k);render();});
+  wireRows();
+}
+function wireRows(){
+  $('list').querySelectorAll('.row').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.id)));
+}
+
+/* ---------- maps ---------- */
+function killMaps(){MAPS.forEach(m=>{try{m.remove();}catch(e){}});MAPS=[];}
+
+function showMap(elId,lat,lng,onMove){
+  if(!$(elId))return null;
+  const m=L.map(elId,{scrollWheelZoom:false}).setView([lat??52.5,lng??-2.0],lat?14:6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  let marker=null;
+  const drop=(la,ln,tell)=>{
+    if(marker)marker.setLatLng([la,ln]);
+    else{
+      marker=L.marker([la,ln],{draggable:!!onMove}).addTo(m);
+      if(onMove)marker.on('dragend',()=>{const p=marker.getLatLng();onMove(p.lat,p.lng);});
+    }
+    if(tell&&onMove)onMove(la,ln);
+  };
+  if(lat&&lng)drop(lat,lng,false);
+  if(onMove)m.on('click',e=>drop(e.latlng.lat,e.latlng.lng,true));
+  MAPS.push(m);
+  setTimeout(()=>m.invalidateSize(),150);
+  return {map:m,drop:drop};
+}
+
+async function geocode(q,mapObj){
+  if(!q.trim()||!mapObj)return;
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
+    const j=await r.json();
+    if(!j.length){toast('No match for that address');return;}
+    const la=parseFloat(j[0].lat),ln=parseFloat(j[0].lon);
+    mapObj.map.setView([la,ln],16);
+    mapObj.drop(la,ln,true);
+  }catch(e){toast('Address lookup unavailable just now');}
 }
 
 /* ---------- detail ---------- */
 function linksFor(id){
   const out=[];
   LINKS.forEach(l=>{
-    if(l.from_contact===id) out.push({id:l.id,kind:l.kind,other:l.to_contact});
-    else if(l.to_contact===id) out.push({id:l.id,kind:l.kind+' (from their side)',other:l.from_contact,reverse:true});
+    const k=KINDS.find(x=>x.name===l.kind);
+    if(l.from_contact===id)out.push({id:l.id,label:l.kind,other:l.to_contact,owned:true});
+    else if(l.to_contact===id)out.push({id:l.id,label:k?k.inverse_name:l.kind,other:l.from_contact,owned:false});
   });
   return out;
 }
 
 function openDetail(id){
-  CURRENT=CONTACTS.find(c=>c.id===id);
-  if(!CURRENT) return;
+  killMaps();
+  CURRENT=CONTACTS.find(c=>c.id===id);if(!CURRENT)return;
   const c=CURRENT;
   $('detTitle').textContent=fullName(c);
+  const age=ageOf(c),d=daysToBirthday(c);
+  const st=STATUSES.find(s=>s.id===c.status_id);
+  const R=(label,html)=>html?`<div class="field"><dt>${label}</dt><dd>${html}</dd></div>`:'';
 
-  const age=ageOf(c), d=daysToBirthday(c);
-  const rows=(pairs)=>pairs.filter(p=>p[1]).map(p=>`<div class="field"><dt>${p[0]}</dt><dd>${p[2]||esc(p[1])}</dd></div>`).join('');
+  const link=(u,t)=>`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`;
+  const chan=(items,fmt)=>arr(items).map(e=>R(esc(e.label||''),fmt(e))).join('');
+  const webUrl=v=>/^https?:/i.test(v)?v:'https://'+v;
 
-  const personal=rows([
-    ['Also known as',c.nickname],
-    ['Given names',c.given_names],
-    ['Born',c.birth_date,fmtDate(c.birth_date)+(age!==null?` · ${age}`:'')],
-    ['Next birthday',d!==null?bdayLabel(d):'',d!==null?bdayLabel(d):''],
-    ['Died',c.death_date,fmtDate(c.death_date)],
-    ['Status',c.partner_status],
-    ['Pets',c.pet_names],
-    ['Met',c.met_where,[esc(c.met_where),c.met_date?fmtDate(c.met_date):''].filter(Boolean).join(', ')]
-  ]);
-  const contact=rows([
-    ['Mobile',c.mobile,c.mobile?`<a href="tel:${esc(c.mobile)}">${esc(c.mobile)}</a>`:''],
-    ['Phone',c.phone,c.phone?`<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>`:''],
-    ['Email',c.email,c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:''],
-    ['Website',c.website,c.website?`<a href="${esc(c.website.startsWith('http')?c.website:'https://'+c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`:''],
-    ['Facebook',c.facebook],['Instagram',c.instagram],['Bluesky',c.bluesky],['Other',c.other_social]
-  ]);
-  const place=rows([
-    ['Address',c.address],['Town',c.town],['Postcode',c.postcode],['Country',c.country],
-    ['Map',(c.latitude&&c.longitude)?'y':'',(c.latitude&&c.longitude)?`<a href="https://www.google.com/maps?q=${c.latitude},${c.longitude}" target="_blank" rel="noopener">${c.latitude}, ${c.longitude}</a>`:'']
-  ]);
-  const work=rows([['Employer',c.employer],['Job title',c.job_title]]);
-  const boat=rows([['Boat name',c.boat_name],['Index number',c.boat_number]]);
+  const personal=R('Also known as',esc(c.nickname))
+    +R('Given names',esc(c.given_names))
+    +R('Status',esc(st?st.name:''))
+    +R('Born',c.birth_date?esc(fmtDate(c.birth_date))+(age!==null?' \u00b7 '+age:''):'')
+    +R('Next birthday',d!==null?bdayLabel(d):'')
+    +R('Died',c.death_date?esc(fmtDate(c.death_date)):'')
+    +R('Pets',esc(c.pet_names));
 
-  const myLinks=linksFor(c.id);
-  const linkHtml = myLinks.map(l=>{
+  const touch=chan(c.phones,e=>`<a href="tel:${esc(e.value)}">${esc(e.value)}</a>`)
+    +chan(c.emails,e=>`<a href="mailto:${esc(e.value)}">${esc(e.value)}</a>`)
+    +chan(c.websites,e=>link(webUrl(e.value),e.value))
+    +chan(c.socials,e=>/^https?:/i.test(e.value)?link(e.value,e.value):esc(e.value));
+
+  const where=R('Address',esc(c.address))+R('Town',esc(c.town))
+    +R('Postcode',esc(c.postcode))+R('Country',esc(c.country))
+    +R('what3words',c.what3words?link(w3wUrl(c.what3words),'///'+c.what3words):'')
+    +(c.latitude&&c.longitude?'<div id="detMap" class="map detail"></div>':'');
+
+  const work=R('Company',esc(c.company))+R('Department',esc(c.department))+R('Job title',esc(c.job_title));
+  const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number));
+  const met=R('Where',esc(c.met_where))+R('When',c.met_date?esc(fmtDate(c.met_date)):'')
+    +R('what3words',c.met_what3words?link(w3wUrl(c.met_what3words),'///'+c.met_what3words):'')
+    +(c.met_latitude&&c.met_longitude?'<div id="metMap" class="map detail"></div>':'');
+
+  const links=linksFor(c.id).map(l=>{
     const o=CONTACTS.find(x=>x.id===l.other);
-    return `<div class="linkrow">
-      <span class="kind">${esc(l.kind)}</span>
+    return `<div class="linkrow"><span class="kind">${esc(l.label)}</span>
       <button class="to" data-go="${l.other}">${esc(o?fullName(o):'(hidden)')}</button>
-      ${l.reverse?'':`<button class="del" data-del="${l.id}" aria-label="Remove link">&times;</button>`}
-    </div>`;
+      ${l.owned?`<button class="del" data-del="${l.id}" aria-label="Remove link">&times;</button>`:''}</div>`;
   }).join('');
 
-  const tagNames=(TAGS[c.id]||[]).map(id=>GROUPS.find(g=>g.id===id)).filter(Boolean);
+  const tagNames=(TAGS[c.id]||[]).map(i=>GROUPS.find(g=>g.id===i)).filter(Boolean);
 
-  $('detBody').innerHTML = `
+  $('detBody').innerHTML=`
     <h2 class="detname">${esc(fullName(c))}</h2>
-    ${c.job_title||c.employer?`<p class="detsub">${esc([c.job_title,c.employer].filter(Boolean).join(', '))}</p>`:''}
+    ${c.job_title||c.company?`<p class="detsub">${esc([c.job_title,c.company].filter(Boolean).join(', '))}</p>`:''}
     <div class="tags">${tagNames.map(g=>`<span class="tag">${esc(g.name)}</span>`).join('')}</div>
     ${personal?`<div class="card"><h3>Personal</h3>${personal}</div>`:''}
-    ${contact?`<div class="card"><h3>Getting in touch</h3>${contact}</div>`:''}
-    ${place?`<div class="card"><h3>Where</h3>${place}</div>`:''}
+    ${touch?`<div class="card"><h3>Getting in touch</h3>${touch}</div>`:''}
+    ${where?`<div class="card"><h3>Where</h3>${where}</div>`:''}
     ${boat?`<div class="card"><h3>Boat</h3>${boat}</div>`:''}
     ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
+    ${met?`<div class="card"><h3>How we met</h3>${met}</div>`:''}
     <div class="card"><h3>Connections</h3>
-      ${linkHtml||'<div class="field"><dd>No links yet.</dd></div>'}
+      ${links||'<div class="field"><dd>No links yet.</dd></div>'}
       <div class="addlink">
-        <select id="linkKind">${LINK_KINDS.map(k=>`<option>${k}</option>`).join('')}</select>
+        <select id="linkKind">${KINDS.map(k=>`<option>${esc(k.name)}</option>`).join('')}</select>
         <input id="linkSearch" placeholder="Search for the other person" autocomplete="off">
         <div class="results hidden" id="linkResults"></div>
-      </div>
-    </div>
-    ${c.notes?`<div class="card"><h3>Notes</h3><div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div></div>`:''}
-  `;
+      </div></div>
+    ${c.notes?`<div class="card"><h3>Notes</h3><div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div></div>`:''}`;
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
   wireLinkSearch();
-
-  $('detail').classList.remove('hidden');
-  $('detail').scrollTop=0;
+  if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
+  if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
+  $('detail').classList.remove('hidden');$('detail').scrollTop=0;
 }
 
 function wireLinkSearch(){
-  const box=$('linkSearch'), res=$('linkResults');
+  const box=$('linkSearch'),res=$('linkResults');
   box.oninput=()=>{
     const q=box.value.trim();
     if(q.length<2){res.classList.add('hidden');return;}
-    const hits=CONTACTS.filter(c=>c.id!==CURRENT.id&&matches(c,q)).slice(0,12);
+    const hits=CONTACTS.filter(c=>c.id!==CURRENT.id&&matches(c,q)).sort(byName).slice(0,12);
     res.innerHTML=hits.length?hits.map(c=>`<button data-pick="${c.id}">${esc(fullName(c))}</button>`).join('')
       :'<button disabled>No one matches</button>';
     res.classList.remove('hidden');
     res.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>addLink(Number(b.dataset.pick)));
   };
 }
-
-async function addLink(otherId){
+async function addLink(other){
   const kind=$('linkKind').value;
-  const {error}=await sb.from('relationships').insert({from_contact:CURRENT.id,to_contact:otherId,kind});
-  if(error){ toast(error.code==='23505'?'That link already exists':'Could not add the link'); return; }
-  const {data}=await sb.from('relationships').select('*');
-  LINKS=data||[]; toast('Link added'); openDetail(CURRENT.id);
+  const {error}=await sb.from('relationships').insert({from_contact:CURRENT.id,to_contact:other,kind});
+  if(error){toast(error.code==='23505'?'That link already exists':'Could not add the link');return;}
+  const {data}=await sb.from('relationships').select('*');LINKS=data||[];
+  toast('Link added');openDetail(CURRENT.id);
 }
 async function removeLink(id){
   const {error}=await sb.from('relationships').delete().eq('id',id);
-  if(error){ toast('Could not remove the link'); return; }
-  LINKS=LINKS.filter(l=>l.id!==id); toast('Link removed'); openDetail(CURRENT.id);
+  if(error){toast('Could not remove the link');return;}
+  LINKS=LINKS.filter(l=>l.id!==id);toast('Link removed');openDetail(CURRENT.id);
 }
 
 /* ---------- editor ---------- */
-const F=(label,name,type='text')=>`<label>${label}<input name="${name}" type="${type}"></label>`;
+const F=(l,n,t='text')=>`<label>${l}<input name="${n}" type="${t}"></label>`;
+
+function multiBlock(key,word){
+  return `<div class="multi"><div class="mrows" id="rows_${key}"></div>
+    <button type="button" class="addmore" data-add="${key}">+ Add ${word}</button></div>`;
+}
+function drawMulti(key){
+  const box=$('rows_'+key);if(!box)return;
+  box.innerHTML=DRAFT[key].map((e,i)=>`<div class="mrow">
+    <select data-lab="${key}:${i}">${LAB[key].map(l=>`<option ${l===e.label?'selected':''}>${esc(l)}</option>`).join('')}</select>
+    <input data-val="${key}:${i}" value="${esc(e.value||'')}">
+    <button type="button" class="x" data-rm="${key}:${i}" aria-label="Remove">&times;</button></div>`).join('');
+  box.querySelectorAll('[data-lab]').forEach(s=>s.onchange=()=>{
+    DRAFT[key][Number(s.dataset.lab.split(':')[1])].label=s.value;});
+  box.querySelectorAll('[data-val]').forEach(i=>i.oninput=()=>{
+    DRAFT[key][Number(i.dataset.val.split(':')[1])].value=i.value;});
+  box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{
+    DRAFT[key].splice(Number(b.dataset.rm.split(':')[1]),1);drawMulti(key);});
+}
 
 function openEditor(c){
+  killMaps();
   const isNew=!c;
+  const copy=v=>JSON.parse(JSON.stringify(arr(v)));
+  DRAFT={
+    phones:copy(c&&c.phones), emails:copy(c&&c.emails),
+    websites:copy(c&&c.websites), socials:copy(c&&c.socials),
+    lat:c?c.latitude:null, lng:c?c.longitude:null,
+    mlat:c?c.met_latitude:null, mlng:c?c.met_longitude:null
+  };
   $('edTitle').textContent=isNew?'Add a contact':'Edit '+fullName(c);
-  $('edBody').innerHTML=`<form class="edit" id="edForm">
+  $('edBody').innerHTML=`<form id="edForm">
     <fieldset><legend>Name</legend>
       <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
-      ${F('Given names','given_names')}
-      ${F('Nickname','nickname')}
+      ${F('Given names','given_names')}${F('Nickname','nickname')}
     </fieldset>
     <fieldset><legend>Groups</legend>
       <div class="checks">${GROUPS.map(g=>`<label><input type="checkbox" name="grp" value="${g.id}">${esc(g.name)}</label>`).join('')}</div>
     </fieldset>
-    <fieldset><legend>Dates</legend>
+    <fieldset><legend>Status and dates</legend>
+      <label>Relationship status<select name="status_id"><option value="">&mdash;</option>
+        ${STATUSES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>
       <div class="two">${F('Born','birth_date','date')}${F('Died','death_date','date')}</div>
+      ${F('Pets','pet_names')}
     </fieldset>
-    <fieldset><legend>Getting in touch</legend>
-      ${F('Mobile','mobile','tel')}${F('Other phone','phone','tel')}${F('Email','email','email')}${F('Website','website')}
-    </fieldset>
-    <fieldset><legend>Where</legend>
+    <fieldset><legend>Phones</legend>${multiBlock('phones','a phone')}</fieldset>
+    <fieldset><legend>Emails</legend>${multiBlock('emails','an email')}</fieldset>
+    <fieldset><legend>Websites</legend>${multiBlock('websites','a website')}</fieldset>
+    <fieldset><legend>Social</legend>${multiBlock('socials','a social account')}</fieldset>
+    <fieldset><legend>Where they are</legend>
       ${F('Address','address')}
       <div class="two">${F('Town','town')}${F('Postcode','postcode')}</div>
       ${F('Country','country')}
-      <div class="two">${F('Latitude','latitude')}${F('Longitude','longitude')}</div>
+      <label>what3words, e.g. filled.count.soap<input name="what3words"></label>
+      <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
+      <div id="homeMap" class="map"></div>
+      <p class="coords" id="homeCoords"></p>
     </fieldset>
     <fieldset><legend>Boat</legend>
       <div class="two">${F('Boat name','boat_name')}${F('Index number','boat_number')}</div>
     </fieldset>
     <fieldset><legend>Work</legend>
-      ${F('Employer','employer')}${F('Job title','job_title')}
+      ${F('Company','company')}${F('Department','department')}${F('Job title','job_title')}
     </fieldset>
-    <fieldset><legend>Social</legend>
-      ${F('Facebook','facebook')}${F('Instagram','instagram')}${F('Bluesky','bluesky')}${F('Other','other_social')}
-    </fieldset>
-    <fieldset><legend>Personal</legend>
-      ${F('Status','partner_status')}${F('Pets','pet_names')}
+    <fieldset><legend>How we met</legend>
       ${F('Where we met','met_where')}${F('When we met','met_date','date')}
+      <label>what3words<input name="met_what3words"></label>
+      <div class="geo"><input id="metQ" placeholder="Find the spot"><button type="button" id="metGo">Find</button></div>
+      <div id="metEditMap" class="map"></div>
+      <p class="coords" id="metCoords"></p>
+    </fieldset>
+    <fieldset><legend>Notes</legend>
       <label>Notes<textarea name="notes" rows="4"></textarea></label>
     </fieldset>
     ${isNew?'':'<button type="button" class="btn danger" id="edDelete">Delete this contact</button>'}
@@ -506,95 +562,159 @@ function openEditor(c){
 
   const f=$('edForm');
   if(c){
-    Object.keys(c).forEach(k=>{ if(f.elements[k]&&k!=='id') f.elements[k].value=c[k]??''; });
-    (TAGS[c.id]||[]).forEach(gid=>{
-      const box=f.querySelector(`input[name="grp"][value="${gid}"]`);
-      if(box) box.checked=true;
-    });
+    Object.keys(c).forEach(k=>{
+      if(f.elements[k]&&k!=='id'&&typeof c[k]!=='object')f.elements[k].value=c[k]??'';});
+    f.elements['status_id'].value=c.status_id??'';
+    (TAGS[c.id]||[]).forEach(g=>{const b=f.querySelector(`input[name="grp"][value="${g}"]`);if(b)b.checked=true;});
     $('edDelete').onclick=()=>deleteContact(c);
   }
-  $('editor').classList.remove('hidden');
-  $('editor').scrollTop=0;
+
+  Object.keys(LAB).forEach(drawMulti);
+  $('edBody').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.add;DRAFT[k].push({label:LAB[k][0],value:''});drawMulti(k);});
+
+  const showCoords=()=>{
+    $('homeCoords').textContent=DRAFT.lat
+      ? (+DRAFT.lat).toFixed(6)+', '+(+DRAFT.lng).toFixed(6)+' — drag the pin to adjust'
+      : 'Tap the map to drop a pin.';
+    $('metCoords').textContent=DRAFT.mlat
+      ? (+DRAFT.mlat).toFixed(6)+', '+(+DRAFT.mlng).toFixed(6)+' — drag the pin to adjust'
+      : 'Tap the map to drop a pin.';
+  };
+  showCoords();
+  $('editor').classList.remove('hidden');$('editor').scrollTop=0;
+
+  setTimeout(()=>{
+    const hm=showMap('homeMap',DRAFT.lat,DRAFT.lng,(la,ln)=>{DRAFT.lat=la;DRAFT.lng=ln;showCoords();});
+    const mm=showMap('metEditMap',DRAFT.mlat,DRAFT.mlng,(la,ln)=>{DRAFT.mlat=la;DRAFT.mlng=ln;showCoords();});
+    $('geoGo').onclick=()=>geocode($('geoQ').value,hm);
+    $('metGo').onclick=()=>geocode($('metQ').value,mm);
+  },100);
+
   $('edSave').onclick=()=>saveContact(c);
 }
 
 async function saveContact(existing){
-  const f=$('edForm');
-  const data={};
-  ['first_name','last_name','given_names','nickname','birth_date','death_date','mobile','phone',
-   'email','website','address','town','postcode','country','latitude','longitude','employer',
-   'job_title','facebook','instagram','bluesky','other_social','partner_status','pet_names',
-   'met_where','met_date','notes'].forEach(k=>{
-    const v=f.elements[k].value.trim();
-    data[k]= v===''?null:v;
-  });
-  if(!data.first_name&&!data.last_name){ toast('Give them a first or last name'); return; }
+  const f=$('edForm'),data={};
+  ['first_name','last_name','given_names','nickname','birth_date','death_date','address','town',
+   'postcode','country','company','department','job_title','boat_name','boat_number','pet_names',
+   'met_where','met_date','notes','what3words','met_what3words'].forEach(k=>{
+    const v=f.elements[k].value.trim();data[k]=v===''?null:v;});
+  data.status_id=f.elements['status_id'].value?Number(f.elements['status_id'].value):null;
+  Object.keys(LAB).forEach(k=>
+    data[k]=DRAFT[k].filter(e=>e.value&&e.value.trim()).map(e=>({label:e.label,value:e.value.trim()})));
+  data.latitude=DRAFT.lat;data.longitude=DRAFT.lng;
+  data.met_latitude=DRAFT.mlat;data.met_longitude=DRAFT.mlng;
 
+  if(!data.first_name&&!data.last_name){toast('Give them a first or last name');return;}
   const chosen=[...f.querySelectorAll('input[name="grp"]:checked')].map(b=>Number(b.value));
-  if(!chosen.length){ toast('Pick at least one group, or only you will see them'); return; }
+  if(!chosen.length){toast('Pick at least one group, or only you will see them');return;}
 
-  $('edSave').disabled=true;
-  let id;
+  $('edSave').disabled=true;let id;
   if(existing){
     const {error}=await sb.from('contacts').update(data).eq('id',existing.id);
-    if(error){ toast('Could not save'); console.error(error); $('edSave').disabled=false; return; }
+    if(error){toast('Could not save');console.error(error);$('edSave').disabled=false;return;}
     id=existing.id;
     const before=TAGS[id]||[];
-    const toAdd=chosen.filter(g=>!before.includes(g));
-    const toGo=before.filter(g=>!chosen.includes(g));
-    if(toAdd.length) await sb.from('contact_groups').insert(toAdd.map(g=>({contact_id:id,group_id:g})));
-    for(const g of toGo) await sb.from('contact_groups').delete().eq('contact_id',id).eq('group_id',g);
+    const add=chosen.filter(g=>!before.includes(g)),go=before.filter(g=>!chosen.includes(g));
+    if(add.length)await sb.from('contact_groups').insert(add.map(g=>({contact_id:id,group_id:g})));
+    for(const g of go)await sb.from('contact_groups').delete().eq('contact_id',id).eq('group_id',g);
   }else{
     data.created_by=ME.id;
     const {data:ins,error}=await sb.from('contacts').insert(data).select().single();
-    if(error){ toast('Could not save'); console.error(error); $('edSave').disabled=false; return; }
+    if(error){toast('Could not save');console.error(error);$('edSave').disabled=false;return;}
     id=ins.id;
     await sb.from('contact_groups').insert(chosen.map(g=>({contact_id:id,group_id:g})));
   }
-  $('edSave').disabled=false;
-  $('editor').classList.add('hidden');
-  await loadAll();
-  toast('Saved');
-  openDetail(id);
+  $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');
+  await loadAll();toast('Saved');openDetail(id);
 }
 
 async function deleteContact(c){
-  if(!confirm('Delete '+fullName(c)+'? This cannot be undone.')) return;
+  if(!confirm('Delete '+fullName(c)+'? This cannot be undone.'))return;
   const {error}=await sb.from('contacts').delete().eq('id',c.id);
-  if(error){ toast('Could not delete'); return; }
-  $('editor').classList.add('hidden');
-  $('detail').classList.add('hidden');
-  await loadAll();
-  toast('Deleted');
+  if(error){toast('Could not delete');return;}
+  killMaps();$('editor').classList.add('hidden');$('detail').classList.add('hidden');
+  await loadAll();toast('Deleted');
+}
+
+/* ---------- settings ---------- */
+function openSettings(){
+  const block=(table,title,one,rows,fields,hint)=>`
+    <div class="card"><h3>${title}</h3>
+      ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
+      ${rows.map(r=>`<div class="setrow">
+        ${fields.map(fd=>`<input data-edit="${table}:${r.id}:${fd}" value="${esc(r[fd]??'')}">`).join('')}
+        <button class="x" data-drop="${table}:${r.id}" aria-label="Remove">&times;</button></div>`).join('')}
+      <div class="setadd">
+        ${fields.map(fd=>`<input data-new="${table}:${fd}" placeholder="${fd==='inverse_name'?'Its opposite, e.g. Child of':'New '+one}">`).join('')}
+        <button class="btn primary" data-addrow="${table}">Add ${one}</button>
+      </div></div>`;
+
+  $('setBody').innerHTML=
+     block('groups','Groups','group',GROUPS,['name'])
+   + block('statuses','Relationship statuses','status',STATUSES,['name'])
+   + block('link_kinds','Connection types','type',KINDS,['name','inverse_name'],
+       'Each type has an opposite. Store "Parent of" once and the other person\u2019s record shows "Child of" automatically.')
+   + `<div class="card"><h3>People who can sign in</h3>
+      <div class="field"><dd>Accounts are created in the Supabase dashboard under
+      Authentication &rsaquo; Users, then given group access with one line of SQL.
+      That can\u2019t be done here safely \u2014 it needs an admin key which must never
+      sit in a public web page.</dd></div></div>`;
+
+  $('setBody').querySelectorAll('[data-edit]').forEach(inp=>inp.onchange=async()=>{
+    const [t,id,fd]=inp.dataset.edit.split(':');
+    const {error}=await sb.from(t).update({[fd]:inp.value.trim()}).eq('id',Number(id));
+    if(error){toast('Could not save that change');return;}
+    await loadAll();toast('Saved');
+  });
+  $('setBody').querySelectorAll('[data-drop]').forEach(b=>b.onclick=async()=>{
+    const [t,id]=b.dataset.drop.split(':');
+    if(!confirm('Remove this? Anything using it loses that setting.'))return;
+    const {error}=await sb.from(t).delete().eq('id',Number(id));
+    if(error){toast('Could not remove \u2014 it may still be in use');return;}
+    await loadAll();openSettings();toast('Removed');
+  });
+  $('setBody').querySelectorAll('[data-addrow]').forEach(b=>b.onclick=async()=>{
+    const t=b.dataset.addrow,rec={};
+    $('setBody').querySelectorAll('[data-new^="'+t+':"]').forEach(inp=>{
+      rec[inp.dataset.new.split(':')[1]]=inp.value.trim();});
+    if(!rec.name){toast('Give it a name');return;}
+    if(t==='link_kinds'&&!rec.inverse_name)rec.inverse_name=rec.name;
+    const {error}=await sb.from(t).insert(rec);
+    if(error){toast('Could not add \u2014 that name may already exist');return;}
+    await loadAll();openSettings();toast('Added');
+  });
+  $('settings').classList.remove('hidden');$('settings').scrollTop=0;
 }
 
 /* ---------- wiring ---------- */
 $('signinBtn').onclick=async()=>{
-  const btn=$('signinBtn'); btn.disabled=true;
+  const b=$('signinBtn');b.disabled=true;
   const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
-  btn.disabled=false;
-  if(error){ $('signinMsg').innerHTML='<div class="msg error">'+esc(error.message)+'</div>'; return; }
+  b.disabled=false;
+  if(error){$('signinMsg').innerHTML='<div class="msg error">'+esc(error.message)+'</div>';return;}
   start();
 };
-$('password').addEventListener('keydown',e=>{ if(e.key==='Enter') $('signinBtn').click(); });
-$('signoutBtn').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+$('password').addEventListener('keydown',e=>{if(e.key==='Enter')$('signinBtn').click();});
+$('signoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload();};
 $('search').oninput=render;
 $('addBtn').onclick=()=>openEditor(null);
-$('detBack').onclick=()=>$('detail').classList.add('hidden');
+$('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');};
 $('detEdit').onclick=()=>openEditor(CURRENT);
-$('edCancel').onclick=()=>$('editor').classList.add('hidden');
-$('bdayBtn').onclick=()=>{
-  VIEW = VIEW==='birthdays'?'all':'birthdays';
-  $('bdayBtn').textContent = VIEW==='birthdays'?'A–Z':'Birthdays';
+$('edCancel').onclick=()=>{killMaps();$('editor').classList.add('hidden');};
+$('setBtn').onclick=openSettings;
+$('setBack').onclick=()=>$('settings').classList.add('hidden');
+$('sortBtn').onclick=()=>{
+  MODE = MODE==='grouped'?'az':MODE==='az'?'birthdays':'grouped';
+  $('sortBtn').textContent = MODE==='grouped'?'Grouped':MODE==='az'?'A\u2013Z':'Birthdays';
   render();
 };
 
 async function start(){
   const {data:{user}}=await sb.auth.getUser();
-  if(!user){ $('signin').classList.remove('hidden'); $('app').classList.add('hidden'); return; }
-  ME=user;
-  $('signin').classList.add('hidden');
-  $('app').classList.remove('hidden');
+  if(!user){$('signin').classList.remove('hidden');$('app').classList.add('hidden');return;}
+  ME=user;$('signin').classList.add('hidden');$('app').classList.remove('hidden');
   await loadAll();
 }
 start();

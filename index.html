@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -33,7 +32,8 @@ a{color:var(--hull)}
 .plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
 .plate button:hover{background:rgba(255,255,255,.12)}
 
-.searchwrap{position:sticky;top:0;z-index:20;background:var(--paper);
+#topbar{position:sticky;top:0;z-index:25;background:var(--paper)}
+.searchwrap{background:var(--paper);
   border-bottom:1px solid var(--rule);padding:12px 16px 8px}
 .searchwrap input{width:100%;padding:14px 16px;font-size:18px;
   border:2px solid var(--rule);border-radius:var(--radius);background:var(--panel)}
@@ -67,15 +67,22 @@ ul.list li{border-bottom:1px solid var(--rule)}
   width:60px;height:60px;border-radius:50%;background:var(--red);color:#fff;
   font-size:32px;line-height:1;box-shadow:0 4px 14px rgba(16,35,28,.3);z-index:30}
 
-.sheet{position:fixed;inset:0;z-index:40;background:var(--paper);overflow-y:auto;-webkit-overflow-scrolling:touch}
-.sheetbar{position:sticky;top:0;z-index:5;background:var(--hull);color:#F2EFE4;
+.sheet{position:fixed;inset:0;z-index:40;background:var(--paper);
+  display:flex;flex-direction:column;overflow:hidden}
+.sheet.hidden{display:none}
+.sheetbar{flex:0 0 auto;background:var(--hull);color:#F2EFE4;
   display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 12px 12px}
 .sheetbar button{color:#F2EFE4;padding:8px 10px;border-radius:8px;font-size:16px}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sheetbody{padding:16px 16px 100px;max-width:640px;margin:0 auto}
+.sheetbody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
 
 .detname{font-size:27px;font-weight:700;margin:4px 0 2px;line-height:1.2}
 .detsub{color:var(--muted);margin:0 0 14px}
+.pins{display:flex;flex-direction:column;gap:4px;margin:0 0 12px}
+.pin{display:flex;gap:8px;align-items:baseline;font-size:16px}
+.pin .pk{color:var(--muted);font-size:15px}
+.pin .pv{font-weight:700;color:var(--hull);padding:0;text-align:left}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
 .tag{background:#E8EFEA;color:var(--hull);border-radius:999px;padding:4px 11px;font-size:14px;font-weight:600}
 
@@ -164,6 +171,7 @@ input[name="postcode"]{text-transform:uppercase}
 </div>
 
 <div id="app" class="hidden">
+  <div id="topbar">
   <header class="plate">
     <h1>Contacts</h1>
     <button id="sortBtn">Grouped</button>
@@ -173,6 +181,7 @@ input[name="postcode"]{text-transform:uppercase}
   <div class="searchwrap">
     <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
     <div class="chips" id="chips"></div>
+  </div>
   </div>
   <p class="count" id="count"></p>
   <ul class="list" id="list"></ul>
@@ -204,7 +213,7 @@ input[name="postcode"]{text-transform:uppercase}
    SETTINGS — paste your two values here.
    ============================================================ */
 const SUPABASE_URL = 'https://uloptfmzydaxymhecuub.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
+const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';;
 /* ========================================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -227,6 +236,13 @@ const arr = v => Array.isArray(v) ? v : [];
 
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
   d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
+
+const CAPS=['first_name','last_name','given_names','nickname','address','address_2',
+  'town','county','country','boat_name','met_where','company','employer_name',
+  'job_title','department'];
+function titleCase(v){
+  return String(v).replace(/\S+/g, w => /[A-Z]/.test(w) ? w : w.charAt(0).toUpperCase()+w.slice(1));
+}
 
 function fullName(c){if(c.is_organisation&&c.company)return c.company;
   return [c.first_name,c.last_name].filter(Boolean).join(' ')||c.company||'(no name)';}
@@ -418,8 +434,8 @@ function linksFor(id){
   const out=[];
   LINKS.forEach(l=>{
     const k=KINDS.find(x=>x.name===l.kind);
-    if(l.from_contact===id)out.push({id:l.id,label:l.kind,other:l.to_contact,owned:true});
-    else if(l.to_contact===id)out.push({id:l.id,label:k?k.inverse_name:l.kind,other:l.from_contact,owned:false});
+    if(l.from_contact===id)out.push({id:l.id,label:l.kind,other:l.to_contact,owned:true,pinned:l.pinned});
+    else if(l.to_contact===id)out.push({id:l.id,label:k?k.inverse_name:l.kind,other:l.from_contact,owned:false,pinned:l.pinned});
   });
   return out;
 }
@@ -469,11 +485,21 @@ function openDetail(id){
         +`<div class="field"><dd><button class="addmore" data-maps="${c.met_latitude},${c.met_longitude}">Open in maps app</button></dd></div>`
       : '');
 
-  const links=linksFor(c.id).map(l=>{
+  const myLinks=linksFor(c.id);
+  const links=myLinks.map(l=>{
     const o=CONTACTS.find(x=>x.id===l.other);
-    return `<div class="linkrow"><span class="kind">${esc(l.label)}</span>
+    return `<div class="linkrow">
+      <input type="checkbox" style="flex:0 0 auto;margin:0" data-pin="${l.id}"
+        ${l.pinned?'checked':''} title="Show beside their name">
+      <span class="kind">${esc(l.label)}</span>
       <button class="to" data-go="${l.other}">${esc(o?fullName(o):'(hidden)')}</button>
       ${l.owned?`<button class="del" data-del="${l.id}" aria-label="Remove link">&times;</button>`:''}</div>`;
+  }).join('');
+
+  const pinned=myLinks.filter(l=>l.pinned).map(l=>{
+    const o=CONTACTS.find(x=>x.id===l.other);
+    return `<span class="pin"><span class="pk">${esc(l.label)}</span>
+      <button class="pv" data-go="${l.other}">${esc(o?fullName(o):'(hidden)')}</button></span>`;
   }).join('');
 
   const tagNames=(TAGS[c.id]||[]).map(i=>GROUPS.find(g=>g.id===i)).filter(Boolean);
@@ -481,6 +507,7 @@ function openDetail(id){
   $('detBody').innerHTML=`
     <h2 class="detname">${esc(fullName(c))}</h2>
     ${c.job_title||c.company?`<p class="detsub">${esc([c.job_title,c.company].filter(Boolean).join(', '))}</p>`:''}
+    ${pinned?`<div class="pins">${pinned}</div>`:''}
     <div class="tags">${tagNames.map(g=>`<span class="tag">${esc(g.name)}</span>`).join('')}</div>
     ${personal?`<div class="card"><h3>Personal</h3>${personal}</div>`:''}
     ${touch?`<div class="card"><h3>Getting in touch</h3>${touch}</div>`:''}
@@ -489,7 +516,9 @@ function openDetail(id){
     ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
     ${met?`<div class="card"><h3>Where we met</h3>${met}</div>`:''}
     <div class="card"><h3>Connections</h3>
-      ${links||'<div class="field"><dd>No links yet.</dd></div>'}
+      ${links?`<div class="field"><dd style="color:var(--muted);font-size:15px">
+        Tick a connection to show it beside their name at the top.</dd></div>`+links
+        :'<div class="field"><dd>No links yet.</dd></div>'}
       <div class="addlink">
         <select id="linkKind">
           <option value="" selected>Connect another contact&hellip;</option>
@@ -502,6 +531,13 @@ function openDetail(id){
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
+  $('detBody').querySelectorAll('[data-pin]').forEach(b=>b.onchange=async()=>{
+    const {error}=await sb.from('relationships')
+      .update({pinned:b.checked}).eq('id',Number(b.dataset.pin));
+    if(error){toast('Could not change that');b.checked=!b.checked;return;}
+    const {data}=await sb.from('relationships').select('*');LINKS=data||[];
+    openDetail(CURRENT.id);
+  });
   $('detBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(',');openInMaps(la,ln);});
   $('detBody').querySelectorAll('[data-share]').forEach(b=>
@@ -509,7 +545,7 @@ function openDetail(id){
   wireLinkSearch();
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
-  $('detail').classList.remove('hidden');$('detail').scrollTop=0;
+  $('detail').classList.remove('hidden');$('detBody').scrollTop=0;
 }
 
 function shareCard(c){
@@ -673,6 +709,7 @@ function openEditor(c){
       <label>Relationship status<select name="status_id"><option value="">&mdash;</option>
         ${STATUSES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>
       <div class="two">${F('Born','birth_date','date')}${F('Died','death_date','date')}</div>
+      <p class="coords" id="ageHint"></p>
     </fieldset>
     <fieldset><legend>Pets</legend>${multiBlock('pets','a pet')}</fieldset>
     <fieldset><legend>Phones</legend>${multiBlock('phones','a phone')}</fieldset>
@@ -684,14 +721,15 @@ function openEditor(c){
       ${F('Address line 2','address_2')}
       <div class="two">${F('Town or city','town')}${F('County or region','county')}</div>
       <div class="two">${F('Postcode','postcode')}${F('Country','country')}</div>
-      <label>what3words, e.g. filled.count.soap<input name="what3words"></label>
+      <label>what3words<input name="what3words" placeholder="///filled.count.soap"></label>
       <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
       <p class="coords">Fills itself from the address above &mdash; edit it if the pin lands wide.</p>
       <div id="homeMap" class="map"></div>
       <p class="coords" id="homeCoords"></p>
     </fieldset>
     <fieldset><legend>Boat</legend>
-      <div class="two">${F('Boat name','boat_name')}${F('Index number','boat_number')}</div>
+      <div class="two">${F('Boat name','boat_name')}
+        <label>Index number<input name="boat_number" inputmode="numeric" pattern="[0-9]*"></label></div>
       <label>Boat notes<textarea name="boat_notes" rows="3"></textarea></label>
     </fieldset>
     <fieldset id="fsWork"><legend>Work</legend>
@@ -700,7 +738,7 @@ function openEditor(c){
     </fieldset>
     <fieldset><legend>Where we met</legend>
       ${F('Where we met','met_where')}${F('When we met','met_date','date')}
-      <label>what3words<input name="met_what3words"></label>
+      <label>what3words<input name="met_what3words" placeholder="///filled.count.soap"></label>
       <div class="geo"><input id="metQ" placeholder="Find the spot"><button type="button" id="metGo">Find</button></div>
       <div id="metEditMap" class="map"></div>
       <p class="coords" id="metCoords"></p>
@@ -722,6 +760,9 @@ function openEditor(c){
     $('edDelete').onclick=()=>deleteContact(c);
   }
 
+  CAPS.forEach(k=>{ const el=f.elements[k]; if(el)
+    el.addEventListener('blur',()=>{ if(el.value.trim()) el.value=titleCase(el.value); }); });
+
   const orgBox=f.elements['is_organisation'];
   const applyOrg=()=>{
     const org=orgBox.checked;
@@ -742,6 +783,16 @@ function openEditor(c){
   addrParts.forEach(k=>f.elements[k].addEventListener('input',()=>{syncAddr();syncMet();}));
   f.elements['met_where'].addEventListener('input',syncMet);
 
+  const showAge=()=>{
+    const b=f.elements['birth_date'].value, d=f.elements['death_date'].value;
+    if(!b){$('ageHint').textContent='';return;}
+    const a=ageOf({birth_date:b,death_date:d||null});
+    $('ageHint').textContent = d ? 'Died at '+a : a+' years old — check the year reads right';
+  };
+  f.elements['birth_date'].addEventListener('input',showAge);
+  f.elements['death_date'].addEventListener('input',showAge);
+  showAge();
+
   applyOrg();
   Object.keys(LAB).forEach(drawMulti);
   $('edBody').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
@@ -756,7 +807,7 @@ function openEditor(c){
       : 'Centred on where you are. Tap the map to drop a pin.';
   };
   showCoords();
-  $('editor').classList.remove('hidden');$('editor').scrollTop=0;
+  $('editor').classList.remove('hidden');$('edBody').scrollTop=0;
 
   setTimeout(()=>{
     const hm=showMap('homeMap',DRAFT.lat,DRAFT.lng,(la,ln)=>{DRAFT.lat=la;DRAFT.lng=ln;showCoords();});
@@ -791,6 +842,9 @@ async function saveContact(existing){
     data.company = emp===''?null:emp;
   }
   if(data.postcode) data.postcode=data.postcode.toUpperCase();
+  ['what3words','met_what3words'].forEach(k=>{
+    if(data[k]) data[k]=data[k].replace(/^\/+/,'').trim()||null; });
+  CAPS.forEach(k=>{ if(data[k]) data[k]=titleCase(data[k]); });
   if(data.is_organisation){
     ['first_name','last_name','given_names','nickname','birth_date','death_date']
       .forEach(k=>data[k]=null);
@@ -942,7 +996,7 @@ function openSettings(){
     if(error){toast('Could not add \u2014 that name may already exist');return;}
     await loadAll();openSettings();toast('Added');
   });
-  $('settings').classList.remove('hidden');$('settings').scrollTop=0;
+  $('settings').classList.remove('hidden');$('setBody').scrollTop=0;
 }
 
 /* ---------- wiring ---------- */

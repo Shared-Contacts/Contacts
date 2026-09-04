@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -104,6 +105,7 @@ label{display:block;margin-top:12px;font-size:15px;color:var(--muted)}
 label input,label textarea,label select{display:block;width:100%;margin-top:4px;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 label input:focus,label textarea:focus{border-color:var(--hull);outline:none}
+input[name="postcode"]{text-transform:uppercase}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .checks label{margin:0;display:inline-flex;align-items:center;gap:7px;padding:8px 13px;
@@ -351,6 +353,13 @@ function wireRows(){
 }
 
 /* ---------- maps ---------- */
+function openInMaps(lat,lng){
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const url = ios ? `https://maps.apple.com/?q=${lat},${lng}`
+                  : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  window.open(url,'_blank','noopener');
+}
+
 function killMaps(){MAPS.forEach(m=>{try{m.remove();}catch(e){}});MAPS=[];}
 
 function showMap(elId,lat,lng,onMove,useHere){
@@ -362,6 +371,12 @@ function showMap(elId,lat,lng,onMove,useHere){
     boxZoom:!locked, keyboard:!locked, zoomControl:!locked
   }).setView([lat??52.5,lng??-2.0],lat?14:6);
   if(locked&&m.tap)m.tap.disable();
+  if(locked&&lat&&lng){
+    const el=$(elId);
+    el.style.cursor='pointer';
+    el.title='Open in your maps app';
+    el.addEventListener('click',()=>openInMaps(lat,lng));
+  }
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
   let marker=null;
@@ -439,14 +454,20 @@ function openDetail(id){
     +R('Town',esc(c.town))+R('County',esc(c.county))
     +R('Postcode',esc(c.postcode))+R('Country',esc(c.country))
     +R('what3words',c.what3words?link(w3wUrl(c.what3words),'///'+c.what3words):'')
-    +(c.latitude&&c.longitude?'<div id="detMap" class="map detail"></div>':'');
+    +(c.latitude&&c.longitude
+      ? '<div id="detMap" class="map detail"></div>'
+        +`<div class="field"><dd><button class="addmore" data-maps="${c.latitude},${c.longitude}">Open in maps app</button></dd></div>`
+      : '');
 
   const work=R('Company',esc(c.company))+R('Department',esc(c.department))+R('Job title',esc(c.job_title));
   const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number))
     +R('Notes',c.boat_notes?esc(c.boat_notes).replace(/\n/g,'<br>'):'');
   const met=R('Where',esc(c.met_where))+R('When',c.met_date?esc(fmtDate(c.met_date)):'')
     +R('what3words',c.met_what3words?link(w3wUrl(c.met_what3words),'///'+c.met_what3words):'')
-    +(c.met_latitude&&c.met_longitude?'<div id="metMap" class="map detail"></div>':'');
+    +(c.met_latitude&&c.met_longitude
+      ? '<div id="metMap" class="map detail"></div>'
+        +`<div class="field"><dd><button class="addmore" data-maps="${c.met_latitude},${c.met_longitude}">Open in maps app</button></dd></div>`
+      : '');
 
   const links=linksFor(c.id).map(l=>{
     const o=CONTACTS.find(x=>x.id===l.other);
@@ -466,11 +487,13 @@ function openDetail(id){
     ${where?`<div class="card"><h3>Where</h3>${where}</div>`:''}
     ${boat?`<div class="card"><h3>Boat</h3>${boat}</div>`:''}
     ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
-    ${met?`<div class="card"><h3>How we met</h3>${met}</div>`:''}
+    ${met?`<div class="card"><h3>Where we met</h3>${met}</div>`:''}
     <div class="card"><h3>Connections</h3>
       ${links||'<div class="field"><dd>No links yet.</dd></div>'}
       <div class="addlink">
-        <select id="linkKind">${KINDS.map(k=>`<option>${esc(k.name)}</option>`).join('')}</select>
+        <select id="linkKind">
+          <option value="" selected>Connect another contact&hellip;</option>
+          ${KINDS.map(k=>`<option>${esc(k.name)}</option>`).join('')}</select>
         <input id="linkSearch" placeholder="Search for the other person" autocomplete="off">
         <div class="results hidden" id="linkResults"></div>
       </div></div>
@@ -479,6 +502,8 @@ function openDetail(id){
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
+  $('detBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
+    const [la,ln]=b.dataset.maps.split(',');openInMaps(la,ln);});
   $('detBody').querySelectorAll('[data-share]').forEach(b=>
     b.onchange=()=>toggleShare(b.dataset.share,b.checked));
   wireLinkSearch();
@@ -508,6 +533,9 @@ async function toggleShare(uid,on){
   if(on){
     const {error}=await sb.from('contact_shares').insert({contact_id:CURRENT.id,user_id:uid,can_edit:true});
     if(error){toast('Could not share');return;}
+    const {data:fresh}=await sb.from('contact_shares').select('*');SHARES=fresh||[];
+    offerLinkedShares(uid);
+    return;
   }else{
     const {error}=await sb.from('contact_shares').delete()
       .eq('contact_id',CURRENT.id).eq('user_id',uid);
@@ -515,6 +543,45 @@ async function toggleShare(uid,on){
   }
   const {data}=await sb.from('contact_shares').select('*');SHARES=data||[];
   toast(on?'Shared':'No longer shared');
+}
+
+function offerLinkedShares(uid){
+  // People connected to this one that I own and haven't already shared
+  const ids=[...new Set(linksFor(CURRENT.id).map(l=>l.other))];
+  const candidates=ids.map(i=>CONTACTS.find(c=>c.id===i))
+    .filter(c=>c&&c.created_by===ME.id&&!SHARES.some(s=>s.contact_id===c.id&&s.user_id===uid));
+  if(!candidates.length){toast('Shared');return;}
+
+  const who=USERS.find(u=>u.id===uid);
+  const box=document.createElement('div');
+  box.className='card';
+  box.innerHTML=`<h3>Share the connections too?</h3>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      ${esc(fullName(CURRENT))} is connected to these people, who
+      ${esc(who?(who.display_name||who.email):'they')} cannot see.</dd></div>
+    ${candidates.map(c=>`<div class="setrow">
+      <label style="margin:0;display:flex;gap:10px;align-items:center;color:var(--ink);flex:1">
+        <input type="checkbox" style="width:auto;margin:0" data-also="${c.id}" checked>
+        ${esc(fullName(c))}</label></div>`).join('')}
+    <div class="setadd">
+      <button class="btn primary" id="alsoGo">Share the ticked ones</button>
+      <button class="addmore" id="alsoSkip">No thanks</button>
+    </div>`;
+  const anchor=$('detBody');
+  anchor.appendChild(box);
+  box.scrollIntoView({block:'nearest'});
+
+  $('alsoSkip').onclick=()=>{box.remove();toast('Shared');};
+  $('alsoGo').onclick=async()=>{
+    const picked=[...box.querySelectorAll('[data-also]:checked')].map(b=>Number(b.dataset.also));
+    if(!picked.length){box.remove();return;}
+    const {error}=await sb.from('contact_shares')
+      .upsert(picked.map(id=>({contact_id:id,user_id:uid,can_edit:true})),
+              {onConflict:'contact_id,user_id'});
+    if(error){toast('Could not share those');console.error(error);return;}
+    const {data}=await sb.from('contact_shares').select('*');SHARES=data||[];
+    box.remove();toast('Shared '+(picked.length+1)+' contacts');
+  };
 }
 
 function wireLinkSearch(){
@@ -533,7 +600,9 @@ function wireLinkSearch(){
   };
 }
 function startLinkedContact(q){
-  PENDING={from:CURRENT.id,kind:$('linkKind').value};
+  const kind=$('linkKind').value;
+  if(!kind){toast('Choose how they are connected first');return;}
+  PENDING={from:CURRENT.id,kind:kind};
   const bits=q.trim().split(/\s+/);
   openEditor(null);
   const f=$('edForm');
@@ -543,6 +612,7 @@ function startLinkedContact(q){
 
 async function addLink(other){
   const kind=$('linkKind').value;
+  if(!kind){toast('Choose how they are connected first');return;}
   const {error}=await sb.from('relationships').insert({from_contact:CURRENT.id,to_contact:other,kind});
   if(error){toast(error.code==='23505'?'That link already exists':'Could not add the link');return;}
   const {data}=await sb.from('relationships').select('*');LINKS=data||[];
@@ -590,7 +660,7 @@ function openEditor(c){
     <fieldset><legend>Name</legend>
       <div class="checks"><label><input type="checkbox" name="is_organisation">
         This is a business or organisation</label></div>
-      <label>Business or company name<input name="company"></label>
+      <div id="orgName"><label>Business or organisation name<input name="company"></label></div>
       <div id="personNames">
         <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
         ${F('Given names','given_names')}${F('Nickname','nickname')}
@@ -624,10 +694,11 @@ function openEditor(c){
       <div class="two">${F('Boat name','boat_name')}${F('Index number','boat_number')}</div>
       <label>Boat notes<textarea name="boat_notes" rows="3"></textarea></label>
     </fieldset>
-    <fieldset><legend>Work</legend>
+    <fieldset id="fsWork"><legend>Work</legend>
+      ${F('Company or employer','employer_name')}
       ${F('Department','department')}${F('Job title','job_title')}
     </fieldset>
-    <fieldset><legend>How we met</legend>
+    <fieldset><legend>Where we met</legend>
       ${F('Where we met','met_where')}${F('When we met','met_date','date')}
       <label>what3words<input name="met_what3words"></label>
       <div class="geo"><input id="metQ" placeholder="Find the spot"><button type="button" id="metGo">Find</button></div>
@@ -646,6 +717,7 @@ function openEditor(c){
       if(f.elements[k]&&k!=='id'&&typeof c[k]!=='object')f.elements[k].value=c[k]??'';});
     f.elements['status_id'].value=c.status_id??'';
     f.elements['is_organisation'].checked=!!c.is_organisation;
+    f.elements['employer_name'].value=c.is_organisation?'':(c.company??'');
     (TAGS[c.id]||[]).forEach(g=>{const b=f.querySelector(`input[name="grp"][value="${g}"]`);if(b)b.checked=true;});
     $('edDelete').onclick=()=>deleteContact(c);
   }
@@ -655,15 +727,20 @@ function openEditor(c){
     const org=orgBox.checked;
     $('personNames').style.display = org?'none':'';
     $('fsPerson').style.display    = org?'none':'';
+    $('orgName').style.display     = org?'':'none';
+    $('fsWork').style.display      = org?'none':'';
   };
   orgBox.addEventListener('change',applyOrg);
 
   // keep the address-search box in step with the address fields
   const addrParts=['address','address_2','town','county','postcode','country'];
   const buildAddr=()=>addrParts.map(k=>f.elements[k].value.trim()).filter(Boolean).join(', ');
-  let addrTouched=false;
+  let addrTouched=false, metTouched=false;
+  const buildMet=()=>f.elements['met_where'].value.trim()||buildAddr();
   const syncAddr=()=>{if(!addrTouched)$('geoQ').value=buildAddr();};
-  addrParts.forEach(k=>f.elements[k].addEventListener('input',syncAddr));
+  const syncMet =()=>{if(!metTouched)$('metQ').value=buildMet();};
+  addrParts.forEach(k=>f.elements[k].addEventListener('input',()=>{syncAddr();syncMet();}));
+  f.elements['met_where'].addEventListener('input',syncMet);
 
   applyOrg();
   Object.keys(LAB).forEach(drawMulti);
@@ -687,8 +764,10 @@ function openEditor(c){
       (la,ln)=>{DRAFT.mlat=la;DRAFT.mlng=ln;showCoords();}, true);
     $('geoQ').value=buildAddr();
     $('geoQ').addEventListener('input',()=>{addrTouched=true;});
+    $('metQ').value=buildMet();
+    $('metQ').addEventListener('input',()=>{metTouched=true;});
     $('geoGo').onclick=()=>geocode($('geoQ').value.trim()||buildAddr(),hm);
-    $('metGo').onclick=()=>geocode($('metQ').value,mm);
+    $('metGo').onclick=()=>geocode($('metQ').value.trim()||buildMet(),mm);
   },100);
 
   $('edSave').onclick=()=>saveContact(c);
@@ -707,6 +786,11 @@ async function saveContact(existing){
   data.met_latitude=DRAFT.mlat;data.met_longitude=DRAFT.mlng;
 
   data.is_organisation=f.elements['is_organisation'].checked;
+  if(!data.is_organisation){
+    const emp=f.elements['employer_name'].value.trim();
+    data.company = emp===''?null:emp;
+  }
+  if(data.postcode) data.postcode=data.postcode.toUpperCase();
   if(data.is_organisation){
     ['first_name','last_name','given_names','nickname','birth_date','death_date']
       .forEach(k=>data[k]=null);
@@ -804,23 +888,33 @@ function openSettings(){
   });
   $('setBody').querySelectorAll('[data-drop]').forEach(b=>b.onclick=async()=>{
     const [t,id]=b.dataset.drop.split(':');
-    if(!confirm('Remove this? Anything using it loses that setting.'))return;
+    let inUse=0;
+    if(t==='groups')     inUse=CONTACTS.filter(c=>(TAGS[c.id]||[]).includes(Number(id))).length;
+    if(t==='statuses')   inUse=CONTACTS.filter(c=>c.status_id===Number(id)).length;
+    if(t==='link_kinds'){
+      const k=KINDS.find(x=>x.id===Number(id));
+      inUse=k?LINKS.filter(l=>l.kind===k.name).length:0;
+    }
+    const warn = inUse
+      ? inUse+' contact'+(inUse===1?'':'s')+' currently use this. Remove it anyway?\n\n'
+        +'They keep all their other details — they just lose this one setting.'
+      : 'Remove this?';
+    if(!confirm(warn))return;
     const {error}=await sb.from(t).delete().eq('id',Number(id));
     if(error){toast('Could not remove \u2014 it may still be in use');return;}
     await loadAll();openSettings();toast('Removed');
   });
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
     const [t,id,dir]=b.dataset.mv.split(':');
-    const rows = t==='groups'?GROUPS:t==='statuses'?STATUSES:t==='pet_types'?PETS:KINDS;
+    const rows=[...(t==='groups'?GROUPS:t==='statuses'?STATUSES:t==='pet_types'?PETS:KINDS)];
     const i=rows.findIndex(r=>r.id===Number(id));
     const j=dir==='up'?i-1:i+1;
-    if(j<0||j>=rows.length)return;
-    const a=rows[i],c2=rows[j];
-    const oa=a.sort_order??(i*10), ob=c2.sort_order??(j*10);
-    const [e1,e2]=await Promise.all([
-      sb.from(t).update({sort_order:ob}).eq('id',a.id),
-      sb.from(t).update({sort_order:oa}).eq('id',c2.id)]);
-    if(e1.error||e2.error){toast('Could not reorder');return;}
+    if(i<0||j<0||j>=rows.length)return;
+    rows.splice(j,0,rows.splice(i,1)[0]);
+    // Renumber the whole list. Swapping two values fails when several share one.
+    const res=await Promise.all(rows.map((r,n)=>
+      sb.from(t).update({sort_order:(n+1)*10}).eq('id',r.id)));
+    if(res.some(r=>r.error)){toast('Could not reorder');console.error(res);return;}
     await loadAll();openSettings();
   });
 

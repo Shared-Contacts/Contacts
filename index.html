@@ -229,7 +229,8 @@ const LAB = {
   emails:  ['Personal','Work','Other'],
   websites:['Website','Blog','Business','Other'],
   socials: ['Facebook','Instagram','Bluesky','X','LinkedIn','YouTube','WhatsApp','TikTok','Other'],
-  pets:    ['Dog']   // replaced from the pet_types table on load
+  pets:    ['Dog'],  // replaced from the pet_types table on load
+  former_names: ['Maiden','Married','Previously','Also known as']
 };
 
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
@@ -302,7 +303,7 @@ function matches(c,q){
   const bits=[c.first_name,c.last_name,c.given_names,c.nickname,c.boat_name,c.boat_number,
     c.town,c.county,c.country,c.company,c.department,c.job_title,c.met_where,c.notes,
     c.address,c.address_2,c.postcode,c.boat_notes];
-  ['emails','phones','websites','socials','pets'].forEach(f=>
+  ['emails','phones','websites','socials','pets','former_names'].forEach(f=>
     arr(c[f]).forEach(e=>{bits.push(e.value);bits.push(e.label);}));
   const hay=bits.filter(Boolean).join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w));
@@ -459,7 +460,8 @@ function openDetail(id){
   const chan=(items,fmt)=>arr(items).map(e=>R(esc(e.label||''),fmt(e))).join('');
   const webUrl=v=>/^https?:/i.test(v)?v:'https://'+v;
 
-  const personal=R('Also known as',esc(c.nickname))
+  const personal=arr(c.former_names).map(n=>R(esc(n.label||'Previously'),esc(n.value))).join('')
+    +R('Also known as',esc(c.nickname))
     +R('Given names',esc(c.given_names))
     +R('Status',esc(st?st.name:''))
     +R('Born',c.birth_date?esc(fmtDate(c.birth_date))+(age!==null?' \u00b7 '+age:''):'')
@@ -694,6 +696,7 @@ function openEditor(c){
   DRAFT={
     phones:copy(c&&c.phones), emails:copy(c&&c.emails),
     websites:copy(c&&c.websites), socials:copy(c&&c.socials), pets:copy(c&&c.pets),
+    former_names:copy(c&&c.former_names),
     lat:c?c.latitude:null, lng:c?c.longitude:null,
     mlat:c?c.met_latitude:null, mlng:c?c.met_longitude:null
   };
@@ -706,6 +709,8 @@ function openEditor(c){
       <div id="personNames">
         <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
         ${F('Given names','given_names')}${F('Nickname','nickname')}
+        <p class="coords" style="margin-top:14px">Previous or other names</p>
+        ${multiBlock('former_names','a previous name')}
       </div>
     </fieldset>
     <fieldset><legend>Groups</legend>
@@ -855,6 +860,7 @@ async function saveContact(existing){
     ['first_name','last_name','given_names','nickname','birth_date','death_date']
       .forEach(k=>data[k]=null);
     data.status_id=null;
+    data.former_names=[];
   }
   if(!data.first_name&&!data.last_name&&!data.company){
     toast(data.is_organisation?'Give the business a name':'Give them a name, or tick "business"');return;}

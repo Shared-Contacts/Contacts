@@ -85,6 +85,26 @@ ul.list li{border-bottom:1px solid var(--rule)}
 
 .detname{font-size:27px;font-weight:700;margin:4px 0 2px;line-height:1.2}
 .detsub{color:var(--muted);margin:0 0 14px}
+details.inpanel{border-top:1px solid #F0EEE7}
+details.inpanel>summary{padding:11px 14px;color:var(--hull);font-weight:600;cursor:pointer;font-size:15px}
+details#dtFormer{margin-top:14px;border:1.5px solid var(--rule);border-radius:8px;background:#FBFAF7}
+details#dtFormer>summary{padding:11px 12px;color:var(--hull);font-weight:600;cursor:pointer}
+details#dtFormer .multi{padding:0 12px 12px}
+
+.avatarwrap{display:flex;gap:14px;align-items:center;margin:4px 0 10px}
+.avatar{width:74px;height:74px;border-radius:50%;object-fit:cover;flex:0 0 auto;
+  border:2px solid var(--rule);background:#EDEFEA}
+.avatar.ph{display:flex;align-items:center;justify-content:center;
+  font-size:27px;font-weight:700;color:var(--hull)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;padding:12px 14px}
+.gallery figure{margin:0;position:relative}
+.gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;
+  border:1px solid var(--rule);cursor:pointer;display:block}
+.gallery .rm{position:absolute;top:2px;right:2px;background:rgba(16,35,28,.72);color:#fff;
+  border-radius:50%;width:24px;height:24px;font-size:16px;line-height:1}
+.photobar{padding:0 14px 14px;display:flex;gap:10px;flex-wrap:wrap}
+.photobar label{margin:0;color:var(--hull);font-weight:700;font-size:16px;cursor:pointer}
+.photobar input[type=file]{display:none}
 .pins{display:flex;flex-direction:column;gap:4px;margin:0 0 12px}
 .pin{display:flex;gap:8px;align-items:baseline;font-size:16px}
 .pin .pk{color:var(--muted);font-size:15px}
@@ -376,6 +396,61 @@ function wireRows(){
 }
 
 /* ---------- maps ---------- */
+/* ---------- photos ---------- */
+let SIGNED={};   // storage path -> temporary viewing URL
+
+async function shrink(file, max){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,no)=>{
+      const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=url; });
+    const scale=Math.min(1, max/Math.max(img.width,img.height));
+    const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    return await new Promise(ok=>cv.toBlob(ok,'image/jpeg',0.82));
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function signPaths(paths){
+  const need=paths.filter(p=>p&&!SIGNED[p]);
+  if(!need.length)return;
+  const {data,error}=await sb.storage.from('photos').createSignedUrls(need,3600);
+  if(error){console.error(error);return;}
+  (data||[]).forEach(d=>{ if(d.signedUrl) SIGNED[d.path]=d.signedUrl; });
+}
+
+async function uploadPhoto(file, asAvatar){
+  if(!file)return;
+  if(!/^image\//.test(file.type)){toast('That is not an image');return;}
+  toast('Adding the photo\u2026');
+  try{
+    const blob=await shrink(file, asAvatar?600:1400);
+    const path=`${CURRENT.id}/${crypto.randomUUID()}.jpg`;
+    const {error}=await sb.storage.from('photos')
+      .upload(path,blob,{contentType:'image/jpeg',upsert:false});
+    if(error){toast('Could not upload it');console.error(error);return;}
+    const patch = asAvatar
+      ? {avatar_path:path}
+      : {photos:[...arr(CURRENT.photos),{path:path}]};
+    const {error:e2}=await sb.from('contacts').update(patch).eq('id',CURRENT.id);
+    if(e2){toast('Uploaded, but could not attach it');console.error(e2);return;}
+    await loadAll(); openDetail(CURRENT.id); toast('Photo added');
+  }catch(e){ console.error(e); toast('Could not read that image'); }
+}
+
+async function removePhoto(path, isAvatar){
+  if(!confirm('Remove this photo?'))return;
+  await sb.storage.from('photos').remove([path]);
+  const patch = isAvatar
+    ? {avatar_path:null}
+    : {photos:arr(CURRENT.photos).filter(p=>p.path!==path)};
+  const {error}=await sb.from('contacts').update(patch).eq('id',CURRENT.id);
+  if(error){toast('Could not remove it');return;}
+  delete SIGNED[path];
+  await loadAll(); openDetail(CURRENT.id); toast('Photo removed');
+}
+
 function openInMaps(lat,lng){
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
   const url = ios ? `https://maps.apple.com/?q=${lat},${lng}`
@@ -447,9 +522,10 @@ function linksFor(id){
   return out;
 }
 
-function openDetail(id){
+async function openDetail(id){
   killMaps();
   CURRENT=CONTACTS.find(c=>c.id===id);if(!CURRENT)return;
+  await signPaths([CURRENT.avatar_path,...arr(CURRENT.photos).map(p=>p.path)]);
   const c=CURRENT;
   $('detTitle').textContent=fullName(c);
   const age=ageOf(c),d=daysToBirthday(c);
@@ -460,14 +536,17 @@ function openDetail(id){
   const chan=(items,fmt)=>arr(items).map(e=>R(esc(e.label||''),fmt(e))).join('');
   const webUrl=v=>/^https?:/i.test(v)?v:'https://'+v;
 
-  const personal=arr(c.former_names).map(n=>R(esc(n.label||'Previously'),esc(n.value))).join('')
-    +R('Also known as',esc(c.nickname))
+  const formerRows=arr(c.former_names)
+    .map(n=>R(esc(n.label||'Previously'),esc(n.value))).join('');
+  const personal=R('Also known as',esc(c.nickname))
     +R('Given names',esc(c.given_names))
     +R('Status',esc(st?st.name:''))
     +R('Born',c.birth_date?esc(fmtDate(c.birth_date))+(age!==null?' \u00b7 '+age:''):'')
     +R('Next birthday',d!==null?bdayLabel(d):'')
     +R('Died',c.death_date?esc(fmtDate(c.death_date)):'')
-    +arr(c.pets).map(pt=>R(esc(pt.label||'Pet'),esc(pt.value))).join('');
+    +arr(c.pets).map(pt=>R(esc(pt.label||'Pet'),esc(pt.value))).join('')
+    +(formerRows?`<details class="inpanel"><summary>Previous or other names</summary>
+        ${formerRows}</details>`:'');
 
   const touch=chan(c.phones,e=>`<a href="tel:${esc(e.value)}">${esc(e.value)}</a>`)
     +chan(c.emails,e=>`<a href="mailto:${esc(e.value)}">${esc(e.value)}</a>`)
@@ -476,12 +555,23 @@ function openDetail(id){
 
   const where=R('Address',[c.address,c.address_2].filter(Boolean).map(esc).join('<br>'))
     +R('Town',esc(c.town))+R('County',esc(c.county))
-    +R('Postcode',esc(c.postcode))+R('Country',esc(c.country))
+    +R('Postcode',c.postcode?esc(c.postcode.toUpperCase()):'')+R('Country',esc(c.country))
     +R('what3words',c.what3words?link(w3wUrl(c.what3words),'///'+c.what3words):'')
     +(c.latitude&&c.longitude
       ? '<div id="detMap" class="map detail"></div>'
         +`<div class="field"><dd><button class="addmore" data-maps="${c.latitude},${c.longitude}">Open in maps app</button></dd></div>`
       : '');
+
+  const shots=arr(c.photos).filter(p=>SIGNED[p.path]);
+  const gallery=`
+    ${shots.length?`<div class="gallery">${shots.map(p=>`<figure>
+        <img src="${esc(SIGNED[p.path])}" alt="" data-big="${esc(p.path)}" loading="lazy">
+        <button class="rm" data-rmphoto="${esc(p.path)}" aria-label="Remove photo">&times;</button>
+      </figure>`).join('')}</div>`
+      :'<div class="field"><dd style="color:var(--muted);font-size:15px">No photos yet.</dd></div>'}
+    <div class="photobar">
+      <label>+ Add a photo<input type="file" accept="image/*" id="addPhoto"></label>
+    </div>`;
 
   const work=R('Company',esc(c.company))+R('Department',esc(c.department))+R('Job title',esc(c.job_title));
   const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number))
@@ -512,7 +602,17 @@ function openDetail(id){
 
   const tagNames=(TAGS[c.id]||[]).map(i=>GROUPS.find(g=>g.id===i)).filter(Boolean);
 
+  const initial=esc(fullName(c).charAt(0).toUpperCase());
+  const avatar = c.avatar_path&&SIGNED[c.avatar_path]
+    ? `<img class="avatar" src="${esc(SIGNED[c.avatar_path])}" alt="">`
+    : `<span class="avatar ph">${initial}</span>`;
+
   $('detBody').innerHTML=`
+    <div class="avatarwrap">${avatar}
+      <span class="photobar" style="padding:0">
+        <label>${c.avatar_path?'Change':'Add'} profile photo<input type="file" accept="image/*" id="addAvatar"></label>
+        ${c.avatar_path?'<button class="addmore" id="rmAvatar" style="color:var(--red)">Remove</button>':''}
+      </span></div>
     <h2 class="detname">${esc(fullName(c))}</h2>
     ${c.job_title||c.company?`<p class="detsub">${esc([c.job_title,c.company].filter(Boolean).join(', '))}</p>`:''}
     ${pinned?`<div class="pins">${pinned}</div>`:''}
@@ -520,6 +620,7 @@ function openDetail(id){
     ${personal?`<div class="card"><h3>Personal</h3>${personal}</div>`:''}
     ${touch?`<div class="card"><h3>Getting in touch</h3>${touch}</div>`:''}
     ${where?`<div class="card"><h3>Where</h3>${where}</div>`:''}
+    <div class="card"><h3>Photos</h3>${gallery}</div>
     ${boat?`<div class="card"><h3>Boat</h3>${boat}</div>`:''}
     ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
     ${met?`<div class="card"><h3>Where we met</h3>${met}</div>`:''}
@@ -539,6 +640,13 @@ function openDetail(id){
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
+  const ap=$('addPhoto'); if(ap)ap.onchange=e=>uploadPhoto(e.target.files[0],false);
+  const av=$('addAvatar'); if(av)av.onchange=e=>uploadPhoto(e.target.files[0],true);
+  const ra=$('rmAvatar'); if(ra)ra.onclick=()=>removePhoto(CURRENT.avatar_path,true);
+  $('detBody').querySelectorAll('[data-rmphoto]').forEach(b=>
+    b.onclick=()=>removePhoto(b.dataset.rmphoto,false));
+  $('detBody').querySelectorAll('[data-big]').forEach(img=>
+    img.onclick=()=>window.open(SIGNED[img.dataset.big],'_blank','noopener'));
   $('detBody').querySelectorAll('[data-pin]').forEach(b=>b.onchange=async()=>{
     const {error}=await sb.from('relationships')
       .update({pinned:b.checked}).eq('id',Number(b.dataset.pin));
@@ -709,8 +817,6 @@ function openEditor(c){
       <div id="personNames">
         <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
         ${F('Given names','given_names')}${F('Nickname','nickname')}
-        <p class="coords" style="margin-top:14px">Previous or other names</p>
-        ${multiBlock('former_names','a previous name')}
       </div>
     </fieldset>
     <fieldset><legend>Groups</legend>
@@ -721,6 +827,8 @@ function openEditor(c){
         ${STATUSES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>
       <div class="two">${F('Born','birth_date','date')}${F('Died','death_date','date')}</div>
       <p class="coords" id="ageHint"></p>
+      <details id="dtFormer"><summary>Previous or other names</summary>
+        ${multiBlock('former_names','a previous name')}</details>
     </fieldset>
     <fieldset><legend>Pets</legend>${multiBlock('pets','a pet')}</fieldset>
     <fieldset><legend>Phones</legend>${multiBlock('phones','a phone')}</fieldset>
@@ -786,12 +894,16 @@ function openEditor(c){
 
   // keep the address-search box in step with the address fields
   const addrParts=['address','address_2','town','county','postcode','country'];
-  const buildAddr=()=>addrParts.map(k=>f.elements[k].value.trim()).filter(Boolean).join(', ');
+  const buildAddr=()=>{
+    const biz=f.elements['is_organisation'].checked?f.elements['company'].value.trim():'';
+    return [biz,...addrParts.map(k=>f.elements[k].value.trim())].filter(Boolean).join(', ');
+  };
   let addrTouched=false, metTouched=false;
   const buildMet=()=>f.elements['met_where'].value.trim()||buildAddr();
   const syncAddr=()=>{if(!addrTouched)$('geoQ').value=buildAddr();};
   const syncMet =()=>{if(!metTouched)$('metQ').value=buildMet();};
   addrParts.forEach(k=>f.elements[k].addEventListener('input',()=>{syncAddr();syncMet();}));
+  f.elements['company'].addEventListener('input',()=>{syncAddr();syncMet();});
   f.elements['met_where'].addEventListener('input',syncMet);
 
   const showAge=()=>{
@@ -806,6 +918,7 @@ function openEditor(c){
 
   applyOrg();
   Object.keys(LAB).forEach(drawMulti);
+  if(DRAFT.former_names.length) $('dtFormer').open=true;
   $('edBody').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
     const k=b.dataset.add;DRAFT[k].push({label:LAB[k][0],value:''});drawMulti(k);});
 

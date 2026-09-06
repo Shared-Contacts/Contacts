@@ -173,6 +173,14 @@ input[name="postcode"]{text-transform:uppercase}
 .setrow{display:flex;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid #F0EEE7}
 .setrow input{flex:1;min-width:0;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .setrow .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:0 4px}
+.menuitem{display:block;width:100%;text-align:left;padding:16px 14px;font-size:17px;
+  border-bottom:1px solid #F0EEE7}
+.menuitem:last-child{border-bottom:none}
+.helpsec h4{margin:22px 0 6px;font-size:17px;color:var(--hull)}
+.helpsec p{margin:0 0 10px}
+.helpsec ul{margin:0 0 10px;padding-left:20px}
+.helpsec li{margin-bottom:5px}
+.helpsec .lead{color:var(--muted)}
 .setrow .mv{color:var(--hull);font-size:11px;line-height:1.1;padding:1px 4px}
 .setrow .mv:disabled{opacity:.25}
 .setrow .scope{flex:0 0 auto;font-size:13px;color:var(--muted)}
@@ -206,8 +214,7 @@ input[name="postcode"]{text-transform:uppercase}
   <header class="plate">
     <h1>Contacts</h1>
     <button id="sortBtn">Grouped</button>
-    <button id="setBtn">Settings</button>
-    <button id="signoutBtn">Sign out</button>
+    <button id="menuBtn">Menu</button>
   </header>
   <div class="searchwrap">
     <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
@@ -229,6 +236,25 @@ input[name="postcode"]{text-transform:uppercase}
   <div class="sheetbar"><button id="edCancel">Cancel</button>
     <span class="title" id="edTitle">Add a contact</span><button id="edSave">Save</button></div>
   <div class="sheetbody" id="edBody"></div>
+</div>
+
+<div id="menu" class="sheet hidden">
+  <div class="sheetbar"><button id="menuBack">Back</button>
+    <span class="title">Menu</span><span style="width:56px"></span></div>
+  <div class="sheetbody">
+    <div class="card">
+      <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
+      <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
+      <button class="menuitem" id="signoutBtn">Sign out</button>
+    </div>
+    <p class="coords" id="whoami"></p>
+  </div>
+</div>
+
+<div id="help" class="sheet hidden">
+  <div class="sheetbar"><button id="helpBack">Back</button>
+    <span class="title">How to use this</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="helpBody"></div>
 </div>
 
 <div id="settings" class="sheet hidden">
@@ -440,7 +466,8 @@ async function uploadPhoto(file, asAvatar){
       : {photos:[...arr(CURRENT.photos),{path:path}]};
     const {error:e2}=await sb.from('contacts').update(patch).eq('id',CURRENT.id);
     if(e2){toast('Uploaded, but could not attach it');console.error(e2);return;}
-    await loadAll(); openDetail(CURRENT.id); toast('Photo added');
+    const at=$('detBody').scrollTop; await loadAll(); openDetail(CURRENT.id,true);
+    $('detBody').scrollTop=at; toast('Photo added');
   }catch(e){ console.error(e); toast('Could not read that image'); }
 }
 
@@ -465,7 +492,8 @@ async function removePhoto(path, isAvatar){
   const {error}=await sb.from('contacts').update(patch).eq('id',CURRENT.id);
   if(error){toast('Could not remove it');return;}
   delete SIGNED[path];
-  await loadAll(); openDetail(CURRENT.id); toast('Photo removed');
+  const at=$('detBody').scrollTop; await loadAll(); openDetail(CURRENT.id,true);
+  $('detBody').scrollTop=at; toast('Photo removed');
 }
 
 function openInMaps(lat,lng){
@@ -553,7 +581,8 @@ function linksFor(id){
   return out;
 }
 
-async function openDetail(id){
+async function openDetail(id, keepPlace){
+  const wasAt = keepPlace ? $('detBody').scrollTop : 0;
   killMaps();
   CURRENT=CONTACTS.find(c=>c.id===id);if(!CURRENT)return;
   await signPaths([CURRENT.avatar_path,...arr(CURRENT.photos).map(p=>p.path)]);
@@ -657,8 +686,8 @@ async function openDetail(id){
     ${where?`<div class="card"><h3>Where</h3>${where}</div>`:''}
     <div class="card"><h3>Photos</h3>${gallery}</div>
     ${boat?`<div class="card"><h3>Boat</h3>${boat}</div>`:''}
-    ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
     ${met?`<div class="card"><h3>Where we met</h3>${met}</div>`:''}
+    ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
     <div class="card"><h3>Connections</h3>
       ${links?`<div class="field"><dd style="color:var(--muted);font-size:15px">
         Tick a connection to show it beside their name at the top.</dd></div>`+links
@@ -687,7 +716,7 @@ async function openDetail(id){
       .update({pinned:b.checked}).eq('id',Number(b.dataset.pin));
     if(error){toast('Could not change that');b.checked=!b.checked;return;}
     const {data}=await sb.from('relationships').select('*');LINKS=data||[];
-    openDetail(CURRENT.id);
+    openDetail(CURRENT.id,true);
   });
   $('detBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(',');openInMaps(la,ln);});
@@ -696,7 +725,7 @@ async function openDetail(id){
   wireLinkSearch();
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
-  $('detail').classList.remove('hidden');$('detBody').scrollTop=0;
+  $('detail').classList.remove('hidden');$('detBody').scrollTop=wasAt;
 }
 
 function shareCard(c){
@@ -803,12 +832,12 @@ async function addLink(other){
   const {error}=await sb.from('relationships').insert({from_contact:CURRENT.id,to_contact:other,kind});
   if(error){toast(error.code==='23505'?'That link already exists':'Could not add the link');return;}
   const {data}=await sb.from('relationships').select('*');LINKS=data||[];
-  toast('Link added');openDetail(CURRENT.id);
+  toast('Link added');openDetail(CURRENT.id,true);
 }
 async function removeLink(id){
   const {error}=await sb.from('relationships').delete().eq('id',id);
   if(error){toast('Could not remove the link');return;}
-  LINKS=LINKS.filter(l=>l.id!==id);toast('Link removed');openDetail(CURRENT.id);
+  LINKS=LINKS.filter(l=>l.id!==id);toast('Link removed');openDetail(CURRENT.id,true);
 }
 
 /* ---------- editor ---------- */
@@ -901,16 +930,16 @@ function openEditor(c){
         <label>Index number<input name="boat_number" inputmode="numeric" pattern="[0-9]*"></label></div>
       <label>Boat notes<textarea name="boat_notes" rows="3"></textarea></label>
     </fieldset>
-    <fieldset id="fsWork"><legend>Work</legend>
-      ${F('Company or employer','employer_name')}
-      ${F('Department','department')}${F('Job title','job_title')}
-    </fieldset>
     <fieldset><legend>Where we met</legend>
       ${F('Where we met','met_where')}${F('When we met','met_date','date')}
       <label>what3words<input name="met_what3words" placeholder="///filled.count.soap"></label>
       <div class="geo"><input id="metQ" placeholder="Find the spot"><button type="button" id="metGo">Find</button></div>
       <div id="metEditMap" class="map"></div>
       <p class="coords" id="metCoords"></p>
+    </fieldset>
+    <fieldset id="fsWork"><legend>Work</legend>
+      ${F('Company or employer','employer_name')}
+      ${F('Department','department')}${F('Job title','job_title')}
     </fieldset>
     <fieldset><legend>Notes</legend>
       <label>Notes<textarea name="notes" rows="4"></textarea></label>
@@ -1183,6 +1212,107 @@ function openSettings(){
   $('settings').classList.remove('hidden');$('setBody').scrollTop=0;
 }
 
+
+function openHelp(){
+  $('helpBody').innerHTML = `
+  <div class="helpsec">
+  <p class="lead">Everything here is stored online, so you and Sandra see the same
+  contacts on any phone, tablet or laptop. You need a signal to use it.</p>
+
+  <h4>Finding someone</h4>
+  <p>Type into the search box at the top. It looks at names, previous names,
+  nicknames, boat names, towns, companies, phone numbers, pets and notes, so
+  a half-remembered detail is usually enough. Several words narrow it down:
+  <em>burns nz</em> finds the Burnses in New Zealand.</p>
+  <p>The coloured buttons under the search box filter by group. Tap
+  <strong>Everyone</strong> to clear it.</p>
+
+  <h4>The three views</h4>
+  <ul>
+    <li><strong>Grouped</strong> &mdash; group, then country, then alphabetical,
+        the way Memento showed it. Tap a heading to open or close it.</li>
+    <li><strong>A&ndash;Z</strong> &mdash; one flat list of everyone.</li>
+    <li><strong>Birthdays</strong> &mdash; whose birthday comes next.</li>
+  </ul>
+  <p>Tap the button in the green bar to move between them. Searching always
+  shows a flat list, whichever view you are in.</p>
+
+  <h4>Adding someone</h4>
+  <p>The red <strong>+</strong> button, bottom right. You must tick at least one
+  group before it will save &mdash; a contact with no group is visible only to
+  whoever created it, and would never reach the other person.</p>
+  <p>For a marina, boatyard or shop, tick <strong>This is a business or
+  organisation</strong> at the top. The personal fields disappear and the
+  business name becomes the record's name. That tick only appears when adding;
+  afterwards there is a Change link if you got it wrong.</p>
+
+  <h4>Lists that grow</h4>
+  <p>Phones, emails, websites, social accounts, pets and previous names all work
+  the same way: choose a label from the dropdown, type the value, and press
+  <strong>+ Add</strong> for another. There is no limit. The &times; removes one.</p>
+  <p>Previous names sit in a panel under the birth date. It opens itself when
+  there is something inside.</p>
+
+  <h4>Maps</h4>
+  <p>Two maps: where they live, and where you met. Tap the map to drop a pin,
+  or drag the pin to adjust it.</p>
+  <p>The <strong>Find</strong> box fills itself in from the address you have
+  typed, so usually you just press Find. Type over it if the pin lands wide.
+  The "where we met" map starts at wherever you are, so if you are adding
+  someone you have just met, the right spot is already on screen.</p>
+  <p>The layers button in a map's top corner switches between the canal map,
+  a towpath map, and the standard map. Your choice is remembered.</p>
+  <p>On a saved contact the map is a still picture, so the page scrolls
+  properly. Tap it to open the location in your phone's maps app.</p>
+
+  <h4>Photos</h4>
+  <p>The round photo at the top is their profile picture; the gallery further
+  down holds as many as you like. Photos are shrunk on your phone before being
+  sent, so there is no need to resize anything first. Tap any photo to see it
+  full size.</p>
+
+  <h4>Connections</h4>
+  <p>At the bottom of a contact, choose how two people are connected, then search
+  for the other person. If they are not in the database yet, tap
+  <strong>Add &hellip; as a new contact</strong> and the link is made when you save.</p>
+  <p>Connections work both ways from a single entry: store "Parent of" on the
+  mother and the child's record shows "Child of" by itself.</p>
+  <p>Tick the box beside a connection to show it at the top of the contact,
+  beside their name. Useful for partners and children.</p>
+
+  <h4>Sharing</h4>
+  <p>Everything you add is private to you until you share it. On a contact,
+  scroll to <strong>Sharing</strong> and tick the person. If that contact is
+  connected to others you have not shared, it offers those too.</p>
+  <p>Menu &rsaquo; Settings &rsaquo; <strong>Share everything</strong> hands over
+  every contact you own in one go. It is not automatic, so anyone added later
+  needs sharing as well.</p>
+  <p>Someone you share with can edit the contact but cannot delete it, and they
+  file it under their own groups, not yours.</p>
+
+  <h4>Settings</h4>
+  <p>Groups, relationship statuses, connection types and kinds of pet are all
+  editable. Use the small arrows to reorder them &mdash; that order is what the
+  grouped view follows.</p>
+  <p>A group can be shared by everyone, or private to you. Tick the box when
+  adding it. Removing something tells you how many contacts use it first;
+  their other details are never touched.</p>
+  <p>New sign-in accounts are the one thing not done here. They are created in
+  the Supabase dashboard.</p>
+
+  <h4>If something looks wrong</h4>
+  <ul>
+    <li>Close the app fully and reopen it. It reloads everything on start.</li>
+    <li>A blank map usually means the canal tile server is busy. Switch layers.</li>
+    <li>Changes you make appear on the other person's phone next time they open it,
+        not instantly.</li>
+    <li>A contact you cannot find may be one you have not been shared.</li>
+  </ul>
+  </div>`;
+  $('help').classList.remove('hidden');
+  $('helpBody').scrollTop=0;
+}
+
 /* ---------- wiring ---------- */
 $('signinBtn').onclick=async()=>{
   const b=$('signinBtn');b.disabled=true;
@@ -1198,6 +1328,14 @@ $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');};
 $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');};
+$('menuBtn').onclick=()=>{
+  const u=USERS.length?'':'';
+  $('whoami').textContent='Signed in as '+(ME.email||'');
+  $('menu').classList.remove('hidden');
+};
+$('menuBack').onclick=()=>$('menu').classList.add('hidden');
+$('goHelp').onclick=openHelp;
+$('helpBack').onclick=()=>$('help').classList.add('hidden');
 $('setBtn').onclick=openSettings;
 $('setBack').onclick=()=>$('settings').classList.add('hidden');
 $('sortBtn').onclick=()=>{

@@ -105,6 +105,11 @@ details#dtFormer .multi{padding:0 12px 12px}
 .photobar{padding:0 14px 14px;display:flex;gap:10px;flex-wrap:wrap}
 .photobar label{margin:0;color:var(--hull);font-weight:700;font-size:16px;cursor:pointer}
 .photobar input[type=file]{display:none}
+.lightbox{position:fixed;inset:0;z-index:80;background:rgba(16,35,28,.94);
+  display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+.lbclose{position:absolute;top:calc(12px + env(safe-area-inset-top));right:16px;
+  color:#F2EFE4;font-size:34px;line-height:1;padding:6px 12px}
 .pins{display:flex;flex-direction:column;gap:4px;margin:0 0 12px}
 .pin{display:flex;gap:8px;align-items:baseline;font-size:16px}
 .pin .pk{color:var(--muted);font-size:15px}
@@ -439,6 +444,18 @@ async function uploadPhoto(file, asAvatar){
   }catch(e){ console.error(e); toast('Could not read that image'); }
 }
 
+function lightbox(url){
+  if(!url)return;
+  const box=document.createElement('div');
+  box.className='lightbox';
+  box.innerHTML=`<img src="${url.replace(/"/g,'&quot;')}" alt="">
+    <button class="lbclose" aria-label="Close">&times;</button>`;
+  box.onclick=()=>box.remove();
+  document.addEventListener('keydown',function esc2(e){
+    if(e.key==='Escape'){box.remove();document.removeEventListener('keydown',esc2);}});
+  document.body.appendChild(box);
+}
+
 async function removePhoto(path, isAvatar){
   if(!confirm('Remove this photo?'))return;
   await sb.storage.from('photos').remove([path]);
@@ -475,8 +492,22 @@ function showMap(elId,lat,lng,onMove,useHere){
     el.title='Open in your maps app';
     el.addEventListener('click',()=>openInMaps(lat,lng));
   }
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  const layers={
+    'Canals (OpenRiverBoat)': L.tileLayer(
+      'https://{s}.tile.openstreetmap.fr/openriverboatmap/{z}/{x}/{y}.png',
+      {maxZoom:18, attribution:'&copy; OpenStreetMap contributors, OpenRiverBoatMap'}),
+    'Towpaths (CyclOSM)': L.tileLayer(
+      'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+      {maxZoom:19, attribution:'&copy; OpenStreetMap contributors, CyclOSM'}),
+    'Standard map': L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {maxZoom:19, attribution:'&copy; OpenStreetMap contributors'})
+  };
+  let want='Canals (OpenRiverBoat)';
+  try{ want=localStorage.getItem('maplayer')||want; }catch(e){}
+  (layers[want]||layers['Standard map']).addTo(m);
+  L.control.layers(layers,null,{collapsed:true}).addTo(m);
+  m.on('baselayerchange',e=>{ try{localStorage.setItem('maplayer',e.name);}catch(err){} });
   let marker=null;
   const drop=(la,ln,tell)=>{
     if(marker)marker.setLatLng([la,ln]);
@@ -571,7 +602,10 @@ async function openDetail(id){
       :'<div class="field"><dd style="color:var(--muted);font-size:15px">No photos yet.</dd></div>'}
     <div class="photobar">
       <label>+ Add a photo<input type="file" accept="image/*" id="addPhoto"></label>
-    </div>`;
+    </div>
+    <div class="field"><dd style="color:var(--muted);font-size:14px">
+      Photos are resized on your phone before they are sent, so there is no need to
+      shrink them first. Tap one to see it full size.</dd></div>`;
 
   const work=R('Company',esc(c.company))+R('Department',esc(c.department))+R('Job title',esc(c.job_title));
   const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number))
@@ -604,7 +638,8 @@ async function openDetail(id){
 
   const initial=esc(fullName(c).charAt(0).toUpperCase());
   const avatar = c.avatar_path&&SIGNED[c.avatar_path]
-    ? `<img class="avatar" src="${esc(SIGNED[c.avatar_path])}" alt="">`
+    ? `<img class="avatar" src="${esc(SIGNED[c.avatar_path])}" alt=""
+         data-big="${esc(c.avatar_path)}" style="cursor:pointer">`
     : `<span class="avatar ph">${initial}</span>`;
 
   $('detBody').innerHTML=`
@@ -646,7 +681,7 @@ async function openDetail(id){
   $('detBody').querySelectorAll('[data-rmphoto]').forEach(b=>
     b.onclick=()=>removePhoto(b.dataset.rmphoto,false));
   $('detBody').querySelectorAll('[data-big]').forEach(img=>
-    img.onclick=()=>window.open(SIGNED[img.dataset.big],'_blank','noopener'));
+    img.onclick=()=>lightbox(SIGNED[img.dataset.big]));
   $('detBody').querySelectorAll('[data-pin]').forEach(b=>b.onchange=async()=>{
     const {error}=await sb.from('relationships')
       .update({pinned:b.checked}).eq('id',Number(b.dataset.pin));
@@ -779,6 +814,14 @@ async function removeLink(id){
 /* ---------- editor ---------- */
 const F=(l,n,t='text')=>`<label>${l}<input name="${n}" type="${t}"></label>`;
 
+// Offer whatever you have typed before for this field, commonest first
+function datalist(id,field){
+  const tally={};
+  CONTACTS.forEach(c=>{ const v=(c[field]||'').trim(); if(v) tally[v]=(tally[v]||0)+1; });
+  const opts=Object.keys(tally).sort((a,b)=>tally[b]-tally[a]||a.localeCompare(b)).slice(0,60);
+  return `<datalist id="${id}">${opts.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
+}
+
 function multiBlock(key,word){
   return `<div class="multi"><div class="mrows" id="rows_${key}"></div>
     <button type="button" class="addmore" data-add="${key}">+ Add ${word}</button></div>`;
@@ -811,8 +854,9 @@ function openEditor(c){
   $('edTitle').textContent=isNew?'Add a contact':'Edit '+fullName(c);
   $('edBody').innerHTML=`<form id="edForm">
     <fieldset><legend>Name</legend>
-      <div class="checks"><label><input type="checkbox" name="is_organisation">
+      <div class="checks" id="orgPick"><label><input type="checkbox" name="is_organisation">
         This is a business or organisation</label></div>
+      <p class="coords" id="orgFixed" style="display:none"></p>
       <div id="orgName"><label>Business or organisation name<input name="company"></label></div>
       <div id="personNames">
         <div class="two">${F('First name','first_name')}${F('Last name','last_name')}</div>
@@ -838,8 +882,14 @@ function openEditor(c){
     <fieldset><legend>Where they are</legend>
       ${F('Address line 1','address')}
       ${F('Address line 2','address_2')}
-      <div class="two">${F('Town or city','town')}${F('County or region','county')}</div>
-      <div class="two">${F('Postcode','postcode')}${F('Country','country')}</div>
+      <div class="two">
+        <label>Town or city<input name="town" list="dlTown" autocomplete="off"></label>
+        <label>County or region<input name="county" list="dlCounty" autocomplete="off"></label>
+      </div>
+      <div class="two">${F('Postcode','postcode')}
+        <label>Country<input name="country" list="dlCountry" autocomplete="off"></label>
+      </div>
+      ${datalist('dlTown','town')}${datalist('dlCounty','county')}${datalist('dlCountry','country')}
       <label>what3words<input name="what3words" placeholder="///filled.count.soap"></label>
       <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
       <p class="coords">Fills itself from the address above &mdash; edit it if the pin lands wide.</p>
@@ -874,6 +924,15 @@ function openEditor(c){
       if(f.elements[k]&&k!=='id'&&typeof c[k]!=='object')f.elements[k].value=c[k]??'';});
     f.elements['status_id'].value=c.status_id??'';
     f.elements['is_organisation'].checked=!!c.is_organisation;
+    $('orgPick').style.display='none';
+    const fx=$('orgFixed');
+    fx.style.display='';
+    fx.innerHTML=(c.is_organisation?'Business or organisation record. ':'Personal record. ')
+      +'<button type="button" class="addmore" id="orgSwap" style="padding:0">Change</button>';
+    $('orgSwap').onclick=()=>{
+      if(!confirm('Switching the record type clears the fields the other type does not use. Continue?'))return;
+      $('orgPick').style.display=''; fx.style.display='none';
+    };
     f.elements['employer_name'].value=c.is_organisation?'':(c.company??'');
     (TAGS[c.id]||[]).forEach(g=>{const b=f.querySelector(`input[name="grp"][value="${g}"]`);if(b)b.checked=true;});
     $('edDelete').onclick=()=>deleteContact(c);

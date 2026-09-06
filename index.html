@@ -271,6 +271,13 @@ input[name="postcode"]{text-transform:uppercase}
    ============================================================ */
 const SUPABASE_URL = 'https://uloptfmzydaxymhecuub.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
+
+/* The canal network, drawn from Canal & River Trust open data.
+   Leave as is to fetch it live, or download the file once, put it in
+   this same folder on GitHub, and change this to 'canals.geojson'
+   which will be much faster. */
+const CANAL_GEOJSON_URL =
+  'https://opendata.arcgis.com/datasets/dab91c04078b4deb890c4381f4a7141a_1.geojson';
 /* ========================================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -503,6 +510,40 @@ function openInMaps(lat,lng){
   window.open(url,'_blank','noopener');
 }
 
+/* The Canal & River Trust publish the network as open data.
+   Fetched once per session, then reused by every map. */
+let CANALS=null, CANALS_TRIED=false;
+
+async function paintCanals(group){
+  if(CANALS){ draw(group); return; }
+  if(CANALS_TRIED) return;
+  CANALS_TRIED=true;
+  try{
+    const r=await fetch(CANAL_GEOJSON_URL);
+    if(!r.ok) throw new Error(r.status);
+    CANALS=await r.json();
+  }catch(e){
+    console.error('canal data',e);
+    toast('Could not load the canal network');
+    CANALS_TRIED=false;
+    return;
+  }
+  draw(group);
+
+  function draw(g){
+    if(!CANALS)return;
+    g.clearLayers();
+    L.geoJSON(CANALS,{
+      style:{color:'#0F6E8C',weight:3,opacity:.85},
+      onEachFeature:(f,layer)=>{
+        const p=f.properties||{};
+        const name=p.SAP_DESCRIPTION||p.Name||p.NAME||p.WATERWAY||p.name;
+        if(name) layer.bindTooltip(String(name),{sticky:true});
+      }
+    }).addTo(g);
+  }
+}
+
 function killMaps(){MAPS.forEach(m=>{try{m.remove();}catch(e){}});MAPS=[];}
 
 function showMap(elId,lat,lng,onMove,useHere){
@@ -521,9 +562,6 @@ function showMap(elId,lat,lng,onMove,useHere){
     el.addEventListener('click',()=>openInMaps(lat,lng));
   }
   const layers={
-    'Canals (OpenRiverBoat)': L.tileLayer(
-      'https://{s}.tile.openstreetmap.fr/openriverboatmap/{z}/{x}/{y}.png',
-      {maxZoom:18, attribution:'&copy; OpenStreetMap contributors, OpenRiverBoatMap'}),
     'Towpaths (CyclOSM)': L.tileLayer(
       'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
       {maxZoom:19, attribution:'&copy; OpenStreetMap contributors, CyclOSM'}),
@@ -531,11 +569,20 @@ function showMap(elId,lat,lng,onMove,useHere){
       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {maxZoom:19, attribution:'&copy; OpenStreetMap contributors'})
   };
-  let want='Canals (OpenRiverBoat)';
+  let want='Towpaths (CyclOSM)';
   try{ want=localStorage.getItem('maplayer')||want; }catch(e){}
   (layers[want]||layers['Standard map']).addTo(m);
-  L.control.layers(layers,null,{collapsed:true}).addTo(m);
+
+  const canals=L.layerGroup();
+  L.control.layers(layers,{'UK canal network':canals},{collapsed:true}).addTo(m);
   m.on('baselayerchange',e=>{ try{localStorage.setItem('maplayer',e.name);}catch(err){} });
+  m.on('overlayadd',  e=>{ if(e.layer===canals){ paintCanals(canals);
+    try{localStorage.setItem('canallayer','on');}catch(err){} } });
+  m.on('overlayremove',e=>{ if(e.layer===canals){
+    try{localStorage.setItem('canallayer','off');}catch(err){} } });
+  let canalOn='on';
+  try{ canalOn=localStorage.getItem('canallayer')||'on'; }catch(e){}
+  if(canalOn==='on') canals.addTo(m);
   let marker=null;
   const drop=(la,ln,tell)=>{
     if(marker)marker.setLatLng([la,ln]);
@@ -1260,8 +1307,10 @@ function openHelp(){
   typed, so usually you just press Find. Type over it if the pin lands wide.
   The "where we met" map starts at wherever you are, so if you are adding
   someone you have just met, the right spot is already on screen.</p>
-  <p>The layers button in a map's top corner switches between the canal map,
-  a towpath map, and the standard map. Your choice is remembered.</p>
+  <p>The layers button in a map's top corner switches the base map between the
+  towpath map and the standard map, and turns the <strong>UK canal network</strong>
+  overlay on or off. The canal lines come from Canal &amp; River Trust open data;
+  hover or tap a canal to see its name. Your choices are remembered.</p>
   <p>On a saved contact the map is a still picture, so the page scrolls
   properly. Tap it to open the location in your phone's maps app.</p>
 

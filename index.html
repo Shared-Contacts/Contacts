@@ -36,6 +36,9 @@ a{color:var(--hull)}
   display:flex;align-items:center;gap:4px;border-bottom:3px solid var(--brass)}
 .plate h1{margin:0 auto 0 4px;font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
+.plate select{background:rgba(255,255,255,.14);color:#F2EFE4;border:1px solid rgba(255,255,255,.3);
+  border-radius:8px;padding:7px 8px;font-size:15px;max-width:46vw}
+.plate select option{color:var(--ink);background:#fff}
 .plate button:hover{background:rgba(255,255,255,.12)}
 
 #topbar{position:sticky;top:0;z-index:25;background:var(--paper)}
@@ -176,9 +179,6 @@ input[name="postcode"]{text-transform:uppercase}
 .menuitem{display:block;width:100%;text-align:left;padding:16px 14px;font-size:17px;
   border-bottom:1px solid #F0EEE7}
 .menuitem:last-child{border-bottom:none}
-.menuitem[aria-pressed="true"]{color:var(--hull);font-weight:700}
-.menuitem[aria-pressed="true"]::after{content:' \2713'}
-#sortPick{padding:0}
 .helpsec h4{margin:22px 0 6px;font-size:17px;color:var(--hull)}
 .helpsec p{margin:0 0 10px}
 .helpsec ul{margin:0 0 10px;padding-left:20px}
@@ -216,7 +216,13 @@ input[name="postcode"]{text-transform:uppercase}
   <div id="topbar">
   <header class="plate">
     <h1>Contacts</h1>
-    <button id="sortBtn">Grouped</button>
+    <select id="viewPick" aria-label="How to list contacts">
+      <option value="grouped">Grouped</option>
+      <option value="az-last">A&ndash;Z by last name</option>
+      <option value="az-first">A&ndash;Z by first name</option>
+      <option value="az-company">A&ndash;Z by business name</option>
+      <option value="birthdays">Birthdays</option>
+    </select>
     <button id="menuBtn">Menu</button>
   </header>
   <div class="searchwrap">
@@ -250,12 +256,6 @@ input[name="postcode"]{text-transform:uppercase}
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
     </div>
-    <div class="card"><h3>Sort names by</h3>
-      <div class="setadd" id="sortPick">
-        <button class="menuitem" data-sort="last">Last name</button>
-        <button class="menuitem" data-sort="first">First name</button>
-        <button class="menuitem" data-sort="company">Business name</button>
-      </div></div>
     <p class="coords" id="whoami"></p>
   </div>
 </div>
@@ -288,6 +288,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
 /* Sent to anyone new so they can get themselves signed in. */
 const START_LINK = 'https://shared-contacts.github.io/Contacts/start.html';
 
+const CANAL_GEOJSON_URL =
 const CANAL_GEOJSON_URL = 'canals.geojson';
 /* ========================================================== */
 
@@ -305,8 +306,13 @@ const LAB = {
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
 let USERS=[], SHARES=[], PETS=[], PENDING=null;
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
-let SORTBY='last';
-try{ SORTBY=localStorage.getItem('sortby')||'last'; }catch(e){}
+let VIEW='grouped', SORTBY='last';
+try{ VIEW=localStorage.getItem('view')||'grouped'; }catch(e){}
+function applyView(){
+  MODE   = VIEW==='grouped' ? 'grouped' : VIEW==='birthdays' ? 'birthdays' : 'az';
+  SORTBY = VIEW==='az-first' ? 'first' : VIEW==='az-company' ? 'company' : 'last';
+}
+applyView();
 
 const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1334,17 +1340,21 @@ function openHelp(){
   <p>The coloured buttons under the search box filter by group. Tap
   <strong>Everyone</strong> to clear it.</p>
 
-  <h4>The three views</h4>
+  <h4>How the list is ordered</h4>
+  <p>The dropdown in the green bar has five choices:</p>
   <ul>
-    <li><strong>Grouped</strong> &mdash; group, then country, then alphabetical.
+    <li><strong>Grouped</strong> &mdash; group, then country, then last name.
         Tap a heading to open or close it.</li>
-    <li><strong>A&ndash;Z</strong> &mdash; one flat list of everyone.</li>
+    <li><strong>A&ndash;Z by last name</strong> &mdash; one list of everyone,
+        surname first. Businesses sort under their own name.</li>
+    <li><strong>A&ndash;Z by first name</strong> &mdash; handy when you know
+        someone as Dickie or Bazza rather than by surname.</li>
+    <li><strong>A&ndash;Z by business name</strong> &mdash; brings marinas,
+        boatyards and chandlers to the front.</li>
     <li><strong>Birthdays</strong> &mdash; whose birthday comes next.</li>
   </ul>
-  <p>Tap the button in the green bar to move between them. Searching always
-  shows a flat list, whichever view you are in.</p>
-  <p>Menu &rsaquo; <strong>Sort names by</strong> decides whether the alphabetical
-  order follows last name, first name or business name.</p>
+  <p>Your choice is remembered on that device. Searching always shows a flat
+  list, whichever setting you are on.</p>
 
   <h4>Adding someone</h4>
   <p>The red <strong>+</strong> button, bottom right. You must tick at least one
@@ -1444,29 +1454,20 @@ $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');};
 $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');};
-function paintSort(){
-  document.querySelectorAll('[data-sort]').forEach(b=>
-    b.setAttribute('aria-pressed', b.dataset.sort===SORTBY));
-}
 $('menuBtn').onclick=()=>{
   $('whoami').textContent='Signed in as '+(ME.email||'');
-  paintSort();
   $('menu').classList.remove('hidden');
 };
-document.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{
-  SORTBY=b.dataset.sort;
-  try{ localStorage.setItem('sortby',SORTBY); }catch(e){}
-  paintSort(); render();
-});
 $('menuBack').onclick=()=>$('menu').classList.add('hidden');
 $('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>$('help').classList.add('hidden');
 $('setBtn').onclick=openSettings;
 $('setBack').onclick=()=>$('settings').classList.add('hidden');
-$('sortBtn').onclick=()=>{
-  MODE = MODE==='grouped'?'az':MODE==='az'?'birthdays':'grouped';
-  $('sortBtn').textContent = MODE==='grouped'?'Grouped':MODE==='az'?'A\u2013Z':'Birthdays';
-  render();
+$('viewPick').value=VIEW;
+$('viewPick').onchange=()=>{
+  VIEW=$('viewPick').value;
+  try{ localStorage.setItem('view',VIEW); }catch(e){}
+  applyView(); render();
 };
 
 async function start(){

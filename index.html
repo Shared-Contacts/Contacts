@@ -86,14 +86,11 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheetbody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
-#edBody{max-width:1040px}
-@media (min-width:860px){
-  #edBody form{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;align-items:start}
-  #edBody fieldset{margin-bottom:18px}
-  #edBody .btn.danger{grid-column:1 / -1}
-}
-@media (min-width:1200px){
-  #edBody form{grid-template-columns:1fr 1fr 1fr}
+#edBody{max-width:1080px}
+@media (min-width:900px){
+  #edBody form{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
+  #edBody .colA,#edBody .colB{min-width:0}
+  #edBody .btn.danger{grid-column:1 / -1;max-width:340px}
 }
 
 .detname{font-size:27px;font-weight:700;margin:4px 0 2px;line-height:1.2}
@@ -328,6 +325,14 @@ const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr = v => Array.isArray(v) ? v : [];
 
+function sheetsOpen(){
+  return ['detail','editor','settings','menu','help']
+    .some(id=>!$(id).classList.contains('hidden'));
+}
+function lockBackground(){
+  document.body.style.overflow = sheetsOpen() ? 'hidden' : '';
+}
+
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
   d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
 
@@ -437,16 +442,26 @@ function dayMonth(d){
   return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 }
 
+function listName(c){
+  if(SORTBY==='last' && !c.is_organisation && c.last_name && c.first_name)
+    return c.last_name+', '+c.first_name;
+  return fullName(c);
+}
+
 function rowHtml(c,nested,birthdayView){
   const d=daysToBirthday(c);
-  const sub=[c.nickname&&'"'+c.nickname+'"',c.boat_name,c.town,c.company].filter(Boolean).join(' \u00b7 ');
+  const age=ageOf(c);
+  const bits=[c.nickname&&'"'+c.nickname+'"'];
+  if(age!==null) bits.push(c.death_date?('died at '+age):(age+' yrs'));
+  bits.push(c.boat_name,c.town,c.is_organisation?null:c.company);
+  const sub=bits.filter(Boolean).join(' \u00b7 ');
   let badge='';
   if(birthdayView&&d!==null)
     badge=`<span class="bday ${d<=7?'soon':''}">${esc(dayMonth(c.birth_date))}<br>${bdayLabel(d)}</span>`;
   else if(d!==null&&d<=45)
     badge=`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`;
   return `<li><button class="row ${nested?'nested':''}" data-id="${c.id}">
-    <span class="who"><span class="name">${esc(fullName(c))}</span>
+    <span class="who"><span class="name">${esc(listName(c))}</span>
     ${sub?`<span class="sub">${esc(sub)}</span>`:''}</span>
     ${badge}
   </button></li>`;
@@ -456,6 +471,7 @@ function render(){
   const q=$('search').value.trim();
   let rows=CONTACTS.filter(c=>matches(c,q));
   if(FILTER)rows=rows.filter(c=>(TAGS[c.id]||[]).includes(FILTER));
+  if(VIEW==='az-company')rows=rows.filter(c=>c.is_organisation);
   const list=$('list');
 
   if(!rows.length){
@@ -855,7 +871,7 @@ async function openDetail(id, keepPlace){
   wireLinkSearch();
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
-  $('detail').classList.remove('hidden');$('detBody').scrollTop=wasAt;
+  $('detail').classList.remove('hidden');$('detBody').scrollTop=wasAt;lockBackground();
 }
 
 function shareCard(c){
@@ -1021,6 +1037,7 @@ async function openEditor(c){
   };
   $('edTitle').textContent=isNew?'Add a contact':'Edit '+fullName(c);
   $('edBody').innerHTML=`<form id="edForm">
+   <div class="colA">
     <fieldset><legend>Name</legend>
       <div class="checks" id="orgPick"><label><input type="checkbox" name="is_organisation">
         This is a business or organisation</label></div>
@@ -1042,11 +1059,13 @@ async function openEditor(c){
       <details id="dtFormer"><summary>Previous or other names</summary>
         ${multiBlock('former_names','a previous name')}</details>
     </fieldset>
-    <fieldset><legend>Pets</legend>${multiBlock('pets','a pet')}</fieldset>
     <fieldset><legend>Phones</legend>${multiBlock('phones','a phone')}</fieldset>
     <fieldset><legend>Emails</legend>${multiBlock('emails','an email')}</fieldset>
     <fieldset><legend>Websites</legend>${multiBlock('websites','a website')}</fieldset>
     <fieldset><legend>Social</legend>${multiBlock('socials','a social account')}</fieldset>
+    <fieldset><legend>Pets</legend>${multiBlock('pets','a pet')}</fieldset>
+   </div>
+   <div class="colB">
     <fieldset><legend>Where they are</legend>
       ${F('Address line 1','address')}
       ${F('Address line 2','address_2')}
@@ -1083,6 +1102,7 @@ async function openEditor(c){
     <fieldset><legend>Notes</legend>
       <label>Notes<textarea name="notes" rows="4"></textarea></label>
     </fieldset>
+   </div>
     ${isNew?'':'<button type="button" class="btn danger" id="edDelete">Delete this contact</button>'}
   </form>`;
 
@@ -1158,7 +1178,7 @@ async function openEditor(c){
       : 'Centred on where you are. Tap the map to drop a pin.';
   };
   showCoords();
-  $('editor').classList.remove('hidden');$('edBody').scrollTop=0;
+  $('editor').classList.remove('hidden');$('edBody').scrollTop=0;lockBackground();
 
   setTimeout(()=>{
     const hm=showMap('homeMap',DRAFT.lat,DRAFT.lng,(la,ln)=>{DRAFT.lat=la;DRAFT.lng=ln;showCoords();});
@@ -1241,7 +1261,7 @@ async function saveContact(existing){
   }
   const back = PENDING&&!existing ? PENDING.from : id;
   PENDING=null;
-  $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');
+  $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');lockBackground();
   await loadAll();toast('Saved');openDetail(back);
 }
 
@@ -1358,7 +1378,7 @@ function openSettings(){
     if(error){toast('Could not add \u2014 that name may already exist');return;}
     await loadAll();openSettings();toast('Added');
   });
-  $('settings').classList.remove('hidden');$('setBody').scrollTop=0;
+  $('settings').classList.remove('hidden');$('setBody').scrollTop=0;lockBackground();
 }
 
 
@@ -1391,13 +1411,14 @@ function openHelp(){
         surname first. Businesses sort under their own name.</li>
     <li><strong>A&ndash;Z by first name</strong> &mdash; handy when you know
         someone as Dickie or Bazza rather than by surname.</li>
-    <li><strong>A&ndash;Z by business name</strong> &mdash; brings marinas,
-        boatyards and chandlers to the front.</li>
+    <li><strong>A&ndash;Z by business name</strong> &mdash; marinas, boatyards
+        and chandlers only. People are left out of this one.</li>
     <li><strong>Birthdays</strong> &mdash; everyone with a birth date, soonest
         first, showing the day and how long to wait.</li>
   </ul>
   <p>People with nothing in the field you are sorting by go to the end of the
-  list rather than being buried under a blank.</p>
+  list rather than being buried under a blank. Sorting by last name lists people
+  as <em>Burns, Viv</em>. Ages show beside each name where a birth date is known.</p>
   <p>Your choice is remembered on that device. Searching always shows a flat
   list, whichever setting you are on.</p>
 
@@ -1484,7 +1505,7 @@ function openHelp(){
     catch(e){ toast('Select the link above and copy it'); }
   };
   $('help').classList.remove('hidden');
-  $('helpBody').scrollTop=0;
+  $('helpBody').scrollTop=0;lockBackground();
 }
 
 /* ---------- wiring ---------- */
@@ -1499,19 +1520,19 @@ $('password').addEventListener('keydown',e=>{if(e.key==='Enter')$('signinBtn').c
 $('signoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload();};
 $('search').oninput=render;
 $('addBtn').onclick=()=>openEditor(null);
-$('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');};
+$('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBackground();};
 $('detEdit').onclick=()=>openEditor(CURRENT);
-$('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');};
+$('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();};
 $('menuBtn').onclick=()=>{
   $('whoami').textContent='Signed in as '+(ME.email||'');
-  $('menu').classList.remove('hidden');
+  $('menu').classList.remove('hidden');lockBackground();
 };
-$('menuBack').onclick=()=>$('menu').classList.add('hidden');
+$('menuBack').onclick=()=>{$('menu').classList.add('hidden');lockBackground();};
 $('refreshBtn').onclick=async()=>{ await loadAll(); toast('Up to date'); };
 $('goHelp').onclick=openHelp;
-$('helpBack').onclick=()=>$('help').classList.add('hidden');
+$('helpBack').onclick=()=>{$('help').classList.add('hidden');lockBackground();};
 $('setBtn').onclick=openSettings;
-$('setBack').onclick=()=>$('settings').classList.add('hidden');
+$('setBack').onclick=()=>{$('settings').classList.add('hidden');lockBackground();};
 $('viewPick').value=VIEW;
 $('viewPick').onchange=()=>{
   VIEW=$('viewPick').value;

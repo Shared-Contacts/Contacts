@@ -176,6 +176,9 @@ input[name="postcode"]{text-transform:uppercase}
 .menuitem{display:block;width:100%;text-align:left;padding:16px 14px;font-size:17px;
   border-bottom:1px solid #F0EEE7}
 .menuitem:last-child{border-bottom:none}
+.menuitem[aria-pressed="true"]{color:var(--hull);font-weight:700}
+.menuitem[aria-pressed="true"]::after{content:' \2713'}
+#sortPick{padding:0}
 .helpsec h4{margin:22px 0 6px;font-size:17px;color:var(--hull)}
 .helpsec p{margin:0 0 10px}
 .helpsec ul{margin:0 0 10px;padding-left:20px}
@@ -247,6 +250,12 @@ input[name="postcode"]{text-transform:uppercase}
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
     </div>
+    <div class="card"><h3>Sort names by</h3>
+      <div class="setadd" id="sortPick">
+        <button class="menuitem" data-sort="last">Last name</button>
+        <button class="menuitem" data-sort="first">First name</button>
+        <button class="menuitem" data-sort="company">Business name</button>
+      </div></div>
     <p class="coords" id="whoami"></p>
   </div>
 </div>
@@ -276,8 +285,10 @@ const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
    Leave as is to fetch it live, or download the file once, put it in
    this same folder on GitHub, and change this to 'canals.geojson'
    which will be much faster. */
+/* Sent to anyone new so they can get themselves signed in. */
+const START_LINK = 'https://shared-contacts.github.io/Contacts/start.html';
+
 const CANAL_GEOJSON_URL = 'canals.geojson';
-  'https://opendata.arcgis.com/datasets/dab91c04078b4deb890c4381f4a7141a_1.geojson';
 /* ========================================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -294,6 +305,8 @@ const LAB = {
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
 let USERS=[], SHARES=[], PETS=[], PENDING=null;
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
+let SORTBY='last';
+try{ SORTBY=localStorage.getItem('sortby')||'last'; }catch(e){}
 
 const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -324,7 +337,26 @@ function daysToBirthday(c){if(!c.birth_date||c.death_date)return null;
   if(x<t)x=new Date(t.getFullYear()+1,b.getMonth(),b.getDate());
   return Math.round((x-t)/86400000);}
 function bdayLabel(n){return n===null?'':n===0?'Today':n===1?'Tomorrow':n+' days';}
-function w3wUrl(w){return 'https://what3words.com/'+String(w).replace(/^\/+/,'');}
+function w3wUrl(w){return 'https://what3words.com/'+String(w).trim().replace(/^\/+/,'');}
+
+const SOCIAL_URL={
+  Facebook: h=>'https://www.facebook.com/'+h,
+  Instagram:h=>'https://www.instagram.com/'+h,
+  Bluesky:  h=>'https://bsky.app/profile/'+h,
+  X:        h=>'https://x.com/'+h,
+  LinkedIn: h=>'https://www.linkedin.com/in/'+h,
+  YouTube:  h=>'https://www.youtube.com/@'+h,
+  TikTok:   h=>'https://www.tiktok.com/@'+h,
+  WhatsApp: h=>'https://wa.me/'+h.replace(/[^0-9]/g,'')
+};
+function socialUrl(label,value){
+  const v=String(value||'').trim();
+  if(!v) return null;
+  if(/^https?:/i.test(v)) return v;
+  if(/^[\w.-]+\.[a-z]{2,}\//i.test(v)) return 'https://'+v;
+  const build=SOCIAL_URL[label];
+  return build ? build(v.replace(/^@/,'')) : null;
+}
 
 /* ---------- load ---------- */
 async function loadAll(){
@@ -366,7 +398,22 @@ function matches(c,q){
   const hay=bits.filter(Boolean).join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w));
 }
-const byName=(a,b)=>fullName(a).localeCompare(fullName(b),'en-GB',{sensitivity:'base'});
+function sortKey(c){
+  const first=(c.first_name||'').trim();
+  const last =(c.last_name ||'').trim();
+  const firm =(c.company   ||'').trim();
+  if(SORTBY==='first')   return [first, last, firm];
+  if(SORTBY==='company') return [firm || last || first, last, first];
+  return [last || firm || first, first, firm];   // last name
+}
+const byName=(a,b)=>{
+  const ka=sortKey(a), kb=sortKey(b);
+  for(let i=0;i<ka.length;i++){
+    const r=String(ka[i]).localeCompare(String(kb[i]),'en-GB',{sensitivity:'base'});
+    if(r) return r;
+  }
+  return 0;
+};
 
 function rowHtml(c,nested){
   const d=daysToBirthday(c);
@@ -658,12 +705,17 @@ async function openDetail(id, keepPlace){
   const touch=chan(c.phones,e=>`<a href="tel:${esc(e.value)}">${esc(e.value)}</a>`)
     +chan(c.emails,e=>`<a href="mailto:${esc(e.value)}">${esc(e.value)}</a>`)
     +chan(c.websites,e=>link(webUrl(e.value),e.value))
-    +chan(c.socials,e=>/^https?:/i.test(e.value)?link(e.value,e.value):esc(e.value));
+    +chan(c.socials,e=>{
+        const u=socialUrl(e.label,e.value);
+        return u?link(u,e.value):esc(e.value);
+      });
 
   const where=R('Address',[c.address,c.address_2].filter(Boolean).map(esc).join('<br>'))
     +R('Town',esc(c.town))+R('County',esc(c.county))
     +R('Postcode',c.postcode?esc(c.postcode.toUpperCase()):'')+R('Country',esc(c.country))
-    +R('what3words',c.what3words?link(w3wUrl(c.what3words),'///'+c.what3words):'')
+    +R('what3words',c.what3words
+        ?link(w3wUrl(c.what3words),'///'+c.what3words.replace(/^\/+/,''))
+        :'')
     +(c.latitude&&c.longitude
       ? '<div id="detMap" class="map detail"></div>'
         +`<div class="field"><dd><button class="addmore" data-maps="${c.latitude},${c.longitude}">Open in maps app</button></dd></div>`
@@ -687,7 +739,9 @@ async function openDetail(id, keepPlace){
   const boat=R('Boat name',esc(c.boat_name))+R('Index number',esc(c.boat_number))
     +R('Notes',c.boat_notes?esc(c.boat_notes).replace(/\n/g,'<br>'):'');
   const met=R('Where',esc(c.met_where))+R('When',c.met_date?esc(fmtDate(c.met_date)):'')
-    +R('what3words',c.met_what3words?link(w3wUrl(c.met_what3words),'///'+c.met_what3words):'')
+    +R('what3words',c.met_what3words
+        ?link(w3wUrl(c.met_what3words),'///'+c.met_what3words.replace(/^\/+/,''))
+        :'')
     +(c.met_latitude&&c.met_longitude
       ? '<div id="metMap" class="map detail"></div>'
         +`<div class="field"><dd><button class="addmore" data-maps="${c.met_latitude},${c.met_longitude}">Open in maps app</button></dd></div>`
@@ -1266,6 +1320,12 @@ function openHelp(){
   <p class="lead">Everything here is stored online, so you and Sandra see the same
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
 
+  <h4>Setting someone up</h4>
+  <p>Send a new user this link. It gives them the address, how to sign in, how
+  to add it to their phone, and what is private versus shared:</p>
+  <p><a href="${esc(START_LINK)}" target="_blank" rel="noopener">${esc(START_LINK)}</a></p>
+  <p><button class="addmore" id="copyStart" style="padding:0">Copy that link</button></p>
+
   <h4>Finding someone</h4>
   <p>Type into the search box at the top. It looks at names, previous names,
   nicknames, boat names, towns, companies, phone numbers, pets and notes, so
@@ -1276,13 +1336,15 @@ function openHelp(){
 
   <h4>The three views</h4>
   <ul>
-    <li><strong>Grouped</strong> &mdash; group, then country, then alphabetical,
-        the way Memento showed it. Tap a heading to open or close it.</li>
+    <li><strong>Grouped</strong> &mdash; group, then country, then alphabetical.
+        Tap a heading to open or close it.</li>
     <li><strong>A&ndash;Z</strong> &mdash; one flat list of everyone.</li>
     <li><strong>Birthdays</strong> &mdash; whose birthday comes next.</li>
   </ul>
   <p>Tap the button in the green bar to move between them. Searching always
   shows a flat list, whichever view you are in.</p>
+  <p>Menu &rsaquo; <strong>Sort names by</strong> decides whether the alphabetical
+  order follows last name, first name or business name.</p>
 
   <h4>Adding someone</h4>
   <p>The red <strong>+</strong> button, bottom right. You must tick at least one
@@ -1358,6 +1420,11 @@ function openHelp(){
     <li>A contact you cannot find may be one you have not been shared.</li>
   </ul>
   </div>`;
+  const cs=$('copyStart');
+  if(cs) cs.onclick=async()=>{
+    try{ await navigator.clipboard.writeText(START_LINK); toast('Link copied'); }
+    catch(e){ toast('Select the link above and copy it'); }
+  };
   $('help').classList.remove('hidden');
   $('helpBody').scrollTop=0;
 }
@@ -1377,11 +1444,20 @@ $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');};
 $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');};
+function paintSort(){
+  document.querySelectorAll('[data-sort]').forEach(b=>
+    b.setAttribute('aria-pressed', b.dataset.sort===SORTBY));
+}
 $('menuBtn').onclick=()=>{
-  const u=USERS.length?'':'';
   $('whoami').textContent='Signed in as '+(ME.email||'');
+  paintSort();
   $('menu').classList.remove('hidden');
 };
+document.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{
+  SORTBY=b.dataset.sort;
+  try{ localStorage.setItem('sortby',SORTBY); }catch(e){}
+  paintSort(); render();
+});
 $('menuBack').onclick=()=>$('menu').classList.add('hidden');
 $('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>$('help').classList.add('hidden');

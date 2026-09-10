@@ -68,7 +68,8 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .row .who{flex:1;min-width:0}
 .row .name{font-size:19px;font-weight:600;display:block}
 .row .sub{color:var(--muted);font-size:15px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .bday{font-size:14px;color:var(--brass);font-weight:600;white-space:nowrap}
+.row .bday{font-size:14px;color:var(--brass);font-weight:600;white-space:nowrap;
+  text-align:right;line-height:1.3}
 .row .bday.soon{color:var(--red)}
 .empty{padding:48px 24px;text-align:center;color:var(--muted)}
 
@@ -85,6 +86,15 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheetbody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
+#edBody{max-width:1040px}
+@media (min-width:860px){
+  #edBody form{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;align-items:start}
+  #edBody fieldset{margin-bottom:18px}
+  #edBody .btn.danger{grid-column:1 / -1}
+}
+@media (min-width:1200px){
+  #edBody form{grid-template-columns:1fr 1fr 1fr}
+}
 
 .detname{font-size:27px;font-weight:700;margin:4px 0 2px;line-height:1.2}
 .detsub{color:var(--muted);margin:0 0 14px}
@@ -252,6 +262,7 @@ input[name="postcode"]{text-transform:uppercase}
     <span class="title">Menu</span><span style="width:56px"></span></div>
   <div class="sheetbody">
     <div class="card">
+      <button class="menuitem" id="refreshBtn">Refresh from the server</button>
       <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
@@ -403,30 +414,41 @@ function matches(c,q){
   const hay=bits.filter(Boolean).join(' ').toLowerCase();
   return q.toLowerCase().split(/\s+/).every(w=>hay.includes(w));
 }
+// The chosen field decides the order. Anyone with that field empty goes to the
+// end of the list rather than being sorted under a blank.
 function sortKey(c){
   const first=(c.first_name||'').trim();
   const last =(c.last_name ||'').trim();
   const firm =(c.company   ||'').trim();
-  if(SORTBY==='first')   return [first, last, firm];
-  if(SORTBY==='company') return [firm || last || first, last, first];
-  return [last || firm || first, first, firm];   // last name
+  const main = SORTBY==='first' ? first : SORTBY==='company' ? firm : last;
+  return {blank: main==='', main: main, then: fullName(c)};
 }
 const byName=(a,b)=>{
   const ka=sortKey(a), kb=sortKey(b);
-  for(let i=0;i<ka.length;i++){
-    const r=String(ka[i]).localeCompare(String(kb[i]),'en-GB',{sensitivity:'base'});
-    if(r) return r;
-  }
-  return 0;
+  if(ka.blank!==kb.blank) return ka.blank?1:-1;
+  const r=ka.main.localeCompare(kb.main,'en-GB',{sensitivity:'base'});
+  if(r) return r;
+  return ka.then.localeCompare(kb.then,'en-GB',{sensitivity:'base'});
 };
 
-function rowHtml(c,nested){
+function dayMonth(d){
+  if(!d) return '';
+  const [y,m,day]=d.split('-').map(Number);
+  return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+
+function rowHtml(c,nested,birthdayView){
   const d=daysToBirthday(c);
   const sub=[c.nickname&&'"'+c.nickname+'"',c.boat_name,c.town,c.company].filter(Boolean).join(' \u00b7 ');
+  let badge='';
+  if(birthdayView&&d!==null)
+    badge=`<span class="bday ${d<=7?'soon':''}">${esc(dayMonth(c.birth_date))}<br>${bdayLabel(d)}</span>`;
+  else if(d!==null&&d<=45)
+    badge=`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`;
   return `<li><button class="row ${nested?'nested':''}" data-id="${c.id}">
     <span class="who"><span class="name">${esc(fullName(c))}</span>
     ${sub?`<span class="sub">${esc(sub)}</span>`:''}</span>
-    ${d!==null&&d<=45?`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`:''}
+    ${badge}
   </button></li>`;
 }
 
@@ -446,8 +468,10 @@ function render(){
     if(MODE==='birthdays'&&!q)
       rows=rows.filter(c=>c.birth_date&&!c.death_date).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
     else rows.sort(byName);
-    $('count').textContent=rows.length+(rows.length===1?' contact':' contacts');
-    list.innerHTML=rows.map(c=>rowHtml(c,false)).join('');
+    const bd = MODE==='birthdays'&&!q;
+    $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')
+      +(bd?', by next birthday':'');
+    list.innerHTML=rows.map(c=>rowHtml(c,false,bd)).join('');
     wireRows();return;
   }
 
@@ -975,8 +999,17 @@ function drawMulti(key){
     DRAFT[key].splice(Number(b.dataset.rm.split(':')[1]),1);drawMulti(key);});
 }
 
-function openEditor(c){
+async function openEditor(c){
   killMaps();
+  if(c){
+    const {data,error}=await sb.from('contacts')
+      .select('*, contact_groups(group_id)').eq('id',c.id).single();
+    if(!error&&data){
+      c=data;
+      CONTACTS=CONTACTS.map(x=>x.id===data.id?data:x);
+      TAGS[data.id]=(data.contact_groups||[]).map(r=>r.group_id);
+    }
+  }
   const isNew=!c;
   const copy=v=>JSON.parse(JSON.stringify(arr(v)));
   DRAFT={
@@ -1176,8 +1209,18 @@ async function saveContact(existing){
 
   $('edSave').disabled=true;let id;
   if(existing){
-    const {error}=await sb.from('contacts').update(data).eq('id',existing.id);
+    const {data:done,error}=await sb.from('contacts').update(data)
+      .eq('id',existing.id).eq('updated_at',existing.updated_at).select();
     if(error){toast('Could not save');console.error(error);$('edSave').disabled=false;return;}
+    if(!done||!done.length){
+      $('edSave').disabled=false;
+      alert('Someone else changed this contact while you had it open, so nothing '
+        +'has been saved \u2014 otherwise your copy would wipe out their change.\n\n'
+        +'Their version will be loaded now. Make your change again on top of it.');
+      killMaps();$('editor').classList.add('hidden');
+      await loadAll(); openDetail(existing.id);
+      return;
+    }
     id=existing.id;
     const before=TAGS[id]||[];
     const add=chosen.filter(g=>!before.includes(g)),go=before.filter(g=>!chosen.includes(g));
@@ -1350,8 +1393,11 @@ function openHelp(){
         someone as Dickie or Bazza rather than by surname.</li>
     <li><strong>A&ndash;Z by business name</strong> &mdash; brings marinas,
         boatyards and chandlers to the front.</li>
-    <li><strong>Birthdays</strong> &mdash; whose birthday comes next.</li>
+    <li><strong>Birthdays</strong> &mdash; everyone with a birth date, soonest
+        first, showing the day and how long to wait.</li>
   </ul>
+  <p>People with nothing in the field you are sorting by go to the end of the
+  list rather than being buried under a blank.</p>
   <p>Your choice is remembered on that device. Searching always shows a flat
   list, whichever setting you are on.</p>
 
@@ -1424,8 +1470,11 @@ function openHelp(){
   <ul>
     <li>Close the app fully and reopen it. It reloads everything on start.</li>
     <li>A blank map usually means the canal tile server is busy. Switch layers.</li>
-    <li>Changes you make appear on the other person's phone next time they open it,
-        not instantly.</li>
+    <li>Changes appear on someone else's phone when they next open the app, not
+        instantly. Menu &rsaquo; <strong>Refresh from the server</strong> fetches
+        the latest at any time.</li>
+    <li>If two of you edit the same contact at once, the second save is stopped
+        and you are shown the other version rather than quietly overwriting it.</li>
     <li>A contact you cannot find may be one you have not been shared.</li>
   </ul>
   </div>`;
@@ -1458,6 +1507,7 @@ $('menuBtn').onclick=()=>{
   $('menu').classList.remove('hidden');
 };
 $('menuBack').onclick=()=>$('menu').classList.add('hidden');
+$('refreshBtn').onclick=async()=>{ await loadAll(); toast('Up to date'); };
 $('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>$('help').classList.add('hidden');
 $('setBtn').onclick=openSettings;
@@ -1468,6 +1518,16 @@ $('viewPick').onchange=()=>{
   try{ localStorage.setItem('view',VIEW); }catch(e){}
   applyView(); render();
 };
+
+let AWAY=Date.now();
+document.addEventListener('visibilitychange',async()=>{
+  if(document.hidden){ AWAY=Date.now(); return; }
+  if(!ME) return;
+  if(Date.now()-AWAY < 20000) return;          // a quick glance away, leave it alone
+  if(!$('editor').classList.contains('hidden')) return;  // never interrupt an edit
+  await loadAll();
+  if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
+});
 
 async function start(){
   const {data:{user}}=await sb.auth.getUser();

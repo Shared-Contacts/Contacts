@@ -62,14 +62,18 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .grouphd .n,.countryhd .n{margin-left:auto;color:var(--muted);font-weight:400;font-size:15px}
 .caret{display:inline-block;width:12px}
 .open .caret{transform:rotate(90deg)}
-.row{width:100%;display:flex;align-items:baseline;gap:12px;padding:15px 16px;text-align:left}
+.row{width:100%;display:flex;align-items:flex-start;gap:12px;padding:13px 16px;text-align:left}
 .row.nested{padding-left:32px}
-.row:active{background:#F1EFE8}
-.row .who{flex:1;min-width:0}
-.row .name{font-size:19px;font-weight:600;display:block}
-.row .sub{color:var(--muted);font-size:15px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul.list li.alt{background:#F3F1EA}
+.row:active{background:#E8E5DC}
+.row .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.row .name{font-size:19px;font-weight:600;line-height:1.25}
+.row .rel{color:#37564A;font-size:15px;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{color:var(--muted);font-size:15px;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .bday{font-size:14px;color:var(--brass);font-weight:600;white-space:nowrap;
-  text-align:right;line-height:1.3}
+  text-align:right;line-height:1.3;padding-top:2px}
 .row .bday.soon{color:var(--red)}
 .empty{padding:48px 24px;text-align:center;color:var(--muted)}
 
@@ -468,30 +472,37 @@ function listName(c){
   return fullName(c);
 }
 
-function rowHtml(c,nested,birthdayView){
+function rowHtml(c,nested,birthdayView,alt){
   const d=daysToBirthday(c);
   const age=ageOf(c);
-  const pins=PINMAP[c.id]||[];
-  const bits=[];
-  if(pins.length) bits.push(pins.slice(0,2).join(' \u00b7 '));
-  if(c.nickname) bits.push('"'+c.nickname+'"');
-  if(age!==null) bits.push(c.death_date?('died at '+age):(age+' yrs'));
-  bits.push(c.boat_name,c.town,c.is_organisation?null:c.company);
-  const sub=bits.filter(Boolean).join(' \u00b7 ');
+  const pins=(PINMAP[c.id]||[]).slice(0,2);
+
+  const detail=[];
+  if(c.nickname) detail.push('"'+c.nickname+'"');
+  if(age!==null) detail.push(c.death_date?('died at '+age):(age+' yrs'));
+  detail.push(c.boat_name, c.town, c.is_organisation?null:c.company);
+  const sub=detail.filter(Boolean).join(' \u00b7 ');
+
   let badge='';
   if(birthdayView&&d!==null)
     badge=`<span class="bday ${d<=7?'soon':''}">${esc(dayMonth(c.birth_date))}<br>${bdayLabel(d)}</span>`;
   else if(d!==null&&d<=45)
     badge=`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`;
-  return `<li><button class="row ${nested?'nested':''}" data-id="${c.id}">
-    <span class="who"><span class="name">${esc(listName(c))}</span>
-    ${sub?`<span class="sub">${esc(sub)}</span>`:''}</span>
+
+  return `<li class="${alt?'alt':''}"><button class="row ${nested?'nested':''}" data-id="${c.id}">
+    <span class="who">
+      <span class="name">${esc(listName(c))}</span>
+      ${pins.length?`<span class="rel">${esc(pins.join(' \u00b7 '))}</span>`:''}
+      ${sub?`<span class="sub">${esc(sub)}</span>`:''}
+    </span>
     ${badge}
   </button></li>`;
 }
 
+let ALT=0;
 function render(){
   buildPinMap();
+  ALT=0;
   const q=$('search').value.trim();
   let rows=CONTACTS.filter(c=>matches(c,q));
   if(FILTER)rows=rows.filter(c=>(TAGS[c.id]||[]).includes(FILTER));
@@ -511,7 +522,7 @@ function render(){
     const bd = MODE==='birthdays'&&!q;
     $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')
       +(bd?', by next birthday':'');
-    list.innerHTML=rows.map(c=>rowHtml(c,false,bd)).join('');
+    list.innerHTML=rows.map(c=>rowHtml(c,false,bd,(ALT++)%2===1)).join('');
     wireRows();return;
   }
 
@@ -531,14 +542,14 @@ function render(){
       const ck=gk+'|'+ct, cOpen=OPEN.has(ck);
       html+=`<li><button class="countryhd ${cOpen?'open':''}" data-open="${esc(ck)}">
         <span class="caret">&#9656;</span>${esc(ct)}<span class="n">${inC.length}</span></button></li>`;
-      if(cOpen)html+=inC.map(c=>rowHtml(c,true)).join('');
+      if(cOpen)html+=inC.map(c=>rowHtml(c,true,false,(ALT++)%2===1)).join('');
     });
   });
   const none=rows.filter(c=>!(TAGS[c.id]||[]).length);
   if(none.length){
     html+=`<li><button class="grouphd ${OPEN.has('none')?'open':''}" data-open="none">
       <span class="caret">&#9656;</span>No group<span class="n">${none.length}</span></button></li>`;
-    if(OPEN.has('none'))html+=none.sort(byName).map(c=>rowHtml(c,true)).join('');
+    if(OPEN.has('none'))html+=none.sort(byName).map(c=>rowHtml(c,true,false,(ALT++)%2===1)).join('');
   }
   list.innerHTML=html;
   list.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{

@@ -136,7 +136,14 @@ details#dtFormer .multi{padding:0 12px 12px}
 .field dd{flex:1;margin:0;word-break:break-word}
 .field dd a{text-decoration:none;font-weight:600}
 
-.linkrow{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #F0EEE7}
+.linkrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:11px 14px;border-bottom:1px solid #F0EEE7}
+.tgs{flex:1 0 100%;display:flex;gap:8px;padding-left:38%}
+.tg{border:1.5px solid var(--rule);border-radius:999px;padding:5px 12px;
+  font-size:14px;color:var(--muted);background:#fff}
+.tg[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);
+  color:#F2EFE4;font-weight:600}
+@media (max-width:480px){.tgs{padding-left:0}}
 .linkrow:last-child{border-bottom:none}
 .linkrow .kind{flex:0 0 38%;color:var(--muted);font-size:15px}
 .linkrow .to{flex:1;font-weight:600;text-align:left}
@@ -442,6 +449,19 @@ function dayMonth(d){
   return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 }
 
+// Worked out once per redraw rather than per row
+let PINMAP={};
+function buildPinMap(){
+  PINMAP={};
+  const nameOf=id=>{const c=CONTACTS.find(x=>x.id===id);return c?fullName(c):null;};
+  LINKS.filter(l=>l.on_tile).forEach(l=>{
+    const k=KINDS.find(x=>x.name===l.kind);
+    const a=nameOf(l.to_contact), b=nameOf(l.from_contact);
+    if(a)(PINMAP[l.from_contact]=PINMAP[l.from_contact]||[]).push(l.kind+' '+a);
+    if(b)(PINMAP[l.to_contact]=PINMAP[l.to_contact]||[]).push((k?k.inverse_name:l.kind)+' '+b);
+  });
+}
+
 function listName(c){
   if(SORTBY==='last' && !c.is_organisation && c.last_name && c.first_name)
     return c.last_name+', '+c.first_name;
@@ -451,7 +471,10 @@ function listName(c){
 function rowHtml(c,nested,birthdayView){
   const d=daysToBirthday(c);
   const age=ageOf(c);
-  const bits=[c.nickname&&'"'+c.nickname+'"'];
+  const pins=PINMAP[c.id]||[];
+  const bits=[];
+  if(pins.length) bits.push(pins.slice(0,2).join(' \u00b7 '));
+  if(c.nickname) bits.push('"'+c.nickname+'"');
   if(age!==null) bits.push(c.death_date?('died at '+age):(age+' yrs'));
   bits.push(c.boat_name,c.town,c.is_organisation?null:c.company);
   const sub=bits.filter(Boolean).join(' \u00b7 ');
@@ -468,6 +491,7 @@ function rowHtml(c,nested,birthdayView){
 }
 
 function render(){
+  buildPinMap();
   const q=$('search').value.trim();
   let rows=CONTACTS.filter(c=>matches(c,q));
   if(FILTER)rows=rows.filter(c=>(TAGS[c.id]||[]).includes(FILTER));
@@ -714,8 +738,10 @@ function linksFor(id){
   const out=[];
   LINKS.forEach(l=>{
     const k=KINDS.find(x=>x.name===l.kind);
-    if(l.from_contact===id)out.push({id:l.id,label:l.kind,other:l.to_contact,owned:true,pinned:l.pinned});
-    else if(l.to_contact===id)out.push({id:l.id,label:k?k.inverse_name:l.kind,other:l.from_contact,owned:false,pinned:l.pinned});
+    if(l.from_contact===id)out.push({id:l.id,label:l.kind,other:l.to_contact,
+      owned:true,pinned:l.pinned,on_tile:l.on_tile});
+    else if(l.to_contact===id)out.push({id:l.id,label:k?k.inverse_name:l.kind,
+      other:l.from_contact,owned:false,pinned:l.pinned,on_tile:l.on_tile});
   });
   return out;
 }
@@ -796,11 +822,13 @@ async function openDetail(id, keepPlace){
   const links=myLinks.map(l=>{
     const o=CONTACTS.find(x=>x.id===l.other);
     return `<div class="linkrow">
-      <input type="checkbox" style="flex:0 0 auto;margin:0" data-pin="${l.id}"
-        ${l.pinned?'checked':''} title="Show beside their name">
       <span class="kind">${esc(l.label)}</span>
       <button class="to" data-go="${l.other}">${esc(o?fullName(o):'(hidden)')}</button>
-      ${l.owned?`<button class="del" data-del="${l.id}" aria-label="Remove link">&times;</button>`:''}</div>`;
+      ${l.owned?`<button class="del" data-del="${l.id}" aria-label="Remove link">&times;</button>`:''}
+      <span class="tgs">
+        <button class="tg" data-pin="${l.id}"  aria-pressed="${!!l.pinned}">Top of page</button>
+        <button class="tg" data-tile="${l.id}" aria-pressed="${!!l.on_tile}">On the list</button>
+      </span></div>`;
   }).join('');
 
   const pinned=myLinks.filter(l=>l.pinned).map(l=>{
@@ -836,7 +864,9 @@ async function openDetail(id, keepPlace){
     ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
     <div class="card"><h3>Connections</h3>
       ${links?`<div class="field"><dd style="color:var(--muted);font-size:15px">
-        Tick a connection to show it beside their name at the top.</dd></div>`+links
+        <strong>Top of page</strong> shows a connection beside their name here.
+        <strong>On the list</strong> shows it on their line in the main list &mdash;
+        worth keeping to one or two.</dd></div>`+links
         :'<div class="field"><dd>No links yet.</dd></div>'}
       <div class="addlink">
         <select id="linkKind">
@@ -857,13 +887,16 @@ async function openDetail(id, keepPlace){
     b.onclick=()=>removePhoto(b.dataset.rmphoto,false));
   $('detBody').querySelectorAll('[data-big]').forEach(img=>
     img.onclick=()=>lightbox(SIGNED[img.dataset.big]));
-  $('detBody').querySelectorAll('[data-pin]').forEach(b=>b.onchange=async()=>{
+  const flip=async(btn,field)=>{
+    const want = btn.getAttribute('aria-pressed')!=='true';
     const {error}=await sb.from('relationships')
-      .update({pinned:b.checked}).eq('id',Number(b.dataset.pin));
-    if(error){toast('Could not change that');b.checked=!b.checked;return;}
+      .update({[field]:want}).eq('id',Number(btn.dataset.pin||btn.dataset.tile));
+    if(error){toast('Could not change that');return;}
     const {data}=await sb.from('relationships').select('*');LINKS=data||[];
     openDetail(CURRENT.id,true);
-  });
+  };
+  $('detBody').querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>flip(b,'pinned'));
+  $('detBody').querySelectorAll('[data-tile]').forEach(b=>b.onclick=()=>flip(b,'on_tile'));
   $('detBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(',');openInMaps(la,ln);});
   $('detBody').querySelectorAll('[data-share]').forEach(b=>
@@ -972,10 +1005,14 @@ function startLinkedContact(q){
   f.elements['last_name'].value=bits.slice(1).join(' ');
 }
 
+const PIN_BY_DEFAULT=/partner|married|engaged|spouse/i;
+
 async function addLink(other){
   const kind=$('linkKind').value;
   if(!kind){toast('Choose how they are connected first');return;}
-  const {error}=await sb.from('relationships').insert({from_contact:CURRENT.id,to_contact:other,kind});
+  const {error}=await sb.from('relationships').insert({
+    from_contact:CURRENT.id, to_contact:other, kind,
+    pinned: PIN_BY_DEFAULT.test(kind)});
   if(error){toast(error.code==='23505'?'That link already exists':'Could not add the link');return;}
   const {data}=await sb.from('relationships').select('*');LINKS=data||[];
   toast('Link added');openDetail(CURRENT.id,true);
@@ -1257,7 +1294,8 @@ async function saveContact(existing){
       .insert(chosen.map(g=>({contact_id:id,group_id:g,user_id:ME.id})));
   }
   if(PENDING&&!existing){
-    await sb.from('relationships').insert({from_contact:PENDING.from,to_contact:id,kind:PENDING.kind});
+    await sb.from('relationships').insert({from_contact:PENDING.from,to_contact:id,
+      kind:PENDING.kind, pinned:PIN_BY_DEFAULT.test(PENDING.kind)});
   }
   const back = PENDING&&!existing ? PENDING.from : id;
   PENDING=null;
@@ -1464,8 +1502,11 @@ function openHelp(){
   <strong>Add &hellip; as a new contact</strong> and the link is made when you save.</p>
   <p>Connections work both ways from a single entry: store "Parent of" on the
   mother and the child's record shows "Child of" by itself.</p>
-  <p>Tick the box beside a connection to show it at the top of the contact,
-  beside their name. Useful for partners and children.</p>
+  <p>Each connection has two buttons. <strong>Top of page</strong> shows it
+  beside their name on their own page &mdash; partner, married and engaged links
+  switch this on themselves. <strong>On the list</strong> shows it on their line
+  in the main list, and is always your own choice, so the list stays readable.
+  Two is about the most that fits.</p>
 
   <h4>Sharing</h4>
   <p>Everything you add is private to you until you share it. On a contact,
@@ -1491,9 +1532,9 @@ function openHelp(){
   <ul>
     <li>Close the app fully and reopen it. It reloads everything on start.</li>
     <li>A blank map usually means the canal tile server is busy. Switch layers.</li>
-    <li>Changes appear on someone else's phone when they next open the app, not
-        instantly. Menu &rsaquo; <strong>Refresh from the server</strong> fetches
-        the latest at any time.</li>
+    <li>The app refreshes itself every few minutes while it is sitting open, and
+        whenever you come back to it. Menu &rsaquo; <strong>Refresh from the
+        server</strong> fetches the latest at any time.</li>
     <li>If two of you edit the same contact at once, the second save is stopped
         and you are shown the other version rather than quietly overwriting it.</li>
     <li>A contact you cannot find may be one you have not been shared.</li>
@@ -1539,6 +1580,18 @@ $('viewPick').onchange=()=>{
   try{ localStorage.setItem('view',VIEW); }catch(e){}
   applyView(); render();
 };
+
+// Every few minutes, but only when nothing is open and you are not typing,
+// so it can never interrupt what you are doing.
+setInterval(async()=>{
+  if(!ME) return;
+  if(document.hidden) return;
+  if(sheetsOpen()) return;
+  if(document.activeElement===$('search')) return;
+  const at=window.scrollY;
+  await loadAll();
+  window.scrollTo(0,at);
+}, 5*60*1000);
 
 let AWAY=Date.now();
 document.addEventListener('visibilitychange',async()=>{

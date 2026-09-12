@@ -37,7 +37,15 @@ a{color:var(--hull)}
 .plate h1{margin:0 auto 0 4px;font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
 .plate select{background:rgba(255,255,255,.14);color:#F2EFE4;border:1px solid rgba(255,255,255,.3);
-  border-radius:8px;padding:7px 8px;font-size:15px;max-width:46vw}
+  border-radius:8px;padding:7px 6px;font-size:15px;min-width:0;max-width:40vw}
+.plate h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){
+  .plate h1{display:none}
+  .plate{gap:6px;justify-content:space-between}
+  .plate select{max-width:none;flex:1 1 auto}
+  .plate button{padding:8px 7px;font-size:14px;flex:0 0 auto}
+}
+body{overflow-x:hidden}
 .plate select option{color:var(--ink);background:#fff}
 .plate button:hover{background:rgba(255,255,255,.12)}
 
@@ -142,7 +150,7 @@ details#dtFormer .multi{padding:0 12px 12px}
 
 .linkrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   padding:11px 14px;border-bottom:1px solid #F0EEE7}
-.tgs{flex:1 0 100%;display:flex;gap:8px;padding-left:38%}
+.tgs{flex:1 0 100%;display:flex;gap:8px;padding-left:38%;flex-wrap:wrap}
 .tg{border:1.5px solid var(--rule);border-radius:999px;padding:5px 12px;
   font-size:14px;color:var(--muted);background:#fff}
 .tg[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);
@@ -215,6 +223,24 @@ input[name="postcode"]{text-transform:uppercase}
 .kindpick button{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--rule);
   background:#fff;font-weight:600;color:var(--muted)}
 .kindpick button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:4px 2px 12px;font-size:18px;font-weight:700}
+.mnav button{color:var(--hull);padding:8px 14px;border-radius:8px;font-size:16px}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mhd{text-align:center;font-size:13px;font-weight:700;color:var(--muted);padding-bottom:2px}
+.mcell{aspect-ratio:1;border:1px solid var(--rule);border-radius:8px;background:var(--panel);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0}
+.mcell.blank{border:none;background:none}
+.mcell .n{font-size:15px;font-weight:600}
+.mcell.today{border-color:var(--hull);border-width:2px}
+.mcell.picked{background:var(--hull)}
+.mcell.picked .n{color:#F2EFE4}
+.dots{display:flex;gap:3px;height:7px}
+.dots i,i.key{display:inline-block;width:7px;height:7px;border-radius:50%}
+i.key{vertical-align:middle}
+.dots i.a,i.key.a{background:#0F6E8C}
+.dots i.t,i.key.t{background:var(--brass)}
+.dots i.l,i.key.l{background:var(--red)}
 .alarm{position:fixed;left:12px;right:12px;bottom:calc(20px + env(safe-area-inset-bottom));
   z-index:70;background:var(--hull);color:#F2EFE4;border-radius:12px;padding:16px 18px;
   box-shadow:0 6px 20px rgba(16,35,28,.4)}
@@ -363,7 +389,7 @@ const LAB = {
 };
 
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
-let USERS=[], SHARES=[], PETS=[], PENDING=null;
+let USERS=[], SHARES=[], PETS=[], PENDING=null, MY_PROFILE=null;
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
 let VIEW='grouped', SORTBY='last';
 try{ VIEW=localStorage.getItem('view')||'grouped'; }catch(e){}
@@ -448,6 +474,7 @@ async function loadAll(){
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
+  MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
   PETS=pt.data||[];
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
@@ -1413,6 +1440,16 @@ function openSettings(){
    + block('pet_types','Kinds of pet','kind',PETS,['name'])
    + block('link_kinds','Connection types','type',KINDS,['name','inverse_name'],
        'Each type has an opposite. Store "Parent of" once and the other person\u2019s record shows "Child of" automatically.')
+   + `<div class="card"><h3>Which contact is you?</h3>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Used to fill in new diary entries.</dd></div>
+      <div class="setadd">
+        <select id="meContact">
+          <option value="">&mdash; not set &mdash;</option>
+          ${CONTACTS.slice().sort(byName).map(c=>
+            `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.my_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
+        </select>
+      </div></div>`
    + `<div class="card"><h3>Share everything</h3>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
       Gives someone every contact you own, including ones you add later only if you repeat this.</dd></div>
@@ -1451,6 +1488,13 @@ function openSettings(){
     if(error){toast('Could not remove \u2014 it may still be in use');return;}
     await loadAll();openSettings();toast('Removed');
   });
+  const mc=$('meContact');
+  if(mc) mc.onchange=async()=>{
+    const v=mc.value?Number(mc.value):null;
+    const {error}=await sb.from('profiles').update({my_contact_id:v}).eq('id',ME.id);
+    if(error){toast('Could not save that');return;}
+    await loadAll(); toast('Saved');
+  };
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
     const [t,id,dir]=b.dataset.mv.split(':');
     const rows=[...(t==='groups'?GROUPS:t==='statuses'?STATUSES:t==='pet_types'?PETS:KINDS)];
@@ -1590,6 +1634,16 @@ function openHelp(){
   their page, and either can repeat.</p>
   <p>Tap the circle to mark something done. A repeating item rolls forward to its
   next date instead of disappearing.</p>
+  <p>The Diary has three views. <strong>List</strong> groups everything by
+  overdue, today, tomorrow and so on. <strong>Week</strong> shows the current
+  week day by day. <strong>Month</strong> shows a calendar with a dot on each day
+  &mdash; blue for an appointment, brass for a to-do, red if it is overdue.
+  Tap a day to see what is on.</p>
+  <p><strong>Who else to remind</strong> puts the same entry in someone else's
+  diary. They can tick it off or change it, so an appointment you are both going
+  to only needs entering once.</p>
+  <p>New entries fill in your own name under "about which contact". Set who that
+  is in Menu &rsaquo; Settings &rsaquo; <em>Which contact is you?</em></p>
   <p>Reminders chime and pop up while the app is open. Tap <strong>Turn on
   alerts</strong> in the Diary the first time, so the phone lets it show a
   notification.</p>
@@ -1640,11 +1694,15 @@ function openHelp(){
    Diary: appointments and to-dos
    ============================================================ */
 let ITEMS=[], ITEM_SHARES=[], DIARY_DONE=false, EDIT_ITEM=null, ITEM_KIND='todo';
+let DIARY_VIEW='list', DIARY_DAY=null;
+let DIARY_MONTH=new Date().toISOString().slice(0,7);
+try{ DIARY_VIEW=localStorage.getItem('dview')||'list'; }catch(e){}
 
 const REMIND_CHOICES=[
-  ['','No reminder'],['0','At the time'],['10','10 minutes before'],
-  ['30','30 minutes before'],['60','1 hour before'],['120','2 hours before'],
-  ['360','6 hours before'],['1440','1 day before'],['2880','2 days before'],
+  ['','No reminder'],['0','At the time'],
+  ['5','5 minutes before'],['15','15 minutes before'],['30','30 minutes before'],
+  ['60','1 hour before'],['120','2 hours before'],['360','6 hours before'],
+  ['720','12 hours before'],['1440','1 day before'],['2880','2 days before'],
   ['10080','1 week before']
 ];
 const REPEATS=[['none','Does not repeat'],['daily','Every day'],['weekly','Every week'],
@@ -1697,7 +1755,77 @@ function openDiary(){
   $('diary').classList.remove('hidden'); $('diaryBody').scrollTop=0; lockBackground();
 }
 
+function itemsOn(day){            // items falling on a given date
+  const a=new Date(day.getFullYear(),day.getMonth(),day.getDate()).getTime();
+  const b=a+86400000;
+  return ITEMS.filter(it=>{
+    if(DIARY_DONE ? !it.done_at : it.done_at) return false;
+    const w=whenOf(it); if(!w) return false;
+    const t=new Date(w).getTime();
+    return t>=a && t<b;
+  });
+}
+
+function itemRow(it){
+  const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
+  const shared=ITEM_SHARES.some(x=>x.item_id===it.id)||it.created_by!==ME.id;
+  return `<div class="item">
+    <button class="tick ${it.done_at?'on':''}" data-done="${it.id}"
+      aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
+    <button class="mid" data-item="${it.id}">
+      <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
+      <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}</span>
+      ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
+    </button></div>`;
+}
+
 function renderDiary(){
+  let html=`<div class="kindpick">
+      <button data-dview="list"  aria-pressed="${DIARY_VIEW==='list'}">List</button>
+      <button data-dview="week"  aria-pressed="${DIARY_VIEW==='week'}">Week</button>
+      <button data-dview="month" aria-pressed="${DIARY_VIEW==='month'}">Month</button>
+    </div>`;
+
+  if(DIARY_VIEW==='list')       html+=diaryList();
+  else if(DIARY_VIEW==='week')  html+=diaryWeek();
+  else                          html+=diaryMonth();
+
+  if(!('Notification' in window) || Notification.permission!=='granted')
+    html+=`<div class="card"><h3>Alerts</h3>
+      <div class="field"><dd>Let this device show a reminder and chime when something
+      falls due while the app is open.</dd></div>
+      <div class="setadd"><button class="btn primary" id="askAlerts">Turn on alerts</button></div></div>`;
+
+  $('diaryBody').innerHTML=html;
+
+  $('diaryBody').querySelectorAll('[data-dview]').forEach(b=>b.onclick=()=>{
+    DIARY_VIEW=b.dataset.dview;
+    try{ localStorage.setItem('dview',DIARY_VIEW); }catch(e){}
+    renderDiary(); });
+  $('diaryBody').querySelectorAll('[data-dv]').forEach(b=>b.onclick=()=>{
+    DIARY_DONE=b.dataset.dv==='done'; renderDiary(); });
+  $('diaryBody').querySelectorAll('[data-done]').forEach(b=>
+    b.onclick=()=>toggleDone(Number(b.dataset.done)));
+  $('diaryBody').querySelectorAll('[data-item]').forEach(b=>
+    b.onclick=()=>openItem(ITEMS.find(x=>x.id===Number(b.dataset.item))));
+  $('diaryBody').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{
+    DIARY_DAY=b.dataset.day; renderDiary(); });
+  $('diaryBody').querySelectorAll('[data-mshift]').forEach(b=>b.onclick=()=>{
+    const d=new Date(DIARY_MONTH+'-01T12:00:00');
+    d.setMonth(d.getMonth()+Number(b.dataset.mshift));
+    DIARY_MONTH=d.toISOString().slice(0,7);
+    DIARY_DAY=null; renderDiary(); });
+
+  const aa=$('askAlerts');
+  if(aa) aa.onclick=async()=>{
+    const r=await Notification.requestPermission();
+    toast(r==='granted'?'Alerts are on':'Alerts stayed off');
+    renderDiary();
+  };
+}
+
+/* ---------- list ---------- */
+function diaryList(){
   const live=ITEMS.filter(it=>DIARY_DONE ? it.done_at : !it.done_at);
   live.sort((a,b)=>{
     const wa=whenOf(a), wb=whenOf(b);
@@ -1722,62 +1850,105 @@ function renderDiary(){
     return 'Later';
   };
 
-  let html=`<div class="kindpick">
-      <button data-dv="open"  aria-pressed="${!DIARY_DONE}">To come</button>
-      <button data-dv="done"  aria-pressed="${DIARY_DONE}">Finished</button>
+  let html=`<div class="kindpick" style="margin-bottom:10px">
+      <button data-dv="open" aria-pressed="${!DIARY_DONE}">To come</button>
+      <button data-dv="done" aria-pressed="${DIARY_DONE}">Finished</button>
     </div>`;
 
-  if(!live.length){
-    html+=`<div class="card"><div class="field"><dd>${DIARY_DONE
+  if(!live.length)
+    return html+`<div class="card"><div class="field"><dd>${DIARY_DONE
       ?'Nothing finished yet.':'Nothing due. Tap Add to put something in.'}</dd></div></div>`;
-  }else{
-    let last=null, open=false;
-    live.forEach(it=>{
-      const b=bucketOf(it);
-      if(b!==last){
-        if(open) html+='</div>';
-        html+=`<p class="dsec">${esc(b)}</p><div class="card">`;
-        last=b; open=true;
-      }
-      const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
-      html+=`<div class="item">
-        <button class="tick ${it.done_at?'on':''}" data-done="${it.id}"
-          aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
-        <button class="mid" data-item="${it.id}">
-          <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
-          <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}</span>
-          ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
-        </button></div>`;
-    });
-    if(open) html+='</div>';
+
+  let last=null, open=false;
+  live.forEach(it=>{
+    const b=bucketOf(it);
+    if(b!==last){
+      if(open) html+='</div>';
+      html+=`<p class="dsec">${esc(b)}</p><div class="card">`;
+      last=b; open=true;
+    }
+    html+=itemRow(it);
+  });
+  if(open) html+='</div>';
+  return html;
+}
+
+/* ---------- week ---------- */
+function diaryWeek(){
+  const now=new Date();
+  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  start.setDate(start.getDate()-((start.getDay()+6)%7));    // Monday
+  let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const rows=itemsOn(d).sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
+    const isToday=d.toDateString()===now.toDateString();
+    html+=`<p class="dsec">${esc(d.toLocaleDateString('en-GB',
+      {weekday:'long',day:'numeric',month:'short'}))}${isToday?' &mdash; today':''}</p>
+      <div class="card">${rows.length?rows.map(itemRow).join('')
+        :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing.</dd></div>'}</div>`;
+  }
+  return html;
+}
+
+/* ---------- month ---------- */
+function diaryMonth(){
+  const [yy,mm]=DIARY_MONTH.split('-').map(Number);
+  const first=new Date(yy,mm-1,1);
+  const label=first.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  const lead=(first.getDay()+6)%7;                       // Monday-first
+  const days=new Date(yy,mm,0).getDate();
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  let cells='';
+  for(let i=0;i<lead;i++) cells+='<span class="mcell blank"></span>';
+  for(let n=1;n<=days;n++){
+    const d=new Date(yy,mm-1,n);
+    const on=itemsOn(d);
+    const key=`${yy}-${String(mm).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
+    const appt=on.some(x=>x.kind==='appointment'), todo=on.some(x=>x.kind==='todo');
+    const late=on.some(isLate);
+    cells+=`<button class="mcell${d.getTime()===today.getTime()?' today':''}${DIARY_DAY===key?' picked':''}"
+        data-day="${key}">
+        <span class="n">${n}</span>
+        <span class="dots">${appt?'<i class="a"></i>':''}${todo?`<i class="${late?'l':'t'}"></i>`:''}</span>
+      </button>`;
   }
 
-  if(!('Notification' in window) || Notification.permission!=='granted')
-    html+=`<div class="card"><h3>Alerts</h3>
-      <div class="field"><dd>Let this device show a reminder and chime when something
-      falls due while the app is open.</dd></div>
-      <div class="setadd"><button class="btn primary" id="askAlerts">Turn on alerts</button></div></div>`;
+  const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+    .map(x=>`<span class="mhd">${x}</span>`).join('');
 
-  $('diaryBody').innerHTML=html;
-  $('diaryBody').querySelectorAll('[data-dv]').forEach(b=>b.onclick=()=>{
-    DIARY_DONE=b.dataset.dv==='done'; renderDiary(); });
-  $('diaryBody').querySelectorAll('[data-done]').forEach(b=>
-    b.onclick=()=>toggleDone(Number(b.dataset.done)));
-  $('diaryBody').querySelectorAll('[data-item]').forEach(b=>
-    b.onclick=()=>openItem(ITEMS.find(x=>x.id===Number(b.dataset.item))));
-  const aa=$('askAlerts');
-  if(aa) aa.onclick=async()=>{
-    const r=await Notification.requestPermission();
-    toast(r==='granted'?'Alerts are on':'Alerts stayed off');
-    renderDiary();
-  };
+  let html=`<div class="mnav">
+      <button data-mshift="-1" aria-label="Previous month">&#9664;</button>
+      <span>${esc(label)}</span>
+      <button data-mshift="1" aria-label="Next month">&#9654;</button>
+    </div>
+    <div class="mgrid">${names}${cells}</div>
+    <p class="coords" style="text-align:center">
+      <i class="key a"></i> appointment &nbsp; <i class="key t"></i> to-do &nbsp;
+      <i class="key l"></i> overdue</p>`;
+
+  if(DIARY_DAY){
+    const [y,m,dd]=DIARY_DAY.split('-').map(Number);
+    const d=new Date(y,m-1,dd);
+    const rows=itemsOn(d).sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
+    html+=`<p class="dsec">${esc(d.toLocaleDateString('en-GB',
+      {weekday:'long',day:'numeric',month:'long'}))}</p>
+      <div class="card">${rows.length?rows.map(itemRow).join('')
+        :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing that day.</dd></div>'}</div>`;
+  }else{
+    html+='<p class="coords" style="text-align:center">Tap a day to see what is on.</p>';
+  }
+  return html;
 }
 
 /* ---------- adding and editing ---------- */
 function openItem(it, presetContact){
   EDIT_ITEM = it || null;
   ITEM_KIND = it ? it.kind : 'todo';
-  const cid = it ? it.contact_id : (presetContact||null);
+  const meProfile = (typeof MY_PROFILE!=='undefined' && MY_PROFILE) ? MY_PROFILE : null;
+  const cid = it ? it.contact_id
+                 : (presetContact || (meProfile && meProfile.my_contact_id) || null);
   $('itTitle').textContent = it ? 'Edit' : 'New';
 
   $('itBody').innerHTML=`<form id="itForm">
@@ -1793,6 +1964,15 @@ function openItem(it, presetContact){
           `<option value="${c.id}">${esc(fullName(c))}</option>`).join('')}
       </select></label>
       <label>Notes<textarea name="notes" rows="3"></textarea></label>
+    </fieldset>
+
+    <fieldset><legend>Who else to remind</legend>
+      ${USERS.length?`<div class="checks">${USERS.map(u=>`<label>
+          <input type="checkbox" name="alsoremind" value="${u.id}">
+          ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+        <p class="coords">They get the same entry in their own diary, and can
+        tick it off or change it.</p>`
+        :'<p class="coords">Nobody else has an account yet.</p>'}
     </fieldset>
 
     <fieldset id="fsAppt"><legend>When</legend>
@@ -1839,6 +2019,10 @@ function openItem(it, presetContact){
     f.elements['remind_mins'].value='60';
   }
   if(cid) f.elements['contact_id'].value=String(cid);
+  if(it) ITEM_SHARES.filter(x=>x.item_id===it.id).forEach(x=>{
+    const b=f.querySelector(`input[name="alsoremind"][value="${x.user_id}"]`);
+    if(b) b.checked=true;
+  });
 
   const applyKind=()=>{
     $('fsAppt').style.display = ITEM_KIND==='appointment' ? '' : 'none';
@@ -1898,8 +2082,27 @@ async function saveItem(){
     d.created_by=ME.id;
     err=(await sb.from('items').insert(d)).error;
   }
+  if(err){ $('itSave').disabled=false; toast('Could not save'); console.error(err); return; }
+
+  // who else should see it
+  let itemId=EDIT_ITEM?EDIT_ITEM.id:null;
+  if(!itemId){
+    const {data:fresh}=await sb.from('items').select('id')
+      .eq('created_by',ME.id).order('id',{ascending:false}).limit(1);
+    itemId=fresh&&fresh[0]?fresh[0].id:null;
+  }
+  if(itemId){
+    const want=[...f.querySelectorAll('input[name="alsoremind"]:checked')].map(b=>b.value);
+    const had=ITEM_SHARES.filter(x=>x.item_id===itemId).map(x=>x.user_id);
+    const add=want.filter(u=>!had.includes(u));
+    const go =had.filter(u=>!want.includes(u));
+    if(add.length) await sb.from('item_shares')
+      .insert(add.map(u=>({item_id:itemId,user_id:u,can_edit:true})));
+    for(const u of go) await sb.from('item_shares')
+      .delete().eq('item_id',itemId).eq('user_id',u);
+  }
+
   $('itSave').disabled=false;
-  if(err){ toast('Could not save'); console.error(err); return; }
   $('itemEd').classList.add('hidden'); lockBackground();
   await loadAll();
   if(!$('diary').classList.contains('hidden')) renderDiary();

@@ -478,6 +478,8 @@ async function loadAll(){
   PETS=pt.data||[];
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
+  const rt=await sb.from('routines').select('*').order('sort_order');
+  ROUTINES=rt.data||[];
   paintDue();
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
   renderChips();render();
@@ -1628,17 +1630,25 @@ function openHelp(){
   <h4>Diary</h4>
   <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
   number beside it is how many are due today or already overdue.</p>
+  <p><em>About which contact</em> ties an entry to a person, so it appears on
+  their page too. Leave it blank for anything that is not about anybody.</p>
   <p>A <strong>to-do</strong> is due by a time, and can have a "not before" date
   if it shouldn't be started yet. An <strong>appointment</strong> has a start and
   an end. Either can be attached to a contact, in which case it also shows on
   their page, and either can repeat.</p>
   <p>Tap the circle to mark something done. A repeating item rolls forward to its
   next date instead of disappearing.</p>
-  <p>The Diary has three views. <strong>List</strong> groups everything by
+  <p><strong>Regular</strong> is a standing list of jobs you come back to &mdash;
+  engine oil, tax return, paint the shower. Ticking one drops it to the bottom
+  with the date you did it; unticking brings it back to the top as needing doing.
+  Nothing leaves the list until you remove it with the &times;. Give jobs a
+  heading to group them, and use "start the round again" to untick the lot.</p>
+  <p>The other Diary views are for things with a date. <strong>List</strong> groups everything by
   overdue, today, tomorrow and so on. <strong>Week</strong> shows the current
   week day by day. <strong>Month</strong> shows a calendar with a dot on each day
   &mdash; blue for an appointment, brass for a to-do, red if it is overdue.
-  Tap a day to see what is on.</p>
+  Tap a day to see what is on. An appointment with an end date shows on every
+  day it covers, so a fortnight away blocks out the whole fortnight.</p>
   <p><strong>Who else to remind</strong> puts the same entry in someone else's
   diary. They can tick it off or change it, so an appointment you are both going
   to only needs entering once.</p>
@@ -1694,6 +1704,7 @@ function openHelp(){
    Diary: appointments and to-dos
    ============================================================ */
 let ITEMS=[], ITEM_SHARES=[], DIARY_DONE=false, EDIT_ITEM=null, ITEM_KIND='todo';
+let ROUTINES=[];
 let DIARY_VIEW='list', DIARY_DAY=null;
 let DIARY_MONTH=new Date().toISOString().slice(0,7);
 try{ DIARY_VIEW=localStorage.getItem('dview')||'list'; }catch(e){}
@@ -1734,6 +1745,18 @@ function whenText(it){
   else day=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',
         year:d.getFullYear()===now.getFullYear()?undefined:'numeric'});
   let txt=[day,time].filter(Boolean).join(', ');
+  if(it.kind==='appointment'&&it.ends_at){
+    const e=new Date(it.ends_at);
+    if(e.toDateString()!==d.toDateString()){
+      const sameYear=e.getFullYear()===d.getFullYear();
+      txt=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+        +' to '+e.toLocaleDateString('en-GB',{day:'numeric',month:'short',
+            year:sameYear?undefined:'numeric'});
+      const nights=Math.round((new Date(e.getFullYear(),e.getMonth(),e.getDate())
+        -new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
+      txt+=' ('+(nights+1)+' days)';
+    }
+  }
   if(it.kind==='todo'&&it.due_from&&new Date(it.due_from)>now)
     txt='from '+new Date(it.due_from).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' until '+txt;
   return txt;
@@ -1755,11 +1778,18 @@ function openDiary(){
   $('diary').classList.remove('hidden'); $('diaryBody').scrollTop=0; lockBackground();
 }
 
-function itemsOn(day){            // items falling on a given date
+// An appointment occupies every day from its start to its end, so ten days
+// away shows on all ten and nothing gets booked over it.
+function itemsOn(day){
   const a=new Date(day.getFullYear(),day.getMonth(),day.getDate()).getTime();
   const b=a+86400000;
   return ITEMS.filter(it=>{
     if(DIARY_DONE ? !it.done_at : it.done_at) return false;
+    if(it.kind==='appointment' && it.starts_at){
+      const st=new Date(it.starts_at).getTime();
+      const en=it.ends_at ? new Date(it.ends_at).getTime() : st;
+      return st < b && en >= a;
+    }
     const w=whenOf(it); if(!w) return false;
     const t=new Date(w).getTime();
     return t>=a && t<b;
@@ -1781,16 +1811,20 @@ function itemRow(it){
 
 function renderDiary(){
   let html=`<div class="kindpick">
-      <button data-dview="list"  aria-pressed="${DIARY_VIEW==='list'}">List</button>
-      <button data-dview="week"  aria-pressed="${DIARY_VIEW==='week'}">Week</button>
-      <button data-dview="month" aria-pressed="${DIARY_VIEW==='month'}">Month</button>
+      <button data-dview="list"    aria-pressed="${DIARY_VIEW==='list'}">List</button>
+      <button data-dview="week"    aria-pressed="${DIARY_VIEW==='week'}">Week</button>
+      <button data-dview="month"   aria-pressed="${DIARY_VIEW==='month'}">Month</button>
+      <button data-dview="routine" aria-pressed="${DIARY_VIEW==='routine'}">Regular</button>
     </div>`;
 
-  if(DIARY_VIEW==='list')       html+=diaryList();
-  else if(DIARY_VIEW==='week')  html+=diaryWeek();
-  else                          html+=diaryMonth();
+  if(DIARY_VIEW==='list')         html+=diaryList();
+  else if(DIARY_VIEW==='week')    html+=diaryWeek();
+  else if(DIARY_VIEW==='routine') html+=diaryRoutine();
+  else                            html+=diaryMonth();
 
-  if(!('Notification' in window) || Notification.permission!=='granted')
+  wireRoutine();
+
+  if(DIARY_VIEW!=='routine' && (!('Notification' in window) || Notification.permission!=='granted'))
     html+=`<div class="card"><h3>Alerts</h3>
       <div class="field"><dd>Let this device show a reminder and chime when something
       falls due while the app is open.</dd></div>
@@ -1821,6 +1855,109 @@ function renderDiary(){
     const r=await Notification.requestPermission();
     toast(r==='granted'?'Alerts are on':'Alerts stayed off');
     renderDiary();
+  };
+}
+
+/* ---------- the standing list of regular jobs ---------- */
+function diaryRoutine(){
+  const headings=[...new Set(ROUTINES.map(r=>r.heading||''))];
+  let html=`<p class="coords">Jobs you come back to. Untick one and it rises to the
+    top as needing doing; tick it and it drops down. Nothing is deleted unless you
+    say so.</p>`;
+
+  if(!ROUTINES.length)
+    html+=`<div class="card"><div class="field"><dd>Nothing here yet. Add your
+      first regular job below.</dd></div></div>`;
+
+  headings.sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b)).forEach(h=>{
+    const rows=ROUTINES.filter(r=>(r.heading||'')===h);
+    const todo=rows.filter(r=>!r.done).sort((a,b)=>a.sort_order-b.sort_order);
+    const done=rows.filter(r=>r.done)
+      .sort((a,b)=>new Date(b.done_at||0)-new Date(a.done_at||0));
+    if(!rows.length) return;
+    html+=`<p class="dsec">${esc(h||'Anything else')}
+      <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">
+        ${todo.length} to do</span></p><div class="card">`;
+    todo.forEach(r=>{ html+=routineRow(r); });
+    if(todo.length&&done.length)
+      html+=`<div class="field"><dd style="color:var(--muted);font-size:14px">Done</dd></div>`;
+    done.forEach(r=>{ html+=routineRow(r); });
+    html+='</div>';
+  });
+
+  html+=`<div class="card"><h3>Add a regular job</h3>
+    <div class="setadd">
+      <input id="rtTitle" placeholder="What needs doing">
+      <input id="rtHead" list="dlHead" placeholder="Heading (optional), e.g. Boat">
+      <datalist id="dlHead">${[...new Set(ROUTINES.map(r=>r.heading).filter(Boolean))]
+        .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
+      <button class="btn primary" id="rtAdd">Add it</button>
+    </div></div>`;
+
+  const anyDone=ROUTINES.some(r=>r.done);
+  if(anyDone)
+    html+=`<div class="card"><div class="setadd">
+      <button class="btn" id="rtReset" style="border:1.5px solid var(--rule)">
+        Untick everything &mdash; start the round again</button></div></div>`;
+  return html;
+}
+
+function routineRow(r){
+  return `<div class="item">
+    <button class="tick ${r.done?'on':''}" data-rt="${r.id}"
+      aria-label="${r.done?'Mark as needing doing':'Mark as done'}">${r.done?'&#10003;':''}</button>
+    <button class="mid" data-rtedit="${r.id}">
+      <span class="t ${r.done?'done':''}">${esc(r.title)}</span>
+      ${r.done&&r.done_at?`<span class="w">done ${esc(new Date(r.done_at)
+        .toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>`:''}
+    </button>
+    <button class="del" data-rtdel="${r.id}" aria-label="Remove">&times;</button></div>`;
+}
+
+function wireRoutine(){
+  const body=$('diaryBody');
+  body.querySelectorAll('[data-rt]').forEach(b=>b.onclick=async()=>{
+    const r=ROUTINES.find(x=>x.id===Number(b.dataset.rt));
+    const want=!r.done;
+    const patch={done:want, done_at:want?new Date().toISOString():null};
+    if(!want) patch.sort_order=Math.min(0,...ROUTINES.map(x=>x.sort_order))-1;
+    const {error}=await sb.from('routines').update(patch).eq('id',r.id);
+    if(error){toast('Could not change that');return;}
+    await loadAll(); renderDiary();
+  });
+  body.querySelectorAll('[data-rtdel]').forEach(b=>b.onclick=async()=>{
+    const r=ROUTINES.find(x=>x.id===Number(b.dataset.rtdel));
+    if(!confirm('Remove "'+r.title+'" from the regular list for good?'))return;
+    const {error}=await sb.from('routines').delete().eq('id',r.id);
+    if(error){toast('Could not remove it');return;}
+    await loadAll(); renderDiary(); toast('Removed');
+  });
+  body.querySelectorAll('[data-rtedit]').forEach(b=>b.onclick=async()=>{
+    const r=ROUTINES.find(x=>x.id===Number(b.dataset.rtedit));
+    const t=prompt('Change the wording:',r.title);
+    if(t===null||!t.trim())return;
+    const {error}=await sb.from('routines').update({title:t.trim()}).eq('id',r.id);
+    if(error){toast('Could not save');return;}
+    await loadAll(); renderDiary();
+  });
+  const add=$('rtAdd');
+  if(add) add.onclick=async()=>{
+    const t=$('rtTitle').value.trim();
+    if(!t){toast('Give it a name');return;}
+    const {error}=await sb.from('routines').insert({
+      created_by:ME.id, title:t,
+      heading:$('rtHead').value.trim()||null,
+      sort_order:Math.max(100,...ROUTINES.map(x=>x.sort_order))+1});
+    if(error){toast('Could not add it');console.error(error);return;}
+    await loadAll(); renderDiary(); toast('Added');
+  };
+  const reset=$('rtReset');
+  if(reset) reset.onclick=async()=>{
+    if(!confirm('Untick every job on the regular list?'))return;
+    const {error}=await sb.from('routines')
+      .update({done:false,done_at:null}).eq('created_by',ME.id).eq('done',true);
+    if(error){toast('Could not reset them');return;}
+    await loadAll(); renderDiary(); toast('All unticked');
   };
 }
 
@@ -1876,15 +2013,14 @@ function diaryList(){
 /* ---------- week ---------- */
 function diaryWeek(){
   const now=new Date();
-  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  start.setDate(start.getDate()-((start.getDay()+6)%7));    // Monday
+  const start=new Date(now.getFullYear(),now.getMonth(),now.getDate());  // today
   let html='';
   for(let i=0;i<7;i++){
     const d=new Date(start); d.setDate(start.getDate()+i);
     const rows=itemsOn(d).sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
-    const isToday=d.toDateString()===now.toDateString();
-    html+=`<p class="dsec">${esc(d.toLocaleDateString('en-GB',
-      {weekday:'long',day:'numeric',month:'short'}))}${isToday?' &mdash; today':''}</p>
+    const isToday=i===0;
+    html+=`<p class="dsec">${isToday?'Today &mdash; ':''}${esc(d.toLocaleDateString('en-GB',
+      {weekday:'long',day:'numeric',month:'short'}))}</p>
       <div class="card">${rows.length?rows.map(itemRow).join('')
         :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing.</dd></div>'}</div>`;
   }

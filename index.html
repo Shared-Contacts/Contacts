@@ -194,6 +194,34 @@ input[name="postcode"]{text-transform:uppercase}
 .setrow{display:flex;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid #F0EEE7}
 .setrow input{flex:1;min-width:0;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .setrow .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:0 4px}
+#dueDot{display:none;margin-left:5px;background:var(--red);color:#fff;border-radius:999px;
+  padding:1px 7px;font-size:13px;font-weight:700}
+#dueDot.on{display:inline-block}
+.dsec{margin:0 0 6px;font-size:14px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);padding:16px 2px 0}
+.item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;
+  border-bottom:1px solid #F0EEE7;width:100%;text-align:left}
+.card .item:last-child{border-bottom:none}
+.item .tick{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+  border:2px solid var(--rule);background:#fff;margin-top:2px}
+.item .tick.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+.item .mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.item .t{font-size:17px;font-weight:600}
+.item .t.done{text-decoration:line-through;color:var(--muted);font-weight:400}
+.item .w{font-size:15px;color:var(--muted)}
+.item .w.late{color:var(--red);font-weight:600}
+.item .who2{font-size:15px;color:#37564A}
+.kindpick{display:flex;gap:8px;margin:0 0 14px}
+.kindpick button{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--rule);
+  background:#fff;font-weight:600;color:var(--muted)}
+.kindpick button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+.alarm{position:fixed;left:12px;right:12px;bottom:calc(20px + env(safe-area-inset-bottom));
+  z-index:70;background:var(--hull);color:#F2EFE4;border-radius:12px;padding:16px 18px;
+  box-shadow:0 6px 20px rgba(16,35,28,.4)}
+.alarm h4{margin:0 0 4px;font-size:18px}
+.alarm p{margin:0 0 10px;color:#C8D6CD;font-size:15px}
+.alarm button{background:rgba(255,255,255,.16);color:#F2EFE4;border-radius:8px;
+  padding:9px 14px;font-weight:600;margin-right:8px}
 .menuitem{display:block;width:100%;text-align:left;padding:16px 14px;font-size:17px;
   border-bottom:1px solid #F0EEE7}
 .menuitem:last-child{border-bottom:none}
@@ -241,6 +269,7 @@ input[name="postcode"]{text-transform:uppercase}
       <option value="az-company">A&ndash;Z by business name</option>
       <option value="birthdays">Birthdays</option>
     </select>
+    <button id="diaryBtn">Diary<span id="dueDot"></span></button>
     <button id="menuBtn">Menu</button>
   </header>
   <div class="searchwrap">
@@ -263,6 +292,18 @@ input[name="postcode"]{text-transform:uppercase}
   <div class="sheetbar"><button id="edCancel">Cancel</button>
     <span class="title" id="edTitle">Add a contact</span><button id="edSave">Save</button></div>
   <div class="sheetbody" id="edBody"></div>
+</div>
+
+<div id="diary" class="sheet hidden">
+  <div class="sheetbar"><button id="diaryBack">Back</button>
+    <span class="title">Diary</span><button id="diaryAdd">Add</button></div>
+  <div class="sheetbody" id="diaryBody"></div>
+</div>
+
+<div id="itemEd" class="sheet hidden">
+  <div class="sheetbar"><button id="itCancel">Cancel</button>
+    <span class="title" id="itTitle">New</span><button id="itSave">Save</button></div>
+  <div class="sheetbody" id="itBody"></div>
 </div>
 
 <div id="menu" class="sheet hidden">
@@ -297,8 +338,9 @@ input[name="postcode"]{text-transform:uppercase}
 /* ============================================================
    SETTINGS — paste your two values here.
    ============================================================ */
-const SUPABASE_URL = 'https://uloptfmzydaxymhecuub.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const START_LINK = 'https://shared-contacts.github.io/Contacts/start.html';
 
 /* The canal network, drawn from Canal & River Trust open data.
    Leave as is to fetch it live, or download the file once, put it in
@@ -337,7 +379,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help']
+  return ['detail','editor','settings','menu','help','diary','itemEd']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -392,7 +434,7 @@ function socialUrl(label,value){
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,s,k,c,l,u,sh,pt]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt,it,ish]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
@@ -400,13 +442,17 @@ async function loadAll(){
     sb.from('relationships').select('*'),
     sb.from('profiles').select('*'),
     sb.from('contact_shares').select('*'),
-    sb.from('pet_types').select('*').order('sort_order')
+    sb.from('pet_types').select('*').order('sort_order'),
+    sb.from('items').select('*'),
+    sb.from('item_shares').select('*')
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
   PETS=pt.data||[];
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
+  ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
+  paintDue();
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
   renderChips();render();
 }
@@ -803,6 +849,17 @@ async function openDetail(id, keepPlace){
         +`<div class="field"><dd><button class="addmore" data-maps="${c.latitude},${c.longitude}">Open in maps app</button></dd></div>`
       : '');
 
+  const mine=ITEMS.filter(x=>x.contact_id===c.id&&!x.done_at)
+    .sort((a,b)=>new Date(whenOf(a)||0)-new Date(whenOf(b)||0));
+  const theirItems=(mine.length?mine.map(x=>`<div class="item">
+      <button class="tick" data-done2="${x.id}" aria-label="Mark as done"></button>
+      <button class="mid" data-item2="${x.id}">
+        <span class="t">${esc(x.title)}</span>
+        <span class="w ${isLate(x)?'late':''}">${esc(whenText(x))}</span>
+      </button></div>`).join('')
+    :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing outstanding.</dd></div>')
+    +`<div class="photobar"><button class="addmore" id="addItemHere">+ Add an appointment or to-do</button></div>`;
+
   const shots=arr(c.photos).filter(p=>SIGNED[p.path]);
   const gallery=`
     ${shots.length?`<div class="gallery">${shots.map(p=>`<figure>
@@ -870,6 +927,7 @@ async function openDetail(id, keepPlace){
     ${touch?`<div class="card"><h3>Getting in touch</h3>${touch}</div>`:''}
     ${where?`<div class="card"><h3>Where</h3>${where}</div>`:''}
     <div class="card"><h3>Photos</h3>${gallery}</div>
+    <div class="card"><h3>Diary</h3>${theirItems}</div>
     ${boat?`<div class="card"><h3>Boat</h3>${boat}</div>`:''}
     ${met?`<div class="card"><h3>Where we met</h3>${met}</div>`:''}
     ${work?`<div class="card"><h3>Work</h3>${work}</div>`:''}
@@ -891,6 +949,11 @@ async function openDetail(id, keepPlace){
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
+  const ai=$('addItemHere'); if(ai)ai.onclick=()=>openItem(null,c.id);
+  $('detBody').querySelectorAll('[data-done2]').forEach(b=>
+    b.onclick=()=>toggleDone(Number(b.dataset.done2)));
+  $('detBody').querySelectorAll('[data-item2]').forEach(b=>
+    b.onclick=()=>openItem(ITEMS.find(x=>x.id===Number(b.dataset.item2))));
   const ap=$('addPhoto'); if(ap)ap.onchange=e=>uploadPhoto(e.target.files[0],false);
   const av=$('addAvatar'); if(av)av.onchange=e=>uploadPhoto(e.target.files[0],true);
   const ra=$('rmAvatar'); if(ra)ra.onclick=()=>removePhoto(CURRENT.avatar_path,true);
@@ -1519,6 +1582,19 @@ function openHelp(){
   in the main list, and is always your own choice, so the list stays readable.
   Two is about the most that fits.</p>
 
+  <h4>Diary</h4>
+  <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
+  number beside it is how many are due today or already overdue.</p>
+  <p>A <strong>to-do</strong> is due by a time, and can have a "not before" date
+  if it shouldn't be started yet. An <strong>appointment</strong> has a start and
+  an end. Either can be attached to a contact, in which case it also shows on
+  their page, and either can repeat.</p>
+  <p>Tap the circle to mark something done. A repeating item rolls forward to its
+  next date instead of disappearing.</p>
+  <p>Reminders chime and pop up while the app is open. Tap <strong>Turn on
+  alerts</strong> in the Diary the first time, so the phone lets it show a
+  notification.</p>
+
   <h4>Sharing</h4>
   <p>Everything you add is private to you until you share it. On a contact,
   scroll to <strong>Sharing</strong> and tick the person. If that contact is
@@ -1560,6 +1636,374 @@ function openHelp(){
   $('helpBody').scrollTop=0;lockBackground();
 }
 
+
+/* ============================================================
+   Diary: appointments and to-dos
+   ============================================================ */
+let ITEMS=[], ITEM_SHARES=[], DIARY_DONE=false, EDIT_ITEM=null, ITEM_KIND='todo';
+
+const REMIND_CHOICES=[
+  ['','No reminder'],['0','At the time'],['10','10 minutes before'],
+  ['30','30 minutes before'],['60','1 hour before'],['120','2 hours before'],
+  ['360','6 hours before'],['1440','1 day before'],['2880','2 days before'],
+  ['10080','1 week before']
+];
+const REPEATS=[['none','Does not repeat'],['daily','Every day'],['weekly','Every week'],
+  ['fortnightly','Every fortnight'],['monthly','Every month'],['yearly','Every year']];
+
+const whenOf = it => it.kind==='appointment' ? it.starts_at : it.due_at;
+
+function localValue(iso){            // ISO -> value for datetime-local
+  if(!iso) return '';
+  const d=new Date(iso);
+  const pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+const isoValue = v => v ? new Date(v).toISOString() : null;
+
+function whenText(it){
+  const w=whenOf(it);
+  if(!w) return 'No date';
+  const d=new Date(w), now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const that =new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const days=Math.round((that-today)/86400000);
+  const time=it.all_day?'':d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  let day;
+  if(days===0) day='Today';
+  else if(days===1) day='Tomorrow';
+  else if(days===-1) day='Yesterday';
+  else if(days>1&&days<7) day=d.toLocaleDateString('en-GB',{weekday:'long'});
+  else day=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',
+        year:d.getFullYear()===now.getFullYear()?undefined:'numeric'});
+  let txt=[day,time].filter(Boolean).join(', ');
+  if(it.kind==='todo'&&it.due_from&&new Date(it.due_from)>now)
+    txt='from '+new Date(it.due_from).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' until '+txt;
+  return txt;
+}
+const isLate = it => !it.done_at && whenOf(it) && new Date(whenOf(it)) < new Date();
+
+function dueSoonCount(){
+  const end=new Date(); end.setHours(23,59,59,999);
+  return ITEMS.filter(it=>!it.done_at&&whenOf(it)&&new Date(whenOf(it))<=end).length;
+}
+function paintDue(){
+  const n=dueSoonCount(), dot=$('dueDot');
+  dot.textContent=n; dot.className=n?'on':'';
+}
+
+/* ---------- the diary list ---------- */
+function openDiary(){
+  renderDiary();
+  $('diary').classList.remove('hidden'); $('diaryBody').scrollTop=0; lockBackground();
+}
+
+function renderDiary(){
+  const live=ITEMS.filter(it=>DIARY_DONE ? it.done_at : !it.done_at);
+  live.sort((a,b)=>{
+    const wa=whenOf(a), wb=whenOf(b);
+    if(!wa&&!wb) return a.title.localeCompare(b.title);
+    if(!wa) return 1;
+    if(!wb) return -1;
+    return new Date(wa)-new Date(wb);
+  });
+
+  const now=new Date();
+  const midnight=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const bucketOf=it=>{
+    const w=whenOf(it);
+    if(!w) return 'No date set';
+    const d=new Date(w);
+    const days=Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-midnight)/86400000);
+    if(days<0) return 'Overdue';
+    if(days===0) return 'Today';
+    if(days===1) return 'Tomorrow';
+    if(days<7) return 'This week';
+    if(days<31) return 'This month';
+    return 'Later';
+  };
+
+  let html=`<div class="kindpick">
+      <button data-dv="open"  aria-pressed="${!DIARY_DONE}">To come</button>
+      <button data-dv="done"  aria-pressed="${DIARY_DONE}">Finished</button>
+    </div>`;
+
+  if(!live.length){
+    html+=`<div class="card"><div class="field"><dd>${DIARY_DONE
+      ?'Nothing finished yet.':'Nothing due. Tap Add to put something in.'}</dd></div></div>`;
+  }else{
+    let last=null, open=false;
+    live.forEach(it=>{
+      const b=bucketOf(it);
+      if(b!==last){
+        if(open) html+='</div>';
+        html+=`<p class="dsec">${esc(b)}</p><div class="card">`;
+        last=b; open=true;
+      }
+      const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
+      html+=`<div class="item">
+        <button class="tick ${it.done_at?'on':''}" data-done="${it.id}"
+          aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
+        <button class="mid" data-item="${it.id}">
+          <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
+          <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}</span>
+          ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
+        </button></div>`;
+    });
+    if(open) html+='</div>';
+  }
+
+  if(!('Notification' in window) || Notification.permission!=='granted')
+    html+=`<div class="card"><h3>Alerts</h3>
+      <div class="field"><dd>Let this device show a reminder and chime when something
+      falls due while the app is open.</dd></div>
+      <div class="setadd"><button class="btn primary" id="askAlerts">Turn on alerts</button></div></div>`;
+
+  $('diaryBody').innerHTML=html;
+  $('diaryBody').querySelectorAll('[data-dv]').forEach(b=>b.onclick=()=>{
+    DIARY_DONE=b.dataset.dv==='done'; renderDiary(); });
+  $('diaryBody').querySelectorAll('[data-done]').forEach(b=>
+    b.onclick=()=>toggleDone(Number(b.dataset.done)));
+  $('diaryBody').querySelectorAll('[data-item]').forEach(b=>
+    b.onclick=()=>openItem(ITEMS.find(x=>x.id===Number(b.dataset.item))));
+  const aa=$('askAlerts');
+  if(aa) aa.onclick=async()=>{
+    const r=await Notification.requestPermission();
+    toast(r==='granted'?'Alerts are on':'Alerts stayed off');
+    renderDiary();
+  };
+}
+
+/* ---------- adding and editing ---------- */
+function openItem(it, presetContact){
+  EDIT_ITEM = it || null;
+  ITEM_KIND = it ? it.kind : 'todo';
+  const cid = it ? it.contact_id : (presetContact||null);
+  $('itTitle').textContent = it ? 'Edit' : 'New';
+
+  $('itBody').innerHTML=`<form id="itForm">
+    <div class="kindpick">
+      <button type="button" data-kind="todo" aria-pressed="${ITEM_KIND==='todo'}">To-do</button>
+      <button type="button" data-kind="appointment" aria-pressed="${ITEM_KIND==='appointment'}">Appointment</button>
+    </div>
+    <fieldset><legend>What</legend>
+      <label>Title<input name="title" required></label>
+      <label>About which contact<select name="contact_id">
+        <option value="">&mdash; nobody in particular &mdash;</option>
+        ${CONTACTS.slice().sort(byName).map(c=>
+          `<option value="${c.id}">${esc(fullName(c))}</option>`).join('')}
+      </select></label>
+      <label>Notes<textarea name="notes" rows="3"></textarea></label>
+    </fieldset>
+
+    <fieldset id="fsAppt"><legend>When</legend>
+      <label>Starts<input type="datetime-local" name="starts_at"></label>
+      <label>Ends<input type="datetime-local" name="ends_at"></label>
+      <div class="checks"><label><input type="checkbox" name="all_day"> All day</label></div>
+    </fieldset>
+
+    <fieldset id="fsTodo"><legend>When it needs doing</legend>
+      <label>Due by<input type="datetime-local" name="due_at"></label>
+      <label>Not before (leave empty if it can be done now)
+        <input type="datetime-local" name="due_from"></label>
+    </fieldset>
+
+    <fieldset><legend>Reminder</legend>
+      <label>Remind me<select name="remind_mins">
+        ${REMIND_CHOICES.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+      </select></label>
+      <label>Repeat<select name="repeat_every">
+        ${REPEATS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+      </select></label>
+    </fieldset>
+
+    ${it?'<button type="button" class="btn danger" id="itDelete">Delete this</button>':''}
+  </form>`;
+
+  const f=$('itForm');
+  if(it){
+    f.elements['title'].value=it.title||'';
+    f.elements['notes'].value=it.notes||'';
+    f.elements['starts_at'].value=localValue(it.starts_at);
+    f.elements['ends_at'].value=localValue(it.ends_at);
+    f.elements['due_at'].value=localValue(it.due_at);
+    f.elements['due_from'].value=localValue(it.due_from);
+    f.elements['all_day'].checked=!!it.all_day;
+    f.elements['remind_mins'].value=it.remind_mins==null?'':String(it.remind_mins);
+    f.elements['repeat_every'].value=it.repeat_every||'none';
+    $('itDelete').onclick=()=>deleteItem(it);
+  }else{
+    const soon=new Date(Date.now()+60*60*1000);
+    soon.setMinutes(0,0,0);
+    f.elements['due_at'].value=localValue(soon);
+    f.elements['starts_at'].value=localValue(soon);
+    f.elements['remind_mins'].value='60';
+  }
+  if(cid) f.elements['contact_id'].value=String(cid);
+
+  const applyKind=()=>{
+    $('fsAppt').style.display = ITEM_KIND==='appointment' ? '' : 'none';
+    $('fsTodo').style.display = ITEM_KIND==='todo' ? '' : 'none';
+    $('itBody').querySelectorAll('[data-kind]').forEach(b=>
+      b.setAttribute('aria-pressed', b.dataset.kind===ITEM_KIND));
+  };
+  $('itBody').querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{
+    ITEM_KIND=b.dataset.kind; applyKind(); });
+  applyKind();
+
+  $('itemEd').classList.remove('hidden'); $('itBody').scrollTop=0; lockBackground();
+}
+
+async function saveItem(){
+  const f=$('itForm');
+  const title=f.elements['title'].value.trim();
+  if(!title){ toast('Give it a title'); return; }
+
+  const d={
+    kind:ITEM_KIND, title,
+    notes:f.elements['notes'].value.trim()||null,
+    contact_id:f.elements['contact_id'].value?Number(f.elements['contact_id'].value):null,
+    repeat_every:f.elements['repeat_every'].value,
+    all_day:f.elements['all_day'].checked,
+    starts_at:null, ends_at:null, due_at:null, due_from:null
+  };
+  if(ITEM_KIND==='appointment'){
+    d.starts_at=isoValue(f.elements['starts_at'].value);
+    d.ends_at  =isoValue(f.elements['ends_at'].value);
+    if(!d.starts_at){ toast('An appointment needs a start time'); return; }
+  }else{
+    d.due_at  =isoValue(f.elements['due_at'].value);
+    d.due_from=isoValue(f.elements['due_from'].value);
+  }
+
+  const mins=f.elements['remind_mins'].value;
+  d.remind_mins = mins===''?null:Number(mins);
+  const anchor = whenOf(d);
+  d.remind_at = (d.remind_mins!=null && anchor)
+    ? new Date(new Date(anchor).getTime() - d.remind_mins*60000).toISOString()
+    : null;
+
+  $('itSave').disabled=true;
+  let err;
+  if(EDIT_ITEM){
+    const r=await sb.from('items').update(d)
+      .eq('id',EDIT_ITEM.id).eq('updated_at',EDIT_ITEM.updated_at).select();
+    err=r.error;
+    if(!err && (!r.data||!r.data.length)){
+      $('itSave').disabled=false;
+      alert('Someone else changed this while you had it open, so nothing was saved.');
+      await loadAll(); $('itemEd').classList.add('hidden'); lockBackground(); renderDiary();
+      return;
+    }
+  }else{
+    d.created_by=ME.id;
+    err=(await sb.from('items').insert(d)).error;
+  }
+  $('itSave').disabled=false;
+  if(err){ toast('Could not save'); console.error(err); return; }
+  $('itemEd').classList.add('hidden'); lockBackground();
+  await loadAll();
+  if(!$('diary').classList.contains('hidden')) renderDiary();
+  if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
+  toast('Saved');
+}
+
+async function deleteItem(it){
+  if(!confirm('Delete "'+it.title+'"?')) return;
+  const {error}=await sb.from('items').delete().eq('id',it.id);
+  if(error){ toast('Could not delete'); return; }
+  $('itemEd').classList.add('hidden'); lockBackground();
+  await loadAll(); renderDiary(); toast('Deleted');
+}
+
+function nextDate(iso, every){
+  const d=new Date(iso);
+  if(every==='daily')       d.setDate(d.getDate()+1);
+  else if(every==='weekly') d.setDate(d.getDate()+7);
+  else if(every==='fortnightly') d.setDate(d.getDate()+14);
+  else if(every==='monthly')d.setMonth(d.getMonth()+1);
+  else if(every==='yearly') d.setFullYear(d.getFullYear()+1);
+  else return null;
+  return d.toISOString();
+}
+
+async function toggleDone(id){
+  const it=ITEMS.find(x=>x.id===id);
+  if(!it) return;
+  if(it.done_at){
+    const {error}=await sb.from('items').update({done_at:null}).eq('id',id);
+    if(error){ toast('Could not change that'); return; }
+  }else if(it.repeat_every&&it.repeat_every!=='none'&&whenOf(it)){
+    // A repeating item rolls forward instead of disappearing
+    const field=it.kind==='appointment'?'starts_at':'due_at';
+    const nxt=nextDate(whenOf(it),it.repeat_every);
+    const patch={[field]:nxt};
+    if(it.kind==='appointment'&&it.ends_at) patch.ends_at=nextDate(it.ends_at,it.repeat_every);
+    if(it.due_from) patch.due_from=nextDate(it.due_from,it.repeat_every);
+    patch.remind_at = it.remind_mins!=null
+      ? new Date(new Date(nxt).getTime()-it.remind_mins*60000).toISOString() : null;
+    const {error}=await sb.from('items').update(patch).eq('id',id);
+    if(error){ toast('Could not roll it forward'); return; }
+    toast('Done — moved to '+whenText({...it,[field]:nxt}));
+  }else{
+    const {error}=await sb.from('items').update({done_at:new Date().toISOString()}).eq('id',id);
+    if(error){ toast('Could not change that'); return; }
+  }
+  await loadAll();
+  renderDiary();
+  if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
+}
+
+/* ---------- alerts while the app is open ---------- */
+let RUNG=new Set();
+try{ RUNG=new Set(JSON.parse(localStorage.getItem('rung')||'[]')); }catch(e){}
+function remember(id){
+  RUNG.add(id);
+  try{ localStorage.setItem('rung',JSON.stringify([...RUNG].slice(-300))); }catch(e){}
+}
+
+function chime(){
+  try{
+    const A=new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.22].forEach((t,i)=>{
+      const o=A.createOscillator(), g=A.createGain();
+      o.type='sine'; o.frequency.value=i?784:587.33;
+      g.gain.setValueAtTime(0.0001,A.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.3,A.currentTime+t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,A.currentTime+t+0.32);
+      o.connect(g); g.connect(A.destination);
+      o.start(A.currentTime+t); o.stop(A.currentTime+t+0.34);
+    });
+  }catch(e){}
+}
+
+function showAlarm(it){
+  document.querySelectorAll('.alarm').forEach(a=>a.remove());
+  const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
+  const box=document.createElement('div');
+  box.className='alarm';
+  box.innerHTML=`<h4>${esc(it.title)}</h4>
+    <p>${esc(whenText(it))}${c?' &middot; '+esc(fullName(c)):''}</p>
+    <button data-open>Open it</button><button data-shut>Dismiss</button>`;
+  document.body.appendChild(box);
+  box.querySelector('[data-shut]').onclick=()=>box.remove();
+  box.querySelector('[data-open]').onclick=()=>{ box.remove(); openDiary(); openItem(it); };
+  if('Notification' in window && Notification.permission==='granted'){
+    try{ new Notification(it.title,{body:whenText(it),tag:'item'+it.id}); }catch(e){}
+  }
+  chime();
+}
+
+setInterval(()=>{
+  if(!ME) return;
+  const now=Date.now();
+  ITEMS.filter(it=>!it.done_at && it.remind_at && !RUNG.has(it.id))
+       .forEach(it=>{
+         const t=new Date(it.remind_at).getTime();
+         if(t<=now && now-t < 6*60*60*1000){ remember(it.id); showAlarm(it); }
+       });
+}, 30*1000);
+
 /* ---------- wiring ---------- */
 $('signinBtn').onclick=async()=>{
   const b=$('signinBtn');b.disabled=true;
@@ -1575,6 +2019,11 @@ $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBackground();};
 $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();};
+$('diaryBtn').onclick=openDiary;
+$('diaryBack').onclick=()=>{$('diary').classList.add('hidden');lockBackground();};
+$('diaryAdd').onclick=()=>openItem(null);
+$('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
+$('itSave').onclick=saveItem;
 $('menuBtn').onclick=()=>{
   $('whoami').textContent='Signed in as '+(ME.email||'');
   $('menu').classList.remove('hidden');lockBackground();

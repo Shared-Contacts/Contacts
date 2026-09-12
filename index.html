@@ -479,6 +479,7 @@ async function loadAll(){
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
   const rt=await sb.from('routines').select('*').order('sort_order');
+  if(rt.error){ console.error('routines',rt.error); toast('Regular jobs list unavailable'); }
   ROUTINES=rt.data||[];
   paintDue();
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
@@ -1822,8 +1823,6 @@ function renderDiary(){
   else if(DIARY_VIEW==='routine') html+=diaryRoutine();
   else                            html+=diaryMonth();
 
-  wireRoutine();
-
   if(DIARY_VIEW!=='routine' && (!('Notification' in window) || Notification.permission!=='granted'))
     html+=`<div class="card"><h3>Alerts</h3>
       <div class="field"><dd>Let this device show a reminder and chime when something
@@ -1831,6 +1830,7 @@ function renderDiary(){
       <div class="setadd"><button class="btn primary" id="askAlerts">Turn on alerts</button></div></div>`;
 
   $('diaryBody').innerHTML=html;
+  wireRoutine();
 
   $('diaryBody').querySelectorAll('[data-dview]').forEach(b=>b.onclick=()=>{
     DIARY_VIEW=b.dataset.dview;
@@ -1889,7 +1889,7 @@ function diaryRoutine(){
     <div class="setadd">
       <input id="rtTitle" placeholder="What needs doing">
       <input id="rtHead" list="dlHead" placeholder="Heading (optional), e.g. Boat">
-      <datalist id="dlHead">${[...new Set(ROUTINES.map(r=>r.heading).filter(Boolean))]
+      <datalist id="dlHead">${knownHeadings()
         .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
       <button class="btn primary" id="rtAdd">Add it</button>
     </div></div>`;
@@ -1900,6 +1900,20 @@ function diaryRoutine(){
       <button class="btn" id="rtReset" style="border:1.5px solid var(--rule)">
         Untick everything &mdash; start the round again</button></div></div>`;
   return html;
+}
+
+// Headings you have used before, kept on this device so they still offer
+// themselves after the last job under a heading is ticked off or removed.
+function knownHeadings(){
+  let saved=[];
+  try{ saved=JSON.parse(localStorage.getItem('headings')||'[]'); }catch(e){}
+  const live=ROUTINES.map(r=>r.heading).filter(Boolean);
+  return [...new Set([...live,...saved])].sort((a,b)=>a.localeCompare(b));
+}
+function rememberHeading(h){
+  if(!h) return;
+  const all=[...new Set([h,...knownHeadings()])].slice(0,40);
+  try{ localStorage.setItem('headings',JSON.stringify(all)); }catch(e){}
 }
 
 function routineRow(r){
@@ -1944,12 +1958,14 @@ function wireRoutine(){
   if(add) add.onclick=async()=>{
     const t=$('rtTitle').value.trim();
     if(!t){toast('Give it a name');return;}
+    const head=$('rtHead').value.trim()||null;
     const {error}=await sb.from('routines').insert({
-      created_by:ME.id, title:t,
-      heading:$('rtHead').value.trim()||null,
+      created_by:ME.id, title:t, heading:head,
       sort_order:Math.max(100,...ROUTINES.map(x=>x.sort_order))+1});
     if(error){toast('Could not add it');console.error(error);return;}
+    rememberHeading(head);
     await loadAll(); renderDiary(); toast('Added');
+    const h=$('rtHead'); if(h) h.value=head||'';
   };
   const reset=$('rtReset');
   if(reset) reset.onclick=async()=>{

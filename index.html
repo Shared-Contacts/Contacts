@@ -1837,6 +1837,7 @@ function renderDiary(){
     slot.innerHTML=h;
     const on=$('pushOn');  if(on)  on.onclick=enablePush;
     const off=$('pushOff'); if(off) off.onclick=disablePush;
+    const rt=$('pushRetry'); if(rt) rt.onclick=()=>renderDiary();
   });
   wireRoutine();
 
@@ -2375,9 +2376,20 @@ function pushPossible(){
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
 
+// serviceWorker.ready never resolves if the worker failed to register,
+// so never wait on it indefinitely.
+async function swReady(ms){
+  if(!('serviceWorker' in navigator)) return null;
+  return await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise(r=>setTimeout(()=>r(null), ms||4000))
+  ]);
+}
+
 async function currentSubscription(){
   if(!pushPossible()) return null;
-  const reg=await navigator.serviceWorker.ready;
+  const reg=await swReady();
+  if(!reg) return null;
   return await reg.pushManager.getSubscription();
 }
 
@@ -2386,7 +2398,8 @@ async function enablePush(){
   const perm=await Notification.requestPermission();
   if(perm!=='granted'){ toast('Reminders stayed off'); return; }
   try{
-    const reg=await navigator.serviceWorker.ready;
+    const reg=await swReady(8000);
+    if(!reg){ toast('The background worker is not running — reload the app'); return; }
     let sub=await reg.pushManager.getSubscription();
     if(!sub) sub=await reg.pushManager.subscribe({
       userVisibleOnly:true,
@@ -2426,12 +2439,19 @@ async function loadDevices(){
 }
 
 async function pushCard(){
+  const reg=await swReady();
   const sub=await currentSubscription();
   const here=sub && MY_DEVICES.some(d=>d.endpoint===sub.endpoint);
   const others=MY_DEVICES.filter(d=>!sub||d.endpoint!==sub.endpoint);
   return `<div class="card"><h3>Reminders on this device</h3>
     ${!pushPossible()
       ? '<div class="field"><dd>This browser cannot receive reminders. On an iPhone, add the app to your home screen first.</dd></div>'
+      : !reg
+      ? `<div class="field"><dd>The background worker has not started, so reminders
+           cannot be switched on yet. Close the app completely and open it again.
+           If it keeps saying this, sw.js may be missing from the site.</dd></div>
+         <div class="setadd"><button class="btn" id="pushRetry"
+           style="border:1.5px solid var(--rule)">Try again</button></div>`
       : here
         ? `<div class="field"><dd>On. Reminders will reach you even when the app is closed.</dd></div>
            <div class="setadd"><button class="btn" id="pushOff"
@@ -2513,7 +2533,8 @@ async function start(){
 start();
 
 if('serviceWorker' in navigator)
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js')
+    .catch(err=>{ console.error('service worker did not register:',err); });
 </script>
 </body>
 </html>

@@ -342,6 +342,15 @@ i.key{vertical-align:middle}
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
     </div>
+    <div class="card"><h3>Your password</h3>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Change it to something you will remember. At least eight characters.
+        It applies everywhere you sign in.</dd></div>
+      <div class="setadd">
+        <input id="pw1" type="password" placeholder="New password" autocomplete="new-password">
+        <input id="pw2" type="password" placeholder="Type it again" autocomplete="new-password">
+        <button class="btn primary" id="pwSave">Change my password</button>
+      </div></div>
     <p class="coords" id="whoami"></p>
   </div>
 </div>
@@ -1549,6 +1558,13 @@ function openHelp(){
   <p class="lead">Everything here is stored online, so you and Sandra see the same
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
 
+  <h4>Your password</h4>
+  <p>Menu &rsaquo; <strong>Your password</strong> changes it to whatever you like.
+  It takes effect immediately and applies on every device you sign in on, so if
+  you are signed in elsewhere, use the new one there next time.</p>
+  <p>There is no "forgotten password" email. If you are locked out, Barry can set
+  a new one for you.</p>
+
   <h4>Setting someone up</h4>
   <p>Send a new user this link. It gives them the address, how to sign in, how
   to add it to their phone, and what is private versus shared:</p>
@@ -2489,6 +2505,17 @@ $('menuBtn').onclick=()=>{
   $('menu').classList.remove('hidden');lockBackground();
 };
 $('menuBack').onclick=()=>{$('menu').classList.add('hidden');lockBackground();};
+$('pwSave').onclick=async()=>{
+  const a=$('pw1').value, b=$('pw2').value;
+  if(a.length<8){ toast('Make it at least eight characters'); return; }
+  if(a!==b){ toast('The two do not match'); return; }
+  $('pwSave').disabled=true;
+  const {error}=await sb.auth.updateUser({password:a});
+  $('pwSave').disabled=false;
+  if(error){ toast(error.message||'Could not change it'); return; }
+  $('pw1').value=''; $('pw2').value='';
+  toast('Password changed');
+};
 $('refreshBtn').onclick=async()=>{ await loadAll(); toast('Up to date'); };
 $('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>{$('help').classList.add('hidden');lockBackground();};

@@ -98,10 +98,10 @@ ul.list li.alt{background:#F3F1EA}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheetbody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
-#edBody{max-width:1080px}
+#edBody,#logEdBody{max-width:1080px}
 @media (min-width:900px){
-  #edBody form{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
-  #edBody .colA,#edBody .colB{min-width:0}
+  #edBody form,#logEdBody form{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
+  #edBody .colA,#edBody .colB,#logEdBody .colA,#logEdBody .colB{min-width:0}
   #edBody .btn.danger{grid-column:1 / -1;max-width:340px}
 }
 
@@ -296,6 +296,7 @@ i.key{vertical-align:middle}
       <option value="birthdays">Birthdays</option>
     </select>
     <button id="diaryBtn">Diary<span id="dueDot"></span></button>
+    <button id="logBtn">Log</button>
     <button id="menuBtn">Menu</button>
   </header>
   <div class="searchwrap">
@@ -330,6 +331,18 @@ i.key{vertical-align:middle}
   <div class="sheetbar"><button id="itCancel">Cancel</button>
     <span class="title" id="itTitle">New</span><button id="itSave">Save</button></div>
   <div class="sheetbody" id="itBody"></div>
+</div>
+
+<div id="log" class="sheet hidden">
+  <div class="sheetbar"><button id="logBack">Back</button>
+    <span class="title">Captain's log</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="logBody"></div>
+</div>
+
+<div id="logEd" class="sheet hidden">
+  <div class="sheetbar"><button id="logEdCancel">Cancel</button>
+    <span class="title" id="logEdTitle"></span><button id="logEdSave">Save</button></div>
+  <div class="sheetbody" id="logEdBody"></div>
 </div>
 
 <div id="menu" class="sheet hidden">
@@ -416,7 +429,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -1647,6 +1660,19 @@ function openHelp(){
   in the main list, and is always your own choice, so the list stays readable.
   Two is about the most that fits.</p>
 
+  <h4>Captain's log</h4>
+  <p><strong>Log</strong> in the green bar keeps one entry a day: blood pressure,
+  medication, where the boat is, engine hours, what you took on, who was aboard
+  and what happened.</p>
+  <p>Today's entry is created for you the first time you open the Log each day.
+  The boat's position, the canal, who is aboard and the engine hours are carried
+  over from your last entry, so on a day you have not moved there is nothing to
+  change. Move the pin or edit the hours when they do change.</p>
+  <p>The arrows at the top step back and forward through the days. The log is
+  private to you.</p>
+  <p>To be reminded, put a repeating daily to-do in the Diary &mdash; "fill in the
+  log", every day, at whatever time suits.</p>
+
   <h4>Diary</h4>
   <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
   number beside it is how many are due today or already overdue.</p>
@@ -2480,6 +2506,290 @@ async function pushCard(){
     </div>`;
 }
 
+
+/* ============================================================
+   The daily log
+   ============================================================ */
+let LOGDAYS=[], LOG_DATE=null;
+
+const LOG_FIELDS_NUM=['am_sys','am_dia','am_pulse','noon_sys','noon_dia','noon_pulse',
+  'pm_sys','pm_dia','pm_pulse','pills_left','exercise_score','steps','pob_tonight',
+  'wifi_quality','weight_kg','waist_cm','hip_cm','hours_start','hours_end',
+  'v_down','v_up','three_down','three_up'];
+const LOG_FIELDS_TXT=['medication','ointment','bike_ride','diary_notes','regular_chores',
+  'drinks','alcohol','pub_cafe','attractions','who_aboard','overnight_guests',
+  'diesel_pumpout_at','coal_gas_at','boat_address','current_canal','journey'];
+const LOG_FIELDS_BOOL=['tablets_taken','walked','boated','stretches','diesel','pump_out',
+  'coal','lpg_gas','water','rubbish','oil_water_checked'];
+
+const isoDay = d => {
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+};
+const dayLabel = iso => {
+  const [y,m,d]=iso.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('en-GB',
+    {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+};
+
+async function loadLog(){
+  const {data,error}=await sb.from('log_days').select('*')
+    .order('on_date',{ascending:false}).limit(400);
+  if(error){ console.error('log',error); toast('Log unavailable'); return; }
+  LOGDAYS=data||[];
+}
+
+// Carries yesterday's position and engine hours forward, as they rarely change
+// overnight and retyping them every day would be a chore.
+function carriedFrom(beforeIso){
+  return LOGDAYS.find(d=>d.on_date<beforeIso) || null;
+}
+
+async function ensureToday(){
+  const today=isoDay(new Date());
+  if(LOGDAYS.some(d=>d.on_date===today)) return today;
+  const prev=carriedFrom(today);
+  const seed={created_by:ME.id, on_date:today};
+  if(prev){
+    ['boat_lat','boat_lng','boat_address','current_canal',
+     'barry_lat','barry_lng','sandra_lat','sandra_lng',
+     'medication','who_aboard'].forEach(k=>{ if(prev[k]!=null) seed[k]=prev[k]; });
+    if(prev.hours_end!=null){ seed.hours_start=prev.hours_end; seed.hours_end=prev.hours_end; }
+  }
+  const {error}=await sb.from('log_days').insert(seed);
+  if(error && error.code!=='23505'){ console.error(error); toast('Could not start today'); }
+  await loadLog();
+  return today;
+}
+
+async function openLog(){
+  await loadLog();
+  LOG_DATE = await ensureToday();
+  renderLog();
+  $('log').classList.remove('hidden'); $('logBody').scrollTop=0; lockBackground();
+}
+
+function logEntry(iso){ return LOGDAYS.find(d=>d.on_date===iso)||null; }
+
+function renderLog(){
+  const e=logEntry(LOG_DATE);
+  const idx=LOGDAYS.findIndex(d=>d.on_date===LOG_DATE);
+  const older=idx>=0&&idx<LOGDAYS.length-1?LOGDAYS[idx+1].on_date:null;
+  const newer=idx>0?LOGDAYS[idx-1].on_date:null;
+
+  const R=(l,v)=>v===null||v===undefined||v===''?'':
+    `<div class="field"><dt>${l}</dt><dd>${esc(String(v))}</dd></div>`;
+  const yes=v=>v===true?'Yes':v===false?'':'';
+  const bp=(s,d,p)=> (s||d)?`${s??'?'}/${d??'?'}${p?', pulse '+p:''}`:'';
+
+  const avg=(...xs)=>{const v=xs.filter(x=>typeof x==='number');
+    return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null;};
+
+  let body='';
+  if(!e){
+    body='<div class="card"><div class="field"><dd>Nothing recorded that day.</dd></div></div>';
+  }else{
+    const svc=[e.diesel&&'diesel',e.pump_out&&'pump out',e.coal&&'coal',e.lpg_gas&&'gas',
+      e.water&&'water',e.rubbish&&'rubbish',e.oil_water_checked&&'oil and water checked']
+      .filter(Boolean).join(', ');
+    const run=(e.hours_end!=null&&e.hours_start!=null)?(e.hours_end-e.hours_start):null;
+
+    body=`
+      ${R('Boat',e.boat_address)+R('Canal',e.current_canal)
+        +((e.boat_lat&&e.boat_lng)?`<div id="logMap" class="map detail"></div>
+           <div class="field"><dd><button class="addmore" data-maps="${e.boat_lat},${e.boat_lng}">Open in maps app</button></dd></div>`:'')
+        ?`<div class="card"><h3>Where</h3>${R('Boat',e.boat_address)}${R('Canal',e.current_canal)}
+           ${R('Journey',e.journey)}
+           ${(e.barry_lat&&e.barry_lng)?R('Barry elsewhere',e.barry_lat.toFixed(4)+', '+e.barry_lng.toFixed(4)):''}
+           ${(e.sandra_lat&&e.sandra_lng)?R('Sandra elsewhere',e.sandra_lat.toFixed(4)+', '+e.sandra_lng.toFixed(4)):''}
+           ${(e.boat_lat&&e.boat_lng)?'<div id="logMap" class="map detail"></div>':''}</div>`:''}
+
+      ${(e.am_sys||e.noon_sys||e.pm_sys||e.tablets_taken!=null||e.pills_left!=null)?
+        `<div class="card"><h3>Readings</h3>
+          ${R('Morning',bp(e.am_sys,e.am_dia,e.am_pulse))}
+          ${R('Midday',bp(e.noon_sys,e.noon_dia,e.noon_pulse))}
+          ${R('Evening',bp(e.pm_sys,e.pm_dia,e.pm_pulse))}
+          ${R('Average',bp(avg(e.am_sys,e.noon_sys,e.pm_sys),
+                            avg(e.am_dia,e.noon_dia,e.pm_dia),
+                            avg(e.am_pulse,e.noon_pulse,e.pm_pulse)))}
+          ${R('Tablets taken',yes(e.tablets_taken))}
+          ${R('Pills left',e.pills_left)}
+          ${R('Weight',e.weight_kg?e.weight_kg+' kg':'')}
+          ${R('Waist',e.waist_cm?e.waist_cm+' cm':'')}
+        </div>`:''}
+
+      ${(e.walked||e.boated||e.bike_ride||e.exercise_score||e.steps)?
+        `<div class="card"><h3>Activity</h3>
+          ${R('Walked',yes(e.walked))}${R('Boated',yes(e.boated))}
+          ${R('Bike',e.bike_ride)}${R('Steps',e.steps)}
+          ${R('Score out of 5',e.exercise_score)}
+        </div>`:''}
+
+      ${(e.hours_end!=null||svc||e.diesel_pumpout_at||e.coal_gas_at)?
+        `<div class="card"><h3>Boat</h3>
+          ${R('Engine hours',e.hours_end)}
+          ${R('Run today',run!=null&&run>0?run.toFixed(1)+' hrs':'')}
+          ${R('Took on',svc)}
+          ${R('Diesel or pump out at',e.diesel_pumpout_at)}
+          ${R('Coal or gas at',e.coal_gas_at)}
+          ${R('Signal',e.wifi_quality?'quality '+e.wifi_quality:'')}
+        </div>`:''}
+
+      ${(e.who_aboard||e.pob_tonight||e.overnight_guests)?
+        `<div class="card"><h3>Aboard</h3>
+          ${R('Who',e.who_aboard)}${R('On board tonight',e.pob_tonight)}
+          ${R('Guests',e.overnight_guests)}
+        </div>`:''}
+
+      ${(e.diary_notes||e.regular_chores||e.drinks||e.alcohol||e.pub_cafe||e.attractions)?
+        `<div class="card"><h3>The day</h3>
+          ${e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:''}
+          ${R('Chores',e.regular_chores)}${R('Drinks',e.drinks)}${R('Alcohol',e.alcohol)}
+          ${R('Out at',e.pub_cafe)}${R('Visited',e.attractions)}
+        </div>`:''}`;
+  }
+
+  $('logBody').innerHTML=`
+    <div class="mnav">
+      <button ${older?`data-logday="${older}"`:'disabled'} aria-label="Earlier day">&#9664;</button>
+      <span style="font-size:16px;text-align:center">${esc(dayLabel(LOG_DATE))}</span>
+      <button ${newer?`data-logday="${newer}"`:'disabled'} aria-label="Later day">&#9654;</button>
+    </div>
+    <div class="kindpick" style="margin-bottom:14px">
+      <button id="logToday">Today</button>
+      <button id="logEdit">${e?'Fill it in':'Start this day'}</button>
+    </div>
+    ${body}`;
+
+  $('logBody').querySelectorAll('[data-logday]').forEach(b=>b.onclick=()=>{
+    LOG_DATE=b.dataset.logday; killMaps(); renderLog(); });
+  $('logBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
+    const [la,ln]=b.dataset.maps.split(','); openInMaps(la,ln); });
+  $('logToday').onclick=async()=>{ LOG_DATE=await ensureToday(); killMaps(); renderLog(); };
+  $('logEdit').onclick=()=>editLog(LOG_DATE);
+
+  killMaps();
+  if(e&&e.boat_lat&&e.boat_lng) showMap('logMap',e.boat_lat,e.boat_lng,null);
+}
+
+/* ---------- filling it in ---------- */
+function editLog(iso){
+  const e=logEntry(iso)||{};
+  const prev=carriedFrom(iso)||{};
+  const N=(l,n,step)=>`<label>${l}<input name="${n}" type="number" inputmode="decimal"${step?' step="'+step+'"':''}></label>`;
+  const T=(l,n)=>`<label>${l}<input name="${n}"></label>`;
+  const C=(l,n)=>`<label><input type="checkbox" name="${n}"> ${l}</label>`;
+
+  $('logEdTitle').textContent=dayLabel(iso);
+  $('logEdBody').innerHTML=`<form id="logForm">
+   <div class="colA">
+    <fieldset><legend>Blood pressure</legend>
+      <div class="two">${N('Morning systolic','am_sys')}${N('Morning diastolic','am_dia')}</div>
+      ${N('Morning pulse','am_pulse')}
+      <div class="two">${N('Midday systolic','noon_sys')}${N('Midday diastolic','noon_dia')}</div>
+      ${N('Midday pulse','noon_pulse')}
+      <div class="two">${N('Evening systolic','pm_sys')}${N('Evening diastolic','pm_dia')}</div>
+      ${N('Evening pulse','pm_pulse')}
+    </fieldset>
+    <fieldset><legend>Medication</legend>
+      <div class="checks">${C('Tablets taken','tablets_taken')}</div>
+      ${N('Pills left','pills_left')}
+      ${T('What','medication')}
+      ${T('Ointment','ointment')}
+    </fieldset>
+    <fieldset><legend>Body</legend>
+      <div class="two">${N('Weight kg','weight_kg','0.1')}${N('Waist cm','waist_cm','0.1')}</div>
+      ${N('Hip cm','hip_cm','0.1')}
+    </fieldset>
+    <fieldset><legend>Activity</legend>
+      <div class="checks">${C('Walked','walked')}${C('Boated','boated')}${C('Stretches','stretches')}</div>
+      ${T('Bike ride','bike_ride')}
+      <div class="two">${N('Steps','steps')}${N('Score out of 5','exercise_score')}</div>
+    </fieldset>
+   </div>
+   <div class="colB">
+    <fieldset><legend>Where</legend>
+      ${T('Closest address','boat_address')}
+      ${T('Current canal','current_canal')}
+      ${T('Journey','journey')}
+      <div class="geo"><input id="logGeoQ" placeholder="Find where the boat is">
+        <button type="button" id="logGeoGo">Find</button></div>
+      <div id="logEditMap" class="map"></div>
+      <p class="coords" id="logCoords"></p>
+      <p class="coords">Carried over from the last entry. Move the pin if you have moved.</p>
+    </fieldset>
+    <fieldset><legend>Engine and services</legend>
+      <div class="two">${N('Hours at start','hours_start','0.1')}${N('Hours at end','hours_end','0.1')}</div>
+      <div class="checks">${C('Diesel','diesel')}${C('Pump out','pump_out')}${C('Coal','coal')}
+        ${C('Gas','lpg_gas')}${C('Water','water')}${C('Rubbish','rubbish')}
+        ${C('Checked oil and water','oil_water_checked')}</div>
+      ${T('Diesel or pump out at','diesel_pumpout_at')}
+      ${T('Coal or gas at','coal_gas_at')}
+      ${N('Signal quality','wifi_quality')}
+    </fieldset>
+    <fieldset><legend>Aboard</legend>
+      ${T('Who is aboard','who_aboard')}
+      ${N('On board tonight','pob_tonight')}
+      ${T('Overnight guests','overnight_guests')}
+    </fieldset>
+    <fieldset><legend>The day</legend>
+      <label>Diary notes<textarea name="diary_notes" rows="5"></textarea></label>
+      ${T('Regular chores','regular_chores')}
+      ${T('Drinks','drinks')}${T('Alcohol','alcohol')}
+      ${T('Pub, restaurant or cafe','pub_cafe')}
+      ${T('Attractions visited','attractions')}
+    </fieldset>
+   </div>
+  </form>`;
+
+  const f=$('logForm');
+  [...LOG_FIELDS_NUM,...LOG_FIELDS_TXT].forEach(k=>{
+    if(f.elements[k]) f.elements[k].value = e[k]??'';
+  });
+  LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) f.elements[k].checked=!!e[k]; });
+
+  LOGDRAFT={
+    blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null
+  };
+  const showC=()=>{ $('logCoords').textContent = LOGDRAFT.blat
+    ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
+    : 'Tap the map to drop a pin.'; };
+  showC();
+
+  $('logEd').classList.remove('hidden'); $('logEdBody').scrollTop=0; lockBackground();
+  setTimeout(()=>{
+    const m=showMap('logEditMap',LOGDRAFT.blat,LOGDRAFT.blng,
+      (la,ln)=>{LOGDRAFT.blat=la;LOGDRAFT.blng=ln;showC();});
+    $('logGeoGo').onclick=()=>geocode($('logGeoQ').value,m);
+  },100);
+
+  $('logEdSave').onclick=()=>saveLog(iso);
+}
+
+let LOGDRAFT={};
+
+async function saveLog(iso){
+  const f=$('logForm'), d={created_by:ME.id, on_date:iso};
+  LOG_FIELDS_NUM.forEach(k=>{
+    const v=f.elements[k]?f.elements[k].value.trim():'';
+    d[k]= v===''?null:Number(v);
+  });
+  LOG_FIELDS_TXT.forEach(k=>{
+    const v=f.elements[k]?f.elements[k].value.trim():'';
+    d[k]= v===''?null:v;
+  });
+  LOG_FIELDS_BOOL.forEach(k=>{ d[k]=f.elements[k]?f.elements[k].checked:null; });
+  d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng;
+
+  $('logEdSave').disabled=true;
+  const {error}=await sb.from('log_days')
+    .upsert(d,{onConflict:'created_by,on_date'});
+  $('logEdSave').disabled=false;
+  if(error){ toast('Could not save the day'); console.error(error); return; }
+  killMaps(); $('logEd').classList.add('hidden'); lockBackground();
+  await loadLog(); renderLog(); toast('Saved');
+}
+
 /* ---------- wiring ---------- */
 $('signinBtn').onclick=async()=>{
   const b=$('signinBtn');b.disabled=true;
@@ -2496,6 +2806,9 @@ $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBac
 $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();};
 $('diaryBtn').onclick=openDiary;
+$('logBtn').onclick=openLog;
+$('logBack').onclick=()=>{killMaps();$('log').classList.add('hidden');lockBackground();};
+$('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
 $('diaryBack').onclick=()=>{$('diary').classList.add('hidden');lockBackground();};
 $('diaryAdd').onclick=()=>openItem(null);
 $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};

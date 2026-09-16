@@ -289,6 +289,8 @@ i.key{vertical-align:middle}
 .setrow .mv{color:var(--hull);font-size:11px;line-height:1.1;padding:1px 4px}
 .setrow .mv:disabled{opacity:.25}
 .setrow .scope{flex:0 0 auto;font-size:13px;color:var(--muted)}
+.setmv{margin-left:auto;display:flex;gap:2px}
+.setmv .mv{font-size:12px;padding:3px 7px}
 .setadd{padding:12px 14px}
 .setadd input{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
   background:#fff;margin-bottom:8px}
@@ -596,15 +598,40 @@ function dayMonth(d){
 
 // Worked out once per redraw rather than per row
 let PINMAP={};
+// "Child of Gavin Rafferty" and "Child of Helen Rafferty" read better as
+// "Child of Gavin and Helen Rafferty".
+function joinNames(names){
+  if(names.length<2) return names.join('');
+  const parts=names.map(n=>n.trim().split(/\s+/));
+  const surnames=parts.map(p=>p[p.length-1]);
+  const same=surnames.every(x=>x.toLowerCase()===surnames[0].toLowerCase())
+             && parts.every(p=>p.length>1);
+  const bits = same ? parts.map(p=>p.slice(0,-1).join(' ')) : names;
+  const tail = same ? ' '+surnames[0] : '';
+  return (bits.length===2 ? bits.join(' and ')
+          : bits.slice(0,-1).join(', ')+' and '+bits[bits.length-1]) + tail;
+}
+
+function mergeByKind(entries){
+  const order=[], byKind={};
+  entries.forEach(e=>{
+    if(!byKind[e.kind]){ byKind[e.kind]=[]; order.push(e.kind); }
+    if(!byKind[e.kind].includes(e.name)) byKind[e.kind].push(e.name);
+  });
+  return order.map(k=>({kind:k, text:k+' '+joinNames(byKind[k])}));
+}
+
 function buildPinMap(){
   PINMAP={};
+  const raw={};
   const nameOf=id=>{const c=CONTACTS.find(x=>x.id===id);return c?fullName(c):null;};
   LINKS.filter(l=>l.on_tile).forEach(l=>{
     const k=KINDS.find(x=>x.name===l.kind);
     const a=nameOf(l.to_contact), b=nameOf(l.from_contact);
-    if(a)(PINMAP[l.from_contact]=PINMAP[l.from_contact]||[]).push(l.kind+' '+a);
-    if(b)(PINMAP[l.to_contact]=PINMAP[l.to_contact]||[]).push((k?k.inverse_name:l.kind)+' '+b);
+    if(a)(raw[l.from_contact]=raw[l.from_contact]||[]).push({kind:l.kind,name:a});
+    if(b)(raw[l.to_contact]=raw[l.to_contact]||[]).push({kind:k?k.inverse_name:l.kind,name:b});
   });
+  Object.keys(raw).forEach(id=>{ PINMAP[id]=mergeByKind(raw[id]).map(x=>x.text); });
 }
 
 function listName(c){
@@ -621,7 +648,8 @@ function rowHtml(c,nested,birthdayView,alt){
   const detail=[];
   if(c.nickname) detail.push('"'+c.nickname+'"');
   if(age!==null) detail.push(c.death_date?('died at '+age):(age+' yrs'));
-  detail.push(c.boat_name, c.town, c.is_organisation?null:c.company);
+  detail.push(c.boat_name, [c.town,c.country].filter(Boolean).join(', '),
+    c.is_organisation?null:c.company);
   const sub=detail.filter(Boolean).join(' \u00b7 ');
 
   let badge='';
@@ -994,10 +1022,17 @@ async function openDetail(id, keepPlace){
       </span></div>`;
   }).join('');
 
-  const pinned=myLinks.filter(l=>l.pinned).map(l=>{
+  const pinnedRaw=myLinks.filter(l=>l.pinned).map(l=>{
     const o=CONTACTS.find(x=>x.id===l.other);
-    return `<span class="pin"><span class="pk">${esc(l.label)}</span>
-      <button class="pv" data-go="${l.other}">${esc(o?fullName(o):'(hidden)')}</button></span>`;
+    return {kind:l.label, name:o?fullName(o):'(hidden)', id:l.other};
+  });
+  const pinned=mergeByKind(pinnedRaw).map(x=>{
+    const only=pinnedRaw.filter(p=>p.kind===x.kind);
+    const rest=x.text.slice(x.kind.length).trim();
+    return `<span class="pin"><span class="pk">${esc(x.kind)}</span>
+      ${only.length===1
+        ? `<button class="pv" data-go="${only[0].id}">${esc(rest)}</button>`
+        : `<span class="pv">${esc(rest)}</span>`}</span>`;
   }).join('');
 
   const tagNames=(TAGS[c.id]||[]).map(i=>GROUPS.find(g=>g.id===i)).filter(Boolean);
@@ -1481,9 +1516,9 @@ async function deleteContact(c){
 }
 
 /* ---------- settings ---------- */
-function logSectionBlock(){
+function logSectionRows(){
   const secs=mySections();
-  return `<details class="card logsec"><summary>Captain's log &mdash; sections</summary>
+  return `
     <div class="field"><dd style="color:var(--muted);font-size:15px">
       Turn off anything you do not use, and put them in the order you fill them in.
       Where and The day always show in full; the rest start folded away.</dd></div>
@@ -1497,22 +1532,22 @@ function logSectionBlock(){
         <span style="flex:1">${esc(def.label)}${def.fixed?' <span class="scope">always open</span>':''}</span>
         <button class="tg" data-secon="${p.id}" aria-pressed="${p.on}">${p.on?'On':'Off'}</button>
       </div>`;
-    }).join('')}
-  </details>`;
+    }).join('')}`;
 }
 
-function optionBlock(kind,title,one){
-  const rows=LOGOPTS.filter(o=>o.kind===kind);
-  return `<details class="card logsec"><summary>${esc(title)}</summary>
-    ${rows.length?rows.map(r=>`<div class="setrow">
+function optionRows(kind,one){
+  const list=LOGOPTS.filter(o=>o.kind===kind);
+  return `${list.length?list.map(r=>`<div class="setrow">
       <input data-optedit="${r.id}" value="${esc(r.name)}">
+      ${kind==='medication'?`<button class="tg" data-optdaily="${r.id}"
+        aria-pressed="${!!r.is_default}">Daily</button>`:''}
       <button class="x" data-optdrop="${r.id}" aria-label="Remove">&times;</button>
     </div>`).join('')
     :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing yet.</dd></div>'}
     <div class="setadd">
       <input data-optnew="${kind}" placeholder="New ${one}">
       <button class="btn primary" data-optadd="${kind}">Add</button>
-    </div></details>`;
+    </div>`;
 }
 
 async function saveSections(secs){
@@ -1522,15 +1557,46 @@ async function saveSections(secs){
   openSettings();
 }
 
+let SET_OPEN={};
+try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
+
+const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
+  'who_aboard','medication','bike_ride','alcohol','mecontact','shareall','people'];
+const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
+  pet_types:'Kinds of pet',link_kinds:'Connection types',
+  logsections:"Captain's log — sections",who_aboard:'Who is aboard — choices',
+  medication:'Medication — choices',bike_ride:'Bike ride — choices',
+  alcohol:'Alcohol — choices',mecontact:'Which contact is you?',
+  shareall:'Share everything',people:'People who can sign in'};
+
+function mySetOrder(){
+  const saved=MY_PROFILE&&MY_PROFILE.settings_order;
+  const out=Array.isArray(saved)?saved.filter(x=>SET_CARDS.includes(x)):[];
+  SET_CARDS.forEach(k=>{ if(!out.includes(k)) out.push(k); });
+  return out;
+}
+async function saveSetOrder(order){
+  const {error}=await sb.from('profiles').update({settings_order:order}).eq('id',ME.id);
+  if(error){ toast('Could not save that order'); return; }
+  MY_PROFILE={...(MY_PROFILE||{}),settings_order:order};
+  openSettings();
+}
+function setHead(key,i,total){
+  return `<summary>${esc(SET_LABEL[key])}
+    <span class="setmv">
+      <button class="mv" data-setmv="${key}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+      <button class="mv" data-setmv="${key}:down" ${i===total-1?'disabled':''} aria-label="Move down">&#9660;</button>
+    </span></summary>`;
+}
+
 async function openSettings(){
   if(!LOGOPTS.length) await loadLog();
-  const block=(table,title,one,rows,fields,hint,extra)=>`
-    <details class="card logsec"><summary>${title}</summary>
+  const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
-      ${rows.map((r,i)=>`<div class="setrow">
+      ${list.map((r,i)=>`<div class="setrow">
         <span style="display:flex;flex-direction:column;gap:2px">
           <button class="mv" data-mv="${table}:${r.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-          <button class="mv" data-mv="${table}:${r.id}:down" ${i===rows.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+          <button class="mv" data-mv="${table}:${r.id}:down" ${i===list.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
         </span>
         ${fields.map(fd=>`<input data-edit="${table}:${r.id}:${fd}" value="${esc(r[fd]??'')}">`).join('')}
         ${table==='groups'?`<span class="scope">${r.owner_id?'mine':'shared'}</span>`:''}
@@ -1539,71 +1605,60 @@ async function openSettings(){
         ${fields.map(fd=>`<input data-new="${table}:${fd}" placeholder="${fd==='inverse_name'?'Its opposite, e.g. Child of':'New '+one}">`).join('')}
         ${extra||''}
         <button class="btn primary" data-addrow="${table}">Add ${one}</button>
-      </div></details>`;
+      </div>`;
 
-  $('setBody').innerHTML=
-     block('groups','Groups','group',GROUPS,['name'],
-       'Shared groups are used by everyone. Your own are private \u2014 no one else sees them, '
-       +'and a contact someone shares with you is filed under your groups, not theirs.',
-       `<div class="checks" style="margin:0 0 10px"><label>
-          <input type="checkbox" id="grpShared"> Everyone can use this group</label></div>`)
-   + block('statuses','Relationship statuses','status',STATUSES,['name'])
-   + block('pet_types','Kinds of pet','kind',PETS,['name'])
-   + block('link_kinds','Connection types','type',KINDS,['name','inverse_name'],
-       'Each type has an opposite. Store "Parent of" once and the other person\u2019s record shows "Child of" automatically.')
-   + logSectionBlock()
-   + optionBlock('who_aboard','Who is aboard — choices','choice')
-   + optionBlock('medication','Medication — choices','medicine')
-   + optionBlock('bike_ride','Bike ride — choices','choice')
-   + optionBlock('alcohol','Alcohol — choices','choice')
-   + `<details class="card logsec"><summary>Which contact is you?</summary>
-      <div class="field"><dd style="color:var(--muted);font-size:15px">
-      Used to fill in new diary entries.</dd></div>
-      <div class="setadd">
-        <select id="meContact">
-          <option value="">&mdash; not set &mdash;</option>
-          ${CONTACTS.slice().sort(byName).map(c=>
-            `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.my_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
-        </select>
-      </div></details>`
-   + `<details class="card logsec"><summary>Share everything</summary>
-      <div class="field"><dd style="color:var(--muted);font-size:15px">
-      Gives someone every contact you own, including ones you add later only if you repeat this.</dd></div>
+  const order=mySetOrder();
+  const card=(key,inner)=>`<details class="card logsec" data-setcard="${key}"
+    ${SET_OPEN[key]?'open':''}>${setHead(key,order.indexOf(key),order.length)}${inner}</details>`;
+
+  const bodies={
+    groups: rows(  'groups','group',GROUPS,['name'],
+      'Shared groups are used by everyone. Your own are private \u2014 no one else sees them.',
+      `<div class="checks" style="margin:0 0 10px"><label>
+         <input type="checkbox" id="grpShared"> Everyone can use this group</label></div>`),
+    statuses: rows('statuses','status',STATUSES,['name']),
+    pet_types: rows('pet_types','kind',PETS,['name']),
+    link_kinds: rows('link_kinds','type',KINDS,['name','inverse_name'],
+      'Each type has an opposite. Store "Parent of" once and the other record shows "Child of".'),
+    logsections: logSectionRows(),
+    who_aboard: optionRows('who_aboard','choice'),
+    medication: optionRows('medication','medicine'),
+    bike_ride:  optionRows('bike_ride','choice'),
+    alcohol:    optionRows('alcohol','choice'),
+    mecontact: `<div class="field"><dd style="color:var(--muted);font-size:15px">
+        Used to fill in new diary entries.</dd></div>
+      <div class="setadd"><select id="meContact">
+        <option value="">&mdash; not set &mdash;</option>
+        ${CONTACTS.slice().sort(byName).map(c=>
+          `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.my_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
+      </select></div>`,
+    shareall: `<div class="field"><dd style="color:var(--muted);font-size:15px">
+        Gives someone every contact you own. Ones you add later need sharing too.</dd></div>
       ${USERS.length?USERS.map(u=>`<div class="setrow">
         <span style="flex:1">${esc(u.display_name||u.email)}</span>
         <button class="addmore" data-shareall="${u.id}">Share all</button></div>`).join('')
-        :'<div class="field"><dd>No one else has an account yet.</dd></div>'}
-      </details>`
-   + `<details class="card logsec"><summary>People who can sign in</summary>
-      <div class="field"><dd>Accounts are created in the Supabase dashboard under
-      Authentication &rsaquo; Users, then given group access with one line of SQL.
-      That can\u2019t be done here safely \u2014 it needs an admin key which must never
-      sit in a public web page.</dd></div></details>`;
+        :'<div class="field"><dd>No one else has an account yet.</dd></div>'}`,
+    people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
+        under Authentication &rsaquo; Users, then given group access with one line of
+        SQL. That cannot be done here safely \u2014 it needs an admin key which must
+        never sit in a public web page.</dd></div>`
+  };
 
-  $('setBody').querySelectorAll('[data-edit]').forEach(inp=>inp.onchange=async()=>{
-    const [t,id,fd]=inp.dataset.edit.split(':');
-    const {error}=await sb.from(t).update({[fd]:inp.value.trim()}).eq('id',Number(id));
-    if(error){toast('Could not save that change');return;}
-    await loadAll();toast('Saved');
+  $('setBody').innerHTML=order.map(k=>card(k,bodies[k]||'')).join('');
+
+  $('setBody').querySelectorAll('[data-setcard]').forEach(d=>d.ontoggle=()=>{
+    SET_OPEN[d.dataset.setcard]=d.open;
+    try{ localStorage.setItem('setopen',JSON.stringify(SET_OPEN)); }catch(e){}
   });
-  $('setBody').querySelectorAll('[data-drop]').forEach(b=>b.onclick=async()=>{
-    const [t,id]=b.dataset.drop.split(':');
-    let inUse=0;
-    if(t==='groups')     inUse=CONTACTS.filter(c=>(TAGS[c.id]||[]).includes(Number(id))).length;
-    if(t==='statuses')   inUse=CONTACTS.filter(c=>c.status_id===Number(id)).length;
-    if(t==='link_kinds'){
-      const k=KINDS.find(x=>x.id===Number(id));
-      inUse=k?LINKS.filter(l=>l.kind===k.name).length:0;
-    }
-    const warn = inUse
-      ? inUse+' contact'+(inUse===1?'':'s')+' currently use this. Remove it anyway?\n\n'
-        +'They keep all their other details — they just lose this one setting.'
-      : 'Remove this?';
-    if(!confirm(warn))return;
-    const {error}=await sb.from(t).delete().eq('id',Number(id));
-    if(error){toast('Could not remove \u2014 it may still be in use');return;}
-    await loadAll();openSettings();toast('Removed');
+  $('setBody').querySelectorAll('[data-setmv]').forEach(b=>b.onclick=ev=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const [key,dir]=b.dataset.setmv.split(':');
+    const o=mySetOrder(); const i=o.indexOf(key), j=dir==='up'?i-1:i+1;
+    if(i<0||j<0||j>=o.length) return;
+    o.splice(j,0,o.splice(i,1)[0]);
+    saveSetOrder(o);
   });
+
   $('setBody').querySelectorAll('[data-secmv]').forEach(b=>b.onclick=()=>{
     const [id,dir]=b.dataset.secmv.split(':');
     const secs=mySections();
@@ -1621,6 +1676,13 @@ async function openSettings(){
     const {error}=await sb.from('log_options')
       .update({name:inp.value.trim()}).eq('id',Number(inp.dataset.optedit));
     if(error){ toast('Could not save'); return; }
+    await loadLog(); openSettings();
+  });
+  $('setBody').querySelectorAll('[data-optdaily]').forEach(b=>b.onclick=async()=>{
+    const want=b.getAttribute('aria-pressed')!=='true';
+    const {error}=await sb.from('log_options')
+      .update({is_default:want}).eq('id',Number(b.dataset.optdaily));
+    if(error){ toast('Could not change that'); return; }
     await loadLog(); openSettings();
   });
   $('setBody').querySelectorAll('[data-optdrop]').forEach(b=>b.onclick=async()=>{
@@ -2898,9 +2960,12 @@ function editLog(iso){
           <input name="pills_left" type="number" inputmode="numeric">
           <button type="button" id="pillUp" aria-label="One more">+</button>
         </span></label>
-      <label>What<input name="medication" list="dlMeds" autocomplete="off"></label>
-      <datalist id="dlMeds">${optsFor('medication')
-        .map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
+      <p class="coords" style="margin-top:12px">What was taken</p>
+      <div class="checks" id="medPick">${LOGOPTS.filter(x=>x.kind==='medication')
+        .map(m=>`<label><input type="checkbox" name="med" value="${esc(m.name)}"
+          data-daily="${m.is_default?'1':'0'}"> ${esc(m.name)}</label>`).join('')
+        || '<span class="coords">Add your medicines in Settings.</span>'}</div>
+      <input type="hidden" name="medication">
     </fieldset>
     <fieldset><legend>Body</legend>
       <div class="two">${N('Weight kg','weight_kg','0.1')}${N('Waist cm','waist_cm','0.1')}</div>
@@ -2988,6 +3053,17 @@ function editLog(iso){
 
   if(!f.elements['who_aboard'].value && prev.who_aboard)
     f.elements['who_aboard'].value=prev.who_aboard;
+
+  // tick what was taken; on a fresh day tick the daily ones
+  const already=(e.medication||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const medBoxes=[...$('medPick').querySelectorAll('[name="med"]')];
+  medBoxes.forEach(b=>{
+    b.checked = already.length ? already.includes(b.value) : b.dataset.daily==='1';
+  });
+  const syncMeds=()=>{ f.elements['medication'].value =
+    medBoxes.filter(b=>b.checked).map(b=>b.value).join(', '); };
+  medBoxes.forEach(b=>b.addEventListener('change',syncMeds));
+  syncMeds();
 
   const sig=$('sigPick');
   const paintSig=()=>sig.querySelectorAll('[data-sig]').forEach(b=>

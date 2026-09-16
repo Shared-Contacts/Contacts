@@ -96,6 +96,36 @@ ul.list li.alt{background:#F3F1EA}
   display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 12px 12px}
 .sheetbar button{color:#F2EFE4;padding:8px 10px;border-radius:8px;font-size:16px}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheetbar .logdate{color:#F2EFE4;text-align:center;border-bottom:1px dotted rgba(255,255,255,.5);
+  padding:6px 4px;font-size:16px}
+.daypick{position:fixed;inset:0;z-index:75;background:rgba(16,35,28,.6);
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.daypick .inner{background:var(--paper);border-radius:12px;padding:16px;max-width:420px;width:100%}
+.logsec>summary{cursor:pointer;padding:13px 14px;font-size:14px;font-weight:700;
+  list-style:none;display:flex;align-items:center;gap:8px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#F4F2EB;
+  border-bottom:1px solid var(--rule)}
+.logsec[open]>summary{border-bottom:1px solid var(--rule)}
+.logsec>summary::-webkit-details-marker{display:none}
+.logsec>summary::before{content:'\25B8';color:var(--hull);font-size:15px;
+  display:inline-block;transition:transform .15s}
+.logsec[open]>summary::before{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.logsec>summary::before{transition:none}}
+.pickrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.pickrow button{border:1.5px solid var(--rule);border-radius:999px;padding:9px 16px;
+  background:#fff;font-weight:600;color:var(--muted)}
+.pickrow button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+.stepper{display:flex;align-items:center;gap:10px;margin-top:4px}
+.stepper button{width:46px;height:46px;border-radius:10px;border:1.5px solid var(--rule);
+  background:#fff;font-size:22px;font-weight:700;color:var(--hull)}
+.stepper input{flex:1;min-width:0;text-align:center}
+.guestrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.guestrow .g{background:#E8EFEA;color:var(--hull);border-radius:999px;padding:5px 10px;
+  font-size:15px;font-weight:600;display:inline-flex;gap:7px;align-items:center}
+.guestrow .g button{color:var(--red);font-size:17px;padding:0}
+.sharebar{background:var(--red);color:#fff;padding:9px 14px;font-size:15px;
+  display:flex;gap:10px;align-items:center}
+.sharebar button{color:#fff;text-decoration:underline;font-weight:600}
 .sheetbody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
 #edBody,#logEdBody{max-width:1080px}
@@ -304,6 +334,7 @@ i.key{vertical-align:middle}
     <div class="chips" id="chips"></div>
   </div>
   </div>
+  <div id="shareBar" class="sharebar hidden"></div>
   <p class="count" id="count"></p>
   <ul class="list" id="list"></ul>
   <button class="fab" id="addBtn" aria-label="Add a contact">+</button>
@@ -333,9 +364,18 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="itBody"></div>
 </div>
 
+<div id="where" class="sheet hidden">
+  <div class="sheetbar"><button id="whereBack">Back</button>
+    <span class="title">Where we are</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="whereBody"></div>
+</div>
+
 <div id="log" class="sheet hidden">
   <div class="sheetbar"><button id="logBack">Back</button>
-    <span class="title">Captain's log</span><span style="width:56px"></span></div>
+    <button id="logPrev" aria-label="Earlier day">&#9664;</button>
+    <button class="title logdate" id="logPick"></button>
+    <button id="logNext" aria-label="Later day">&#9654;</button>
+    <button id="logEditTop">Edit</button></div>
   <div class="sheetbody" id="logBody"></div>
 </div>
 
@@ -350,6 +390,7 @@ i.key{vertical-align:middle}
     <span class="title">Menu</span><span style="width:56px"></span></div>
   <div class="sheetbody">
     <div class="card">
+      <button class="menuitem" id="goWhere">Share where I am &rsaquo;</button>
       <button class="menuitem" id="refreshBtn">Refresh from the server</button>
       <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
@@ -429,7 +470,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -1440,9 +1481,51 @@ async function deleteContact(c){
 }
 
 /* ---------- settings ---------- */
-function openSettings(){
+function logSectionBlock(){
+  const secs=mySections();
+  return `<details class="card logsec"><summary>Captain's log &mdash; sections</summary>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Turn off anything you do not use, and put them in the order you fill them in.
+      Where and The day always show in full; the rest start folded away.</dd></div>
+    ${secs.map((p,i)=>{
+      const def=secDef(p.id);
+      return `<div class="setrow">
+        <span style="display:flex;flex-direction:column;gap:2px">
+          <button class="mv" data-secmv="${p.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+          <button class="mv" data-secmv="${p.id}:down" ${i===secs.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+        </span>
+        <span style="flex:1">${esc(def.label)}${def.fixed?' <span class="scope">always open</span>':''}</span>
+        <button class="tg" data-secon="${p.id}" aria-pressed="${p.on}">${p.on?'On':'Off'}</button>
+      </div>`;
+    }).join('')}
+  </details>`;
+}
+
+function optionBlock(kind,title,one){
+  const rows=LOGOPTS.filter(o=>o.kind===kind);
+  return `<details class="card logsec"><summary>${esc(title)}</summary>
+    ${rows.length?rows.map(r=>`<div class="setrow">
+      <input data-optedit="${r.id}" value="${esc(r.name)}">
+      <button class="x" data-optdrop="${r.id}" aria-label="Remove">&times;</button>
+    </div>`).join('')
+    :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing yet.</dd></div>'}
+    <div class="setadd">
+      <input data-optnew="${kind}" placeholder="New ${one}">
+      <button class="btn primary" data-optadd="${kind}">Add</button>
+    </div></details>`;
+}
+
+async function saveSections(secs){
+  const {error}=await sb.from('profiles').update({log_sections:secs}).eq('id',ME.id);
+  if(error){ toast('Could not save that'); return; }
+  MY_PROFILE={...(MY_PROFILE||{}),log_sections:secs};
+  openSettings();
+}
+
+async function openSettings(){
+  if(!LOGOPTS.length) await loadLog();
   const block=(table,title,one,rows,fields,hint,extra)=>`
-    <div class="card"><h3>${title}</h3>
+    <details class="card logsec"><summary>${title}</summary>
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
       ${rows.map((r,i)=>`<div class="setrow">
         <span style="display:flex;flex-direction:column;gap:2px">
@@ -1456,7 +1539,7 @@ function openSettings(){
         ${fields.map(fd=>`<input data-new="${table}:${fd}" placeholder="${fd==='inverse_name'?'Its opposite, e.g. Child of':'New '+one}">`).join('')}
         ${extra||''}
         <button class="btn primary" data-addrow="${table}">Add ${one}</button>
-      </div></div>`;
+      </div></details>`;
 
   $('setBody').innerHTML=
      block('groups','Groups','group',GROUPS,['name'],
@@ -1468,7 +1551,12 @@ function openSettings(){
    + block('pet_types','Kinds of pet','kind',PETS,['name'])
    + block('link_kinds','Connection types','type',KINDS,['name','inverse_name'],
        'Each type has an opposite. Store "Parent of" once and the other person\u2019s record shows "Child of" automatically.')
-   + `<div class="card"><h3>Which contact is you?</h3>
+   + logSectionBlock()
+   + optionBlock('who_aboard','Who is aboard — choices','choice')
+   + optionBlock('medication','Medication — choices','medicine')
+   + optionBlock('bike_ride','Bike ride — choices','choice')
+   + optionBlock('alcohol','Alcohol — choices','choice')
+   + `<details class="card logsec"><summary>Which contact is you?</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
       Used to fill in new diary entries.</dd></div>
       <div class="setadd">
@@ -1477,20 +1565,20 @@ function openSettings(){
           ${CONTACTS.slice().sort(byName).map(c=>
             `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.my_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
         </select>
-      </div></div>`
-   + `<div class="card"><h3>Share everything</h3>
+      </div></details>`
+   + `<details class="card logsec"><summary>Share everything</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
       Gives someone every contact you own, including ones you add later only if you repeat this.</dd></div>
       ${USERS.length?USERS.map(u=>`<div class="setrow">
         <span style="flex:1">${esc(u.display_name||u.email)}</span>
         <button class="addmore" data-shareall="${u.id}">Share all</button></div>`).join('')
         :'<div class="field"><dd>No one else has an account yet.</dd></div>'}
-      </div>`
-   + `<div class="card"><h3>People who can sign in</h3>
+      </details>`
+   + `<details class="card logsec"><summary>People who can sign in</summary>
       <div class="field"><dd>Accounts are created in the Supabase dashboard under
       Authentication &rsaquo; Users, then given group access with one line of SQL.
       That can\u2019t be done here safely \u2014 it needs an admin key which must never
-      sit in a public web page.</dd></div></div>`;
+      sit in a public web page.</dd></div></details>`;
 
   $('setBody').querySelectorAll('[data-edit]').forEach(inp=>inp.onchange=async()=>{
     const [t,id,fd]=inp.dataset.edit.split(':');
@@ -1516,6 +1604,42 @@ function openSettings(){
     if(error){toast('Could not remove \u2014 it may still be in use');return;}
     await loadAll();openSettings();toast('Removed');
   });
+  $('setBody').querySelectorAll('[data-secmv]').forEach(b=>b.onclick=()=>{
+    const [id,dir]=b.dataset.secmv.split(':');
+    const secs=mySections();
+    const i=secs.findIndex(x=>x.id===id), j=dir==='up'?i-1:i+1;
+    if(i<0||j<0||j>=secs.length) return;
+    secs.splice(j,0,secs.splice(i,1)[0]);
+    saveSections(secs);
+  });
+  $('setBody').querySelectorAll('[data-secon]').forEach(b=>b.onclick=()=>{
+    const secs=mySections();
+    const x=secs.find(y=>y.id===b.dataset.secon);
+    if(x){ x.on=!x.on; saveSections(secs); }
+  });
+  $('setBody').querySelectorAll('[data-optedit]').forEach(inp=>inp.onchange=async()=>{
+    const {error}=await sb.from('log_options')
+      .update({name:inp.value.trim()}).eq('id',Number(inp.dataset.optedit));
+    if(error){ toast('Could not save'); return; }
+    await loadLog(); openSettings();
+  });
+  $('setBody').querySelectorAll('[data-optdrop]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Remove this choice? Days already using it keep what they say.')) return;
+    const {error}=await sb.from('log_options').delete().eq('id',Number(b.dataset.optdrop));
+    if(error){ toast('Could not remove it'); return; }
+    await loadLog(); openSettings();
+  });
+  $('setBody').querySelectorAll('[data-optadd]').forEach(b=>b.onclick=async()=>{
+    const kind=b.dataset.optadd;
+    const box=$('setBody').querySelector(`[data-optnew="${kind}"]`);
+    const v=box.value.trim();
+    if(!v){ toast('Type it in first'); return; }
+    const {error}=await sb.from('log_options')
+      .insert({created_by:ME.id,kind,name:v,sort_order:100});
+    if(error){ toast('Could not add — it may already be there'); return; }
+    await loadLog(); openSettings(); toast('Added');
+  });
+
   const mc=$('meContact');
   if(mc) mc.onchange=async()=>{
     const v=mc.value?Number(mc.value):null;
@@ -1570,6 +1694,15 @@ function openHelp(){
   <div class="helpsec">
   <p class="lead">Everything here is stored online, so you and Sandra see the same
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
+
+  <h4>Sharing where you are</h4>
+  <p>Menu &rsaquo; <strong>Share where I am</strong> lets you hand your position
+  to a named person for one, four, eight or twenty-four hours.</p>
+  <p>You tick who may see it. Only they can, and only while it is running &mdash;
+  nobody can look you up, and turning it off removes their access at once.</p>
+  <p>While it is on, a red band sits across the top of the screen naming who can
+  see it, with a <strong>Stop now</strong> button, so it can never be running
+  without you knowing. Your position only updates while the app is open.</p>
 
   <h4>Your password</h4>
   <p>Menu &rsaquo; <strong>Your password</strong> changes it to whatever you like.
@@ -1661,6 +1794,14 @@ function openHelp(){
   Two is about the most that fits.</p>
 
   <h4>Captain's log</h4>
+  <p>Tap the date in the green bar for a calendar, or the arrows either side to
+  step a day at a time. The date stays put while you scroll.</p>
+  <p>Most sections start folded up; tap a heading to open one, and it stays that
+  way next time. Menu &rsaquo; Settings &rsaquo; <em>Captain's log &mdash; sections</em>
+  turns any of them off and changes the order.</p>
+  <p>The choices behind "who is aboard", medication, bike ride and alcohol are
+  yours to edit, also in Settings. Pills left carries over from the day before
+  with &minus; and + to knock it down. Overnight guests searches your contacts.</p>
   <p><strong>Log</strong> in the green bar keeps one entry a day: blood pressure,
   medication, where the boat is, engine hours, what you took on, who was aboard
   and what happened.</p>
@@ -2510,13 +2651,14 @@ async function pushCard(){
 /* ============================================================
    The daily log
    ============================================================ */
-let LOGDAYS=[], LOG_DATE=null;
+let LOGDAYS=[], LOG_DATE=null, LOGOPTS=[];
+const optsFor = kind => LOGOPTS.filter(o=>o.kind===kind).map(o=>o.name);
 
 const LOG_FIELDS_NUM=['am_sys','am_dia','am_pulse','noon_sys','noon_dia','noon_pulse',
   'pm_sys','pm_dia','pm_pulse','pills_left','exercise_score','steps','pob_tonight',
   'wifi_quality','weight_kg','waist_cm','hip_cm','hours_start','hours_end',
   'v_down','v_up','three_down','three_up'];
-const LOG_FIELDS_TXT=['medication','ointment','bike_ride','diary_notes','regular_chores',
+const LOG_FIELDS_TXT=['medication','bike_ride','diary_notes','regular_chores',
   'drinks','alcohol','pub_cafe','attractions','who_aboard','overnight_guests',
   'diesel_pumpout_at','coal_gas_at','boat_address','current_canal','journey'];
 const LOG_FIELDS_BOOL=['tablets_taken','walked','boated','stretches','diesel','pump_out',
@@ -2533,10 +2675,12 @@ const dayLabel = iso => {
 };
 
 async function loadLog(){
-  const {data,error}=await sb.from('log_days').select('*')
-    .order('on_date',{ascending:false}).limit(400);
-  if(error){ console.error('log',error); toast('Log unavailable'); return; }
-  LOGDAYS=data||[];
+  const [lg,op]=await Promise.all([
+    sb.from('log_days').select('*').order('on_date',{ascending:false}).limit(600),
+    sb.from('log_options').select('*').order('sort_order')
+  ]);
+  if(lg.error){ console.error('log',lg.error); toast('Log unavailable'); return; }
+  LOGDAYS=lg.data||[]; LOGOPTS=op.data||[];
 }
 
 // Carries yesterday's position and engine hours forward, as they rarely change
@@ -2571,105 +2715,160 @@ async function openLog(){
 
 function logEntry(iso){ return LOGDAYS.find(d=>d.on_date===iso)||null; }
 
+const LOG_SECTIONS=[
+  {id:'where',      label:'Where',      fixed:true},
+  {id:'bp',         label:'Blood pressure'},
+  {id:'medication', label:'Medication'},
+  {id:'body',       label:'Body'},
+  {id:'activity',   label:'Activity'},
+  {id:'boat',       label:'Boat and services'},
+  {id:'aboard',     label:'Aboard'},
+  {id:'day',        label:'The day',    fixed:true}
+];
+
+function mySections(){
+  const saved=MY_PROFILE&&MY_PROFILE.log_sections;
+  if(!Array.isArray(saved)||!saved.length)
+    return LOG_SECTIONS.map(s=>({id:s.id,on:true}));
+  const known=LOG_SECTIONS.map(s=>s.id);
+  const out=saved.filter(x=>known.includes(x.id));
+  known.forEach(id=>{ if(!out.some(x=>x.id===id)) out.push({id,on:true}); });
+  return out;
+}
+const secDef = id => LOG_SECTIONS.find(s=>s.id===id);
+
+let LOG_OPEN={};
+try{ LOG_OPEN=JSON.parse(localStorage.getItem('logopen')||'{}'); }catch(e){}
+function rememberOpen(){ try{ localStorage.setItem('logopen',JSON.stringify(LOG_OPEN)); }catch(e){} }
+
 function renderLog(){
   const e=logEntry(LOG_DATE);
-  const idx=LOGDAYS.findIndex(d=>d.on_date===LOG_DATE);
-  const older=idx>=0&&idx<LOGDAYS.length-1?LOGDAYS[idx+1].on_date:null;
-  const newer=idx>0?LOGDAYS[idx-1].on_date:null;
+  $('logPick').textContent=dayLabel(LOG_DATE);
 
   const R=(l,v)=>v===null||v===undefined||v===''?'':
     `<div class="field"><dt>${l}</dt><dd>${esc(String(v))}</dd></div>`;
-  const yes=v=>v===true?'Yes':v===false?'':'';
-  const bp=(s,d,p)=> (s||d)?`${s??'?'}/${d??'?'}${p?', pulse '+p:''}`:'';
-
+  const yes=v=>v===true?'Yes':'';
+  const bp=(sy,di,pu)=>(sy||di)?`${sy??'?'}/${di??'?'}${pu?', pulse '+pu:''}`:'';
   const avg=(...xs)=>{const v=xs.filter(x=>typeof x==='number');
     return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null;};
 
-  let body='';
   if(!e){
-    body='<div class="card"><div class="field"><dd>Nothing recorded that day.</dd></div></div>';
-  }else{
-    const svc=[e.diesel&&'diesel',e.pump_out&&'pump out',e.coal&&'coal',e.lpg_gas&&'gas',
-      e.water&&'water',e.rubbish&&'rubbish',e.oil_water_checked&&'oil and water checked']
-      .filter(Boolean).join(', ');
-    const run=(e.hours_end!=null&&e.hours_start!=null)?(e.hours_end-e.hours_start):null;
-
-    body=`
-      ${R('Boat',e.boat_address)+R('Canal',e.current_canal)
-        +((e.boat_lat&&e.boat_lng)?`<div id="logMap" class="map detail"></div>
-           <div class="field"><dd><button class="addmore" data-maps="${e.boat_lat},${e.boat_lng}">Open in maps app</button></dd></div>`:'')
-        ?`<div class="card"><h3>Where</h3>${R('Boat',e.boat_address)}${R('Canal',e.current_canal)}
-           ${R('Journey',e.journey)}
-           ${(e.barry_lat&&e.barry_lng)?R('Barry elsewhere',e.barry_lat.toFixed(4)+', '+e.barry_lng.toFixed(4)):''}
-           ${(e.sandra_lat&&e.sandra_lng)?R('Sandra elsewhere',e.sandra_lat.toFixed(4)+', '+e.sandra_lng.toFixed(4)):''}
-           ${(e.boat_lat&&e.boat_lng)?'<div id="logMap" class="map detail"></div>':''}</div>`:''}
-
-      ${(e.am_sys||e.noon_sys||e.pm_sys||e.tablets_taken!=null||e.pills_left!=null)?
-        `<div class="card"><h3>Readings</h3>
-          ${R('Morning',bp(e.am_sys,e.am_dia,e.am_pulse))}
-          ${R('Midday',bp(e.noon_sys,e.noon_dia,e.noon_pulse))}
-          ${R('Evening',bp(e.pm_sys,e.pm_dia,e.pm_pulse))}
-          ${R('Average',bp(avg(e.am_sys,e.noon_sys,e.pm_sys),
-                            avg(e.am_dia,e.noon_dia,e.pm_dia),
-                            avg(e.am_pulse,e.noon_pulse,e.pm_pulse)))}
-          ${R('Tablets taken',yes(e.tablets_taken))}
-          ${R('Pills left',e.pills_left)}
-          ${R('Weight',e.weight_kg?e.weight_kg+' kg':'')}
-          ${R('Waist',e.waist_cm?e.waist_cm+' cm':'')}
-        </div>`:''}
-
-      ${(e.walked||e.boated||e.bike_ride||e.exercise_score||e.steps)?
-        `<div class="card"><h3>Activity</h3>
-          ${R('Walked',yes(e.walked))}${R('Boated',yes(e.boated))}
-          ${R('Bike',e.bike_ride)}${R('Steps',e.steps)}
-          ${R('Score out of 5',e.exercise_score)}
-        </div>`:''}
-
-      ${(e.hours_end!=null||svc||e.diesel_pumpout_at||e.coal_gas_at)?
-        `<div class="card"><h3>Boat</h3>
-          ${R('Engine hours',e.hours_end)}
-          ${R('Run today',run!=null&&run>0?run.toFixed(1)+' hrs':'')}
-          ${R('Took on',svc)}
-          ${R('Diesel or pump out at',e.diesel_pumpout_at)}
-          ${R('Coal or gas at',e.coal_gas_at)}
-          ${R('Signal',e.wifi_quality?'quality '+e.wifi_quality:'')}
-        </div>`:''}
-
-      ${(e.who_aboard||e.pob_tonight||e.overnight_guests)?
-        `<div class="card"><h3>Aboard</h3>
-          ${R('Who',e.who_aboard)}${R('On board tonight',e.pob_tonight)}
-          ${R('Guests',e.overnight_guests)}
-        </div>`:''}
-
-      ${(e.diary_notes||e.regular_chores||e.drinks||e.alcohol||e.pub_cafe||e.attractions)?
-        `<div class="card"><h3>The day</h3>
-          ${e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:''}
-          ${R('Chores',e.regular_chores)}${R('Drinks',e.drinks)}${R('Alcohol',e.alcohol)}
-          ${R('Out at',e.pub_cafe)}${R('Visited',e.attractions)}
-        </div>`:''}`;
+    $('logBody').innerHTML=`<div class="card"><div class="field">
+      <dd>Nothing recorded that day.</dd></div>
+      <div class="setadd"><button class="btn primary" id="logStart">Start this day</button></div></div>`;
+    $('logStart').onclick=()=>editLog(LOG_DATE);
+    killMaps(); return;
   }
 
-  $('logBody').innerHTML=`
-    <div class="mnav">
-      <button ${older?`data-logday="${older}"`:'disabled'} aria-label="Earlier day">&#9664;</button>
-      <span style="font-size:16px;text-align:center">${esc(dayLabel(LOG_DATE))}</span>
-      <button ${newer?`data-logday="${newer}"`:'disabled'} aria-label="Later day">&#9654;</button>
-    </div>
-    <div class="kindpick" style="margin-bottom:14px">
-      <button id="logToday">Today</button>
-      <button id="logEdit">${e?'Fill it in':'Start this day'}</button>
-    </div>
-    ${body}`;
+  const svc=[e.diesel&&'diesel',e.pump_out&&'pump out',e.coal&&'coal',e.lpg_gas&&'gas',
+    e.water&&'water',e.rubbish&&'rubbish',e.oil_water_checked&&'oil and water checked']
+    .filter(Boolean).join(', ');
+  const run=(e.hours_end!=null&&e.hours_start!=null)?(e.hours_end-e.hours_start):null;
 
-  $('logBody').querySelectorAll('[data-logday]').forEach(b=>b.onclick=()=>{
-    LOG_DATE=b.dataset.logday; killMaps(); renderLog(); });
+  const content={
+    where: R('Boat',e.boat_address)+R('Canal',e.current_canal)+R('Journey',e.journey)
+      +((e.barry_lat&&e.barry_lng)?R('Barry elsewhere',(+e.barry_lat).toFixed(4)+', '+(+e.barry_lng).toFixed(4)):'')
+      +((e.sandra_lat&&e.sandra_lng)?R('Sandra elsewhere',(+e.sandra_lat).toFixed(4)+', '+(+e.sandra_lng).toFixed(4)):'')
+      +((e.boat_lat&&e.boat_lng)?'<div id="logMap" class="map detail"></div>'
+        +`<div class="field"><dd><button class="addmore" data-maps="${e.boat_lat},${e.boat_lng}">Open in maps app</button></dd></div>`:''),
+    bp: R('Morning',bp(e.am_sys,e.am_dia,e.am_pulse))
+      +R('Midday',bp(e.noon_sys,e.noon_dia,e.noon_pulse))
+      +R('Evening',bp(e.pm_sys,e.pm_dia,e.pm_pulse))
+      +R('Average',bp(avg(e.am_sys,e.noon_sys,e.pm_sys),
+                      avg(e.am_dia,e.noon_dia,e.pm_dia),
+                      avg(e.am_pulse,e.noon_pulse,e.pm_pulse))),
+    medication: R('Tablets taken',yes(e.tablets_taken))+R('Pills left',e.pills_left)
+      +R('What',e.medication),
+    body: R('Weight',e.weight_kg?e.weight_kg+' kg':'')
+      +R('Waist',e.waist_cm?e.waist_cm+' cm':'')
+      +R('Hip',e.hip_cm?e.hip_cm+' cm':''),
+    activity: R('Walked',yes(e.walked))+R('Boated',yes(e.boated))
+      +R('Stretches',yes(e.stretches))+R('Bike',e.bike_ride)
+      +R('Steps',e.steps)+R('Score out of 5',e.exercise_score),
+    boat: R('Engine hours',e.hours_end)
+      +R('Run today',run!=null&&run>0?run.toFixed(1)+' hrs':'')
+      +R('Took on',svc)+R('Diesel or pump out at',e.diesel_pumpout_at)
+      +R('Coal or gas at',e.coal_gas_at)
+      +R('Signal',e.wifi_quality?e.wifi_quality+' out of 5':''),
+    aboard: R('Who',e.who_aboard)+R('On board tonight',e.pob_tonight)
+      +R('Guests',e.overnight_guests),
+    day: (e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:'')
+      +R('Chores',e.regular_chores)+R('Drinks',e.drinks)+R('Alcohol',e.alcohol)
+      +R('Out at',e.pub_cafe)+R('Visited',e.attractions)
+  };
+
+  let html='';
+  mySections().forEach(pref=>{
+    if(!pref.on) return;
+    const def=secDef(pref.id);
+    const inner=content[pref.id];
+    if(!inner) return;
+    if(def.fixed){
+      html+=`<div class="card"><h3>${esc(def.label)}</h3>${inner}</div>`;
+    }else{
+      const open=LOG_OPEN[pref.id]===true;
+      html+=`<details class="card logsec" data-sec="${pref.id}" ${open?'open':''}>
+        <summary>${esc(def.label)}</summary>${inner}</details>`;
+    }
+  });
+
+  $('logBody').innerHTML=html||'<div class="card"><div class="field"><dd>Nothing to show. Tap Edit to fill the day in.</dd></div></div>';
   $('logBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(','); openInMaps(la,ln); });
-  $('logToday').onclick=async()=>{ LOG_DATE=await ensureToday(); killMaps(); renderLog(); };
-  $('logEdit').onclick=()=>editLog(LOG_DATE);
+  $('logBody').querySelectorAll('[data-sec]').forEach(d=>d.ontoggle=()=>{
+    LOG_OPEN[d.dataset.sec]=d.open; rememberOpen(); });
 
   killMaps();
-  if(e&&e.boat_lat&&e.boat_lng) showMap('logMap',e.boat_lat,e.boat_lng,null);
+  if(e.boat_lat&&e.boat_lng) showMap('logMap',e.boat_lat,e.boat_lng,null);
+}
+
+/* ---------- pick a day from a calendar ---------- */
+let PICK_MONTH=null;
+function openDayPick(){
+  PICK_MONTH=LOG_DATE.slice(0,7);
+  drawDayPick();
+}
+function drawDayPick(){
+  document.querySelectorAll('.daypick').forEach(x=>x.remove());
+  const [yy,mm]=PICK_MONTH.split('-').map(Number);
+  const first=new Date(yy,mm-1,1);
+  const lead=(first.getDay()+6)%7, days=new Date(yy,mm,0).getDate();
+  const have=new Set(LOGDAYS.map(d=>d.on_date));
+  let cells='';
+  for(let i=0;i<lead;i++) cells+='<span class="mcell blank"></span>';
+  for(let n=1;n<=days;n++){
+    const key=`${yy}-${String(mm).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
+    cells+=`<button class="mcell${key===LOG_DATE?' picked':''}" data-pickday="${key}">
+      <span class="n">${n}</span>
+      <span class="dots">${have.has(key)?'<i class="a"></i>':''}</span></button>`;
+  }
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <div class="mnav">
+      <button data-pm="-1" aria-label="Previous month">&#9664;</button>
+      <span>${esc(first.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))}</span>
+      <button data-pm="1" aria-label="Next month">&#9654;</button>
+    </div>
+    <div class="mgrid">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+      .map(x=>`<span class="mhd">${x}</span>`).join('')}${cells}</div>
+    <div class="setadd"><button class="btn" id="pickClose"
+      style="border:1.5px solid var(--rule)">Close</button></div></div>`;
+  document.body.appendChild(box);
+  box.onclick=ev=>{ if(ev.target===box) box.remove(); };
+  box.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{
+    const d=new Date(PICK_MONTH+'-01T12:00:00');
+    d.setMonth(d.getMonth()+Number(b.dataset.pm));
+    PICK_MONTH=d.toISOString().slice(0,7); drawDayPick(); });
+  box.querySelectorAll('[data-pickday]').forEach(b=>b.onclick=()=>{
+    LOG_DATE=b.dataset.pickday; box.remove(); killMaps(); renderLog(); });
+  $('pickClose').onclick=()=>box.remove();
+}
+
+function stepDay(n){
+  const [y,m,d]=LOG_DATE.split('-').map(Number);
+  const dt=new Date(y,m-1,d); dt.setDate(dt.getDate()+n);
+  LOG_DATE=isoDay(dt); killMaps(); renderLog();
 }
 
 /* ---------- filling it in ---------- */
@@ -2693,9 +2892,15 @@ function editLog(iso){
     </fieldset>
     <fieldset><legend>Medication</legend>
       <div class="checks">${C('Tablets taken','tablets_taken')}</div>
-      ${N('Pills left','pills_left')}
-      ${T('What','medication')}
-      ${T('Ointment','ointment')}
+      <label>Pills left
+        <span class="stepper">
+          <button type="button" id="pillDown" aria-label="One fewer">&minus;</button>
+          <input name="pills_left" type="number" inputmode="numeric">
+          <button type="button" id="pillUp" aria-label="One more">+</button>
+        </span></label>
+      <label>What<input name="medication" list="dlMeds" autocomplete="off"></label>
+      <datalist id="dlMeds">${optsFor('medication')
+        .map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
     </fieldset>
     <fieldset><legend>Body</legend>
       <div class="two">${N('Weight kg','weight_kg','0.1')}${N('Waist cm','waist_cm','0.1')}</div>
@@ -2703,7 +2908,9 @@ function editLog(iso){
     </fieldset>
     <fieldset><legend>Activity</legend>
       <div class="checks">${C('Walked','walked')}${C('Boated','boated')}${C('Stretches','stretches')}</div>
-      ${T('Bike ride','bike_ride')}
+      <label>Bike ride<input name="bike_ride" list="dlBike" autocomplete="off"></label>
+      <datalist id="dlBike">${optsFor('bike_ride')
+        .map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
       <div class="two">${N('Steps','steps')}${N('Score out of 5','exercise_score')}</div>
     </fieldset>
    </div>
@@ -2725,17 +2932,33 @@ function editLog(iso){
         ${C('Checked oil and water','oil_water_checked')}</div>
       ${T('Diesel or pump out at','diesel_pumpout_at')}
       ${T('Coal or gas at','coal_gas_at')}
-      ${N('Signal quality','wifi_quality')}
+      <label>Signal quality
+        <span class="pickrow" id="sigPick">${[1,2,3,4,5].map(n=>
+          `<button type="button" data-sig="${n}">${n}</button>`).join('')}
+          <button type="button" data-sig="">None</button></span></label>
+      <input type="hidden" name="wifi_quality">
     </fieldset>
     <fieldset><legend>Aboard</legend>
-      ${T('Who is aboard','who_aboard')}
+      <label>Who is aboard<select name="who_aboard">
+        <option value="">&mdash;</option>
+        ${optsFor('who_aboard').map(v=>`<option>${esc(v)}</option>`).join('')}
+      </select></label>
+      <p class="coords">The choices are yours to change, in Settings.</p>
       ${N('On board tonight','pob_tonight')}
-      ${T('Overnight guests','overnight_guests')}
+      <label>Overnight guests
+        <input id="guestSearch" placeholder="Start typing a name from your contacts"
+               autocomplete="off"></label>
+      <div class="results hidden" id="guestHits"></div>
+      <div class="guestrow" id="guestList"></div>
+      <input type="hidden" name="overnight_guests">
     </fieldset>
     <fieldset><legend>The day</legend>
       <label>Diary notes<textarea name="diary_notes" rows="5"></textarea></label>
       ${T('Regular chores','regular_chores')}
-      ${T('Drinks','drinks')}${T('Alcohol','alcohol')}
+      ${T('Drinks','drinks')}
+      <label>Alcohol<input name="alcohol" list="dlAlc" autocomplete="off"></label>
+      <datalist id="dlAlc">${optsFor('alcohol')
+        .map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
       ${T('Pub, restaurant or cafe','pub_cafe')}
       ${T('Attractions visited','attractions')}
     </fieldset>
@@ -2749,7 +2972,49 @@ function editLog(iso){
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) f.elements[k].checked=!!e[k]; });
 
   LOGDRAFT={
-    blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null
+    blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null,
+    guests:(e.overnight_guests||'').split(',').map(x=>x.trim()).filter(Boolean)
+  };
+
+  // pills carry over from the day before, ready to be knocked down
+  if(f.elements['pills_left'].value==='' && prev.pills_left!=null)
+    f.elements['pills_left'].value=prev.pills_left;
+  const bump=n=>{
+    const cur=Number(f.elements['pills_left'].value||0);
+    f.elements['pills_left'].value=Math.max(0,cur+n);
+  };
+  $('pillDown').onclick=()=>bump(-1);
+  $('pillUp').onclick=()=>bump(1);
+
+  if(!f.elements['who_aboard'].value && prev.who_aboard)
+    f.elements['who_aboard'].value=prev.who_aboard;
+
+  const sig=$('sigPick');
+  const paintSig=()=>sig.querySelectorAll('[data-sig]').forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.sig)===String(f.elements['wifi_quality'].value)));
+  f.elements['wifi_quality'].value = e.wifi_quality!=null?String(e.wifi_quality):'';
+  sig.querySelectorAll('[data-sig]').forEach(b=>b.onclick=()=>{
+    f.elements['wifi_quality'].value=b.dataset.sig; paintSig(); });
+  paintSig();
+
+  const drawGuests=()=>{
+    $('guestList').innerHTML=LOGDRAFT.guests.map((g,i)=>
+      `<span class="g">${esc(g)}<button type="button" data-gx="${i}" aria-label="Remove">&times;</button></span>`).join('');
+    $('guestList').querySelectorAll('[data-gx]').forEach(b=>b.onclick=()=>{
+      LOGDRAFT.guests.splice(Number(b.dataset.gx),1); drawGuests(); });
+    f.elements['overnight_guests'].value=LOGDRAFT.guests.join(', ');
+  };
+  drawGuests();
+  $('guestSearch').oninput=()=>{
+    const q=$('guestSearch').value.trim(), box=$('guestHits');
+    if(q.length<2){ box.classList.add('hidden'); return; }
+    const hits=CONTACTS.filter(c=>matches(c,q)).sort(byName).slice(0,10);
+    box.innerHTML=(hits.map(c=>`<button type="button" data-gp="${esc(fullName(c))}">${esc(fullName(c))}</button>`).join(''))
+      +`<button type="button" data-gp="${esc(q)}" style="color:var(--hull);font-weight:700">Add "${esc(q)}" anyway</button>`;
+    box.classList.remove('hidden');
+    box.querySelectorAll('[data-gp]').forEach(b=>b.onclick=()=>{
+      if(!LOGDRAFT.guests.includes(b.dataset.gp)) LOGDRAFT.guests.push(b.dataset.gp);
+      $('guestSearch').value=''; box.classList.add('hidden'); drawGuests(); });
   };
   const showC=()=>{ $('logCoords').textContent = LOGDRAFT.blat
     ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
@@ -2790,6 +3055,159 @@ async function saveLog(iso){
   await loadLog(); renderLog(); toast('Saved');
 }
 
+/* ============================================================
+   Sharing where you are — on purpose, and briefly
+   ============================================================ */
+let SHARE_UNTIL=null, SHARE_TIMER=null, OTHERS=[], SHARED_WITH=[];
+
+async function loadShares(){
+  const [loc,who]=await Promise.all([
+    sb.from('live_locations').select('*').gt('until',new Date().toISOString()),
+    sb.from('location_shares').select('*').eq('owner_id',ME.id)
+  ]);
+  const rows=loc.data||[];
+  OTHERS=rows.filter(r=>r.user_id!==ME.id);
+  const me=rows.find(r=>r.user_id===ME.id);
+  SHARE_UNTIL = me ? new Date(me.until) : null;
+  SHARED_WITH=(who.data||[]).map(r=>r.viewer_id);
+  paintShareBar();
+}
+
+function namesOf(ids){
+  return ids.map(id=>{
+    const u=USERS.find(x=>x.id===id);
+    return u?(u.display_name||u.email):'someone';
+  });
+}
+
+function paintShareBar(){
+  const bar=$('shareBar');
+  if(SHARE_UNTIL && SHARE_UNTIL>new Date()){
+    const who=namesOf(SHARED_WITH);
+    bar.innerHTML=`<span>Sharing your location with
+      ${esc(who.length?who.join(' and '):'nobody')} until
+      ${esc(SHARE_UNTIL.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))}</span>
+      <button id="shareStop">Stop now</button>`;
+    bar.classList.remove('hidden');
+    $('shareStop').onclick=stopSharing;
+  }else{
+    bar.classList.add('hidden');
+    SHARE_UNTIL=null;
+  }
+}
+
+async function pushMyPosition(){
+  if(!SHARE_UNTIL || SHARE_UNTIL<=new Date()){ stopSharing(true); return; }
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    await sb.from('live_locations').upsert({
+      user_id:ME.id, lat:pos.coords.latitude, lng:pos.coords.longitude,
+      accuracy:pos.coords.accuracy, updated_at:new Date().toISOString(),
+      until:SHARE_UNTIL.toISOString(),
+      label:(MY_PROFILE&&MY_PROFILE.display_name)||ME.email
+    },{onConflict:'user_id'});
+  },()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+
+async function startSharing(hours){
+  if(!navigator.geolocation){ toast('This device cannot report a position'); return; }
+  const picked=[...document.querySelectorAll('[name="shareWith"]:checked')].map(b=>b.value);
+  if(!picked.length){ toast('Choose who may see it first'); return; }
+
+  await sb.from('location_shares').delete().eq('owner_id',ME.id);
+  const {error}=await sb.from('location_shares')
+    .insert(picked.map(v=>({owner_id:ME.id,viewer_id:v})));
+  if(error){ toast('Could not set who can see it'); console.error(error); return; }
+  SHARED_WITH=picked;
+
+  SHARE_UNTIL=new Date(Date.now()+hours*3600*1000);
+  await pushMyPosition();
+  if(SHARE_TIMER) clearInterval(SHARE_TIMER);
+  SHARE_TIMER=setInterval(pushMyPosition, 3*60*1000);
+  paintShareBar();
+  toast('Sharing with '+namesOf(picked).join(' and '));
+  if(!$('where').classList.contains('hidden')) renderWhere();
+}
+
+async function stopSharing(quiet){
+  if(SHARE_TIMER){ clearInterval(SHARE_TIMER); SHARE_TIMER=null; }
+  SHARE_UNTIL=null;
+  await sb.from('live_locations').delete().eq('user_id',ME.id);
+  await sb.from('location_shares').delete().eq('owner_id',ME.id);
+  SHARED_WITH=[];
+  paintShareBar();
+  if(!quiet) toast('Stopped sharing');
+  if(!$('where').classList.contains('hidden')) renderWhere();
+}
+
+async function openWhere(){
+  await loadShares();
+  renderWhere();
+  $('where').classList.remove('hidden'); $('whereBody').scrollTop=0; lockBackground();
+}
+
+function renderWhere(){
+  const on=SHARE_UNTIL && SHARE_UNTIL>new Date();
+  let html=`<div class="card"><h3>Your position</h3>
+    ${on?`<div class="field"><dd>Being shared with
+        <strong>${esc(namesOf(SHARED_WITH).join(' and ')||'nobody')}</strong> until
+        ${esc(SHARE_UNTIL.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'}))},
+        then it stops by itself. It only updates while this app is open.</dd></div>
+      <div class="setadd"><button class="btn" id="wStop"
+        style="border:1.5px solid var(--red);color:var(--red)">Stop sharing now</button></div>`
+     :USERS.length
+       ?`<div class="field"><dd style="color:var(--muted);font-size:15px">
+          Nobody can see where you are. Choose who may, and for how long.
+          It switches itself off at the end, and only they can see it.</dd></div>
+        <div class="setadd">
+          <div class="checks">${USERS.map(u=>`<label>
+            <input type="checkbox" name="shareWith" value="${u.id}"
+              ${SHARED_WITH.includes(u.id)?'checked':''}>
+            ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+          <div class="pickrow" style="margin-top:14px">
+            <button id="w1" type="button">1 hour</button>
+            <button id="w4" type="button">4 hours</button>
+            <button id="w8" type="button">8 hours</button>
+            <button id="w24" type="button">All day</button>
+          </div></div>`
+       :`<div class="field"><dd>Nobody else has an account yet, so there is
+          no one to share it with.</dd></div>`}
+    </div>`;
+
+  if(OTHERS.length){
+    html+=`<div class="card"><h3>Shared with you</h3>
+      ${OTHERS.map(o=>`<div class="item">
+        <button class="mid" data-wgo="${o.lat},${o.lng}">
+          <span class="t">${esc(o.label||'Someone')}</span>
+          <span class="w">last heard ${esc(new Date(o.updated_at)
+            .toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))}
+            &middot; until ${esc(new Date(o.until)
+            .toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))}</span>
+        </button></div>`).join('')}
+      <div id="whereMap" class="map detail"></div></div>`;
+  }else{
+    html+=`<div class="card"><h3>Shared with you</h3>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Nobody is sharing their position at the moment.</dd></div></div>`;
+  }
+
+  $('whereBody').innerHTML=html;
+  const b=id=>$(id);
+  if(b('w1')) b('w1').onclick=()=>startSharing(1);
+  if(b('w4')) b('w4').onclick=()=>startSharing(4);
+  if(b('w8')) b('w8').onclick=()=>startSharing(8);
+  if(b('w24')) b('w24').onclick=()=>startSharing(24);
+  if(b('wStop')) b('wStop').onclick=stopSharing;
+  $('whereBody').querySelectorAll('[data-wgo]').forEach(x=>x.onclick=()=>{
+    const [la,ln]=x.dataset.wgo.split(','); openInMaps(la,ln); });
+
+  killMaps();
+  if(OTHERS.length){
+    const m=showMap('whereMap',Number(OTHERS[0].lat),Number(OTHERS[0].lng),null);
+    if(m) OTHERS.slice(1).forEach(o=>L.marker([Number(o.lat),Number(o.lng)]).addTo(m.map));
+  }
+}
+
 /* ---------- wiring ---------- */
 $('signinBtn').onclick=async()=>{
   const b=$('signinBtn');b.disabled=true;
@@ -2807,6 +3225,12 @@ $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();};
 $('diaryBtn').onclick=openDiary;
 $('logBtn').onclick=openLog;
+$('logPrev').onclick=()=>stepDay(-1);
+$('logNext').onclick=()=>stepDay(1);
+$('logPick').onclick=openDayPick;
+$('logEditTop').onclick=()=>editLog(LOG_DATE);
+$('goWhere').onclick=()=>{$('menu').classList.add('hidden');openWhere();};
+$('whereBack').onclick=()=>{killMaps();$('where').classList.add('hidden');lockBackground();};
 $('logBack').onclick=()=>{killMaps();$('log').classList.add('hidden');lockBackground();};
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
 $('diaryBack').onclick=()=>{$('diary').classList.add('hidden');lockBackground();};
@@ -2869,6 +3293,7 @@ async function start(){
   ME=user;$('signin').classList.add('hidden');$('app').classList.remove('hidden');
   await loadAll();
   loadDevices();
+  loadShares();
 }
 start();
 

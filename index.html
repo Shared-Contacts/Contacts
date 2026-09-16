@@ -139,6 +139,11 @@ ul.list li.alt{background:#F3F1EA}
 .detsub{color:var(--muted);margin:0 0 14px}
 details.inpanel{border-top:1px solid #F0EEE7}
 details.inpanel>summary{padding:11px 14px;color:var(--hull);font-weight:600;cursor:pointer;font-size:15px}
+details.awaybox{margin-top:14px;border:1.5px solid var(--rule);border-radius:8px;background:#FBFAF7}
+details.awaybox>summary{padding:11px 12px;color:var(--hull);font-weight:600;cursor:pointer}
+details.awaybox .geo,details.awaybox .map,details.awaybox .coords,
+details.awaybox .addmore{margin-left:12px;margin-right:12px}
+details.awaybox .addmore{color:var(--red);padding-bottom:12px}
 details#dtFormer{margin-top:14px;border:1.5px solid var(--rule);border-radius:8px;background:#FBFAF7}
 details#dtFormer>summary{padding:11px 12px;color:var(--hull);font-weight:600;cursor:pointer}
 details#dtFormer .multi{padding:0 12px 12px}
@@ -1912,6 +1917,10 @@ function openHelp(){
   so a medicine you have stopped taking stays out of the way without losing the
   days it appears on. Pills left carries over from the day before with &minus;
   and + to knock it down. Overnight guests searches your contacts.</p>
+  <p>Under Where there are two folded panels for the days one of you is not
+  aboard. Drop a pin, or use Find. They stay empty unless you use them, and
+  never carry over to the next day &mdash; being away is not the usual state of
+  things. The button inside clears one again.</p>
   <p>Filling in a day follows the same section order as Settings, and anything
   you have turned off is left out. What is already stored in a section you have
   turned off stays as it is.</p>
@@ -3009,6 +3018,22 @@ function editLog(iso){
       <div id="logEditMap" class="map"></div>
       <p class="coords" id="logCoords"></p>
       <p class="coords">Carried over from the last entry. Move the pin if you have moved.</p>
+
+      <details id="dtMe" class="awaybox"><summary>You, if not aboard</summary>
+        <div class="geo"><input id="meQ" placeholder="Where were you?">
+          <button type="button" id="meGo">Find</button></div>
+        <div id="logMapMe" class="map"></div>
+        <p class="coords" id="meCoords"></p>
+        <button type="button" class="addmore" id="meClear">Not away &mdash; clear this</button>
+      </details>
+
+      <details id="dtPartner" class="awaybox"><summary>Sandra, if not aboard</summary>
+        <div class="geo"><input id="paQ" placeholder="Where was she?">
+          <button type="button" id="paGo">Find</button></div>
+        <div id="logMapPartner" class="map"></div>
+        <p class="coords" id="paCoords"></p>
+        <button type="button" class="addmore" id="paClear">Not away &mdash; clear this</button>
+      </details>
     </fieldset>`,
 
     bp:`<fieldset><legend>Blood pressure</legend>
@@ -3108,7 +3133,9 @@ function editLog(iso){
 
   LOGDRAFT={
     blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null,
-    guests:(e.overnight_guests||'').split(',').map(x=>x.trim()).filter(Boolean)
+    guests:(e.overnight_guests||'').split(',').map(x=>x.trim()).filter(Boolean),
+    xlat:e.barry_lat??null,  xlng:e.barry_lng??null,
+    slat:e.sandra_lat??null, slng:e.sandra_lng??null
   };
 
   // pills carry over from the day before, ready to be knocked down
@@ -3165,11 +3192,21 @@ function editLog(iso){
       $('guestSearch').value=''; box.classList.add('hidden'); drawGuests(); });
   };
   }
+  const showAway=()=>{
+    if($('meCoords')) $('meCoords').textContent = LOGDRAFT.xlat
+      ? (+LOGDRAFT.xlat).toFixed(6)+', '+(+LOGDRAFT.xlng).toFixed(6)
+      : 'Tap the map to drop a pin.';
+    if($('paCoords')) $('paCoords').textContent = LOGDRAFT.slat
+      ? (+LOGDRAFT.slat).toFixed(6)+', '+(+LOGDRAFT.slng).toFixed(6)
+      : 'Tap the map to drop a pin.';
+  };
   const showC=()=>{ if(!$('logCoords')) return;
     $('logCoords').textContent = LOGDRAFT.blat
     ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
     : 'Tap the map to drop a pin.'; };
-  showC();
+  showC(); showAway();
+  if($('dtMe')      && LOGDRAFT.xlat) $('dtMe').open=true;
+  if($('dtPartner') && LOGDRAFT.slat) $('dtPartner').open=true;
 
   $('logEd').classList.remove('hidden'); $('logEdBody').scrollTop=0; lockBackground();
   setTimeout(()=>{
@@ -3177,6 +3214,27 @@ function editLog(iso){
     const m=showMap('logEditMap',LOGDRAFT.blat,LOGDRAFT.blng,
       (la,ln)=>{LOGDRAFT.blat=la;LOGDRAFT.blng=ln;showC();});
     $('logGeoGo').onclick=()=>geocode($('logGeoQ').value,m);
+
+    // The two "if not aboard" maps only draw once their panel is opened,
+    // otherwise Leaflet measures them at zero height and shows grey.
+    const wire=(box,mapId,draftLat,draftLng,q,go,clear)=>{
+      const d=$(box); if(!d) return;
+      let made=null;
+      const build=()=>{
+        if(made||!d.open) return;
+        made=showMap(mapId,LOGDRAFT[draftLat],LOGDRAFT[draftLng],
+          (la,ln)=>{LOGDRAFT[draftLat]=la;LOGDRAFT[draftLng]=ln;showAway();}, true);
+        $(go).onclick=()=>geocode($(q).value,made);
+      };
+      d.addEventListener('toggle',build);
+      if(d.open) setTimeout(build,60);
+      $(clear).onclick=()=>{
+        LOGDRAFT[draftLat]=null; LOGDRAFT[draftLng]=null;
+        showAway(); d.open=false;
+      };
+    };
+    wire('dtMe','logMapMe','xlat','xlng','meQ','meGo','meClear');
+    wire('dtPartner','logMapPartner','slat','slng','paQ','paGo','paClear');
   },100);
 
   $('logEdSave').onclick=()=>saveLog(iso);
@@ -3200,6 +3258,10 @@ async function saveLog(iso){
   // Leave whatever is stored alone rather than clearing it.
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) d[k]=f.elements[k].checked; });
   if(LOGDRAFT.blat!=null){ d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng; }
+  if(document.getElementById('dtMe')){
+    d.barry_lat=LOGDRAFT.xlat;  d.barry_lng=LOGDRAFT.xlng;
+    d.sandra_lat=LOGDRAFT.slat; d.sandra_lng=LOGDRAFT.slng;
+  }
 
   $('logEdSave').disabled=true;
   const {error}=await sb.from('log_days')

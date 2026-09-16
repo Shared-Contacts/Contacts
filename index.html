@@ -439,7 +439,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_ffHo4CL3bl3m207Cjpf6RA_qqYIxUzc';
 /* Public half of the push key pair. Safe to be here. */
 const VAPID_PUBLIC_KEY = 'BCZGMULyiOQCp6wXtnOIzNBCRVI_kZG5whqiIEtPMMzteGkJUxjyZbiND9JlogEMZtcCNulD73n-aB_ageLxSrM';
 
-/* Sent to anyone new so they can get themselves signed in. */
+/* Sent to anyone new so they can get themselves signed in. */const CANAL_GEOJSON_URL = 'canals.geojson';
 const START_LINK = 'https://shared-contacts.github.io/Contacts/start.html';
 
 const CANAL_GEOJSON_URL = 'canals.geojson';
@@ -1537,7 +1537,11 @@ function logSectionRows(){
 
 function optionRows(kind,one){
   const list=LOGOPTS.filter(o=>o.kind===kind);
-  return `${list.length?list.map(r=>`<div class="setrow">
+  return `${list.length?list.map((r,i)=>`<div class="setrow">
+      <span style="display:flex;flex-direction:column;gap:2px">
+        <button class="mv" data-optmv="${kind}:${r.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+        <button class="mv" data-optmv="${kind}:${r.id}:down" ${i===list.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+      </span>
       <input data-optedit="${r.id}" value="${esc(r.name)}">
       ${kind==='medication'?`<button class="tg" data-optdaily="${r.id}"
         aria-pressed="${!!r.is_default}">Daily</button>`:''}
@@ -1697,6 +1701,17 @@ async function openSettings(){
     const {error}=await sb.from('log_options')
       .update({name:inp.value.trim()}).eq('id',Number(inp.dataset.optedit));
     if(error){ toast('Could not save'); return; }
+    await loadLog(); openSettings();
+  });
+  $('setBody').querySelectorAll('[data-optmv]').forEach(b=>b.onclick=async()=>{
+    const [kind,id,dir]=b.dataset.optmv.split(':');
+    const list=LOGOPTS.filter(o=>o.kind===kind);
+    const i=list.findIndex(x=>x.id===Number(id)), j=dir==='up'?i-1:i+1;
+    if(i<0||j<0||j>=list.length) return;
+    list.splice(j,0,list.splice(i,1)[0]);
+    const res=await Promise.all(list.map((r,n)=>
+      sb.from('log_options').update({sort_order:(n+1)*10}).eq('id',r.id)));
+    if(res.some(r=>r.error)){ toast('Could not reorder'); return; }
     await loadLog(); openSettings();
   });
   $('setBody').querySelectorAll('[data-optdaily]').forEach(b=>b.onclick=async()=>{
@@ -1891,8 +1906,15 @@ function openHelp(){
   way next time. Menu &rsaquo; Settings &rsaquo; <em>Captain's log &mdash; sections</em>
   turns any of them off and changes the order.</p>
   <p>The choices behind "who is aboard", medication, bike ride and alcohol are
-  yours to edit, also in Settings. Pills left carries over from the day before
-  with &minus; and + to knock it down. Overnight guests searches your contacts.</p>
+  yours to edit and reorder in Settings &mdash; type over one to rename it, or use
+  the arrows to put them in the order you use them.</p>
+  <p>Only medicines ticked <strong>Daily</strong> appear when filling in a day,
+  so a medicine you have stopped taking stays out of the way without losing the
+  days it appears on. Pills left carries over from the day before with &minus;
+  and + to knock it down. Overnight guests searches your contacts.</p>
+  <p>Filling in a day follows the same section order as Settings, and anything
+  you have turned off is left out. What is already stored in a section you have
+  turned off stays as it is.</p>
   <p><strong>Log</strong> in the green bar keeps one entry a day: blood pressure,
   medication, where the boat is, engine hours, what you took on, who was aboard
   and what happened.</p>
@@ -2971,45 +2993,14 @@ function editLog(iso){
   const C=(l,n)=>`<label><input type="checkbox" name="${n}"> ${l}</label>`;
 
   $('logEdTitle').textContent=dayLabel(iso);
-  $('logEdBody').innerHTML=`<form id="logForm">
-   <div class="colA">
-    <fieldset><legend>Blood pressure</legend>
-      <div class="two">${N('Morning systolic','am_sys')}${N('Morning diastolic','am_dia')}</div>
-      ${N('Morning pulse','am_pulse')}
-      <div class="two">${N('Midday systolic','noon_sys')}${N('Midday diastolic','noon_dia')}</div>
-      ${N('Midday pulse','noon_pulse')}
-      <div class="two">${N('Evening systolic','pm_sys')}${N('Evening diastolic','pm_dia')}</div>
-      ${N('Evening pulse','pm_pulse')}
-    </fieldset>
-    <fieldset><legend>Medication</legend>
-      <div class="checks">${C('Tablets taken','tablets_taken')}</div>
-      <label>Pills left
-        <span class="stepper">
-          <button type="button" id="pillDown" aria-label="One fewer">&minus;</button>
-          <input name="pills_left" type="number" inputmode="numeric">
-          <button type="button" id="pillUp" aria-label="One more">+</button>
-        </span></label>
-      <p class="coords" style="margin-top:12px">What was taken</p>
-      <div class="checks" id="medPick">${LOGOPTS.filter(x=>x.kind==='medication')
-        .map(m=>`<label><input type="checkbox" name="med" value="${esc(m.name)}"
-          data-daily="${m.is_default?'1':'0'}"> ${esc(m.name)}</label>`).join('')
-        || '<span class="coords">Add your medicines in Settings.</span>'}</div>
-      <input type="hidden" name="medication">
-    </fieldset>
-    <fieldset><legend>Body</legend>
-      <div class="two">${N('Weight kg','weight_kg','0.1')}${N('Waist cm','waist_cm','0.1')}</div>
-      ${N('Hip cm','hip_cm','0.1')}
-    </fieldset>
-    <fieldset><legend>Activity</legend>
-      <div class="checks">${C('Walked','walked')}${C('Boated','boated')}${C('Stretches','stretches')}</div>
-      <label>Bike ride<input name="bike_ride" list="dlBike" autocomplete="off"></label>
-      <datalist id="dlBike">${optsFor('bike_ride')
-        .map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
-      <div class="two">${N('Steps','steps')}${N('Score out of 5','exercise_score')}</div>
-    </fieldset>
-   </div>
-   <div class="colB">
-    <fieldset><legend>Where</legend>
+  const meds=LOGOPTS.filter(x=>x.kind==='medication');
+  const takenAlready=(e.medication||'').split(',').map(x=>x.trim()).filter(Boolean);
+  // Daily ones, plus anything this day already records, so editing an old
+  // entry never quietly drops a medicine you have since stopped.
+  const medList=meds.filter(m=>m.is_default||takenAlready.includes(m.name));
+
+  const panes={
+    where:`<fieldset><legend>Where</legend>
       ${T('Closest address','boat_address')}
       ${T('Current canal','current_canal')}
       ${T('Journey','journey')}
@@ -3018,8 +3009,48 @@ function editLog(iso){
       <div id="logEditMap" class="map"></div>
       <p class="coords" id="logCoords"></p>
       <p class="coords">Carried over from the last entry. Move the pin if you have moved.</p>
-    </fieldset>
-    <fieldset><legend>Engine and services</legend>
+    </fieldset>`,
+
+    bp:`<fieldset><legend>Blood pressure</legend>
+      <div class="two">${N('Morning systolic','am_sys')}${N('Morning diastolic','am_dia')}</div>
+      ${N('Morning pulse','am_pulse')}
+      <div class="two">${N('Midday systolic','noon_sys')}${N('Midday diastolic','noon_dia')}</div>
+      ${N('Midday pulse','noon_pulse')}
+      <div class="two">${N('Evening systolic','pm_sys')}${N('Evening diastolic','pm_dia')}</div>
+      ${N('Evening pulse','pm_pulse')}
+    </fieldset>`,
+
+    medication:`<fieldset><legend>Medication</legend>
+      <div class="checks">${C('Tablets taken','tablets_taken')}</div>
+      <label>Pills left
+        <span class="stepper">
+          <button type="button" id="pillDown" aria-label="One fewer">&minus;</button>
+          <input name="pills_left" type="number" inputmode="numeric">
+          <button type="button" id="pillUp" aria-label="One more">+</button>
+        </span></label>
+      <p class="coords" style="margin-top:12px">What was taken</p>
+      <div class="checks" id="medPick">${medList.length
+        ? medList.map(m=>`<label><input type="checkbox" name="med" value="${esc(m.name)}"
+            data-daily="${m.is_default?'1':'0'}"> ${esc(m.name)}</label>`).join('')
+        : '<span class="coords">Tick your daily medicines in Settings.</span>'}</div>
+      <input type="hidden" name="medication">
+    </fieldset>`,
+
+    body:`<fieldset><legend>Body</legend>
+      <div class="two">${N('Weight kg','weight_kg','0.1')}${N('Waist cm','waist_cm','0.1')}</div>
+      ${N('Hip cm','hip_cm','0.1')}
+    </fieldset>`,
+
+    activity:`<fieldset><legend>Activity</legend>
+      <div class="checks">${C('Walked','walked')}${C('Boated','boated')}${C('Stretches','stretches')}</div>
+      <label>Bike ride<select name="bike_ride">
+        <option value="">&mdash;</option>
+        ${optsFor('bike_ride').map(v=>`<option>${esc(v)}</option>`).join('')}
+      </select></label>
+      <div class="two">${N('Steps','steps')}${N('Score out of 5','exercise_score')}</div>
+    </fieldset>`,
+
+    boat:`<fieldset><legend>Engine and services</legend>
       <div class="two">${N('Hours at start','hours_start','0.1')}${N('Hours at end','hours_end','0.1')}</div>
       <div class="checks">${C('Diesel','diesel')}${C('Pump out','pump_out')}${C('Coal','coal')}
         ${C('Gas','lpg_gas')}${C('Water','water')}${C('Rubbish','rubbish')}
@@ -3031,13 +3062,13 @@ function editLog(iso){
           `<button type="button" data-sig="${n}">${n}</button>`).join('')}
           <button type="button" data-sig="">None</button></span></label>
       <input type="hidden" name="wifi_quality">
-    </fieldset>
-    <fieldset><legend>Aboard</legend>
+    </fieldset>`,
+
+    aboard:`<fieldset><legend>Aboard</legend>
       <label>Who is aboard<select name="who_aboard">
         <option value="">&mdash;</option>
         ${optsFor('who_aboard').map(v=>`<option>${esc(v)}</option>`).join('')}
       </select></label>
-      <p class="coords">The choices are yours to change, in Settings.</p>
       ${N('On board tonight','pob_tonight')}
       <label>Overnight guests
         <input id="guestSearch" placeholder="Start typing a name from your contacts"
@@ -3045,18 +3076,28 @@ function editLog(iso){
       <div class="results hidden" id="guestHits"></div>
       <div class="guestrow" id="guestList"></div>
       <input type="hidden" name="overnight_guests">
-    </fieldset>
-    <fieldset><legend>The day</legend>
+    </fieldset>`,
+
+    day:`<fieldset><legend>The day</legend>
       <label>Diary notes<textarea name="diary_notes" rows="5"></textarea></label>
       ${T('Regular chores','regular_chores')}
       ${T('Drinks','drinks')}
-      <label>Alcohol<input name="alcohol" list="dlAlc" autocomplete="off"></label>
-      <datalist id="dlAlc">${optsFor('alcohol')
-        .map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
+      <label>Alcohol<select name="alcohol">
+        <option value="">&mdash;</option>
+        ${optsFor('alcohol').map(v=>`<option>${esc(v)}</option>`).join('')}
+      </select></label>
       ${T('Pub, restaurant or cafe','pub_cafe')}
       ${T('Attractions visited','attractions')}
-    </fieldset>
-   </div>
+    </fieldset>`
+  };
+
+  // Same order as Settings, and nothing you have switched off
+  const wanted=mySections().filter(x=>x.on && panes[x.id]).map(x=>panes[x.id]);
+  const half=Math.ceil(wanted.length/2);
+
+  $('logEdBody').innerHTML=`<form id="logForm">
+   <div class="colA">${wanted.slice(0,half).join('')}</div>
+   <div class="colB">${wanted.slice(half).join('')}</div>
   </form>`;
 
   const f=$('logForm');
@@ -3071,37 +3112,39 @@ function editLog(iso){
   };
 
   // pills carry over from the day before, ready to be knocked down
-  if(f.elements['pills_left'].value==='' && prev.pills_left!=null)
+  if(f.elements['pills_left'] && f.elements['pills_left'].value==='' && prev.pills_left!=null)
     f.elements['pills_left'].value=prev.pills_left;
   const bump=n=>{
     const cur=Number(f.elements['pills_left'].value||0);
     f.elements['pills_left'].value=Math.max(0,cur+n);
   };
-  $('pillDown').onclick=()=>bump(-1);
-  $('pillUp').onclick=()=>bump(1);
+  if($('pillDown')){ $('pillDown').onclick=()=>bump(-1); $('pillUp').onclick=()=>bump(1); }
 
-  if(!f.elements['who_aboard'].value && prev.who_aboard)
+  if(f.elements['who_aboard'] && !f.elements['who_aboard'].value && prev.who_aboard)
     f.elements['who_aboard'].value=prev.who_aboard;
 
   // tick what was taken; on a fresh day tick the daily ones
   const already=(e.medication||'').split(',').map(x=>x.trim()).filter(Boolean);
-  const medBoxes=[...$('medPick').querySelectorAll('[name="med"]')];
+  const medBoxes=$('medPick')?[...$('medPick').querySelectorAll('[name="med"]')]:[];
   medBoxes.forEach(b=>{
     b.checked = already.length ? already.includes(b.value) : b.dataset.daily==='1';
   });
-  const syncMeds=()=>{ f.elements['medication'].value =
+  const syncMeds=()=>{ if(f.elements['medication']) f.elements['medication'].value =
     medBoxes.filter(b=>b.checked).map(b=>b.value).join(', '); };
   medBoxes.forEach(b=>b.addEventListener('change',syncMeds));
   syncMeds();
 
   const sig=$('sigPick');
+  if(sig){
   const paintSig=()=>sig.querySelectorAll('[data-sig]').forEach(b=>
     b.setAttribute('aria-pressed', String(b.dataset.sig)===String(f.elements['wifi_quality'].value)));
   f.elements['wifi_quality'].value = e.wifi_quality!=null?String(e.wifi_quality):'';
   sig.querySelectorAll('[data-sig]').forEach(b=>b.onclick=()=>{
     f.elements['wifi_quality'].value=b.dataset.sig; paintSig(); });
   paintSig();
+  }
 
+  if($('guestList')){
   const drawGuests=()=>{
     $('guestList').innerHTML=LOGDRAFT.guests.map((g,i)=>
       `<span class="g">${esc(g)}<button type="button" data-gx="${i}" aria-label="Remove">&times;</button></span>`).join('');
@@ -3121,13 +3164,16 @@ function editLog(iso){
       if(!LOGDRAFT.guests.includes(b.dataset.gp)) LOGDRAFT.guests.push(b.dataset.gp);
       $('guestSearch').value=''; box.classList.add('hidden'); drawGuests(); });
   };
-  const showC=()=>{ $('logCoords').textContent = LOGDRAFT.blat
+  }
+  const showC=()=>{ if(!$('logCoords')) return;
+    $('logCoords').textContent = LOGDRAFT.blat
     ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
     : 'Tap the map to drop a pin.'; };
   showC();
 
   $('logEd').classList.remove('hidden'); $('logEdBody').scrollTop=0; lockBackground();
   setTimeout(()=>{
+    if(!$('logEditMap')) return;
     const m=showMap('logEditMap',LOGDRAFT.blat,LOGDRAFT.blng,
       (la,ln)=>{LOGDRAFT.blat=la;LOGDRAFT.blng=ln;showC();});
     $('logGeoGo').onclick=()=>geocode($('logGeoQ').value,m);
@@ -3141,15 +3187,19 @@ let LOGDRAFT={};
 async function saveLog(iso){
   const f=$('logForm'), d={created_by:ME.id, on_date:iso};
   LOG_FIELDS_NUM.forEach(k=>{
-    const v=f.elements[k]?f.elements[k].value.trim():'';
+    if(!f.elements[k]) return;
+    const v=f.elements[k].value.trim();
     d[k]= v===''?null:Number(v);
   });
   LOG_FIELDS_TXT.forEach(k=>{
-    const v=f.elements[k]?f.elements[k].value.trim():'';
+    if(!f.elements[k]) return;
+    const v=f.elements[k].value.trim();
     d[k]= v===''?null:v;
   });
-  LOG_FIELDS_BOOL.forEach(k=>{ d[k]=f.elements[k]?f.elements[k].checked:null; });
-  d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng;
+  // A field that is not on the form belongs to a section you have turned off.
+  // Leave whatever is stored alone rather than clearing it.
+  LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) d[k]=f.elements[k].checked; });
+  if(LOGDRAFT.blat!=null){ d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng; }
 
   $('logEdSave').disabled=true;
   const {error}=await sb.from('log_days')

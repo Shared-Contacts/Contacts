@@ -76,6 +76,7 @@ ul.list li.alt{background:#F3F1EA}
 .row:active{background:#E8E5DC}
 .row .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .row .name{font-size:19px;font-weight:600;line-height:1.25}
+.sharedot{color:#0F6E8C;font-size:22px;line-height:0;vertical-align:middle}
 .row .rel{color:#37564A;font-size:15px;line-height:1.3;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .sub{color:var(--muted);font-size:15px;line-height:1.3;
@@ -92,7 +93,7 @@ ul.list li.alt{background:#F3F1EA}
 .sheet{position:fixed;inset:0;z-index:40;background:var(--paper);
   display:flex;flex-direction:column;overflow:hidden}
 .sheet.hidden{display:none}
-.sheetbar{flex:0 0 auto;background:var(--hull);color:#F2EFE4;
+.sheetbar{flex:0 0 auto;position:sticky;top:0;z-index:6;background:var(--hull);color:#F2EFE4;
   display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 12px 12px}
 .sheetbar button{color:#F2EFE4;padding:8px 10px;border-radius:8px;font-size:16px}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -126,7 +127,7 @@ ul.list li.alt{background:#F3F1EA}
 .sharebar{background:var(--red);color:#fff;padding:9px 14px;font-size:15px;
   display:flex;gap:10px;align-items:center}
 .sharebar button{color:#fff;text-decoration:underline;font-weight:600}
-.sheetbody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+.sheetbody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
 #edBody,#logEdBody{max-width:1080px}
 @media (min-width:900px){
@@ -245,6 +246,11 @@ input[name="postcode"]{text-transform:uppercase}
 .item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;
   border-bottom:1px solid #F0EEE7;width:100%;text-align:left}
 .card .item:last-child{border-bottom:none}
+.rtlist .item{padding:7px 14px}
+.rtlist .item .t{font-size:16px}
+.rtdone>summary{padding:10px 14px;color:var(--muted);font-size:15px;cursor:pointer;
+  font-weight:600;list-style:none}
+.rtdone>summary::-webkit-details-marker{display:none}
 .item .tick{flex:0 0 auto;width:26px;height:26px;border-radius:50%;
   border:2px solid var(--rule);background:#fff;margin-top:2px}
 .item .tick.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
@@ -371,6 +377,18 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="itBody"></div>
 </div>
 
+<div id="wish" class="sheet hidden">
+  <div class="sheetbar"><button id="wishBack">Back</button>
+    <span class="title">Wishlist</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="wishBody"></div>
+</div>
+
+<div id="shop" class="sheet hidden">
+  <div class="sheetbar"><button id="shopBack">Back</button>
+    <span class="title">Shopping</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="shopBody"></div>
+</div>
+
 <div id="where" class="sheet hidden">
   <div class="sheetbar"><button id="whereBack">Back</button>
     <span class="title">Where we are</span><span style="width:56px"></span></div>
@@ -397,13 +415,15 @@ i.key{vertical-align:middle}
     <span class="title">Menu</span><span style="width:56px"></span></div>
   <div class="sheetbody">
     <div class="card">
+      <button class="menuitem" id="goShop">Shopping list &rsaquo;</button>
+      <button class="menuitem" id="goWish">Wishlist &mdash; ideas for these apps &rsaquo;</button>
       <button class="menuitem" id="goWhere">Share where I am &rsaquo;</button>
       <button class="menuitem" id="refreshBtn">Refresh from the server</button>
       <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
     </div>
-    <div class="card"><h3>Your password</h3>
+    <details class="card logsec"><summary>Your password</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         Change it to something you will remember. At least eight characters.
         It applies everywhere you sign in.</dd></div>
@@ -411,7 +431,7 @@ i.key{vertical-align:middle}
         <input id="pw1" type="password" placeholder="New password" autocomplete="new-password">
         <input id="pw2" type="password" placeholder="Type it again" autocomplete="new-password">
         <button class="btn primary" id="pwSave">Change my password</button>
-      </div></div>
+      </div></details>
     <p class="coords" id="whoami"></p>
   </div>
 </div>
@@ -477,7 +497,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -665,7 +685,7 @@ function rowHtml(c,nested,birthdayView,alt){
 
   return `<li class="${alt?'alt':''}"><button class="row ${nested?'nested':''}" data-id="${c.id}">
     <span class="who">
-      <span class="name">${esc(listName(c))}</span>
+      <span class="name">${c.created_by!==ME.id?'<span class="sharedot" title="Shared with you">&bull;</span> ':''}${esc(listName(c))}</span>
       ${pins.length?`<span class="rel">${esc(pins.join(' \u00b7 '))}</span>`:''}
       ${sub?`<span class="sub">${esc(sub)}</span>`:''}
     </span>
@@ -759,10 +779,22 @@ async function signPaths(paths){
   (data||[]).forEach(d=>{ if(d.signedUrl) SIGNED[d.path]=d.signedUrl; });
 }
 
-async function uploadPhoto(file, asAvatar){
+// Several at once, one after another so a slow signal cannot overlap them
+async function uploadPhotos(files){
+  if(!files||!files.length) return;
+  const many=files.length>1;
+  for(let i=0;i<files.length;i++){
+    if(many) toast('Adding photo '+(i+1)+' of '+files.length);
+    await uploadPhoto(files[i],false,true);
+  }
+  await loadAll(); openDetail(CURRENT.id,true);
+  toast(many?files.length+' photos added':'Photo added');
+}
+
+async function uploadPhoto(file, asAvatar, quiet){
   if(!file)return;
   if(!/^image\//.test(file.type)){toast('That is not an image');return;}
-  toast('Adding the photo\u2026');
+  if(!quiet) toast('Adding the photo\u2026');
   try{
     const blob=await shrink(file, asAvatar?600:1400);
     const path=`${CURRENT.id}/${crypto.randomUUID()}.jpg`;
@@ -996,7 +1028,7 @@ async function openDetail(id, keepPlace){
       </figure>`).join('')}</div>`
       :'<div class="field"><dd style="color:var(--muted);font-size:15px">No photos yet.</dd></div>'}
     <div class="photobar">
-      <label>+ Add a photo<input type="file" accept="image/*" id="addPhoto"></label>
+      <label>+ Add photos<input type="file" accept="image/*" multiple id="addPhoto"></label>
     </div>
     <div class="field"><dd style="color:var(--muted);font-size:14px">
       Photos are resized on your phone before they are sent, so there is no need to
@@ -1089,7 +1121,7 @@ async function openDetail(id, keepPlace){
     b.onclick=()=>toggleDone(Number(b.dataset.done2)));
   $('detBody').querySelectorAll('[data-item2]').forEach(b=>
     b.onclick=()=>openItem(ITEMS.find(x=>x.id===Number(b.dataset.item2))));
-  const ap=$('addPhoto'); if(ap)ap.onchange=e=>uploadPhoto(e.target.files[0],false);
+  const ap=$('addPhoto'); if(ap)ap.onchange=e=>uploadPhotos([...e.target.files]);
   const av=$('addAvatar'); if(av)av.onchange=e=>uploadPhoto(e.target.files[0],true);
   const ra=$('rmAvatar'); if(ra)ra.onclick=()=>removePhoto(CURRENT.avatar_path,true);
   $('detBody').querySelectorAll('[data-rmphoto]').forEach(b=>
@@ -1806,6 +1838,18 @@ function openHelp(){
   <p class="lead">Everything here is stored online, so you and Sandra see the same
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
 
+  <h4>Shopping list</h4>
+  <p>Menu &rsaquo; <strong>Shopping list</strong> is shared by everyone signed in.
+  Either of you can add to it and either can tick things off, so whoever is in the
+  shop sees what the other added. Ticked items drop into the trolley at the bottom
+  until you clear it.</p>
+
+  <h4>Wishlist</h4>
+  <p>Menu &rsaquo; <strong>Wishlist</strong> is where anyone can put ideas for
+  either app. Tag an idea as Contacts or Calendar Club, and move it between Idea,
+  Maybe, Doing, Done and Not doing as it goes along. You can only remove your own,
+  but anyone can move any of them.</p>
+
   <h4>Sharing where you are</h4>
   <p>Menu &rsaquo; <strong>Share where I am</strong> lets you hand your position
   to a named person for one, four, eight or twenty-four hours.</p>
@@ -2185,11 +2229,11 @@ function diaryRoutine(){
     if(!rows.length) return;
     html+=`<p class="dsec">${esc(h||'Anything else')}
       <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">
-        ${todo.length} to do</span></p><div class="card">`;
+        ${todo.length} to do</span></p><div class="card rtlist">`;
     todo.forEach(r=>{ html+=routineRow(r); });
-    if(todo.length&&done.length)
-      html+=`<div class="field"><dd style="color:var(--muted);font-size:14px">Done</dd></div>`;
-    done.forEach(r=>{ html+=routineRow(r); });
+    if(done.length)
+      html+=`<details class="rtdone"><summary>${done.length} done &mdash; show</summary>
+        ${done.map(routineRow).join('')}</details>`;
     html+='</div>';
   });
 
@@ -2748,7 +2792,7 @@ async function pushCard(){
   const sub=await currentSubscription();
   const here=sub && MY_DEVICES.some(d=>d.endpoint===sub.endpoint);
   const others=MY_DEVICES.filter(d=>!sub||d.endpoint!==sub.endpoint);
-  return `<div class="card"><h3>Reminders on this device</h3>
+  return `<details class="card logsec"><summary>Reminders on this device</summary>
     ${!pushPossible()
       ? '<div class="field"><dd>This browser cannot receive reminders. On an iPhone, add the app to your home screen first.</dd></div>'
       : !reg
@@ -2766,7 +2810,7 @@ async function pushCard(){
            <div class="setadd"><button class="btn primary" id="pushOn">Turn on reminders</button></div>`}
     ${others.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
         Also registered: ${others.map(d=>esc(d.label||'a device')).join(', ')}</dd></div>`:''}
-    </div>`;
+    </details>`;
 }
 
 
@@ -2891,8 +2935,8 @@ function renderLog(){
     where: (()=>{
       const spots=[];
       if(e.boat_lat&&e.boat_lng)     spots.push({lat:+e.boat_lat,  lng:+e.boat_lng,  what:'Boat'});
-      if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng, what:'You'});
-      if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,what:'Sandra'});
+      if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng, what:myShortName()});
+      if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,what:partnerShortName()});
       const place=(label,p)=>`<div class="field"><dt>${label}</dt><dd>
         <button class="addmore" style="padding:0" data-maps="${p.lat},${p.lng}">
           ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} &nbsp;&rsaquo;</button></dd></div>`;
@@ -2954,8 +2998,8 @@ function renderLog(){
   if($('logMap')){
     const spots=[];
     if(e.boat_lat&&e.boat_lng)     spots.push({lat:+e.boat_lat,  lng:+e.boat_lng,  what:'Boat'});
-    if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng, what:'You'});
-    if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,what:'Sandra'});
+    if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng, what:myShortName()});
+    if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,what:partnerShortName()});
     const m=showMap('logMap',spots[0].lat,spots[0].lng,null);
     if(m){
       // Label every pin, so three hundred miles apart still makes sense
@@ -3044,7 +3088,7 @@ function editLog(iso){
       <p class="coords" id="logCoords"></p>
       <p class="coords">Carried over from the last entry. Move the pin if you have moved.</p>
 
-      <details id="dtMe" class="awaybox"><summary>You, if not aboard</summary>
+      <details id="dtMe" class="awaybox"><summary>${esc(myShortName())}, if not aboard</summary>
         <div class="geo"><input id="meQ" placeholder="Where were you?">
           <button type="button" id="meGo">Find</button></div>
         <div id="logMapMe" class="map"></div>
@@ -3052,8 +3096,8 @@ function editLog(iso){
         <button type="button" class="addmore" id="meClear">Not away &mdash; clear this</button>
       </details>
 
-      <details id="dtPartner" class="awaybox"><summary>Sandra, if not aboard</summary>
-        <div class="geo"><input id="paQ" placeholder="Where was she?">
+      <details id="dtPartner" class="awaybox"><summary>${esc(partnerShortName())}, if not aboard</summary>
+        <div class="geo"><input id="paQ" placeholder="Where were they?">
           <button type="button" id="paGo">Find</button></div>
         <div id="logMapPartner" class="map"></div>
         <p class="coords" id="paCoords"></p>
@@ -3315,6 +3359,21 @@ async function loadShares(){
   paintShareBar();
 }
 
+// Who the log's two "if not aboard" slots belong to
+function myShortName(){
+  if(MY_PROFILE&&MY_PROFILE.my_contact_id){
+    const c=CONTACTS.find(x=>x.id===MY_PROFILE.my_contact_id);
+    if(c&&c.first_name) return c.first_name;
+  }
+  return 'You';
+}
+function partnerShortName(){
+  const u=USERS[0];
+  if(!u) return 'Partner';
+  if(u.display_name) return u.display_name.split(/\s+/)[0];
+  return (u.email||'Partner').split('@')[0];
+}
+
 function namesOf(ids){
   return ids.map(id=>{
     const u=USERS.find(x=>x.id===id);
@@ -3450,6 +3509,178 @@ function renderWhere(){
   }
 }
 
+
+/* ============================================================
+   Wishlist and shopping list — both shared by everyone signed in
+   ============================================================ */
+let WISHES=[], SHOP=[], WISH_APP='contacts';
+
+const WISH_STATUS=[['idea','Idea'],['maybe','Maybe'],['doing','Doing'],
+  ['done','Done'],['no','Not doing']];
+
+async function loadLists(){
+  const [w,sh]=await Promise.all([
+    sb.from('wishes').select('*').order('created_at',{ascending:false}),
+    sb.from('shopping').select('*').order('sort_order').order('created_at')
+  ]);
+  WISHES=w.data||[]; SHOP=sh.data||[];
+}
+
+function whoWrote(id){
+  if(id===ME.id) return 'you';
+  const u=USERS.find(x=>x.id===id);
+  return u?(u.display_name||u.email.split('@')[0]):'someone';
+}
+
+/* ---------- wishlist ---------- */
+async function openWish(){
+  await loadLists(); renderWish();
+  $('wish').classList.remove('hidden'); $('wishBody').scrollTop=0; lockBackground();
+}
+
+function renderWish(){
+  const live=WISHES.filter(w=>w.app===WISH_APP||w.app==='either');
+  const byStatus={};
+  live.forEach(w=>{ (byStatus[w.status]=byStatus[w.status]||[]).push(w); });
+
+  let html=`<div class="kindpick">
+      <button data-wapp="contacts"      aria-pressed="${WISH_APP==='contacts'}">Contacts</button>
+      <button data-wapp="calendar club" aria-pressed="${WISH_APP==='calendar club'}">Calendar Club</button>
+    </div>
+    <div class="card"><h3>Add an idea</h3><div class="setadd">
+      <input id="wTitle" placeholder="What would be good?">
+      <textarea id="wNotes" rows="2" placeholder="Anything worth explaining (optional)"
+        style="width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;margin-bottom:8px"></textarea>
+      <button class="btn primary" id="wAdd">Add it</button>
+    </div></div>`;
+
+  WISH_STATUS.forEach(([key,label])=>{
+    const rows=byStatus[key]||[];
+    if(!rows.length) return;
+    html+=`<p class="dsec">${label} <span style="float:right;font-weight:400;
+      text-transform:none;letter-spacing:0">${rows.length}</span></p><div class="card">`;
+    rows.forEach(w=>{
+      html+=`<div class="item" style="align-items:flex-start">
+        <span class="mid">
+          <span class="t" style="${key==='done'||key==='no'?'color:var(--muted)':''}">${esc(w.title)}</span>
+          ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
+          <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
+            ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
+          <span class="pickrow" style="margin-top:8px">
+            ${WISH_STATUS.map(([k,l])=>`<button type="button" data-wset="${w.id}:${k}"
+              aria-pressed="${w.status===k}" style="padding:5px 11px;font-size:14px">${l}</button>`).join('')}
+          </span>
+        </span>
+        ${w.created_by===ME.id?`<button class="del" data-wdel="${w.id}" aria-label="Remove">&times;</button>`:''}
+      </div>`;
+    });
+    html+='</div>';
+  });
+
+  if(!live.length)
+    html+=`<div class="card"><div class="field"><dd>No ideas yet for this one.</dd></div></div>`;
+
+  $('wishBody').innerHTML=html;
+  $('wishBody').querySelectorAll('[data-wapp]').forEach(b=>b.onclick=()=>{
+    WISH_APP=b.dataset.wapp; renderWish(); });
+  $('wAdd').onclick=async()=>{
+    const t=$('wTitle').value.trim();
+    if(!t){ toast('Say what the idea is'); return; }
+    const {error}=await sb.from('wishes').insert({
+      created_by:ME.id, app:WISH_APP, title:t,
+      notes:$('wNotes').value.trim()||null});
+    if(error){ toast('Could not add it'); console.error(error); return; }
+    await loadLists(); renderWish(); toast('Added');
+  };
+  $('wishBody').querySelectorAll('[data-wset]').forEach(b=>b.onclick=async()=>{
+    const [id,st]=b.dataset.wset.split(':');
+    const {error}=await sb.from('wishes').update({status:st}).eq('id',Number(id));
+    if(error){ toast('Could not change that'); return; }
+    await loadLists(); renderWish();
+  });
+  $('wishBody').querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Remove your idea?')) return;
+    const {error}=await sb.from('wishes').delete().eq('id',Number(b.dataset.wdel));
+    if(error){ toast('Could not remove it'); return; }
+    await loadLists(); renderWish();
+  });
+}
+
+/* ---------- shopping ---------- */
+async function openShop(){
+  await loadLists(); renderShop();
+  $('shop').classList.remove('hidden'); $('shopBody').scrollTop=0; lockBackground();
+}
+
+function renderShop(){
+  const todo=SHOP.filter(x=>!x.got);
+  const got =SHOP.filter(x=>x.got)
+    .sort((a,b)=>new Date(b.got_at||0)-new Date(a.got_at||0));
+
+  const row=x=>`<div class="item rtrow">
+    <button class="tick ${x.got?'on':''}" data-sgot="${x.id}"
+      aria-label="${x.got?'Put back on the list':'Got it'}">${x.got?'&#10003;':''}</button>
+    <button class="mid" data-sedit="${x.id}">
+      <span class="t ${x.got?'done':''}">${esc(x.name)}${x.qty?' &mdash; '+esc(x.qty):''}</span>
+      ${x.created_by!==ME.id&&!x.got?`<span class="w">added by ${esc(whoWrote(x.created_by))}</span>`:''}
+    </button>
+    <button class="del" data-sdel="${x.id}" aria-label="Remove">&times;</button></div>`;
+
+  $('shopBody').innerHTML=`
+    <div class="card"><h3>Add to the list</h3><div class="setadd">
+      <input id="sName" placeholder="What do we need?">
+      <input id="sQty" placeholder="How much or how many (optional)">
+      <button class="btn primary" id="sAdd">Add it</button>
+    </div></div>
+    <p class="dsec">To get <span style="float:right;font-weight:400;text-transform:none;
+      letter-spacing:0">${todo.length}</span></p>
+    <div class="card rtlist">${todo.length?todo.map(row).join('')
+      :'<div class="field"><dd>Nothing on the list.</dd></div>'}</div>
+    ${got.length?`<p class="dsec">In the trolley</p>
+      <div class="card rtlist">${got.map(row).join('')}
+        <div class="setadd"><button class="btn" id="sClear"
+          style="border:1.5px solid var(--rule)">Clear the trolley</button></div></div>`:''}`;
+
+  $('sAdd').onclick=async()=>{
+    const n=$('sName').value.trim();
+    if(!n){ toast('Type what you need'); return; }
+    const {error}=await sb.from('shopping').insert({
+      created_by:ME.id, name:n, qty:$('sQty').value.trim()||null,
+      sort_order:Math.max(100,...SHOP.map(x=>x.sort_order))+1});
+    if(error){ toast('Could not add it'); return; }
+    $('sName').value=''; $('sQty').value='';
+    await loadLists(); renderShop();
+  };
+  $('shopBody').querySelectorAll('[data-sgot]').forEach(b=>b.onclick=async()=>{
+    const x=SHOP.find(y=>y.id===Number(b.dataset.sgot));
+    const want=!x.got;
+    const {error}=await sb.from('shopping')
+      .update({got:want, got_at:want?new Date().toISOString():null}).eq('id',x.id);
+    if(error){ toast('Could not change that'); return; }
+    await loadLists(); renderShop();
+  });
+  $('shopBody').querySelectorAll('[data-sdel]').forEach(b=>b.onclick=async()=>{
+    const {error}=await sb.from('shopping').delete().eq('id',Number(b.dataset.sdel));
+    if(error){ toast('Could not remove it'); return; }
+    await loadLists(); renderShop();
+  });
+  $('shopBody').querySelectorAll('[data-sedit]').forEach(b=>b.onclick=async()=>{
+    const x=SHOP.find(y=>y.id===Number(b.dataset.sedit));
+    const n=prompt('Change it to:',x.name);
+    if(n===null||!n.trim()) return;
+    const {error}=await sb.from('shopping').update({name:n.trim()}).eq('id',x.id);
+    if(error){ toast('Could not save'); return; }
+    await loadLists(); renderShop();
+  });
+  const cl=$('sClear');
+  if(cl) cl.onclick=async()=>{
+    if(!confirm('Take everything in the trolley off the list?')) return;
+    const {error}=await sb.from('shopping').delete().eq('got',true);
+    if(error){ toast('Could not clear it'); return; }
+    await loadLists(); renderShop(); toast('Cleared');
+  };
+}
+
 /* ---------- wiring ---------- */
 $('signinBtn').onclick=async()=>{
   const b=$('signinBtn');b.disabled=true;
@@ -3472,6 +3703,10 @@ $('logNext').onclick=()=>stepDay(1);
 $('logPick').onclick=openDayPick;
 $('logEditTop').onclick=()=>editLog(LOG_DATE);
 $('goWhere').onclick=()=>{$('menu').classList.add('hidden');openWhere();};
+$('goWish').onclick=()=>{$('menu').classList.add('hidden');openWish();};
+$('goShop').onclick=()=>{$('menu').classList.add('hidden');openShop();};
+$('wishBack').onclick=()=>{$('wish').classList.add('hidden');lockBackground();};
+$('shopBack').onclick=()=>{$('shop').classList.add('hidden');lockBackground();};
 $('whereBack').onclick=()=>{killMaps();$('where').classList.add('hidden');lockBackground();};
 $('logBack').onclick=()=>{killMaps();$('log').classList.add('hidden');lockBackground();};
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};

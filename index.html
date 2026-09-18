@@ -72,7 +72,7 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .open .caret{transform:rotate(90deg)}
 .row{width:100%;display:flex;align-items:flex-start;gap:12px;padding:13px 16px;text-align:left}
 .row.nested{padding-left:32px}
-ul.list li.alt{background:#F3F1EA}
+ul.list li.alt{background:var(--band,#F3F1EA)}
 .row:active{background:#E8E5DC}
 .row .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .row .name{font-size:19px;font-weight:600;line-height:1.25}
@@ -264,6 +264,12 @@ input[name="postcode"]{text-transform:uppercase}
 .kindpick button{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--rule);
   background:#fff;font-weight:600;color:var(--muted)}
 .kindpick button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+.todayband{margin:0 0 12px;padding:9px 14px;border-radius:8px;
+  background:var(--hull);color:var(--paper);font-weight:700;font-size:15px;text-align:center}
+.pastband{margin:0 0 14px;padding:11px 14px;border-radius:8px;
+  background:#F6E7C9;border:1.5px solid var(--brass);color:var(--ink);font-size:15px}
+.pastband .addmore{padding:0;margin-left:6px}
+.sheet.pastday>.sheetbar{background:var(--brass)}
 .mnav{display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:4px 2px 12px;font-size:18px;font-weight:700}
 .mnav button{color:var(--hull);padding:8px 14px;border-radius:8px;font-size:16px}
@@ -289,6 +295,11 @@ i.key{vertical-align:middle}
 .alarm p{margin:0 0 10px;color:#C8D6CD;font-size:15px}
 .alarm button{background:rgba(255,255,255,.16);color:#F2EFE4;border-radius:8px;
   padding:9px 14px;font-weight:600;margin-right:8px}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;
+  border:1.5px solid var(--rule);background:var(--panel);font-size:15px;color:var(--muted)}
+.swatch span{width:17px;height:17px;border-radius:50%;display:inline-block}
+.swatch[aria-pressed="true"]{border-color:var(--hull);color:var(--ink);font-weight:700}
 .menuitem{display:block;width:100%;text-align:left;padding:16px 14px;font-size:17px;
   border-bottom:1px solid #F0EEE7}
 .menuitem:last-child{border-bottom:none}
@@ -423,6 +434,10 @@ i.key{vertical-align:middle}
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
     </div>
+    <details class="card logsec"><summary>Colours</summary>
+      <div class="setadd"><div class="swatches" id="themePick"></div></div>
+    </details>
+
     <details class="card logsec"><summary>Your password</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         Change it to something you will remember. At least eight characters.
@@ -568,6 +583,7 @@ async function loadAll(){
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
   MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
+  if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
   PETS=pt.data||[];
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
@@ -1839,16 +1855,23 @@ function openHelp(){
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
 
   <h4>Shopping list</h4>
-  <p>Menu &rsaquo; <strong>Shopping list</strong> is shared by everyone signed in.
-  Either of you can add to it and either can tick things off, so whoever is in the
-  shop sees what the other added. Ticked items drop into the trolley at the bottom
-  until you clear it.</p>
+  <p>You have your own list, and so does everyone else. Open
+  <strong>Who can use this list</strong> at the bottom and tick someone to let
+  them add to yours and tick things off it. Lists shared with you appear as extra
+  buttons along the top, so you can put something on Sandra's list for her next
+  shop without it landing on yours.</p>
+  <p>Ticked items drop into the trolley at the bottom until you clear it.</p>
 
   <h4>Wishlist</h4>
   <p>Menu &rsaquo; <strong>Wishlist</strong> is where anyone can put ideas for
   either app. Tag an idea as Contacts or Calendar Club, and move it between Idea,
   Maybe, Doing, Done and Not doing as it goes along. You can only remove your own,
   but anyone can move any of them.</p>
+
+  <h4>Colours</h4>
+  <p>Menu &rsaquo; <strong>Colours</strong> offers Canal, Serene, Sombre, Jazzy and
+  High contrast. It follows your account, so it looks the same on the phone and
+  the laptop, and it is yours alone.</p>
 
   <h4>Sharing where you are</h4>
   <p>Menu &rsaquo; <strong>Share where I am</strong> lets you hand your position
@@ -1975,8 +1998,10 @@ function openHelp(){
   The boat's position, the canal, who is aboard and the engine hours are carried
   over from your last entry, so on a day you have not moved there is nothing to
   change. Move the pin or edit the hours when they do change.</p>
-  <p>The arrows at the top step back and forward through the days. The log is
-  private to you.</p>
+  <p>The arrows at the top step back and forward through the days. Today's entry
+  has a green band across the top; any other day turns the bar amber and says
+  plainly which day you are on, with a button back to today. The log is private
+  to you.</p>
   <p>To be reminded, put a repeating daily to-do in the Diary &mdash; "fill in the
   log", every day, at whatever time suits.</p>
 
@@ -2910,6 +2935,9 @@ function rememberOpen(){ try{ localStorage.setItem('logopen',JSON.stringify(LOG_
 function renderLog(){
   const e=logEntry(LOG_DATE);
   $('logPick').textContent=dayLabel(LOG_DATE);
+  const isToday = LOG_DATE===isoDay(new Date());
+  $('log').classList.toggle('pastday',!isToday);
+  $('logEd').classList.toggle('pastday',!isToday);
 
   const R=(l,v)=>v===null||v===undefined||v===''?'':
     `<div class="field"><dt>${l}</dt><dd>${esc(String(v))}</dd></div>`;
@@ -2988,7 +3016,14 @@ function renderLog(){
     }
   });
 
+  html = (isToday
+    ? `<p class="todayband">Today &mdash; ${esc(dayLabel(LOG_DATE))}</p>`
+    : `<div class="pastband">You are looking at
+        <strong>${esc(dayLabel(LOG_DATE))}</strong>, not today.
+        <button class="addmore" id="backToday">Go to today</button></div>`) + html;
   $('logBody').innerHTML=html||'<div class="card"><div class="field"><dd>Nothing to show. Tap Edit to fill the day in.</dd></div></div>';
+  const bt=$('backToday');
+  if(bt) bt.onclick=async()=>{ LOG_DATE=await ensureToday(); killMaps(); renderLog(); };
   $('logBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(','); openInMaps(la,ln); });
   $('logBody').querySelectorAll('[data-sec]').forEach(d=>d.ontoggle=()=>{
@@ -3071,6 +3106,8 @@ function editLog(iso){
   const C=(l,n)=>`<label><input type="checkbox" name="${n}"> ${l}</label>`;
 
   $('logEdTitle').textContent=dayLabel(iso);
+  const editingToday = iso===isoDay(new Date());
+  $('logEd').classList.toggle('pastday',!editingToday);
   const meds=LOGOPTS.filter(x=>x.kind==='medication');
   const takenAlready=(e.medication||'').split(',').map(x=>x.trim()).filter(Boolean);
   // Daily ones, plus anything this day already records, so editing an old
@@ -3189,7 +3226,10 @@ function editLog(iso){
   const wanted=mySections().filter(x=>x.on && panes[x.id]).map(x=>panes[x.id]);
   const half=Math.ceil(wanted.length/2);
 
-  $('logEdBody').innerHTML=`<form id="logForm">
+  $('logEdBody').innerHTML=(editingToday?'':
+    `<div class="pastband">Careful &mdash; you are filling in
+      <strong>${esc(dayLabel(iso))}</strong>, not today.</div>`)
+   +`<form id="logForm">
    <div class="colA">${wanted.slice(0,half).join('')}</div>
    <div class="colB">${wanted.slice(half).join('')}</div>
   </form>`;
@@ -3519,11 +3559,8 @@ const WISH_STATUS=[['idea','Idea'],['maybe','Maybe'],['doing','Doing'],
   ['done','Done'],['no','Not doing']];
 
 async function loadLists(){
-  const [w,sh]=await Promise.all([
-    sb.from('wishes').select('*').order('created_at',{ascending:false}),
-    sb.from('shopping').select('*').order('sort_order').order('created_at')
-  ]);
-  WISHES=w.data||[]; SHOP=sh.data||[];
+  const w=await sb.from('wishes').select('*').order('created_at',{ascending:false});
+  WISHES=w.data||[];
 }
 
 function whoWrote(id){
@@ -3606,63 +3643,117 @@ function renderWish(){
   });
 }
 
-/* ---------- shopping ---------- */
+/* ---------- shopping: a list each, shared with whoever ---------- */
+let LISTS=[], LIST_SHARES=[], CUR_LIST=null;
+
+async function loadShopping(){
+  const [l,sh,it]=await Promise.all([
+    sb.from('shopping_lists').select('*').order('created_at'),
+    sb.from('shopping_list_shares').select('*'),
+    sb.from('shopping').select('*').order('sort_order').order('created_at')
+  ]);
+  LISTS=l.data||[]; LIST_SHARES=sh.data||[]; SHOP=it.data||[];
+
+  if(!LISTS.some(x=>x.owner_id===ME.id)){
+    const {data}=await sb.from('shopping_lists')
+      .insert({owner_id:ME.id,name:'My shopping'}).select().single();
+    if(data) LISTS.push(data);
+  }
+  if(!CUR_LIST||!LISTS.some(x=>x.id===CUR_LIST))
+    CUR_LIST=(LISTS.find(x=>x.owner_id===ME.id)||LISTS[0]||{}).id||null;
+}
+
 async function openShop(){
-  await loadLists(); renderShop();
+  await loadShopping(); renderShop();
   $('shop').classList.remove('hidden'); $('shopBody').scrollTop=0; lockBackground();
 }
 
 function renderShop(){
-  const todo=SHOP.filter(x=>!x.got);
-  const got =SHOP.filter(x=>x.got)
-    .sort((a,b)=>new Date(b.got_at||0)-new Date(a.got_at||0));
+  const list=LISTS.find(x=>x.id===CUR_LIST);
+  const mine=list&&list.owner_id===ME.id;
+  const items=SHOP.filter(x=>x.list_id===CUR_LIST);
+  const todo=items.filter(x=>!x.got);
+  const got =items.filter(x=>x.got).sort((a,b)=>new Date(b.got_at||0)-new Date(a.got_at||0));
 
-  const row=x=>`<div class="item rtrow">
+  const row=x=>`<div class="item">
     <button class="tick ${x.got?'on':''}" data-sgot="${x.id}"
-      aria-label="${x.got?'Put back on the list':'Got it'}">${x.got?'&#10003;':''}</button>
+      aria-label="${x.got?'Put it back':'Got it'}">${x.got?'&#10003;':''}</button>
     <button class="mid" data-sedit="${x.id}">
       <span class="t ${x.got?'done':''}">${esc(x.name)}${x.qty?' &mdash; '+esc(x.qty):''}</span>
       ${x.created_by!==ME.id&&!x.got?`<span class="w">added by ${esc(whoWrote(x.created_by))}</span>`:''}
     </button>
     <button class="del" data-sdel="${x.id}" aria-label="Remove">&times;</button></div>`;
 
-  $('shopBody').innerHTML=`
-    <div class="card"><h3>Add to the list</h3><div class="setadd">
-      <input id="sName" placeholder="What do we need?">
+  let html=`<div class="kindpick" style="flex-wrap:wrap">
+    ${LISTS.map(l=>`<button data-slist="${l.id}" aria-pressed="${l.id===CUR_LIST}">
+      ${esc(l.name)}${l.owner_id!==ME.id?' &middot; '+esc(whoWrote(l.owner_id)):''}</button>`).join('')}
+    </div>`;
+
+  if(!list){
+    $('shopBody').innerHTML=html+'<div class="card"><div class="field"><dd>No list yet.</dd></div></div>';
+    return;
+  }
+
+  html+=`<div class="card"><h3>Add to ${esc(list.name)}</h3><div class="setadd">
+      <input id="sName" placeholder="What is needed?">
       <input id="sQty" placeholder="How much or how many (optional)">
       <button class="btn primary" id="sAdd">Add it</button>
     </div></div>
     <p class="dsec">To get <span style="float:right;font-weight:400;text-transform:none;
       letter-spacing:0">${todo.length}</span></p>
     <div class="card rtlist">${todo.length?todo.map(row).join('')
-      :'<div class="field"><dd>Nothing on the list.</dd></div>'}</div>
+      :'<div class="field"><dd>Nothing on this list.</dd></div>'}</div>
     ${got.length?`<p class="dsec">In the trolley</p>
       <div class="card rtlist">${got.map(row).join('')}
         <div class="setadd"><button class="btn" id="sClear"
           style="border:1.5px solid var(--rule)">Clear the trolley</button></div></div>`:''}`;
 
+  if(mine){
+    const shared=LIST_SHARES.filter(x=>x.list_id===CUR_LIST).map(x=>x.user_id);
+    html+=`<details class="card logsec"><summary>Who can use this list</summary>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Only you and the people you tick. They can add to it and tick things off.</dd></div>
+      ${USERS.length?`<div class="setadd"><div class="checks">
+        ${USERS.map(u=>`<label><input type="checkbox" data-sshare="${u.id}"
+          ${shared.includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')}
+        </div></div>`
+        :'<div class="field"><dd>Nobody else has an account yet.</dd></div>'}
+      <div class="setadd">
+        <input id="sRename" value="${esc(list.name)}">
+        <button class="btn" id="sRenameGo" style="border:1.5px solid var(--rule)">Rename this list</button>
+      </div></details>`;
+  }else{
+    html+=`<div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
+      ${esc(whoWrote(list.owner_id))} shared this list with you. You can add to it and
+      tick things off.</dd></div></div>`;
+  }
+
+  $('shopBody').innerHTML=html;
+
+  $('shopBody').querySelectorAll('[data-slist]').forEach(b=>b.onclick=()=>{
+    CUR_LIST=Number(b.dataset.slist); renderShop(); });
   $('sAdd').onclick=async()=>{
     const n=$('sName').value.trim();
-    if(!n){ toast('Type what you need'); return; }
+    if(!n){ toast('Type what is needed'); return; }
     const {error}=await sb.from('shopping').insert({
-      created_by:ME.id, name:n, qty:$('sQty').value.trim()||null,
-      sort_order:Math.max(100,...SHOP.map(x=>x.sort_order))+1});
-    if(error){ toast('Could not add it'); return; }
-    $('sName').value=''; $('sQty').value='';
-    await loadLists(); renderShop();
+      created_by:ME.id, list_id:CUR_LIST, name:n,
+      qty:$('sQty').value.trim()||null,
+      sort_order:Math.max(100,...items.map(x=>x.sort_order))+1});
+    if(error){ toast('Could not add it'); console.error(error); return; }
+    await loadShopping(); renderShop();
   };
   $('shopBody').querySelectorAll('[data-sgot]').forEach(b=>b.onclick=async()=>{
     const x=SHOP.find(y=>y.id===Number(b.dataset.sgot));
     const want=!x.got;
     const {error}=await sb.from('shopping')
-      .update({got:want, got_at:want?new Date().toISOString():null}).eq('id',x.id);
+      .update({got:want,got_at:want?new Date().toISOString():null}).eq('id',x.id);
     if(error){ toast('Could not change that'); return; }
-    await loadLists(); renderShop();
+    await loadShopping(); renderShop();
   });
   $('shopBody').querySelectorAll('[data-sdel]').forEach(b=>b.onclick=async()=>{
     const {error}=await sb.from('shopping').delete().eq('id',Number(b.dataset.sdel));
     if(error){ toast('Could not remove it'); return; }
-    await loadLists(); renderShop();
+    await loadShopping(); renderShop();
   });
   $('shopBody').querySelectorAll('[data-sedit]').forEach(b=>b.onclick=async()=>{
     const x=SHOP.find(y=>y.id===Number(b.dataset.sedit));
@@ -3670,15 +3761,82 @@ function renderShop(){
     if(n===null||!n.trim()) return;
     const {error}=await sb.from('shopping').update({name:n.trim()}).eq('id',x.id);
     if(error){ toast('Could not save'); return; }
-    await loadLists(); renderShop();
+    await loadShopping(); renderShop();
   });
+  $('shopBody').querySelectorAll('[data-sshare]').forEach(b=>b.onchange=async()=>{
+    const uid=b.dataset.sshare;
+    const {error} = b.checked
+      ? await sb.from('shopping_list_shares').insert({list_id:CUR_LIST,user_id:uid})
+      : await sb.from('shopping_list_shares').delete()
+          .eq('list_id',CUR_LIST).eq('user_id',uid);
+    if(error){ toast('Could not change who can use it'); b.checked=!b.checked; return; }
+    await loadShopping(); renderShop();
+    toast(b.checked?'Shared':'No longer shared');
+  });
+  const rn=$('sRenameGo');
+  if(rn) rn.onclick=async()=>{
+    const n=$('sRename').value.trim();
+    if(!n) return;
+    const {error}=await sb.from('shopping_lists').update({name:n}).eq('id',CUR_LIST);
+    if(error){ toast('Could not rename it'); return; }
+    await loadShopping(); renderShop();
+  };
   const cl=$('sClear');
   if(cl) cl.onclick=async()=>{
-    if(!confirm('Take everything in the trolley off the list?')) return;
-    const {error}=await sb.from('shopping').delete().eq('got',true);
+    if(!confirm('Take everything in the trolley off this list?')) return;
+    const {error}=await sb.from('shopping').delete().eq('got',true).eq('list_id',CUR_LIST);
     if(error){ toast('Could not clear it'); return; }
-    await loadLists(); renderShop(); toast('Cleared');
+    await loadShopping(); renderShop(); toast('Cleared');
   };
+}
+
+/* ============================================================
+   Colour schemes
+   ============================================================ */
+const THEMES={
+  canal:{ label:'Canal', swatch:'#1D4A3A',
+    v:{'--ink':'#10231C','--hull':'#1D4A3A','--hull-dark':'#14342B','--red':'#B3322A',
+       '--brass':'#8A6D12','--paper':'#FBFAF7','--panel':'#FFFFFF','--rule':'#E3E1D8',
+       '--muted':'#5F6B65','--band':'#F3F1EA'}},
+  serene:{ label:'Serene', swatch:'#2F6B6B',
+    v:{'--ink':'#13282B','--hull':'#2F6B6B','--hull-dark':'#224E4E','--red':'#A8503C',
+       '--brass':'#7A6A2E','--paper':'#F8FBFA','--panel':'#FFFFFF','--rule':'#DCE7E5',
+       '--muted':'#5A6E70','--band':'#EEF5F3'}},
+  sombre:{ label:'Sombre', swatch:'#2E3338',
+    v:{'--ink':'#15181B','--hull':'#2E3338','--hull-dark':'#202428','--red':'#9E3B33',
+       '--brass':'#6F5B12','--paper':'#F5F6F7','--panel':'#FFFFFF','--rule':'#DDE0E3',
+       '--muted':'#5C646B','--band':'#EDEFF1'}},
+  jazzy:{ label:'Jazzy', swatch:'#4A2E6B',
+    v:{'--ink':'#1E1329','--hull':'#4A2E6B','--hull-dark':'#37214F','--red':'#C4452B',
+       '--brass':'#9A6B10','--paper':'#FFF9F3','--panel':'#FFFFFF','--rule':'#E8DED4',
+       '--muted':'#6A5E72','--band':'#F6EDE4'}},
+  ink:{ label:'High contrast', swatch:'#000000',
+    v:{'--ink':'#000000','--hull':'#14213D','--hull-dark':'#0C1526','--red':'#9B1B12',
+       '--brass':'#6B5300','--paper':'#FFFFFF','--panel':'#FFFFFF','--rule':'#B9BEC7',
+       '--muted':'#3D4550','--band':'#EDEFF3'}}
+};
+
+function applyTheme(key){
+  const t=THEMES[key]||THEMES.canal;
+  Object.entries(t.v).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+  try{ localStorage.setItem('theme',key); }catch(e){}
+}
+// Straight away, before the profile has loaded, so it never flashes
+try{ applyTheme(localStorage.getItem('theme')||'canal'); }catch(e){ applyTheme('canal'); }
+
+async function chooseTheme(key){
+  applyTheme(key);
+  await sb.from('profiles').update({theme:key}).eq('id',ME.id);
+  MY_PROFILE={...(MY_PROFILE||{}),theme:key};
+  if(!$('menu').classList.contains('hidden')) paintThemePick();
+}
+function paintThemePick(){
+  const box=$('themePick'); if(!box) return;
+  const now=(MY_PROFILE&&MY_PROFILE.theme)||'canal';
+  box.innerHTML=Object.entries(THEMES).map(([k,t])=>
+    `<button class="swatch" data-theme="${k}" aria-pressed="${k===now}">
+      <span style="background:${t.swatch}"></span>${esc(t.label)}</button>`).join('');
+  box.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>chooseTheme(b.dataset.theme));
 }
 
 /* ---------- wiring ---------- */
@@ -3716,6 +3874,7 @@ $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();
 $('itSave').onclick=saveItem;
 $('menuBtn').onclick=()=>{
   $('whoami').textContent='Signed in as '+(ME.email||'');
+  paintThemePick();
   $('menu').classList.remove('hidden');lockBackground();
 };
 $('menuBack').onclick=()=>{$('menu').classList.add('hidden');lockBackground();};

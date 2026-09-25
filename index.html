@@ -74,6 +74,10 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .row.nested{padding-left:32px}
 ul.list li.alt{background:var(--band,#F3F1EA)}
 .row:active{background:#E8E5DC}
+.rowpic{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;
+  border:1.5px solid var(--rule);background:#EDEFEA;margin-top:2px}
+.rowpic.ph{display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:700;color:var(--hull)}
 .row .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .row .name{font-size:19px;font-weight:600;line-height:1.25}
 .sharedot{color:#0F6E8C;font-size:22px;line-height:0;vertical-align:middle}
@@ -388,6 +392,12 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="itBody"></div>
 </div>
 
+<div id="io" class="sheet hidden">
+  <div class="sheetbar"><button id="ioBack">Back</button>
+    <span class="title">Import and export</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="ioBody"></div>
+</div>
+
 <div id="wish" class="sheet hidden">
   <div class="sheetbar"><button id="wishBack">Back</button>
     <span class="title">Wishlist</span><span style="width:56px"></span></div>
@@ -426,6 +436,7 @@ i.key{vertical-align:middle}
     <span class="title">Menu</span><span style="width:56px"></span></div>
   <div class="sheetbody">
     <div class="card">
+      <button class="menuitem" id="goIO">Import and export contacts &rsaquo;</button>
       <button class="menuitem" id="goShop">Shopping list &rsaquo;</button>
       <button class="menuitem" id="goWish">Wishlist &mdash; ideas for these apps &rsaquo;</button>
       <button class="menuitem" id="goWhere">Share where I am &rsaquo;</button>
@@ -438,7 +449,7 @@ i.key{vertical-align:middle}
       <div class="setadd"><div class="swatches" id="themePick"></div></div>
     </details>
 
-    <details class="card logsec"><summary>Change your password</summary>
+    <details class="card logsec"><summary>Your password</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         Change it to something you will remember. At least eight characters.
         It applies everywhere you sign in.</dd></div>
@@ -497,7 +508,7 @@ const LAB = {
 };
 
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
-let USERS=[], SHARES=[], PETS=[], PENDING=null, MY_PROFILE=null;
+let USERS=[], SHARES=[], PETS=[], PENDING=null, MY_PROFILE=null, FAVS=[];
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
 let VIEW='grouped', SORTBY='last';
 try{ VIEW=localStorage.getItem('view')||'grouped'; }catch(e){}
@@ -512,7 +523,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -567,7 +578,7 @@ function socialUrl(label,value){
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,s,k,c,l,u,sh,pt,it,ish]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt,fv,it,ish]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
@@ -576,6 +587,7 @@ async function loadAll(){
     sb.from('profiles').select('*'),
     sb.from('contact_shares').select('*'),
     sb.from('pet_types').select('*').order('sort_order'),
+    sb.from('contact_favourites').select('*').eq('user_id',ME.id),
     sb.from('items').select('*'),
     sb.from('item_shares').select('*')
   ]);
@@ -584,7 +596,7 @@ async function loadAll(){
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
   MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
   if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
-  PETS=pt.data||[];
+  PETS=pt.data||[]; FAVS=(fv.data||[]).map(x=>x.contact_id);
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
   const rt=await sb.from('routines').select('*').order('sort_order');
@@ -592,7 +604,24 @@ async function loadAll(){
   ROUTINES=rt.data||[];
   paintDue();
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
+  await fileNewlyShared();
+  const faces=CONTACTS.map(c=>c.avatar_path).filter(Boolean);
+  if(faces.length) await signPaths(faces);
   renderChips();render();
+}
+
+// A contact someone shares with you arrives with no filing of your own.
+// Put it in your "Shared with me" group so it shows up in the grouped
+// view; you can move it somewhere better whenever you like.
+async function fileNewlyShared(){
+  const box=GROUPS.find(g=>g.name==='Shared with me'&&g.owner_id===ME.id);
+  if(!box) return;
+  const loose=CONTACTS.filter(c=>c.created_by!==ME.id&&!(TAGS[c.id]||[]).length);
+  if(!loose.length) return;
+  const {error}=await sb.from('contact_groups')
+    .insert(loose.map(c=>({contact_id:c.id,group_id:box.id,user_id:ME.id})));
+  if(error){ console.error('filing shared',error); return; }
+  loose.forEach(c=>{ TAGS[c.id]=[box.id]; });
 }
 
 function renderChips(){
@@ -699,7 +728,11 @@ function rowHtml(c,nested,birthdayView,alt){
   else if(d!==null&&d<=45)
     badge=`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`;
 
+  const pic = c.avatar_path && SIGNED[c.avatar_path]
+    ? `<img class="rowpic" src="${esc(SIGNED[c.avatar_path])}" alt="" loading="lazy">`
+    : `<span class="rowpic ph">${esc(fullName(c).charAt(0).toUpperCase())}</span>`;
   return `<li class="${alt?'alt':''}"><button class="row ${nested?'nested':''}" data-id="${c.id}">
+    ${pic}
     <span class="who">
       <span class="name">${c.created_by!==ME.id?'<span class="sharedot" title="Shared with you">&bull;</span> ':''}${esc(listName(c))}</span>
       ${pins.length?`<span class="rel">${esc(pins.join(' \u00b7 '))}</span>`:''}
@@ -725,6 +758,13 @@ function render(){
     return;
   }
 
+  const favRows=rows.filter(c=>FAVS.includes(c.id)).sort(byName);
+  const favBlock = (!q && favRows.length)
+    ? `<li><button class="grouphd open" style="background:#EDEFEA">
+         <span class="caret">&#9733;</span>Kept at the top<span class="n">${favRows.length}</span>
+       </button></li>` + favRows.map(c=>rowHtml(c,true,false,false)).join('')
+    : '';
+
   if(q||MODE!=='grouped'){
     if(MODE==='birthdays'&&!q)
       rows=rows.filter(c=>c.birth_date&&!c.death_date).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
@@ -732,12 +772,12 @@ function render(){
     const bd = MODE==='birthdays'&&!q;
     $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')
       +(bd?', by next birthday':'');
-    list.innerHTML=rows.map(c=>rowHtml(c,false,bd,(ALT++)%2===1)).join('');
+    list.innerHTML=favBlock+rows.map(c=>rowHtml(c,false,bd,(ALT++)%2===1)).join('');
     wireRows();return;
   }
 
   $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')+', by group and country';
-  let html='';
+  let html=favBlock;
   groupsInOrder().forEach(g=>{
     const inG=rows.filter(c=>(TAGS[c.id]||[]).includes(g.id));
     if(!inG.length)return;
@@ -1103,6 +1143,9 @@ async function openDetail(id, keepPlace){
         ${c.avatar_path?'<button class="addmore" id="rmAvatar" style="color:var(--red)">Remove</button>':''}
       </span></div>
     <h2 class="detname">${esc(fullName(c))}</h2>
+    <p style="margin:0 0 10px"><button class="tg" id="favBtn"
+      aria-pressed="${FAVS.includes(c.id)}">${FAVS.includes(c.id)
+      ? '\u2605 Kept at the top' : '\u2606 Keep at the top'}</button></p>
     ${c.job_title||c.company?`<p class="detsub">${esc([c.job_title,c.company].filter(Boolean).join(', '))}</p>`:''}
     ${pinned?`<div class="pins">${pinned}</div>`:''}
     <div class="tags">${tagNames.map(g=>`<span class="tag">${esc(g.name)}</span>`).join('')}</div>
@@ -1132,6 +1175,7 @@ async function openDetail(id, keepPlace){
 
   $('detBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.go)));
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
+  const fb=$('favBtn'); if(fb) fb.onclick=()=>toggleFav(c.id);
   const ai=$('addItemHere'); if(ai)ai.onclick=()=>openItem(null,c.id);
   $('detBody').querySelectorAll('[data-done2]').forEach(b=>
     b.onclick=()=>toggleDone(Number(b.dataset.done2)));
@@ -1162,6 +1206,17 @@ async function openDetail(id, keepPlace){
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
   $('detail').classList.remove('hidden');$('detBody').scrollTop=wasAt;lockBackground();
+}
+
+async function toggleFav(id){
+  const on=FAVS.includes(id);
+  const {error} = on
+    ? await sb.from('contact_favourites').delete().eq('contact_id',id).eq('user_id',ME.id)
+    : await sb.from('contact_favourites').insert({contact_id:id,user_id:ME.id});
+  if(error){ toast('Could not change that'); return; }
+  FAVS = on ? FAVS.filter(x=>x!==id) : [...FAVS,id];
+  render(); openDetail(id,true);
+  toast(on?'Taken off the top':'Kept at the top');
 }
 
 function shareCard(c){
@@ -1868,6 +1923,17 @@ function openHelp(){
   Maybe, Doing, Done and Not doing as it goes along. You can only remove your own,
   but anyone can move any of them.</p>
 
+  <h4>Bringing contacts in, and saving a copy</h4>
+  <p>Menu &rsaquo; <strong>Import and export contacts</strong>. Download a copy of
+  everything as a spreadsheet file whenever you like &mdash; worth doing monthly.</p>
+  <p>To bring contacts in from somewhere else, download the template first so the
+  column names match, fill it in, and choose the file. It tells you how many are
+  new and how many are already here before anything happens. Anyone already in the
+  database is left exactly as they are; only new names are added, so importing the
+  same file twice does no harm.</p>
+  <p>Put group names in the groups column separated by semicolons. Anything it
+  does not recognise goes into "Shared with me" so you can file it yourself.</p>
+
   <h4>Colours</h4>
   <p>Menu &rsaquo; <strong>Colours</strong> offers Canal, Serene, Sombre, Jazzy and
   High contrast. It follows your account, so it looks the same on the phone and
@@ -1882,8 +1948,8 @@ function openHelp(){
   see it, with a <strong>Stop now</strong> button, so it can never be running
   without you knowing. Your position only updates while the app is open.</p>
 
-  <h4>Change your password</h4>
-  <p>Menu &rsaquo; <strong>Change your password</strong> changes it to whatever you like.
+  <h4>Your password</h4>
+  <p>Menu &rsaquo; <strong>Your password</strong> changes it to whatever you like.
   It takes effect immediately and applies on every device you sign in on, so if
   you are signed in elsewhere, use the new one there next time.</p>
   <p>There is no "forgotten password" email. If you are locked out, Barry can set
@@ -2238,9 +2304,16 @@ function renderDiary(){
 /* ---------- the standing list of regular jobs ---------- */
 function diaryRoutine(){
   const headings=[...new Set(ROUTINES.map(r=>r.heading||''))];
-  let html=`<p class="coords">Jobs you come back to. Untick one and it rises to the
-    top as needing doing; tick it and it drops down. Nothing is deleted unless you
-    say so.</p>`;
+  let html=`<details class="card logsec"><summary>Add a regular job</summary>
+    <div class="setadd">
+      <input id="rtTitle" placeholder="What needs doing">
+      <input id="rtHead" list="dlHead" placeholder="Heading (optional), e.g. Boat">
+      <datalist id="dlHead">${knownHeadings()
+        .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
+      <button class="btn primary" id="rtAdd">Add it</button>
+    </div></details>
+    <p class="coords">Jobs you come back to. Untick one and it rises to the top as
+    needing doing; tick it and it drops down. Nothing is deleted unless you say so.</p>`;
 
   if(!ROUTINES.length)
     html+=`<div class="card"><div class="field"><dd>Nothing here yet. Add your
@@ -2252,7 +2325,9 @@ function diaryRoutine(){
     const done=rows.filter(r=>r.done)
       .sort((a,b)=>new Date(b.done_at||0)-new Date(a.done_at||0));
     if(!rows.length) return;
-    html+=`<p class="dsec">${esc(h||'Anything else')}
+    html+=`<p class="dsec">
+      <button data-rthead="${esc(h)}" style="font:inherit;color:inherit;padding:0;
+        border-bottom:1px dotted var(--muted)">${esc(h||'Anything else')}</button>
       <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">
         ${todo.length} to do</span></p><div class="card rtlist">`;
     todo.forEach(r=>{ html+=routineRow(r); });
@@ -2261,15 +2336,6 @@ function diaryRoutine(){
         ${done.map(routineRow).join('')}</details>`;
     html+='</div>';
   });
-
-  html+=`<div class="card"><h3>Add a regular job</h3>
-    <div class="setadd">
-      <input id="rtTitle" placeholder="What needs doing">
-      <input id="rtHead" list="dlHead" placeholder="Heading (optional), e.g. Boat">
-      <datalist id="dlHead">${knownHeadings()
-        .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
-      <button class="btn primary" id="rtAdd">Add it</button>
-    </div></div>`;
 
   const anyDone=ROUTINES.some(r=>r.done);
   if(anyDone)
@@ -2330,6 +2396,18 @@ function wireRoutine(){
     const {error}=await sb.from('routines').update({title:t.trim()}).eq('id',r.id);
     if(error){toast('Could not save');return;}
     await loadAll(); renderDiary();
+  });
+  body.querySelectorAll('[data-rthead]').forEach(b=>b.onclick=async()=>{
+    const was=b.dataset.rthead;
+    const now=prompt('Rename this heading. Every job under it moves with it.',was);
+    if(now===null) return;
+    const to=now.trim()||null;
+    const ids=ROUTINES.filter(r=>(r.heading||'')===was).map(r=>r.id);
+    const res=await Promise.all(ids.map(id=>
+      sb.from('routines').update({heading:to}).eq('id',id)));
+    if(res.some(r=>r.error)){ toast('Could not rename it'); return; }
+    rememberHeading(to);
+    await loadAll(); renderDiary(); toast('Renamed');
   });
   const add=$('rtAdd');
   if(add) add.onclick=async()=>{
@@ -3576,7 +3654,7 @@ async function openWish(){
 }
 
 function renderWish(){
-  const live=WISHES.filter(w=>w.app===WISH_APP||w.app==='either');
+  const live=WISHES.filter(w=>w.app===WISH_APP);
   const byStatus={};
   live.forEach(w=>{ (byStatus[w.status]=byStatus[w.status]||[]).push(w); });
 
@@ -3790,6 +3868,184 @@ function renderShop(){
   };
 }
 
+
+/* ============================================================
+   Import and export
+   ============================================================ */
+const IO_COLS=['first_name','last_name','given_names','nickname','company',
+  'is_organisation','birth_date','death_date','address','address_2','town','county',
+  'postcode','country','boat_name','boat_number','boat_notes','job_title','department',
+  'met_where','met_date','what3words','notes','phones','emails','websites','socials',
+  'pets','former_names','groups'];
+
+function csvCell(v){
+  if(v===null||v===undefined) return '';
+  const s=typeof v==='object'?JSON.stringify(v):String(v);
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+
+function parseCsv(text){
+  const rows=[]; let row=[], cell='', q=false;
+  text=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ cell+='"'; i++; } else q=false; }
+      else cell+=c;
+    }else{
+      if(c==='"') q=true;
+      else if(c===','){ row.push(cell); cell=''; }
+      else if(c==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+      else cell+=c;
+    }
+  }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(x=>x.trim()!==''));
+}
+
+function download(name, text, type){
+  const blob=new Blob([text],{type:type||'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+
+function exportContacts(){
+  const lines=[IO_COLS.join(',')];
+  CONTACTS.forEach(c=>{
+    const tags=(TAGS[c.id]||[]).map(id=>{
+      const g=GROUPS.find(x=>x.id===id); return g?g.name:null; }).filter(Boolean).join('; ');
+    lines.push(IO_COLS.map(k=>k==='groups'?csvCell(tags):csvCell(c[k])).join(','));
+  });
+  const stamp=new Date().toISOString().slice(0,10);
+  download('contacts-'+stamp+'.csv', lines.join('\n'));
+  toast(CONTACTS.length+' contacts saved');
+}
+
+function exportTemplate(){
+  const sample=IO_COLS.map(k=>{
+    if(k==='first_name') return 'Jane';
+    if(k==='last_name') return 'Example';
+    if(k==='town') return 'Malpas';
+    if(k==='country') return 'UK';
+    if(k==='groups') return 'Friend; Boater';
+    if(k==='phones') return '"[{""label"":""Mobile"",""value"":""07700 900000""}]"';
+    if(k==='is_organisation') return 'false';
+    return '';
+  });
+  download('contacts-template.csv', IO_COLS.join(',')+'\n'+sample.join(','));
+}
+
+function openIO(){
+  $('ioBody').innerHTML=`
+    <div class="card"><h3>Save a copy</h3>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Every contact you can see, as a spreadsheet file. Worth doing monthly.</dd></div>
+      <div class="setadd">
+        <button class="btn primary" id="ioExport">Download my contacts</button>
+      </div></div>
+
+    <div class="card"><h3>Bring contacts in</h3>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Anyone already here is left exactly as they are &mdash; nothing is ever
+        overwritten. Only names that are new get added.</dd></div>
+      <div class="setadd">
+        <button class="btn" id="ioTemplate" style="border:1.5px solid var(--rule)">
+          Download the template first</button>
+        <label class="btn" style="border:1.5px solid var(--rule);cursor:pointer">
+          Choose a CSV file<input type="file" accept=".csv,text/csv" id="ioFile" style="display:none">
+        </label>
+      </div>
+      <div id="ioReport"></div>
+    </div>`;
+
+  $('ioExport').onclick=exportContacts;
+  $('ioTemplate').onclick=exportTemplate;
+  $('ioFile').onchange=e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>previewImport(String(r.result));
+    r.readAsText(f);
+  };
+  $('io').classList.remove('hidden'); $('ioBody').scrollTop=0; lockBackground();
+}
+
+let IMPORT_ROWS=[];
+function previewImport(text){
+  const rows=parseCsv(text);
+  if(rows.length<2){ toast('That file has no rows in it'); return; }
+  const head=rows[0].map(h=>h.trim().toLowerCase().replace(/\s+/g,'_'));
+  const known=head.filter(h=>IO_COLS.includes(h));
+  if(!known.includes('first_name')&&!known.includes('last_name')&&!known.includes('company')){
+    toast('No name column found. Use the template.');
+    return;
+  }
+
+  const here=new Set(CONTACTS.map(c=>
+    ((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase()));
+
+  IMPORT_ROWS=[]; const skipped=[];
+  rows.slice(1).forEach(r=>{
+    const rec={};
+    head.forEach((h,i)=>{ if(IO_COLS.includes(h)) rec[h]=(r[i]||'').trim(); });
+    const key=((rec.first_name||'')+'|'+(rec.last_name||'')+'|'+(rec.company||'')).toLowerCase();
+    if(key==='||') return;
+    if(here.has(key)) skipped.push(rec); else IMPORT_ROWS.push(rec);
+  });
+
+  $('ioReport').innerHTML=`
+    <div class="field"><dt>New</dt><dd>${IMPORT_ROWS.length}</dd></div>
+    <div class="field"><dt>Already here</dt><dd>${skipped.length}, left untouched</dd></div>
+    ${IMPORT_ROWS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
+        ${esc(IMPORT_ROWS.slice(0,6).map(x=>[x.first_name,x.last_name].filter(Boolean).join(' ')
+          ||x.company||'(no name)').join(', '))}${IMPORT_ROWS.length>6?'\u2026':''}</dd></div>
+      <div class="setadd"><button class="btn primary" id="ioGo">
+        Add these ${IMPORT_ROWS.length}</button></div>`
+      :'<div class="field"><dd>Nothing new to add.</dd></div>'}`;
+
+  const go=$('ioGo');
+  if(go) go.onclick=doImport;
+}
+
+async function doImport(){
+  const btn=$('ioGo'); btn.disabled=true;
+  const box=GROUPS.find(g=>g.name==='Shared with me'&&g.owner_id===ME.id);
+  let added=0, failed=0;
+
+  for(const rec of IMPORT_ROWS){
+    const d={created_by:ME.id};
+    IO_COLS.forEach(k=>{
+      if(k==='groups') return;
+      const v=rec[k];
+      if(v===undefined||v==='') return;
+      if(['phones','emails','websites','socials','pets','former_names'].includes(k)){
+        try{ d[k]=JSON.parse(v); }catch(e){ /* leave it out rather than corrupt it */ }
+      }else if(k==='is_organisation') d[k]=/^(true|yes|1)$/i.test(v);
+      else d[k]=v;
+    });
+    if(!d.first_name&&!d.last_name&&!d.company){ failed++; continue; }
+
+    const {data,error}=await sb.from('contacts').insert(d).select().single();
+    if(error||!data){ failed++; console.error(error); continue; }
+    added++;
+
+    const names=(rec.groups||'').split(/[;,]/).map(x=>x.trim()).filter(Boolean);
+    const ids=names.map(n=>{
+      const g=GROUPS.find(x=>x.name.toLowerCase()===n.toLowerCase()); return g?g.id:null;
+    }).filter(Boolean);
+    const use=ids.length?ids:(box?[box.id]:[]);
+    if(use.length) await sb.from('contact_groups')
+      .insert(use.map(gid=>({contact_id:data.id,group_id:gid,user_id:ME.id})));
+  }
+
+  btn.disabled=false;
+  await loadAll();
+  $('ioReport').innerHTML=`<div class="field"><dd><strong>${added} added.</strong>
+    ${failed?failed+' could not be read and were left out.':''}</dd></div>`;
+  toast(added+' contacts added');
+}
+
 /* ============================================================
    Colour schemes
    ============================================================ */
@@ -3863,6 +4119,8 @@ $('logEditTop').onclick=()=>editLog(LOG_DATE);
 $('goWhere').onclick=()=>{$('menu').classList.add('hidden');openWhere();};
 $('goWish').onclick=()=>{$('menu').classList.add('hidden');openWish();};
 $('goShop').onclick=()=>{$('menu').classList.add('hidden');openShop();};
+$('goIO').onclick=()=>{$('menu').classList.add('hidden');openIO();};
+$('ioBack').onclick=()=>{$('io').classList.add('hidden');lockBackground();};
 $('wishBack').onclick=()=>{$('wish').classList.add('hidden');lockBackground();};
 $('shopBack').onclick=()=>{$('shop').classList.add('hidden');lockBackground();};
 $('whereBack').onclick=()=>{killMaps();$('where').classList.add('hidden');lockBackground();};

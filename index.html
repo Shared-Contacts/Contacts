@@ -252,6 +252,7 @@ input[name="postcode"]{text-transform:uppercase}
 .card .item:last-child{border-bottom:none}
 .rtlist .item{padding:7px 14px}
 .rtlist .item .t{font-size:16px}
+.mvhead{flex:0 0 auto;color:var(--muted);font-size:20px;padding:0 8px}
 .rtdone>summary{padding:10px 14px;color:var(--muted);font-size:15px;cursor:pointer;
   font-weight:600;list-style:none}
 .rtdone>summary::-webkit-details-marker{display:none}
@@ -984,7 +985,7 @@ function showMap(elId,lat,lng,onMove,useHere){
   if(lat&&lng)drop(lat,lng,false);
   if(onMove)m.on('click',e=>drop(e.latlng.lat,e.latlng.lng,true));
   MAPS.push(m);
-  setTimeout(()=>m.invalidateSize(),150);
+  [150,600].forEach(t=>setTimeout(()=>{ try{ m.invalidateSize(); }catch(e){} },t));
   // With nothing recorded yet, start where you are rather than over the Midlands.
   if(!lat&&useHere&&navigator.geolocation){
     navigator.geolocation.getCurrentPosition(
@@ -1759,12 +1760,22 @@ async function openSettings(){
     bike_ride:  optionRows('bike_ride','choice'),
     alcohol:    optionRows('alcohol','choice'),
     mecontact: `<div class="field"><dd style="color:var(--muted);font-size:15px">
-        Used to fill in new diary entries.</dd></div>
-      <div class="setadd"><select id="meContact">
-        <option value="">&mdash; not set &mdash;</option>
-        ${CONTACTS.slice().sort(byName).map(c=>
-          `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.my_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
-      </select></div>`,
+        Fills in new diary entries, and names the two "if not aboard" slots
+        in the log.</dd></div>
+      <div class="setadd">
+        <p class="coords">You</p>
+        <select id="meContact">
+          <option value="">&mdash; not set &mdash;</option>
+          ${CONTACTS.slice().sort(byName).map(c=>
+            `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.my_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
+        </select>
+        <p class="coords" style="margin-top:12px">The other person in the log</p>
+        <select id="paContactPick">
+          <option value="">&mdash; not set &mdash;</option>
+          ${CONTACTS.slice().sort(byName).map(c=>
+            `<option value="${c.id}" ${MY_PROFILE&&MY_PROFILE.partner_contact_id===c.id?'selected':''}>${esc(fullName(c))}</option>`).join('')}
+        </select>
+      </div>`,
     shareall: `<div class="field"><dd style="color:var(--muted);font-size:15px">
         Gives someone every contact you own. Ones you add later need sharing too.</dd></div>
       ${USERS.length?USERS.map(u=>`<div class="setrow">
@@ -1846,6 +1857,13 @@ async function openSettings(){
     await loadLog(); openSettings(); toast('Added');
   });
 
+  const pc=$('paContactPick');
+  if(pc) pc.onchange=async()=>{
+    const v=pc.value?Number(pc.value):null;
+    const {error}=await sb.from('profiles').update({partner_contact_id:v}).eq('id',ME.id);
+    if(error){toast('Could not save that');return;}
+    await loadAll(); toast('Saved');
+  };
   const mc=$('meContact');
   if(mc) mc.onchange=async()=>{
     const v=mc.value?Number(mc.value):null;
@@ -1926,8 +1944,11 @@ function openHelp(){
   <h4>Bringing contacts in, and saving a copy</h4>
   <p>Menu &rsaquo; <strong>Import and export contacts</strong>. Download a copy of
   everything as a spreadsheet file whenever you like &mdash; worth doing monthly.</p>
-  <p>To bring contacts in from somewhere else, download the template first so the
-  column names match, fill it in, and choose the file. It tells you how many are
+  <p>Two kinds of file work. A <strong>.vcf</strong> exported from your phone's
+  own contacts app comes across with names, numbers, emails, addresses and
+  birthdays, and needs no preparation &mdash; just export and choose the file.
+  For anything else, download the template first so the column names match,
+  fill it in, and choose the file. It tells you how many are
   new and how many are already here before anything happens. Anyone already in the
   database is left exactly as they are; only new names are added, so importing the
   same file twice does no harm.</p>
@@ -2368,6 +2389,7 @@ function routineRow(r){
       ${r.done&&r.done_at?`<span class="w">done ${esc(new Date(r.done_at)
         .toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>`:''}
     </button>
+    <button class="mvhead" data-rtmove="${r.id}" aria-label="Change its heading">&#8942;</button>
     <button class="del" data-rtdel="${r.id}" aria-label="Remove">&times;</button></div>`;
 }
 
@@ -2381,6 +2403,19 @@ function wireRoutine(){
     const {error}=await sb.from('routines').update(patch).eq('id',r.id);
     if(error){toast('Could not change that');return;}
     await loadAll(); renderDiary();
+  });
+  body.querySelectorAll('[data-rtmove]').forEach(b=>b.onclick=async()=>{
+    const r=ROUTINES.find(x=>x.id===Number(b.dataset.rtmove));
+    const opts=knownHeadings();
+    const now=prompt('Which heading should "'+r.title+'" sit under?'
+      +(opts.length?'\n\nAlready in use: '+opts.join(', '):'')
+      +'\n\nLeave it empty for no heading.', r.heading||'');
+    if(now===null) return;
+    const to=now.trim()||null;
+    const {error}=await sb.from('routines').update({heading:to}).eq('id',r.id);
+    if(error){ toast('Could not move it'); return; }
+    rememberHeading(to);
+    await loadAll(); renderDiary(); toast('Moved');
   });
   body.querySelectorAll('[data-rtdel]').forEach(b=>b.onclick=async()=>{
     const r=ROUTINES.find(x=>x.id===Number(b.dataset.rtdel));
@@ -2550,6 +2585,25 @@ function diaryMonth(){
 }
 
 /* ---------- adding and editing ---------- */
+// datetime-local shows no weekday, which is how appointments end up on
+// the wrong day. Say it underneath as they type.
+function showWeekday(form, names){
+  names.forEach(n=>{
+    const el=form.elements[n]; if(!el) return;
+    const hint=document.createElement('span');
+    hint.className='coords'; hint.style.display='block'; hint.style.marginTop='4px';
+    el.parentNode.appendChild(hint);
+    const paint=()=>{
+      const v=el.value;
+      if(!v){ hint.textContent=''; return; }
+      const d=new Date(v.length<=10?v+'T12:00':v);
+      hint.textContent=isNaN(d)?'':d.toLocaleDateString('en-GB',
+        {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    };
+    el.addEventListener('input',paint); paint();
+  });
+}
+
 function openItem(it, presetContact){
   EDIT_ITEM = it || null;
   ITEM_KIND = it ? it.kind : 'todo';
@@ -2641,6 +2695,7 @@ function openItem(it, presetContact){
     ITEM_KIND=b.dataset.kind; applyKind(); });
   applyKind();
 
+  showWeekday(f,['starts_at','ends_at','due_at','due_from']);
   $('itemEd').classList.remove('hidden'); $('itBody').scrollTop=0; lockBackground();
 }
 
@@ -3116,12 +3171,14 @@ function renderLog(){
     const m=showMap('logMap',spots[0].lat,spots[0].lng,null);
     if(m){
       // Label every pin, so three hundred miles apart still makes sense
-      L.marker([spots[0].lat,spots[0].lng]).addTo(m.map)
-        .bindTooltip(spots[0].what,{permanent:spots.length>1,direction:'top'});
-      spots.slice(1).forEach(p=>L.marker([p.lat,p.lng]).addTo(m.map)
-        .bindTooltip(p.what,{permanent:true,direction:'top'}));
+      // Labels sit below the pins; above, the top one gets clipped by the edge
+      spots.forEach(p=>L.marker([p.lat,p.lng]).addTo(m.map)
+        .bindTooltip(p.what,{permanent:spots.length>1,direction:'bottom',offset:[0,6]}));
       if(spots.length>1)
-        m.map.fitBounds(spots.map(p=>[p.lat,p.lng]),{padding:[30,30],maxZoom:14});
+        m.map.fitBounds(spots.map(p=>[p.lat,p.lng]),
+          {paddingTopLeft:[36,46],paddingBottomRight:[36,36],maxZoom:13});
+      // Tiles sometimes draw before the panel has its final height
+      [250,700].forEach(t=>setTimeout(()=>m.map.invalidateSize(),t));
     }
   }
 }
@@ -3391,6 +3448,7 @@ function editLog(iso){
     $('logCoords').textContent = LOGDRAFT.blat
     ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
     : 'Tap the map to drop a pin.'; };
+  showWeekday(f,['met_date']);
   showC(); showAway();
   if($('dtMe')      && LOGDRAFT.xlat) $('dtMe').open=true;
   if($('dtPartner') && LOGDRAFT.slat) $('dtPartner').open=true;
@@ -3486,10 +3544,14 @@ function myShortName(){
   return 'You';
 }
 function partnerShortName(){
+  if(MY_PROFILE&&MY_PROFILE.partner_contact_id){
+    const c=CONTACTS.find(x=>x.id===MY_PROFILE.partner_contact_id);
+    if(c&&c.first_name) return c.first_name;
+    if(c) return fullName(c);
+  }
   const u=USERS[0];
-  if(!u) return 'Partner';
-  if(u.display_name) return u.display_name.split(/\s+/)[0];
-  return (u.email||'Partner').split('@')[0];
+  if(u&&u.display_name) return u.display_name.split(/\s+/)[0];
+  return 'The other person';
 }
 
 function namesOf(ids){
@@ -3937,6 +3999,92 @@ function exportTemplate(){
   download('contacts-template.csv', IO_COLS.join(',')+'\n'+sample.join(','));
 }
 
+
+/* ---------- reading a .vcf file from a phone ---------- */
+function decodeQP(v){
+  return v.replace(/=([0-9A-F]{2})/gi,(m,h)=>String.fromCharCode(parseInt(h,16)));
+}
+
+function parseVcards(text){
+  // Unfold: a line starting with a space or tab continues the one before
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n')
+                  .replace(/\n[ \t]/g,'').split('\n');
+  const cards=[]; let cur=null;
+  lines.forEach(line=>{
+    if(/^BEGIN:VCARD/i.test(line)){ cur=[]; return; }
+    if(/^END:VCARD/i.test(line)){ if(cur) cards.push(cur); cur=null; return; }
+    if(cur&&line.trim()) cur.push(line);
+  });
+
+  return cards.map(card=>{
+    const c={phones:[],emails:[],websites:[],socials:[]};
+    card.forEach(line=>{
+      const at=line.indexOf(':'); if(at<0) return;
+      const left=line.slice(0,at), right=line.slice(at+1);
+      const bits=left.split(';');
+      const name=bits[0].toUpperCase().replace(/^ITEM\d+\./,'');
+      const params=bits.slice(1).join(';').toUpperCase();
+      let val=right;
+      if(/QUOTED-PRINTABLE/.test(params)) val=decodeQP(val);
+      val=val.replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\n/gi,'\n').trim();
+      if(!val) return;
+
+      const label=(want)=>{
+        const m=params.match(/TYPE=([A-Z,]+)/);
+        const t=m?m[1].split(',')[0]:'';
+        return want[t]||want.DEFAULT;
+      };
+
+      switch(name){
+        case 'N': {
+          const p=val.split(';');
+          c.last_name  = c.last_name  || (p[0]||'').trim();
+          c.first_name = c.first_name || (p[1]||'').trim();
+          if(p[2]&&p[2].trim()) c.given_names=p[2].trim();
+          break;
+        }
+        case 'FN':
+          c._fn=val; break;
+        case 'NICKNAME': c.nickname=val; break;
+        case 'ORG': c.company=val.split(';')[0].trim(); break;
+        case 'TITLE': c.job_title=val; break;
+        case 'TEL':
+          c.phones.push({label:label({CELL:'Mobile',MOBILE:'Mobile',HOME:'Home',
+            WORK:'Work',DEFAULT:'Other'}), value:val}); break;
+        case 'EMAIL':
+          c.emails.push({label:label({WORK:'Work',DEFAULT:'Personal'}), value:val}); break;
+        case 'URL':
+          c.websites.push({label:'Website', value:val}); break;
+        case 'BDAY': {
+          const m=val.match(/(\d{4})-?(\d{2})-?(\d{2})/);
+          if(m) c.birth_date=`${m[1]}-${m[2]}-${m[3]}`;
+          break;
+        }
+        case 'ADR': {
+          const p=val.split(';');     // pobox;ext;street;town;county;postcode;country
+          if(p[2]&&p[2].trim()) c.address=p[2].trim().replace(/\n/g,', ');
+          if(p[3]&&p[3].trim()) c.town=p[3].trim();
+          if(p[4]&&p[4].trim()) c.county=p[4].trim();
+          if(p[5]&&p[5].trim()) c.postcode=p[5].trim();
+          if(p[6]&&p[6].trim()) c.country=p[6].trim();
+          break;
+        }
+        case 'NOTE': c.notes=val; break;
+      }
+    });
+
+    // Fall back to the display name when there is no structured one
+    if(!c.first_name&&!c.last_name&&c._fn){
+      const p=c._fn.trim().split(/\s+/);
+      c.first_name=p.shift()||'';
+      c.last_name=p.join(' ');
+    }
+    delete c._fn;
+    ['phones','emails','websites','socials'].forEach(k=>{ if(!c[k].length) delete c[k]; });
+    return c;
+  }).filter(c=>c.first_name||c.last_name||c.company);
+}
+
 function openIO(){
   $('ioBody').innerHTML=`
     <div class="card"><h3>Save a copy</h3>
@@ -3954,24 +4102,65 @@ function openIO(){
         <button class="btn" id="ioTemplate" style="border:1.5px solid var(--rule)">
           Download the template first</button>
         <label class="btn" style="border:1.5px solid var(--rule);cursor:pointer">
-          Choose a CSV file<input type="file" accept=".csv,text/csv" id="ioFile" style="display:none">
+          Choose a file<input type="file" accept=".csv,.vcf,text/csv,text/vcard"
+            id="ioFile" style="display:none">
         </label>
+        <p class="coords">A CSV from the template, or a .vcf file exported from
+        your phone's own contacts app.</p>
       </div>
       <div id="ioReport"></div>
     </div>`;
 
   $('ioExport').onclick=exportContacts;
   $('ioTemplate').onclick=exportTemplate;
+  IMPORT_KIND='csv';
   $('ioFile').onchange=e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
-    r.onload=()=>previewImport(String(r.result));
+    r.onload=()=>{
+      const text=String(r.result);
+      if(/BEGIN:VCARD/i.test(text)) previewVcf(text);
+      else previewImport(text);
+    };
     r.readAsText(f);
   };
   $('io').classList.remove('hidden'); $('ioBody').scrollTop=0; lockBackground();
 }
 
-let IMPORT_ROWS=[];
+let IMPORT_ROWS=[], IMPORT_KIND='csv';
+
+function previewVcf(text){
+  const cards=parseVcards(text);
+  if(!cards.length){ toast('No contacts found in that file'); return; }
+
+  const here=new Set(CONTACTS.map(c=>
+    ((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase()));
+
+  IMPORT_KIND='vcf'; IMPORT_ROWS=[];
+  let skipped=0;
+  cards.forEach(c=>{
+    const key=((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase();
+    if(here.has(key)) skipped++; else { here.add(key); IMPORT_ROWS.push(c); }
+  });
+
+  $('ioReport').innerHTML=`
+    <div class="field"><dt>In the file</dt><dd>${cards.length}</dd></div>
+    <div class="field"><dt>New</dt><dd>${IMPORT_ROWS.length}</dd></div>
+    <div class="field"><dt>Already here</dt><dd>${skipped}, left untouched</dd></div>
+    ${IMPORT_ROWS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
+        ${esc(IMPORT_ROWS.slice(0,8).map(x=>[x.first_name,x.last_name].filter(Boolean).join(' ')
+          ||x.company||'(no name)').join(', '))}${IMPORT_ROWS.length>8?'\u2026':''}</dd></div>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Phone numbers, emails, addresses and birthdays come across where the file
+        has them. They will go into "Shared with me" for you to file.</dd></div>
+      <div class="setadd"><button class="btn primary" id="ioGo">
+        Add these ${IMPORT_ROWS.length}</button></div>`
+      :'<div class="field"><dd>Nothing new to add.</dd></div>'}`;
+
+  const go=$('ioGo');
+  if(go) go.onclick=doImport;
+}
+
 function previewImport(text){
   const rows=parseCsv(text);
   if(rows.length<2){ toast('That file has no rows in it'); return; }
@@ -3985,7 +4174,7 @@ function previewImport(text){
   const here=new Set(CONTACTS.map(c=>
     ((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase()));
 
-  IMPORT_ROWS=[]; const skipped=[];
+  IMPORT_KIND='csv'; IMPORT_ROWS=[]; const skipped=[];
   rows.slice(1).forEach(r=>{
     const rec={};
     head.forEach((h,i)=>{ if(IO_COLS.includes(h)) rec[h]=(r[i]||'').trim(); });
@@ -4014,6 +4203,15 @@ async function doImport(){
   let added=0, failed=0;
 
   for(const rec of IMPORT_ROWS){
+    if(IMPORT_KIND==='vcf'){
+      const d={...rec, created_by:ME.id};
+      const {data,error}=await sb.from('contacts').insert(d).select().single();
+      if(error||!data){ failed++; console.error(error); continue; }
+      added++;
+      if(box) await sb.from('contact_groups')
+        .insert([{contact_id:data.id,group_id:box.id,user_id:ME.id}]);
+      continue;
+    }
     const d={created_by:ME.id};
     IO_COLS.forEach(k=>{
       if(k==='groups') return;

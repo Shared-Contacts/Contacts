@@ -158,7 +158,7 @@ details.inpanel{border-top:1px solid #F0EEE7}
 details.inpanel>summary{padding:11px 14px;color:var(--hull);font-weight:600;cursor:pointer;font-size:15px}
 details.awaybox{margin-top:14px;border:1.5px solid var(--rule);border-radius:8px;background:#FBFAF7}
 details.awaybox>summary{padding:11px 12px;color:var(--hull);font-weight:600;cursor:pointer}
-details.awaybox .geo,details.awaybox .map,details.awaybox .coords,
+details.awaybox label,details.awaybox .geo,details.awaybox .map,details.awaybox .coords,
 details.awaybox .addmore{margin-left:12px;margin-right:12px}
 details.awaybox .addmore{color:var(--red);padding-bottom:12px}
 details#dtFormer{margin-top:14px;border:1.5px solid var(--rule);border-radius:8px;background:#FBFAF7}
@@ -1775,6 +1775,7 @@ async function saveContact(existing){
   ['first_name','last_name','given_names','nickname','birth_date','death_date','address','address_2',
    'town','county','postcode','country','company','department','job_title','boat_name','boat_number',
    'met_where','met_date','notes','what3words','met_what3words','boat_notes'].forEach(k=>{
+    if(!f.elements[k]) return;
     const v=f.elements[k].value.trim();data[k]=v===''?null:v;});
   data.status_id=f.elements['status_id'].value?Number(f.elements['status_id'].value):null;
   Object.keys(LAB).forEach(k=>
@@ -3475,7 +3476,7 @@ const LOG_FIELDS_NUM=['am_sys','am_dia','am_pulse','noon_sys','noon_dia','noon_p
   'pm_sys','pm_dia','pm_pulse','pills_left','exercise_score','steps','pob_tonight',
   'wifi_quality','weight_kg','waist_cm','hip_cm','hours_start','hours_end',
   'v_down','v_up','three_down','three_up'];
-const LOG_FIELDS_TXT=['medication','bike_ride','diary_notes','regular_chores',
+const LOG_FIELDS_TXT=['stay_label','medication','bike_ride','diary_notes','regular_chores',
   'drinks','alcohol','pub_cafe','attractions','who_aboard','overnight_guests',
   'diesel_pumpout_at','coal_gas_at','boat_address','current_canal','journey'];
 const LOG_FIELDS_BOOL=['tablets_taken','walked','boated','stretches','diesel','pump_out',
@@ -3512,8 +3513,8 @@ async function ensureToday(){
   const prev=carriedFrom(today);
   const seed={created_by:ME.id, on_date:today};
   if(prev){
-    ['boat_lat','boat_lng','boat_address','current_canal',
-     'barry_lat','barry_lng','sandra_lat','sandra_lng',
+    // Only where you stayed carries over. Anywhere else was that day's business.
+    ['boat_lat','boat_lng','boat_address','current_canal','stay_label',
      'medication','who_aboard'].forEach(k=>{ if(prev[k]!=null) seed[k]=prev[k]; });
     if(prev.hours_end!=null){ seed.hours_start=prev.hours_end; seed.hours_end=prev.hours_end; }
   }
@@ -3588,22 +3589,25 @@ function renderLog(){
   const content={
     where: (()=>{
       const spots=[];
-      if(e.boat_lat&&e.boat_lng)     spots.push({lat:+e.boat_lat,  lng:+e.boat_lng,
-        what:'Boat', where:e.boat_address});
-      if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng,
-        what:myShortName(), where:e.barry_place});
-      if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,
-        what:partnerShortName(), where:e.sandra_place});
-      const place=(label,p)=>`<div class="field"><dt>${label}</dt><dd>
+      if(e.boat_lat&&e.boat_lng) spots.push({lat:+e.boat_lat, lng:+e.boat_lng,
+        what:e.stay_label||'Where we stayed', where:e.boat_address, main:true});
+      arr(e.places).forEach(p=>{
+        if(p.lat==null||p.lng==null) return;
+        spots.push({lat:+p.lat, lng:+p.lng, what:p.label||'Somewhere', where:p.place});
+      });
+      const row=(p)=>`<div class="field"><dt>${esc(p.what)}</dt><dd>
         <button class="addmore" style="padding:0;text-align:left" data-maps="${p.lat},${p.lng}">
           ${p.where?esc(p.where)+'<br>':''}<span style="font-weight:400;color:var(--muted)">
           ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} &rsaquo;</span></button></dd></div>`;
-      return R('Boat',e.boat_address)+R('Canal',e.current_canal)+R('Journey',e.journey)
-        + spots.map(p=>place(p.what==='Boat'?'Boat position':p.what+' that day',p)).join('')
+      return R(esc(e.stay_label||'Stayed'),esc(e.boat_address))
+        + R('Canal',esc(e.current_canal)) + R('Journey',esc(e.journey))
+        + arr(e.places).filter(p=>p.lat==null&&p.place).map(p=>
+            R(esc(p.label||'Also'),esc(p.place))).join('')
+        + spots.map(row).join('')
         + (spots.length?'<div id="logMap" class="map detail"></div>':'')
         + (spots.length>1?`<div class="field"><dd style="color:var(--muted);font-size:14px">
-            ${spots.length} places that day. Tap any set of coordinates to open it
-            in your maps app.</dd></div>`:'');
+            ${spots.length} places that day. Tap any of them to open it in your maps
+            app.</dd></div>`:'');
     })(),
     bp: R('Morning',bp(e.am_sys,e.am_dia,e.am_pulse))
       +R('Midday',bp(e.noon_sys,e.noon_dia,e.noon_pulse))
@@ -3662,24 +3666,26 @@ function renderLog(){
   killMaps();
   if($('logMap')){
     const spots=[];
-    if(e.boat_lat&&e.boat_lng)     spots.push({lat:+e.boat_lat,  lng:+e.boat_lng,  what:'Boat'});
-    if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng, what:myShortName()});
-    if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,what:partnerShortName()});
-    const m=showMap('logMap',spots[0].lat,spots[0].lng,null);
-    if(m){
-      // Label every pin, so three hundred miles apart still makes sense
-      // Labels sit below the pins; above, the top one gets clipped by the edge
-      spots.forEach(p=>L.marker([p.lat,p.lng]).addTo(m.map)
-        .bindTooltip(p.what,{permanent:spots.length>1,direction:'right',offset:[10,-10]}));
-      if(spots.length>1){
-        m.map._wantFit={
-          bounds:spots.map(p=>[p.lat,p.lng]),
-          opts:{paddingTopLeft:[40,40],paddingBottomRight:[90,40],maxZoom:13}
-        };
-        m.map.invalidateSize();
-        m.map.fitBounds(m.map._wantFit.bounds, m.map._wantFit.opts);
-        // Once you move it yourself, stop putting it back
-        m.map.once('zoomstart dragstart',()=>{ delete m.map._wantFit; });
+    if(e.boat_lat&&e.boat_lng) spots.push({lat:+e.boat_lat, lng:+e.boat_lng,
+      what:e.stay_label||'Stayed'});
+    arr(e.places).forEach(p=>{
+      if(p.lat==null||p.lng==null) return;
+      spots.push({lat:+p.lat, lng:+p.lng, what:p.label||'Somewhere'});
+    });
+    if(spots.length){
+      const m=showMap('logMap',spots[0].lat,spots[0].lng,null);
+      if(m){
+        spots.forEach(p=>L.marker([p.lat,p.lng]).addTo(m.map)
+          .bindTooltip(p.what,{permanent:spots.length>1,direction:'right',offset:[10,-10]}));
+        if(spots.length>1){
+          m.map._wantFit={
+            bounds:spots.map(p=>[p.lat,p.lng]),
+            opts:{paddingTopLeft:[40,40],paddingBottomRight:[90,40],maxZoom:13}
+          };
+          m.map.invalidateSize();
+          m.map.fitBounds(m.map._wantFit.bounds, m.map._wantFit.opts);
+          m.map.once('zoomstart dragstart',()=>{ delete m.map._wantFit; });
+        }
       }
     }
   }
@@ -3752,33 +3758,31 @@ function editLog(iso){
   const medList=meds.filter(m=>m.is_default||takenAlready.includes(m.name));
 
   const panes={
-    where:`<fieldset><legend>Where</legend>
+    where:`<fieldset><legend>Where you stayed</legend>
+      <label>What to call it
+        <input name="stay_label" list="dlStay" placeholder="Boat" autocomplete="off"></label>
+      <datalist id="dlStay">${['Boat','Van','Home','Hotel','Tent','Mooring']
+        .map(v=>`<option value="${v}">`).join('')}</datalist>
       ${T('Closest address','boat_address')}
       ${T('Current canal','current_canal')}
       ${T('Journey','journey')}
-      <div class="geo"><input id="logGeoQ" placeholder="Find where the boat is">
+      <div class="geo"><input id="logGeoQ" placeholder="Find where you stayed">
         <button type="button" id="logGeoGo">Find</button></div>
       <div id="logEditMap" class="map"></div>
       <p class="coords" id="logCoords"></p>
-      <p class="coords">Carried over from the last entry. Move the pin if you have moved.</p>
+      <p class="coords">This one carries over to tomorrow. Move the pin when you move.</p>
+    </fieldset>
 
-      <details id="dtMe" class="awaybox"><summary>${esc(myShortName())}, if not aboard</summary>
-        <div class="geo"><input id="meQ" placeholder="Where were you?">
-          <button type="button" id="meGo">Find</button></div>
-        <div id="logMapMe" class="map"></div>
-        <p class="coords" id="meCoords"></p>
-        <button type="button" class="addmore" id="meClear">Not away &mdash; clear this</button>
-      </details>
-
-      <details id="dtPartner" class="awaybox"><summary>${esc(partnerShortName())}, if not aboard</summary>
-        <div class="geo"><input id="paQ" placeholder="Where were they?">
-          <button type="button" id="paGo">Find</button></div>
-        <div id="logMapPartner" class="map"></div>
-        <p class="coords" id="paCoords"></p>
-        <button type="button" class="addmore" id="paClear">Not away &mdash; clear this</button>
-      </details>
+    <fieldset><legend>Anywhere else that day</legend>
+      <div id="placeList"></div>
+      <button type="button" class="addmore" id="placeAdd">+ Add a person or a place</button>
+      <p class="coords">Somebody who was elsewhere, or somewhere you went &mdash; a
+      museum, a beach, a pub. Call each one whatever it is. These are for the one
+      day and do not carry over.</p>
+      <datalist id="dlPlaceNames">${[...new Set(
+        LOGDAYS.flatMap(d=>arr(d.places).map(x=>x.label)).filter(Boolean)
+      )].slice(0,40).map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
     </fieldset>`,
-
     bp:`<fieldset><legend>Blood pressure</legend>
       <div class="two">${N('Morning systolic','am_sys')}${N('Morning diastolic','am_dia')}</div>
       ${N('Morning pulse','am_pulse')}
@@ -3880,8 +3884,7 @@ function editLog(iso){
   LOGDRAFT={
     blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null,
     guests:(e.overnight_guests||'').split(',').map(x=>x.trim()).filter(Boolean),
-    xlat:e.barry_lat??null,  xlng:e.barry_lng??null,  xplace:e.barry_place??null,
-    slat:e.sandra_lat??null, slng:e.sandra_lng??null, splace:e.sandra_place??null
+    places:JSON.parse(JSON.stringify(arr(e.places)))
   };
 
   // pills carry over from the day before, ready to be knocked down
@@ -3893,6 +3896,8 @@ function editLog(iso){
   };
   if($('pillDown')){ $('pillDown').onclick=()=>bump(-1); $('pillUp').onclick=()=>bump(1); }
 
+  if(f.elements['stay_label'] && !f.elements['stay_label'].value)
+    f.elements['stay_label'].value = e.stay_label || prev.stay_label || 'Boat';
   if(f.elements['who_aboard'] && !f.elements['who_aboard'].value && prev.who_aboard)
     f.elements['who_aboard'].value=prev.who_aboard;
 
@@ -3938,24 +3943,68 @@ function editLog(iso){
       $('guestSearch').value=''; box.classList.add('hidden'); drawGuests(); });
   };
   }
-  const showAway=()=>{
-    if($('meCoords')) $('meCoords').textContent = LOGDRAFT.xlat
-      ? (LOGDRAFT.xplace?LOGDRAFT.xplace+' \u00b7 ':'')
-        +(+LOGDRAFT.xlat).toFixed(5)+', '+(+LOGDRAFT.xlng).toFixed(5)
-      : 'Tap the map to drop a pin.';
-    if($('paCoords')) $('paCoords').textContent = LOGDRAFT.slat
-      ? (LOGDRAFT.splace?LOGDRAFT.splace+' \u00b7 ':'')
-        +(+LOGDRAFT.slat).toFixed(5)+', '+(+LOGDRAFT.slng).toFixed(5)
-      : 'Tap the map to drop a pin.';
+  const PMAPS={};
+  const placeCoords=i=>{
+    const el=document.querySelector(`[data-pc="${i}"]`); if(!el) return;
+    const p=LOGDRAFT.places[i]||{};
+    el.textContent = p.lat!=null
+      ? (p.place?p.place+' · ':'')+(+p.lat).toFixed(5)+', '+(+p.lng).toFixed(5)
+      : 'Tap the map to drop a pin, or just name it and leave the map alone.';
+  };
+  const drawPlaces=()=>{
+    const box=$('placeList'); if(!box) return;
+    // Rebuilding the list throws away the containers, so let go of the old
+    // maps first. Leaving them behind means a reused slot never draws.
+    Object.keys(PMAPS).forEach(k=>{
+      try{ PMAPS[k].map.remove(); MAPS=MAPS.filter(x=>x!==PMAPS[k].map); }catch(e){}
+      delete PMAPS[k];
+    });
+    box.innerHTML=LOGDRAFT.places.map((p,i)=>`
+      <details class="awaybox" data-pbox="${i}" ${p.lat!=null||p.label?'open':''}>
+        <summary>${esc(p.label||'Somewhere else')}</summary>
+        <label>What or who
+          <input data-plabel="${i}" list="dlPlaceNames" value="${esc(p.label||'')}"
+            placeholder="Sandra, the museum, the beach…" autocomplete="off"></label>
+        <div class="geo"><input data-pq="${i}" placeholder="Find it on the map">
+          <button type="button" data-pgo="${i}">Find</button></div>
+        <div id="pmap${i}" class="map"></div>
+        <p class="coords" data-pc="${i}"></p>
+        <button type="button" class="addmore" data-prm="${i}"
+          style="color:var(--red)">Remove this one</button>
+      </details>`).join('');
+
+    box.querySelectorAll('[data-plabel]').forEach(inp=>inp.oninput=()=>{
+      const i=Number(inp.dataset.plabel);
+      LOGDRAFT.places[i].label=inp.value;
+      const sum=box.querySelector(`[data-pbox="${i}"] summary`);
+      if(sum) sum.textContent=inp.value||'Somewhere else';
+    });
+    box.querySelectorAll('[data-prm]').forEach(b=>b.onclick=()=>{
+      LOGDRAFT.places.splice(Number(b.dataset.prm),1); drawPlaces();
+    });
+    box.querySelectorAll('[data-pbox]').forEach(d=>{
+      const i=Number(d.dataset.pbox);
+      const build=()=>{
+        if(PMAPS[i]||!d.open) return;
+        PMAPS[i]=showMap('pmap'+i, LOGDRAFT.places[i].lat, LOGDRAFT.places[i].lng,
+          async(la,ln)=>{
+            LOGDRAFT.places[i].lat=la; LOGDRAFT.places[i].lng=ln; placeCoords(i);
+            LOGDRAFT.places[i].place=await placeName(la,ln); placeCoords(i);
+          }, true);
+        const go=box.querySelector(`[data-pgo="${i}"]`);
+        if(go) go.onclick=()=>geocode(box.querySelector(`[data-pq="${i}"]`).value, PMAPS[i]);
+      };
+      d.addEventListener('toggle',build);
+      if(d.open) setTimeout(build,60);
+      placeCoords(i);
+    });
   };
   const showC=()=>{ if(!$('logCoords')) return;
     $('logCoords').textContent = LOGDRAFT.blat
     ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
     : 'Tap the map to drop a pin.'; };
   useWhenPicker(f,['met_date'],{dateOnly:['met_date']});
-  showC(); showAway();
-  if($('dtMe')      && LOGDRAFT.xlat) $('dtMe').open=true;
-  if($('dtPartner') && LOGDRAFT.slat) $('dtPartner').open=true;
+  showC();
 
   $('logEd').classList.remove('hidden'); $('logEdBody').scrollTop=0; lockBackground();
   setTimeout(()=>{
@@ -3964,29 +4013,17 @@ function editLog(iso){
       (la,ln)=>{LOGDRAFT.blat=la;LOGDRAFT.blng=ln;showC();});
     $('logGeoGo').onclick=()=>geocode($('logGeoQ').value,m);
 
-    // The two "if not aboard" maps only draw once their panel is opened,
-    // otherwise Leaflet measures them at zero height and shows grey.
-    const wire=(box,mapId,draftLat,draftLng,q,go,clear,placeKey)=>{
-      const d=$(box); if(!d) return;
-      let made=null;
-      const build=()=>{
-        if(made||!d.open) return;
-        made=showMap(mapId,LOGDRAFT[draftLat],LOGDRAFT[draftLng],
-          async(la,ln)=>{
-            LOGDRAFT[draftLat]=la; LOGDRAFT[draftLng]=ln; showAway();
-            LOGDRAFT[placeKey]=await placeName(la,ln); showAway();
-          }, true);
-        $(go).onclick=()=>geocode($(q).value,made);
-      };
-      d.addEventListener('toggle',build);
-      if(d.open) setTimeout(build,60);
-      $(clear).onclick=()=>{
-        LOGDRAFT[draftLat]=null; LOGDRAFT[draftLng]=null; LOGDRAFT[placeKey]=null;
-        showAway(); d.open=false;
-      };
+    drawPlaces();
+    const pa=$('placeAdd');
+    if(pa) pa.onclick=()=>{
+      LOGDRAFT.places.push({label:'',lat:null,lng:null,place:null});
+      drawPlaces();
+      const last=$('placeList').lastElementChild;
+      if(last){ last.open=true; last.scrollIntoView({block:'nearest'}); }
     };
-    wire('dtMe','logMapMe','xlat','xlng','meQ','meGo','meClear','xplace');
-    wire('dtPartner','logMapPartner','slat','slng','paQ','paGo','paClear','splace');
+
+    // The old two-slot maps only drew once their panel was opened,
+    // otherwise Leaflet measures them at zero height and shows grey.
   },100);
 
   $('logEdSave').onclick=()=>saveLog(iso);
@@ -4010,9 +4047,11 @@ async function saveLog(iso){
   // Leave whatever is stored alone rather than clearing it.
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) d[k]=f.elements[k].checked; });
   if(LOGDRAFT.blat!=null){ d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng; }
-  if(document.getElementById('dtMe')){
-    d.barry_lat=LOGDRAFT.xlat;  d.barry_lng=LOGDRAFT.xlng;  d.barry_place=LOGDRAFT.xplace;
-    d.sandra_lat=LOGDRAFT.slat; d.sandra_lng=LOGDRAFT.slng; d.sandra_place=LOGDRAFT.splace;
+  if(document.getElementById('placeList')){
+    d.places=LOGDRAFT.places
+      .filter(p=>(p.label&&p.label.trim())||p.lat!=null)
+      .map(p=>({label:(p.label||'').trim()||'Somewhere',
+                lat:p.lat, lng:p.lng, place:p.place||null}));
   }
 
   $('logEdSave').disabled=true;

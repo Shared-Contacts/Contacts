@@ -73,6 +73,11 @@ ul.list li{border-bottom:1px solid var(--rule)}
 .row{width:100%;display:flex;align-items:flex-start;gap:12px;padding:13px 16px;text-align:left}
 .row.nested{padding-left:32px}
 ul.list li.alt{background:var(--band,#F3F1EA)}
+/* The ones you keep at the top, tinted wherever they turn up in the list */
+ul.list li.fav,ul.list li.fav.alt{background:#FBF3DC}
+ul.list li.fav>.row{box-shadow:inset 4px 0 0 var(--brass)}
+ul.list li.fav .name::after{content:'\2605';color:var(--brass);
+  font-size:14px;margin-left:7px;vertical-align:1px}
 .row:active{background:#E8E5DC}
 .rowpic{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;
   border:1.5px solid var(--rule);background:#EDEFEA;margin-top:2px}
@@ -360,6 +365,11 @@ input[name="postcode"]{text-transform:uppercase}
 .shoptabs .ln{display:inline-block;background:var(--red);color:#fff;border-radius:999px;
   padding:0 7px;font-size:13px;margin-left:3px;vertical-align:middle}
 .shoptabs em{display:block;font-style:normal;font-size:12px;font-weight:400;opacity:.75}
+.shoptabs .tabx{display:inline-block;margin-left:8px;width:22px;height:22px;
+  line-height:21px;text-align:center;border-radius:50%;font-size:17px;font-weight:700;
+  background:rgba(0,0,0,.08);vertical-align:middle}
+.shoptabs button[aria-pressed="true"] .tabx{background:rgba(255,255,255,.22)}
+.shoptabs .tabx:active{background:var(--red);color:#fff}
 .todayband{margin:0 0 12px;padding:9px 14px;border-radius:8px;
   background:var(--hull);color:var(--paper);font-weight:700;font-size:15px;text-align:center}
 .pastband{margin:0 0 14px;padding:11px 14px;border-radius:8px;
@@ -837,7 +847,7 @@ function rowHtml(c,nested,birthdayView,alt){
   const box = PICKING
     ? `<span class="pickbox ${PICKED.has(c.id)?'on':''}">${PICKED.has(c.id)?'&#10003;':''}</span>`
     : '';
-  return `<li class="${alt?'alt':''}${PICKED.has(c.id)?' chosen':''}">
+  return `<li class="${alt?'alt':''}${FAVS.includes(c.id)?' fav':''}${PICKED.has(c.id)?' chosen':''}">
     <button class="row ${nested?'nested':''}" data-id="${c.id}">
     ${box}${pic}
     <span class="who">
@@ -1073,6 +1083,58 @@ function openInMaps(lat,lng){
   window.open(url,'_blank','noopener');
 }
 
+/* A pin you can tap to open that exact spot in your maps app, rather
+   than every tap on the map opening whichever place it was centred on. */
+const PIN_DIRS=[['right',[12,-12]],['left',[-12,-12]],
+                ['top',[0,-26]],['bottom',[0,10]]];
+function pinAt(mapObj,lat,lng,label,showLabel,n){
+  const mk=L.marker([lat,lng]).addTo(mapObj.map);
+  // Send each label off in a different direction, so two pins close
+  // together do not print one name on top of the other.
+  const [dir,off]=PIN_DIRS[(n||0)%PIN_DIRS.length];
+  if(label) mk.bindTooltip(label,{permanent:!!showLabel,direction:dir,
+    offset:off,interactive:true});   // tapping the label counts too
+  mk.on('click',ev=>{
+    if(ev&&ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent);
+    openInMaps(lat,lng);
+  });
+  const el=mk.getElement();
+  if(el){ el.style.cursor='pointer';
+    el.title=(label?label+' \u2014 ':'')+'open in your maps app'; }
+  return mk;
+}
+
+/* Two people in the same spot are one pin with both names on it, rather
+   than two pins printing over each other. */
+function mergeSpots(spots){
+  const out=[];
+  spots.forEach(p=>{
+    const same=out.find(o=>Math.abs(o.lat-p.lat)<0.0002
+                        && Math.abs(o.lng-p.lng)<0.0002);
+    if(same){ if(p.what&&!same.names.includes(p.what)) same.names.push(p.what); }
+    else out.push({lat:p.lat, lng:p.lng, names:p.what?[p.what]:[]});
+  });
+  return out.map(o=>({lat:o.lat, lng:o.lng,
+    what:o.names.length>2 ? o.names.slice(0,-1).join(', ')+' and '+o.names.slice(-1)
+        :o.names.join(' and ')}));
+}
+
+/* Put the pins in view, once the box has a real width to measure. */
+function fitPins(mapObj,points){
+  if(points.length<2) return;
+  const m=mapObj.map;
+  m._wantFit={
+    bounds:points,
+    opts:{paddingTopLeft:[40,40],paddingBottomRight:[90,40],maxZoom:13}
+  };
+  m.invalidateSize();
+  m._autoFit=true;
+  m.fitBounds(m._wantFit.bounds, Object.assign({},m._wantFit.opts,{animate:false}));
+  m._autoFit=false;
+  // Once the reader moves the map themselves, leave it where they put it.
+  m.on('zoomstart dragstart',()=>{ if(!m._autoFit) delete m._wantFit; });
+}
+
 /* The Canal & River Trust publish the network as open data.
    Fetched once per session, then reused by every map. */
 let CANALS=null, CANALS_TRIED=false;
@@ -1109,7 +1171,7 @@ async function paintCanals(group){
 
 function killMaps(){MAPS.forEach(m=>{try{m.remove();}catch(e){}});MAPS=[];}
 
-function showMap(elId,lat,lng,onMove,useHere){
+function showMap(elId,lat,lng,onMove,useHere,ownPins){
   if(!$(elId))return null;
   const locked = !onMove;   // a saved record shows a still map, so scrolling works
   const m=L.map(elId,{
@@ -1120,7 +1182,12 @@ function showMap(elId,lat,lng,onMove,useHere){
     boxZoom:!locked, keyboard:!locked, zoomControl:true
   }).setView([lat??52.5,lng??-2.0],lat?14:6);
   if(locked){
-    m.once('zoomend',()=>{
+    let freed=false;
+    m.on('zoomend',()=>{
+      // Re-fitting the pins ourselves also fires zoomend. Only a finger on
+      // the + or - button should unlock the map and stop the re-fitting.
+      if(m._autoFit||freed) return;
+      freed=true;
       m.dragging.enable(); m.touchZoom.enable(); m.doubleClickZoom.enable();
       delete m._wantFit;
       const el=$(elId);
@@ -1133,7 +1200,9 @@ function showMap(elId,lat,lng,onMove,useHere){
     });
   }
   if(locked&&m.tap)m.tap.disable();
-  if(locked&&lat&&lng){
+  // A map with several pins handles its own taps, pin by pin, so it does
+  // not get the whole-map tap that opens the one place it was centred on.
+  if(locked&&lat&&lng&&!ownPins){
     const el=$(elId);
     el.style.cursor='pointer';
     el.title='Open in your maps app';
@@ -1170,7 +1239,7 @@ function showMap(elId,lat,lng,onMove,useHere){
     }
     if(tell&&onMove)onMove(la,ln);
   };
-  if(lat&&lng)drop(lat,lng,false);
+  if(lat&&lng&&!ownPins)drop(lat,lng,false);
   if(onMove)m.on('click',e=>drop(e.latlng.lat,e.latlng.lng,true));
   MAPS.push(m);
   // Remember what we wanted to show, so it can be re-fitted once the
@@ -1179,7 +1248,12 @@ function showMap(elId,lat,lng,onMove,useHere){
   const nudge=()=>{
     try{
       m.invalidateSize();
-      if(m._wantFit) m.fitBounds(m._wantFit.bounds, m._wantFit.opts);
+      if(m._wantFit){
+        m._autoFit=true;
+        m.fitBounds(m._wantFit.bounds,
+          Object.assign({},m._wantFit.opts,{animate:false}));
+        m._autoFit=false;
+      }
     }catch(e){}
   };
   [60,300,900].forEach(t=>setTimeout(nudge,t));
@@ -3527,8 +3601,12 @@ async function ensureToday(){
 async function openLog(){
   await loadLog();
   LOG_DATE = await ensureToday();
+  // Show the page BEFORE drawing it. A map built inside a hidden box has no
+  // width to measure, so it used to open on a blank patch of sea and only
+  // came right once you stepped a day back and forward again.
+  $('log').classList.remove('hidden'); lockBackground();
   renderLog();
-  $('log').classList.remove('hidden'); $('logBody').scrollTop=0; lockBackground();
+  $('logBody').scrollTop=0;
 }
 
 function logEntry(iso){ return LOGDAYS.find(d=>d.on_date===iso)||null; }
@@ -3606,8 +3684,8 @@ function renderLog(){
         + spots.map(row).join('')
         + (spots.length?'<div id="logMap" class="map detail"></div>':'')
         + (spots.length>1?`<div class="field"><dd style="color:var(--muted);font-size:14px">
-            ${spots.length} places that day. Tap any of them to open it in your maps
-            app.</dd></div>`:'');
+            ${spots.length} places that day. Tap a pin, or any set of
+            coordinates, to open that one in your maps app.</dd></div>`:'');
     })(),
     bp: R('Morning',bp(e.am_sys,e.am_dia,e.am_pulse))
       +R('Midday',bp(e.noon_sys,e.noon_dia,e.noon_pulse))
@@ -3673,19 +3751,11 @@ function renderLog(){
       spots.push({lat:+p.lat, lng:+p.lng, what:p.label||'Somewhere'});
     });
     if(spots.length){
-      const m=showMap('logMap',spots[0].lat,spots[0].lng,null);
+      const m=showMap('logMap',spots[0].lat,spots[0].lng,null,false,true);
       if(m){
-        spots.forEach(p=>L.marker([p.lat,p.lng]).addTo(m.map)
-          .bindTooltip(p.what,{permanent:spots.length>1,direction:'right',offset:[10,-10]}));
-        if(spots.length>1){
-          m.map._wantFit={
-            bounds:spots.map(p=>[p.lat,p.lng]),
-            opts:{paddingTopLeft:[40,40],paddingBottomRight:[90,40],maxZoom:13}
-          };
-          m.map.invalidateSize();
-          m.map.fitBounds(m.map._wantFit.bounds, m.map._wantFit.opts);
-          m.map.once('zoomstart dragstart',()=>{ delete m.map._wantFit; });
-        }
+        const pins=mergeSpots(spots);
+        pins.forEach((p,i)=>pinAt(m,p.lat,p.lng,p.what,pins.length>1,i));
+        fitPins(m,pins.map(p=>[p.lat,p.lng]));
       }
     }
   }
@@ -4230,8 +4300,14 @@ function renderWhere(){
 
   killMaps();
   if(OTHERS.length){
-    const m=showMap('whereMap',Number(OTHERS[0].lat),Number(OTHERS[0].lng),null);
-    if(m) OTHERS.slice(1).forEach(o=>L.marker([Number(o.lat),Number(o.lng)]).addTo(m.map));
+    const m=showMap('whereMap',Number(OTHERS[0].lat),Number(OTHERS[0].lng),
+      null,false,true);
+    if(m){
+      const pins=mergeSpots(OTHERS.map(o=>({lat:Number(o.lat), lng:Number(o.lng),
+        what:o.label||'Someone'})));
+      pins.forEach((p,i)=>pinAt(m,p.lat,p.lng,p.what,pins.length>1,i));
+      fitPins(m,pins.map(p=>[p.lat,p.lng]));
+    }
   }
 }
 
@@ -4355,6 +4431,22 @@ async function openShop(){
   $('shop').classList.remove('hidden'); $('shopBody').scrollTop=0; lockBackground();
 }
 
+async function binList(id){
+  const l=LISTS.find(x=>x.id===id);
+  if(!l) return;
+  if(l.owner_id!==ME.id){ toast('That list belongs to someone else'); return; }
+  if(LISTS.filter(x=>x.owner_id===ME.id).length<2){
+    toast('Keep at least one list of your own'); return;
+  }
+  const n=SHOP.filter(x=>x.list_id===id).length;
+  if(!confirm('Delete the list "'+l.name+'"'
+    +(n?' and the '+n+' thing'+(n===1?'':'s')+' on it':'')+'?')) return;
+  const {error}=await sb.from('shopping_lists').delete().eq('id',id);
+  if(error){ toast('Could not delete it'); console.error(error); return; }
+  if(CUR_LIST===id) CUR_LIST=null;
+  await loadShopping(); renderShop(); toast('List deleted');
+}
+
 function renderShop(){
   const list=LISTS.find(x=>x.id===CUR_LIST);
   const mine=list&&list.owner_id===ME.id;
@@ -4375,9 +4467,17 @@ function renderShop(){
   SHOP.forEach(x=>{ if(!x.got) counts[x.list_id]=(counts[x.list_id]||0)+1; });
 
   let html=`<div class="kindpick shoptabs">
-    ${LISTS.map(l=>`<button data-slist="${l.id}" aria-pressed="${l.id===CUR_LIST}">
+    ${LISTS.map(l=>{
+      // The cross only shows on the list you are actually looking at, so a
+      // stray thumb cannot delete one in passing, and never on your last one.
+      const canBin = l.id===CUR_LIST && l.owner_id===ME.id
+        && LISTS.filter(x=>x.owner_id===ME.id).length>1;
+      return `<button data-slist="${l.id}" aria-pressed="${l.id===CUR_LIST}">
       ${esc(l.name)}${counts[l.id]?` <span class="ln">${counts[l.id]}</span>`:''}
-      ${l.owner_id!==ME.id?`<em>${esc(whoWrote(l.owner_id))}'s</em>`:''}</button>`).join('')}
+      ${canBin?`<span class="tabx" data-sbin="${l.id}"
+        aria-hidden="true" title="Delete this list">&times;</span>`:''}
+      ${l.owner_id!==ME.id?`<em>${esc(whoWrote(l.owner_id))}'s</em>`:''}</button>`;
+    }).join('')}
     </div>`;
 
   if(!list){
@@ -4425,6 +4525,12 @@ function renderShop(){
 
   $('shopBody').querySelectorAll('[data-slist]').forEach(b=>b.onclick=()=>{
     CUR_LIST=Number(b.dataset.slist); renderShop(); });
+  $('shopBody').querySelectorAll('[data-sbin]').forEach(x=>{
+    x.onclick=async ev=>{
+      ev.stopPropagation(); ev.preventDefault();
+      await binList(Number(x.dataset.sbin));
+    };
+  });
   $('sAdd').onclick=async()=>{
     const n=$('sName').value.trim();
     if(!n){ toast('Type what is needed'); return; }
@@ -4467,15 +4573,7 @@ function renderShop(){
     toast(b.checked?'Shared':'No longer shared');
   });
   const ld=$('sListDel');
-  if(ld) ld.onclick=async()=>{
-    const n=items.length;
-    if(!confirm('Delete the list "'+list.name+'"'
-      +(n?' and the '+n+' thing'+(n===1?'':'s')+' on it':'')+'?')) return;
-    const {error}=await sb.from('shopping_lists').delete().eq('id',CUR_LIST);
-    if(error){ toast('Could not delete it'); return; }
-    CUR_LIST=null;
-    await loadShopping(); renderShop(); toast('List deleted');
-  };
+  if(ld) ld.onclick=()=>binList(CUR_LIST);
   const rn=$('sRenameGo');
   if(rn) rn.onclick=async()=>{
     const n=$('sRename').value.trim();

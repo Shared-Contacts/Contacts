@@ -247,9 +247,60 @@ input[name="postcode"]{text-transform:uppercase}
 .geo input{flex:1;min-width:0;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .geo button{flex:0 0 auto;padding:11px 16px;border-radius:8px;background:var(--hull);color:#F2EFE4;font-weight:600}
 .coords{margin:8px 0 0;font-size:14px;color:var(--muted)}
-.weekday{display:block;margin-top:6px;padding:7px 11px;border-radius:8px;
+.weekday{display:block;margin-top:6px;padding:6px 11px;border-radius:8px;
   background:var(--hull);color:var(--paper);font-weight:700;font-size:15px}
 .weekday:empty{display:none}
+
+.whenbtn{display:block;width:100%;margin-top:4px;padding:13px 12px;text-align:left;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff;color:var(--ink);
+  font-size:17px;font-weight:600}
+.whenbtn.empty{color:var(--muted);font-weight:400}
+.whenbtn:active{background:#F1EFE8}
+
+.pickwrap{align-items:flex-start;overflow-y:auto;padding:14px 12px 30px}
+.pickinner{max-width:440px;padding:0;overflow:hidden}
+.pickhead{background:var(--hull);color:var(--paper);padding:14px 16px}
+.pickhead .pt{display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+  opacity:.75;margin-bottom:3px}
+.pickhead .pv{display:block;font-size:19px;font-weight:700;line-height:1.3}
+
+.pquick{display:flex;gap:7px;overflow-x:auto;padding:12px 14px 4px;scrollbar-width:none}
+.pquick::-webkit-scrollbar{display:none}
+.pquick button{flex:0 0 auto;border:1.5px solid var(--rule);border-radius:10px;
+  background:#fff;padding:7px 12px;font-size:15px;font-weight:600;color:var(--ink);
+  line-height:1.2;text-align:center}
+.pquick button em{display:block;font-style:normal;font-size:13px;font-weight:400;
+  color:var(--muted);margin-top:2px}
+.pquick button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:var(--paper)}
+.pquick button[aria-pressed="true"] em{color:rgba(255,255,255,.8)}
+
+.pnav{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px 4px;font-size:17px;font-weight:700}
+.pnav button{color:var(--hull);padding:9px 16px;border-radius:8px;font-size:16px}
+.pgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:2px 12px 10px}
+.phd{text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding-bottom:4px}
+.phd.wend{color:var(--brass)}
+.pcell{aspect-ratio:1;border:none;border-radius:9px;background:transparent;
+  font-size:16px;font-weight:600;color:var(--ink)}
+.pcell.wend{color:var(--brass)}
+.pcell.out{color:var(--rule);font-weight:400}
+.pcell.today{box-shadow:inset 0 0 0 2px var(--brass)}
+.pcell.on{background:var(--hull);color:var(--paper)}
+.pcell:active{background:#E8E5DC}
+.pcell.on:active{background:var(--hull-dark)}
+
+.ptime{border-top:1px solid var(--rule);padding-bottom:4px}
+.pclock{display:flex;gap:6px;align-items:center;padding:8px 14px 12px}
+.pclock button{flex:0 0 auto;border:1.5px solid var(--rule);border-radius:8px;
+  background:#fff;padding:9px 10px;font-size:14px;font-weight:600;color:var(--hull)}
+.pclock input{flex:1;min-width:0;text-align:center;font-size:19px;font-weight:700;
+  padding:9px 6px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+
+.pfoot{display:flex;gap:8px;border-top:1px solid var(--rule);padding:12px 14px}
+.pfoot button{flex:1;padding:13px 8px;border-radius:9px;border:1.5px solid var(--rule);
+  background:#fff;font-size:16px;font-weight:600;color:var(--muted)}
+.pfoot button.go{background:var(--hull);border-color:var(--hull);color:var(--paper);flex:1.4}
+.pfoot button.go:disabled{opacity:.45}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
@@ -1644,6 +1695,9 @@ async function openEditor(c){
   f.elements['company'].addEventListener('input',()=>{syncAddr();syncMet();});
   f.elements['met_where'].addEventListener('input',syncMet);
 
+  useWhenPicker(f,['birth_date','death_date','met_date'],
+    {dateOnly:['birth_date','death_date','met_date']});
+
   const showAge=()=>{
     const b=f.elements['birth_date'].value, d=f.elements['death_date'].value;
     if(!b){$('ageHint').textContent='';return;}
@@ -2281,6 +2335,11 @@ function openHelp(){
   <h4>Diary</h4>
   <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
   number beside it is how many are due today or already overdue.</p>
+  <p>Tapping a date opens a calendar showing the whole month, with the weekend
+  days picked out and today ringed. Along the top are shortcuts &mdash; Today,
+  Tomorrow, then each weekday by name with its date, so booking something for
+  next Monday needs no counting. Underneath, common times and &minus;15 / +15
+  buttons.</p>
   <p><em>About which contact</em> ties an entry to a person, so it appears on
   their page too. Leave it blank for anything that is not about anybody.</p>
   <p>A <strong>to-do</strong> is due by a time, and can have a "not before" date
@@ -2774,6 +2833,215 @@ function diaryMonth(){
 }
 
 /* ---------- adding and editing ---------- */
+
+/* ============================================================
+   A date and time picker that shows a whole month at a time,
+   so "next Monday" is something you can see rather than count.
+   ============================================================ */
+let PICK_OPEN=null;
+
+function whenPicker(opts){
+  // opts: {value:'YYYY-MM-DDTHH:mm'|'', withTime:true, title:'Due by'}
+  return new Promise(resolve=>{
+    const withTime = opts.withTime!==false;
+    const now=new Date();
+    let sel = opts.value ? new Date(opts.value) : null;
+    if(sel && isNaN(sel)) sel=null;
+    let month = new Date((sel||now).getFullYear(), (sel||now).getMonth(), 1);
+    let hh = sel?sel.getHours():9, mm = sel?sel.getMinutes():0;
+
+    const box=document.createElement('div');
+    box.className='daypick pickwrap';
+    document.body.appendChild(box);
+    PICK_OPEN=box;
+
+    const done=v=>{ box.remove(); PICK_OPEN=null; resolve(v); };
+    box.onclick=e=>{ if(e.target===box) done(undefined); };
+
+    const sameDay=(a,b)=>a&&b&&a.getFullYear()===b.getFullYear()
+      &&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+
+    const pad=n=>String(n).padStart(2,'0');
+    const out=()=>{
+      if(!sel) return '';
+      return `${sel.getFullYear()}-${pad(sel.getMonth()+1)}-${pad(sel.getDate())}`
+        + (withTime?`T${pad(hh)}:${pad(mm)}`:'');
+    };
+
+    // Monday of the week containing d
+    const mondayOf=d=>{
+      const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+      x.setDate(x.getDate()-((x.getDay()+6)%7));
+      return x;
+    };
+    const addDays=(d,n)=>{
+      const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+      x.setDate(x.getDate()+n); return x;
+    };
+
+    const quick=()=>{
+      const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const list=[['Today',today],['Tomorrow',addDays(today,1)]];
+      // the next occurrence of each weekday, named and dated
+      const names=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      for(let i=2;i<=6;i++){                    // today and tomorrow already there
+        const d=addDays(today,i);
+        list.push([names[(d.getDay()+6)%7], d]);
+      }
+      list.push(['In a week',addDays(today,7)]); // same weekday as today
+      list.push(['In a fortnight',addDays(today,14)]);
+      return list;
+    };
+
+    const draw=()=>{
+      const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const first=new Date(month.getFullYear(),month.getMonth(),1);
+      const lead=(first.getDay()+6)%7;
+      const days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+
+      let cells='';
+      // tail of the previous month, greyed, so the grid never starts ragged
+      const prevDays=new Date(month.getFullYear(),month.getMonth(),0).getDate();
+      for(let i=lead-1;i>=0;i--)
+        cells+=`<button class="pcell out" data-off="${-i-1}">${prevDays-i}</button>`;
+      for(let n=1;n<=days;n++){
+        const d=new Date(month.getFullYear(),month.getMonth(),n);
+        const cls=[ sameDay(d,sel)?'on':'', sameDay(d,today)?'today':'',
+                    (d.getDay()===0||d.getDay()===6)?'wend':'' ].filter(Boolean).join(' ');
+        cells+=`<button class="pcell ${cls}" data-day="${n}">${n}</button>`;
+      }
+      const tail=(7-((lead+days)%7))%7;
+      for(let i=1;i<=tail;i++)
+        cells+=`<button class="pcell out" data-off="${days+i}">${i}</button>`;
+
+      const heads=['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        .map((x,i)=>`<span class="phd${i>4?' wend':''}">${x}</span>`).join('');
+
+      box.innerHTML=`<div class="inner pickinner">
+        <div class="pickhead">
+          <span class="pt">${esc(opts.title||'Pick a date')}</span>
+          <span class="pv">${sel
+            ? esc(sel.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))
+              + (withTime?` at ${pad(hh)}:${pad(mm)}`:'')
+            : 'Nothing chosen'}</span>
+        </div>
+
+        <div class="pquick">${quick().map(([label,d])=>
+          `<button data-jump="${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}"
+            ${sameDay(d,sel)?'aria-pressed="true"':''}>
+            ${esc(label)}<em>${d.getDate()} ${d.toLocaleDateString('en-GB',{month:'short'})}</em>
+          </button>`).join('')}</div>
+
+        <div class="pnav">
+          <button data-mv="-1" aria-label="Previous month">&#9664;</button>
+          <span>${esc(month.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))}</span>
+          <button data-mv="1" aria-label="Next month">&#9654;</button>
+        </div>
+        <div class="pgrid">${heads}${cells}</div>
+
+        ${withTime?`<div class="ptime">
+          <div class="pquick">${['08:00','09:00','10:00','12:00','14:00','16:00','18:00','19:30']
+            .map(t=>`<button data-time="${t}" ${pad(hh)+':'+pad(mm)===t?'aria-pressed="true"':''}>${t}</button>`).join('')}</div>
+          <div class="pclock">
+            <button data-adj="-60">&minus;1 hr</button>
+            <button data-adj="-15">&minus;15</button>
+            <input type="time" id="pkTime" value="${pad(hh)}:${pad(mm)}">
+            <button data-adj="15">+15</button>
+            <button data-adj="60">+1 hr</button>
+          </div></div>`:''}
+
+        <div class="pfoot">
+          <button id="pkClear">Clear</button>
+          <button id="pkCancel">Cancel</button>
+          <button id="pkSet" class="go" ${sel?'':'disabled'}>Use this</button>
+        </div>
+      </div>`;
+
+      box.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{
+        sel=new Date(month.getFullYear(),month.getMonth(),Number(b.dataset.day));
+        draw();
+      });
+      box.querySelectorAll('[data-off]').forEach(b=>b.onclick=()=>{
+        sel=new Date(month.getFullYear(),month.getMonth(),Number(b.dataset.off));
+        month=new Date(sel.getFullYear(),sel.getMonth(),1);
+        draw();
+      });
+      box.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{
+        const [y,m,d]=b.dataset.jump.split('-').map(Number);
+        sel=new Date(y,m-1,d); month=new Date(y,m-1,1); draw();
+      });
+      box.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{
+        month=new Date(month.getFullYear(),month.getMonth()+Number(b.dataset.mv),1); draw();
+      });
+      box.querySelectorAll('[data-time]').forEach(b=>b.onclick=()=>{
+        const [a,c]=b.dataset.time.split(':').map(Number);
+        hh=a; mm=c; if(!sel) sel=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+        draw();
+      });
+      box.querySelectorAll('[data-adj]').forEach(b=>b.onclick=()=>{
+        let t=hh*60+mm+Number(b.dataset.adj);
+        t=((t%1440)+1440)%1440;
+        hh=Math.floor(t/60); mm=t%60; draw();
+      });
+      const tf=$('pkTime');
+      if(tf) tf.onchange=()=>{
+        const [a,c]=tf.value.split(':').map(Number);
+        if(!isNaN(a)){ hh=a; mm=c||0;
+          if(!sel) sel=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+          draw(); }
+      };
+      $('pkClear').onclick=()=>done('');
+      $('pkCancel').onclick=()=>done(undefined);
+      const go=$('pkSet');
+      if(go&&sel) go.onclick=()=>done(out());
+    };
+    draw();
+  });
+}
+
+// Turns a plain input into a button that opens the picker above.
+function useWhenPicker(form, names, opts){
+  names.forEach(n=>{
+    const el=form.elements[n];
+    if(!el) return;
+    const withTime = !(opts&&opts.dateOnly&&opts.dateOnly.includes(n));
+    el.type='hidden';
+
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='whenbtn';
+    const hint=document.createElement('span');
+    hint.className='weekday';
+
+    const paint=()=>{
+      const v=el.value;
+      if(!v){ btn.textContent='Choose a date'; btn.classList.add('empty');
+        hint.textContent=''; return; }
+      const d=new Date(v.length<=10?v+'T12:00':v);
+      btn.classList.remove('empty');
+      btn.textContent=isNaN(d)?v
+        : d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})
+          + (withTime?', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'');
+      hint.textContent=isNaN(d)?''
+        : '➔ '+d.toLocaleDateString('en-GB',{weekday:'long'});
+    };
+
+    btn.onclick=async()=>{
+      const label=(el.closest('label')||{}).firstChild;
+      const v=await whenPicker({
+        value:el.value, withTime,
+        title:(label&&label.textContent)?label.textContent.trim():'Pick a date'
+      });
+      if(v===undefined) return;
+      el.value=v; paint();
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    };
+
+    el.parentNode.insertBefore(btn, el.nextSibling);
+    btn.parentNode.insertBefore(hint, btn.nextSibling);
+    paint();
+  });
+}
+
 // datetime-local shows no weekday, which is how appointments end up on
 // the wrong day. Say it underneath as they type.
 function showWeekday(form, names){
@@ -2884,7 +3152,7 @@ function openItem(it, presetContact){
     ITEM_KIND=b.dataset.kind; applyKind(); });
   applyKind();
 
-  showWeekday(f,['starts_at','ends_at','due_at','due_from']);
+  useWhenPicker(f,['starts_at','ends_at','due_at','due_from']);
   $('itemEd').classList.remove('hidden'); $('itBody').scrollTop=0; lockBackground();
 }
 
@@ -3648,7 +3916,7 @@ function editLog(iso){
     $('logCoords').textContent = LOGDRAFT.blat
     ? (+LOGDRAFT.blat).toFixed(6)+', '+(+LOGDRAFT.blng).toFixed(6)
     : 'Tap the map to drop a pin.'; };
-  showWeekday(f,['met_date']);
+  useWhenPicker(f,['met_date'],{dateOnly:['met_date']});
   showC(); showAway();
   if($('dtMe')      && LOGDRAFT.xlat) $('dtMe').open=true;
   if($('dtPartner') && LOGDRAFT.slat) $('dtPartner').open=true;

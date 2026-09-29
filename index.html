@@ -105,6 +105,7 @@ ul.list li.chosen{background:#FBE9E7}
   font-size:32px;line-height:1;box-shadow:0 4px 14px rgba(16,35,28,.3);z-index:30}
 
 .sheet{position:fixed;inset:0;z-index:40;background:var(--paper);
+  height:100%;height:100dvh;max-height:100dvh;
   display:flex;flex-direction:column;overflow:hidden}
 .sheet.hidden{display:none}
 .sheetbar{flex:0 0 auto;position:sticky;top:0;z-index:6;background:var(--hull);color:#F2EFE4;
@@ -141,7 +142,7 @@ ul.list li.chosen{background:#FBE9E7}
 .sharebar{background:var(--red);color:#fff;padding:9px 14px;font-size:15px;
   display:flex;gap:10px;align-items:center}
 .sharebar button{color:#fff;text-decoration:underline;font-weight:600}
-.sheetbody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+.sheetbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   padding:16px 16px 100px;max-width:640px;margin:0 auto;width:100%}
 #edBody,#logEdBody{max-width:1080px}
 @media (min-width:900px){
@@ -237,12 +238,18 @@ input[name="postcode"]{text-transform:uppercase}
 .addmore{color:var(--hull);font-weight:700;padding:8px 0;font-size:16px}
 
 .map{height:220px;border-radius:8px;border:1.5px solid var(--rule);margin-top:10px}
-.map.detail{height:170px;margin:0;border:none;border-radius:0}
+.map.detail{height:190px;margin:0;border:none;border-radius:0;position:relative}
+.mapfree{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:500;
+  background:rgba(16,35,28,.82);color:#F2EFE4;padding:6px 13px;border-radius:999px;
+  font-size:14px;pointer-events:none}
 .leaflet-container{z-index:0}
 .geo{display:flex;gap:8px;margin-top:12px}
 .geo input{flex:1;min-width:0;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .geo button{flex:0 0 auto;padding:11px 16px;border-radius:8px;background:var(--hull);color:#F2EFE4;font-weight:600}
 .coords{margin:8px 0 0;font-size:14px;color:var(--muted)}
+.weekday{display:block;margin-top:6px;padding:7px 11px;border-radius:8px;
+  background:var(--hull);color:var(--paper);font-weight:700;font-size:15px}
+.weekday:empty{display:none}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
@@ -454,6 +461,7 @@ i.key{vertical-align:middle}
       <button class="menuitem" id="goWish">Wishlist &mdash; ideas for these apps &rsaquo;</button>
       <button class="menuitem" id="goWhere">Share where I am &rsaquo;</button>
       <button class="menuitem" id="refreshBtn">Refresh from the server</button>
+      <button class="menuitem" id="refreshPics">Photos not showing? Fetch them again</button>
       <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
       <button class="menuitem" id="signoutBtn">Sign out</button>
@@ -618,7 +626,11 @@ async function loadAll(){
   paintDue();
   TAGS={};CONTACTS.forEach(x=>TAGS[x.id]=(x.contact_groups||[]).map(r=>r.group_id));
   await fileNewlyShared();
-  const faces=CONTACTS.map(c=>c.avatar_path).filter(Boolean);
+  const faces=[];
+  CONTACTS.forEach(c=>{
+    if(c.avatar_path) faces.push(c.avatar_path);
+    arr(c.photos).forEach(p=>{ if(p.path) faces.push(p.path); });
+  });
   if(faces.length) await signPaths(faces);
   renderChips();render();
 }
@@ -742,7 +754,9 @@ function rowHtml(c,nested,birthdayView,alt){
     badge=`<span class="bday ${d<=7?'soon':''}">${bdayLabel(d)}</span>`;
 
   const pic = c.avatar_path && SIGNED[c.avatar_path]
-    ? `<img class="rowpic" src="${esc(SIGNED[c.avatar_path])}" alt="" loading="lazy">`
+    ? `<img class="rowpic" src="${esc(SIGNED[c.avatar_path])}" alt="" loading="lazy"
+         onerror="this.replaceWith(Object.assign(document.createElement('span'),
+           {className:'rowpic ph',textContent:'${esc(fullName(c).charAt(0).toUpperCase())}'}))">`
     : `<span class="rowpic ph">${esc(fullName(c).charAt(0).toUpperCase())}</span>`;
   const box = PICKING
     ? `<span class="pickbox ${PICKED.has(c.id)?'on':''}">${PICKED.has(c.id)?'&#10003;':''}</span>`
@@ -891,12 +905,32 @@ async function shrink(file, max){
   } finally { URL.revokeObjectURL(url); }
 }
 
-async function signPaths(paths){
-  const need=paths.filter(p=>p&&!SIGNED[p]);
+async function signPaths(paths,force){
+  const need=paths.filter(p=>p&&(force||!SIGNED[p]));
   if(!need.length)return;
-  const {data,error}=await sb.storage.from('photos').createSignedUrls(need,3600);
-  if(error){console.error(error);return;}
-  (data||[]).forEach(d=>{ if(d.signedUrl) SIGNED[d.path]=d.signedUrl; });
+  // In batches: a few hundred at once is refused
+  for(let i=0;i<need.length;i+=100){
+    const {data,error}=await sb.storage.from('photos')
+      .createSignedUrls(need.slice(i,i+100),3600);
+    if(error){console.error(error);continue;}
+    (data||[]).forEach(d=>{ if(d.signedUrl) SIGNED[d.path]=d.signedUrl; });
+  }
+}
+
+// Links to photos expire after an hour. Leave the app open longer than that
+// and pictures start failing; this fetches them all again.
+async function refreshPhotos(){
+  toast('Fetching the photos again\u2026');
+  SIGNED={};
+  const all=[];
+  CONTACTS.forEach(c=>{
+    if(c.avatar_path) all.push(c.avatar_path);
+    arr(c.photos).forEach(p=>{ if(p.path) all.push(p.path); });
+  });
+  await signPaths(all,true);
+  render();
+  if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
+  toast('Photos refreshed');
 }
 
 // Several at once, one after another so a slow signal cannot overlap them
@@ -1004,11 +1038,24 @@ function showMap(elId,lat,lng,onMove,useHere){
   const locked = !onMove;   // a saved record shows a still map, so scrolling works
   const m=L.map(elId,{
     scrollWheelZoom:false,
-    // A saved map keeps its + and - buttons but will not follow your finger,
-    // so the page still scrolls past it.
+    // A saved map starts fixed so the page scrolls past it. Zoom it with the
+    // + or - button and dragging switches on, so you can look around.
     dragging:!locked, touchZoom:!locked, doubleClickZoom:!locked,
     boxZoom:!locked, keyboard:!locked, zoomControl:true
   }).setView([lat??52.5,lng??-2.0],lat?14:6);
+  if(locked){
+    m.once('zoomend',()=>{
+      m.dragging.enable(); m.touchZoom.enable(); m.doubleClickZoom.enable();
+      delete m._wantFit;
+      const el=$(elId);
+      if(el&&!el.querySelector('.mapfree')){
+        const tag=document.createElement('div');
+        tag.className='mapfree'; tag.textContent='Drag to look around';
+        el.appendChild(tag);
+        setTimeout(()=>tag.remove(),3500);
+      }
+    });
+  }
   if(locked&&m.tap)m.tap.disable();
   if(locked&&lat&&lng){
     const el=$(elId);
@@ -1074,6 +1121,19 @@ function showMap(elId,lat,lng,onMove,useHere){
       ()=>{}, {timeout:8000, maximumAge:300000});
   }
   return {map:m,drop:drop};
+}
+
+// The other way round: coordinates to a place name, so "38.7075, -9.4195"
+// reads as "Cascais, Portugal".
+async function placeName(lat,lng){
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=14&lat='
+      +lat+'&lon='+lng);
+    const j=await r.json();
+    const a=j.address||{};
+    const town=a.city||a.town||a.village||a.suburb||a.hamlet||a.county;
+    return [town,a.country].filter(Boolean).join(', ')||null;
+  }catch(e){ return null; }
 }
 
 async function geocode(q,mapObj){
@@ -1490,6 +1550,9 @@ async function openEditor(c){
       <details id="dtFormer"><summary>Previous or other names</summary>
         ${multiBlock('former_names','a previous name')}</details>
     </fieldset>
+    <fieldset><legend>Notes</legend>
+      <label>Notes<textarea name="notes" rows="4"></textarea></label>
+    </fieldset>
     <fieldset><legend>Phones</legend>${multiBlock('phones','a phone')}</fieldset>
     <fieldset><legend>Emails</legend>${multiBlock('emails','an email')}</fieldset>
     <fieldset><legend>Websites</legend>${multiBlock('websites','a website')}</fieldset>
@@ -1529,9 +1592,6 @@ async function openEditor(c){
     <fieldset id="fsWork"><legend>Work</legend>
       ${F('Company or employer','employer_name')}
       ${F('Department','department')}${F('Job title','job_title')}
-    </fieldset>
-    <fieldset><legend>Notes</legend>
-      <label>Notes<textarea name="notes" rows="4"></textarea></label>
     </fieldset>
    </div>
     ${isNew?'':'<button type="button" class="btn danger" id="edDelete">Delete this contact</button>'}
@@ -2274,6 +2334,9 @@ function openHelp(){
 
   <h4>If something looks wrong</h4>
   <ul>
+    <li>Photos missing or showing as broken? The links they use expire after an
+        hour. Menu &rsaquo; <strong>Photos not showing? Fetch them again</strong>
+        gets fresh ones.</li>
     <li>Close the app fully and reopen it. It reloads everything on start.</li>
     <li>A blank map usually means the canal tile server is busy. Switch layers.</li>
     <li>The app refreshes itself every few minutes while it is sitting open, and
@@ -2717,13 +2780,13 @@ function showWeekday(form, names){
   names.forEach(n=>{
     const el=form.elements[n]; if(!el) return;
     const hint=document.createElement('span');
-    hint.className='coords'; hint.style.display='block'; hint.style.marginTop='4px';
+    hint.className='weekday';
     el.parentNode.appendChild(hint);
     const paint=()=>{
       const v=el.value;
       if(!v){ hint.textContent=''; return; }
       const d=new Date(v.length<=10?v+'T12:00':v);
-      hint.textContent=isNaN(d)?'':d.toLocaleDateString('en-GB',
+      hint.textContent=isNaN(d)?'':'\u2794 '+d.toLocaleDateString('en-GB',
         {weekday:'long',day:'numeric',month:'long',year:'numeric'});
     };
     el.addEventListener('input',paint); paint();
@@ -2753,6 +2816,16 @@ function openItem(it, presetContact){
       <label>Notes<textarea name="notes" rows="3"></textarea></label>
     </fieldset>
 
+    <fieldset id="fsWhenAppt"><legend>When</legend>
+      <label>Starts<input type="datetime-local" name="starts_at"></label>
+      <label>Ends<input type="datetime-local" name="ends_at"></label>
+      <div class="checks"><label><input type="checkbox" name="all_day"> All day</label></div>
+    </fieldset>
+    <fieldset id="fsTodo"><legend>When it needs doing</legend>
+      <label>Due by<input type="datetime-local" name="due_at"></label>
+      <label>Not before (leave empty if it can be done now)
+        <input type="datetime-local" name="due_from"></label>
+    </fieldset>
     <fieldset><legend>Who else to remind</legend>
       ${USERS.length?`<div class="checks">${USERS.map(u=>`<label>
           <input type="checkbox" name="alsoremind" value="${u.id}">
@@ -2762,17 +2835,7 @@ function openItem(it, presetContact){
         :'<p class="coords">Nobody else has an account yet.</p>'}
     </fieldset>
 
-    <fieldset id="fsAppt"><legend>When</legend>
-      <label>Starts<input type="datetime-local" name="starts_at"></label>
-      <label>Ends<input type="datetime-local" name="ends_at"></label>
-      <div class="checks"><label><input type="checkbox" name="all_day"> All day</label></div>
-    </fieldset>
 
-    <fieldset id="fsTodo"><legend>When it needs doing</legend>
-      <label>Due by<input type="datetime-local" name="due_at"></label>
-      <label>Not before (leave empty if it can be done now)
-        <input type="datetime-local" name="due_from"></label>
-    </fieldset>
 
     <fieldset><legend>Reminder</legend>
       <label>Remind me<select name="remind_mins">
@@ -2812,7 +2875,7 @@ function openItem(it, presetContact){
   });
 
   const applyKind=()=>{
-    $('fsAppt').style.display = ITEM_KIND==='appointment' ? '' : 'none';
+    $('fsWhenAppt').style.display = ITEM_KIND==='appointment' ? '' : 'none';
     $('fsTodo').style.display = ITEM_KIND==='todo' ? '' : 'none';
     $('itBody').querySelectorAll('[data-kind]').forEach(b=>
       b.setAttribute('aria-pressed', b.dataset.kind===ITEM_KIND));
@@ -3221,12 +3284,16 @@ function renderLog(){
   const content={
     where: (()=>{
       const spots=[];
-      if(e.boat_lat&&e.boat_lng)     spots.push({lat:+e.boat_lat,  lng:+e.boat_lng,  what:'Boat'});
-      if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng, what:myShortName()});
-      if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,what:partnerShortName()});
+      if(e.boat_lat&&e.boat_lng)     spots.push({lat:+e.boat_lat,  lng:+e.boat_lng,
+        what:'Boat', where:e.boat_address});
+      if(e.barry_lat&&e.barry_lng)   spots.push({lat:+e.barry_lat, lng:+e.barry_lng,
+        what:myShortName(), where:e.barry_place});
+      if(e.sandra_lat&&e.sandra_lng) spots.push({lat:+e.sandra_lat,lng:+e.sandra_lng,
+        what:partnerShortName(), where:e.sandra_place});
       const place=(label,p)=>`<div class="field"><dt>${label}</dt><dd>
-        <button class="addmore" style="padding:0" data-maps="${p.lat},${p.lng}">
-          ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} &nbsp;&rsaquo;</button></dd></div>`;
+        <button class="addmore" style="padding:0;text-align:left" data-maps="${p.lat},${p.lng}">
+          ${p.where?esc(p.where)+'<br>':''}<span style="font-weight:400;color:var(--muted)">
+          ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} &rsaquo;</span></button></dd></div>`;
       return R('Boat',e.boat_address)+R('Canal',e.current_canal)+R('Journey',e.journey)
         + spots.map(p=>place(p.what==='Boat'?'Boat position':p.what+' that day',p)).join('')
         + (spots.length?'<div id="logMap" class="map detail"></div>':'')
@@ -3509,8 +3576,8 @@ function editLog(iso){
   LOGDRAFT={
     blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null,
     guests:(e.overnight_guests||'').split(',').map(x=>x.trim()).filter(Boolean),
-    xlat:e.barry_lat??null,  xlng:e.barry_lng??null,
-    slat:e.sandra_lat??null, slng:e.sandra_lng??null
+    xlat:e.barry_lat??null,  xlng:e.barry_lng??null,  xplace:e.barry_place??null,
+    slat:e.sandra_lat??null, slng:e.sandra_lng??null, splace:e.sandra_place??null
   };
 
   // pills carry over from the day before, ready to be knocked down
@@ -3569,10 +3636,12 @@ function editLog(iso){
   }
   const showAway=()=>{
     if($('meCoords')) $('meCoords').textContent = LOGDRAFT.xlat
-      ? (+LOGDRAFT.xlat).toFixed(6)+', '+(+LOGDRAFT.xlng).toFixed(6)
+      ? (LOGDRAFT.xplace?LOGDRAFT.xplace+' \u00b7 ':'')
+        +(+LOGDRAFT.xlat).toFixed(5)+', '+(+LOGDRAFT.xlng).toFixed(5)
       : 'Tap the map to drop a pin.';
     if($('paCoords')) $('paCoords').textContent = LOGDRAFT.slat
-      ? (+LOGDRAFT.slat).toFixed(6)+', '+(+LOGDRAFT.slng).toFixed(6)
+      ? (LOGDRAFT.splace?LOGDRAFT.splace+' \u00b7 ':'')
+        +(+LOGDRAFT.slat).toFixed(5)+', '+(+LOGDRAFT.slng).toFixed(5)
       : 'Tap the map to drop a pin.';
   };
   const showC=()=>{ if(!$('logCoords')) return;
@@ -3593,24 +3662,27 @@ function editLog(iso){
 
     // The two "if not aboard" maps only draw once their panel is opened,
     // otherwise Leaflet measures them at zero height and shows grey.
-    const wire=(box,mapId,draftLat,draftLng,q,go,clear)=>{
+    const wire=(box,mapId,draftLat,draftLng,q,go,clear,placeKey)=>{
       const d=$(box); if(!d) return;
       let made=null;
       const build=()=>{
         if(made||!d.open) return;
         made=showMap(mapId,LOGDRAFT[draftLat],LOGDRAFT[draftLng],
-          (la,ln)=>{LOGDRAFT[draftLat]=la;LOGDRAFT[draftLng]=ln;showAway();}, true);
+          async(la,ln)=>{
+            LOGDRAFT[draftLat]=la; LOGDRAFT[draftLng]=ln; showAway();
+            LOGDRAFT[placeKey]=await placeName(la,ln); showAway();
+          }, true);
         $(go).onclick=()=>geocode($(q).value,made);
       };
       d.addEventListener('toggle',build);
       if(d.open) setTimeout(build,60);
       $(clear).onclick=()=>{
-        LOGDRAFT[draftLat]=null; LOGDRAFT[draftLng]=null;
+        LOGDRAFT[draftLat]=null; LOGDRAFT[draftLng]=null; LOGDRAFT[placeKey]=null;
         showAway(); d.open=false;
       };
     };
-    wire('dtMe','logMapMe','xlat','xlng','meQ','meGo','meClear');
-    wire('dtPartner','logMapPartner','slat','slng','paQ','paGo','paClear');
+    wire('dtMe','logMapMe','xlat','xlng','meQ','meGo','meClear','xplace');
+    wire('dtPartner','logMapPartner','slat','slng','paQ','paGo','paClear','splace');
   },100);
 
   $('logEdSave').onclick=()=>saveLog(iso);
@@ -3635,8 +3707,8 @@ async function saveLog(iso){
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) d[k]=f.elements[k].checked; });
   if(LOGDRAFT.blat!=null){ d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng; }
   if(document.getElementById('dtMe')){
-    d.barry_lat=LOGDRAFT.xlat;  d.barry_lng=LOGDRAFT.xlng;
-    d.sandra_lat=LOGDRAFT.slat; d.sandra_lng=LOGDRAFT.slng;
+    d.barry_lat=LOGDRAFT.xlat;  d.barry_lng=LOGDRAFT.xlng;  d.barry_place=LOGDRAFT.xplace;
+    d.sandra_lat=LOGDRAFT.slat; d.sandra_lng=LOGDRAFT.slng; d.sandra_place=LOGDRAFT.splace;
   }
 
   $('logEdSave').disabled=true;
@@ -4478,6 +4550,7 @@ $('pwSave').onclick=async()=>{
   toast('Password changed');
 };
 $('refreshBtn').onclick=async()=>{ await loadAll(); toast('Up to date'); };
+$('refreshPics').onclick=()=>{ $('menu').classList.add('hidden'); lockBackground(); refreshPhotos(); };
 $('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>{$('help').classList.add('hidden');lockBackground();};
 $('setBtn').onclick=openSettings;

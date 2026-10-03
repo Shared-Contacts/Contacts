@@ -37,12 +37,14 @@ a{color:var(--hull)}
 .plate{background:var(--hull);color:#F2EFE4;padding:calc(14px + env(safe-area-inset-top)) 12px 14px;
   display:flex;align-items:center;gap:4px;border-bottom:3px solid var(--brass)}
 .plate h1{margin:0 auto 0 4px;font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.plate .mk{height:26px;width:auto;flex:0 0 auto;display:block}
 .plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
 .plate select{background:rgba(255,255,255,.14);color:#F2EFE4;border:1px solid rgba(255,255,255,.3);
   border-radius:8px;padding:7px 6px;font-size:15px;min-width:0;max-width:40vw}
 .plate h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:560px){
   .plate h1{display:none}
+  .plate .mk{height:24px}
   .plate{gap:6px;justify-content:space-between}
   .plate select{max-width:none;flex:1 1 auto}
   .plate button{padding:8px 7px;font-size:14px;flex:0 0 auto}
@@ -450,6 +452,7 @@ i.key{vertical-align:middle}
 <div id="app" class="hidden">
   <div id="topbar">
   <header class="plate">
+    <img class="mk" src="logo-mark-bare.svg" alt="It’s MY life" width="33" height="26">
     <h1>Contacts</h1>
     <select id="viewPick" aria-label="How to list contacts">
       <option value="grouped">Grouped</option>

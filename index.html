@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1D4A3A">
-<title>Contacts</title>
+<title>It’s MY life</title>
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Contacts">
+<meta name="apple-mobile-web-app-title" content="It’s MY life">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -425,6 +427,7 @@ i.key{vertical-align:middle}
 
 .signin{max-width:380px;margin:0 auto;padding:56px 24px}
 .signin h2{font-size:24px;margin:0 0 6px}
+.brand{display:block;width:min(300px,86%);height:auto;margin:0 auto 18px}
 .signin p{color:var(--muted);margin:0 0 24px}
 .msg{padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:16px}
 .msg.error{background:#FBE9E7;color:#7E241E}
@@ -436,7 +439,7 @@ i.key{vertical-align:middle}
 <body>
 
 <div id="signin" class="signin">
-  <h2>Contacts</h2>
+  <img class="brand" src="logo-wordmark.svg" alt="It’s MY life" width="408" height="112">
   <p>Sign in to continue.</p>
   <div id="signinMsg"></div>
   <label>Email<input id="email" type="email" autocomplete="username" inputmode="email"></label>

@@ -133,24 +133,34 @@ ul.list li.chosen{background:#FBE9E7}
 @media (prefers-reduced-motion:reduce){#homeRefresh.spin svg{animation:none}}
 .homebody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:18px 18px calc(28px + env(safe-area-inset-bottom))}
-.tiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.tiles{display:grid;gap:11px;grid-template-columns:repeat(3,1fr)}
+@media (min-width:560px){.tiles{gap:14px;
+  grid-template-columns:repeat(auto-fill,minmax(136px,1fr))}}
 .tilewrap{position:relative}
-.tile{width:100%;background:var(--tc,#2F4858);color:#FBFAF7;border-radius:18px;
-  aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:10px;padding:14px 10px;text-align:center;
-  box-shadow:0 2px 6px rgba(16,35,28,.16)}
+.tile{width:100%;background:var(--tc,#2F4858);color:#FBFAF7;border-radius:14px;
+  aspect-ratio:1/1;display:flex;flex-direction:column;align-items:stretch;
+  justify-content:flex-end;padding:0;overflow:hidden;text-align:center;
+  box-shadow:0 2px 5px rgba(16,35,28,.16)}
 .tile:active{transform:scale(.97)}
-.tile .mys{width:54%;max-width:92px;height:auto;display:block}
-.tile .tname{font-size:16px;font-weight:600;line-height:1.2;
-  overflow-wrap:anywhere;hyphens:auto}
-.arranging .tile{padding-bottom:46px}
-.tedit{position:absolute;inset:auto 8px 8px;display:flex;gap:6px;
-  justify-content:center}
-.tedit button,.tgrab{background:rgba(0,0,0,.34);color:#FBFAF7;
-  width:32px;height:32px;border-radius:50%;font-size:17px;line-height:1;
+.tmy{flex:1 1 auto;display:flex;align-items:center;justify-content:center;
+  min-height:0;padding:10px 8px 4px}
+.tile .mys{width:100%;max-width:58px;height:auto;display:block;opacity:.5}
+.tile .tname{flex:0 0 auto;background:var(--td,rgba(0,0,0,.28));
+  padding:7px 5px;font-size:15px;font-weight:700;line-height:1.15;
+  letter-spacing:.01em;overflow-wrap:anywhere;hyphens:auto}
+@media (min-width:560px){.tile{border-radius:18px}
+  .tile .mys{max-width:74px}
+  .tile .tname{font-size:17px;padding:9px 7px}}
+.arranging .tile .mys{opacity:.16}
+.tedit{position:absolute;left:3px;right:3px;top:44%;transform:translateY(-50%);
+  display:flex;gap:3px;justify-content:center}
+.tedit button,.tgrab{background:rgba(0,0,0,.42);color:#FBFAF7;
+  width:28px;height:28px;border-radius:50%;font-size:16px;line-height:1;
   display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .tedit button:disabled{opacity:.3}
-.tgrab{position:absolute;top:8px;right:8px}
+.tgrab{position:absolute;top:5px;right:5px}
+@media (min-width:560px){.tedit button,.tgrab{width:32px;height:32px}
+  .tedit{gap:6px} .tgrab{top:8px;right:8px}}
 .tileadd{border:2px dashed var(--rule);border-radius:18px;aspect-ratio:1/1;
   color:var(--muted);font-size:15px;font-weight:600;display:flex;
   flex-direction:column;align-items:center;justify-content:center;gap:6px}
@@ -4732,6 +4742,36 @@ const TILE_DEFAULTS=['contacts','log','diary','shop','where','wish','settings','
 
 let TILES=[], ARRANGING=false;
 
+// A shade or two down from the tile colour, for the name band and the
+// bar at the top of the screen that tile opens.
+function shade(hex,amt){
+  const n=parseInt(String(hex).replace('#',''),16);
+  if(!isFinite(n)) return hex;
+  const f=v=>Math.max(0,Math.min(255,Math.round(v*(1-amt))));
+  return '#'+[f((n>>16)&255),f((n>>8)&255),f(n&255)]
+    .map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// Which screens wear a tile's colour. Clearing them first means a tile you
+// took off the home screen hands its screen back to the colour scheme.
+const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
+  shop:['shop'], where:['where'], wish:['wish'], io:['io'],
+  settings:['settings'], help:['help'], pick:['app']};
+function applySkins(){
+  Object.values(TILE_SKIN).flat().forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.style.removeProperty('--hull');
+    el.style.removeProperty('--hull-dark');
+  });
+  TILES.forEach(t=>{
+    (TILE_SKIN[t.dest]||[]).forEach(id=>{
+      const el=$(id); if(!el) return;
+      el.style.setProperty('--hull', t.colour);
+      el.style.setProperty('--hull-dark', shade(t.colour,.3));
+    });
+  });
+}
+
 function defaultTiles(){
   return TILE_DEFAULTS.map(d=>({dest:d, label:TILE_DEST[d].label,
     colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[0]}));
@@ -4753,11 +4793,13 @@ async function saveTiles(){
 
 function renderHome(){
   const box=$('homeBody'); if(!box) return;
+  applySkins();
   const n=TILES.length;
   box.innerHTML=`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
     <div class="tilewrap">
-      <button class="tile" data-tile="${i}" style="--tc:${esc(t.colour)}">
-        ${MY_MARK}
+      <button class="tile" data-tile="${i}"
+        style="--tc:${esc(t.colour)};--td:${esc(shade(t.colour,.26))}">
+        <span class="tmy">${MY_MARK}</span>
         <span class="tname">${esc(t.label)}</span>
       </button>
       ${ARRANGING?`<button class="tgrab" data-tedit="${i}"

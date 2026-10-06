@@ -37,7 +37,8 @@ a{color:var(--hull)}
 .plate{background:var(--hull);color:#F2EFE4;padding:calc(14px + env(safe-area-inset-top)) 12px 14px;
   display:flex;align-items:center;gap:4px;border-bottom:3px solid var(--brass)}
 .plate h1{margin:0 auto 0 4px;font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
-.plate .mk{height:26px;width:auto;flex:0 0 auto;display:block}
+.plate #homeBtn{padding:6px 8px;border-radius:9px;flex:0 0 auto;display:block}
+.plate .mk{height:26px;width:auto;display:block}
 .plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
 .plate select{background:rgba(255,255,255,.14);color:#F2EFE4;border:1px solid rgba(255,255,255,.3);
   border-radius:8px;padding:7px 6px;font-size:15px;min-width:0;max-width:40vw}
@@ -113,6 +114,52 @@ ul.list li.chosen{background:#FBE9E7}
 .fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));
   width:60px;height:60px;border-radius:50%;background:var(--red);color:#fff;
   font-size:32px;line-height:1;box-shadow:0 4px 14px rgba(16,35,28,.3);z-index:30}
+
+/* The front door. It sits above the contacts list but below every sheet,
+   so closing Shopping or the Log drops you back here, not somewhere else. */
+.homescreen{position:fixed;top:0;left:0;right:0;z-index:35;background:var(--paper);
+  height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
+  display:flex;flex-direction:column;overflow:hidden}
+.homebar{flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  padding:calc(14px + env(safe-area-inset-top)) 18px 12px;border-bottom:1px solid var(--rule)}
+.homebar img{height:46px;width:auto;margin-right:auto;max-width:62%}
+.homebar button{width:44px;height:44px;border-radius:50%;flex:0 0 auto;
+  border:1.5px solid var(--rule);color:var(--hull);display:flex;
+  align-items:center;justify-content:center}
+.homebar button svg{width:23px;height:23px;display:block}
+.homebar button.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+#homeRefresh.spin svg{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#homeRefresh.spin svg{animation:none}}
+.homebody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:18px 18px calc(28px + env(safe-area-inset-bottom))}
+.tiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.tilewrap{position:relative}
+.tile{width:100%;background:var(--tc,#2F4858);color:#FBFAF7;border-radius:18px;
+  aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;padding:14px 10px;text-align:center;
+  box-shadow:0 2px 6px rgba(16,35,28,.16)}
+.tile:active{transform:scale(.97)}
+.tile .mys{width:54%;max-width:92px;height:auto;display:block}
+.tile .tname{font-size:16px;font-weight:600;line-height:1.2;
+  overflow-wrap:anywhere;hyphens:auto}
+.arranging .tile{padding-bottom:46px}
+.tedit{position:absolute;inset:auto 8px 8px;display:flex;gap:6px;
+  justify-content:center}
+.tedit button,.tgrab{background:rgba(0,0,0,.34);color:#FBFAF7;
+  width:32px;height:32px;border-radius:50%;font-size:17px;line-height:1;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.tedit button:disabled{opacity:.3}
+.tgrab{position:absolute;top:8px;right:8px}
+.tileadd{border:2px dashed var(--rule);border-radius:18px;aspect-ratio:1/1;
+  color:var(--muted);font-size:15px;font-weight:600;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.tileadd span{font-size:30px;line-height:1}
+.homenote{color:var(--muted);font-size:15px;margin:16px 2px 0}
+.swatchgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px}
+.swatchgrid button{height:44px;border-radius:9px;border:2px solid transparent}
+.swatchgrid button[aria-pressed="true"]{border-color:var(--ink);
+  box-shadow:0 0 0 2px var(--paper) inset}
 
 .sheet{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--paper);
   height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
@@ -452,7 +499,8 @@ i.key{vertical-align:middle}
 <div id="app" class="hidden">
   <div id="topbar">
   <header class="plate">
-    <img class="mk" src="logo-mark-bare.svg" alt="It’s MY life" width="33" height="26">
+    <button id="homeBtn" aria-label="Home" title="Home"><img class="mk"
+      src="logo-mark-bare.svg" alt="" width="33" height="26"></button>
     <h1>Contacts</h1>
     <select id="viewPick" aria-label="How to list contacts">
       <option value="grouped">Grouped</option>
@@ -552,7 +600,6 @@ i.key{vertical-align:middle}
       <button class="menuitem" id="goShop">Shopping list &rsaquo;</button>
       <button class="menuitem" id="goWish">Wishlist &mdash; ideas for these apps &rsaquo;</button>
       <button class="menuitem" id="goWhere">Share where I am &rsaquo;</button>
-      <button class="menuitem" id="refreshBtn">Refresh from the server</button>
       <button class="menuitem" id="refreshPics">Photos not showing? Fetch them again</button>
       <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
       <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
@@ -573,6 +620,23 @@ i.key{vertical-align:middle}
       </div></details>
     <p class="coords" id="whoami"></p>
   </div>
+</div>
+
+<div id="home" class="homescreen hidden">
+  <div class="homebar">
+    <img src="logo-wordmark.svg" alt="It’s MY life" width="408" height="112">
+    <button id="homeArrange" aria-label="Arrange the tiles" title="Arrange the tiles">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <rect x="3" y="3" width="8" height="8" rx="2.2"/>
+        <rect x="13" y="3" width="8" height="8" rx="2.2"/>
+        <rect x="3" y="13" width="8" height="8" rx="2.2"/>
+        <rect x="13" y="13" width="8" height="8" rx="2.2"/></svg></button>
+    <button id="homeRefresh" aria-label="Refresh from the server" title="Refresh from the server">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/>
+        <path d="M20.5 3.5V9H15"/></svg></button>
+  </div>
+  <div class="homebody" id="homeBody"></div>
 </div>
 
 <div id="help" class="sheet hidden">
@@ -640,7 +704,8 @@ function sheetsOpen(){
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
-  document.body.style.overflow = sheetsOpen() ? 'hidden' : '';
+  const home = !$('home').classList.contains('hidden');
+  document.body.style.overflow = (sheetsOpen()||home) ? 'hidden' : '';
 }
 
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
@@ -1986,13 +2051,30 @@ let SET_OPEN={};
 try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
-  'who_aboard','medication','bike_ride','alcohol','mecontact','shareall','people'];
+  'who_aboard','medication','bike_ride','alcohol','mecontact','shareall',
+  'hometiles','people'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
-  logsections:"Captain's log — sections",who_aboard:'Who is aboard — choices',
+  logsections:'Sections to show',who_aboard:'Who is aboard — choices',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
   alcohol:'Alcohol — choices',mecontact:'Which contact is you?',
-  shareall:'Share everything',people:'People who can sign in'};
+  shareall:'Share everything',hometiles:'The tiles',
+  people:'People who can sign in'};
+
+// Everything to do with one screen sits under that screen's heading.
+const SET_GROUPS=[
+  {label:'Contacts',   cards:['groups','statuses','link_kinds','pet_types',
+                              'mecontact','shareall']},
+  {label:'Daily Log',  cards:['logsections','who_aboard','medication',
+                              'bike_ride','alcohol']},
+  {label:'Home screen',cards:['hometiles']},
+  {label:'The app',    cards:['people']}
+];
+const setGroupOf = key => SET_GROUPS.find(g=>g.cards.includes(key));
+function cardsInGroup(g){
+  const o=mySetOrder();
+  return o.filter(k=>g.cards.includes(k));
+}
 
 function myGroupOrder(){
   const saved=(MY_PROFILE&&MY_PROFILE.group_order)||[];
@@ -2090,9 +2172,8 @@ async function openSettings(){
         <button class="btn primary" data-addrow="${table}">Add ${one}</button>
       </div>`;
 
-  const order=mySetOrder();
-  const card=(key,inner)=>`<details class="card logsec" data-setcard="${key}"
-    ${SET_OPEN[key]?'open':''}>${setHead(key,order.indexOf(key),order.length)}${inner}</details>`;
+  const card=(key,inner,list)=>`<details class="card logsec" data-setcard="${key}"
+    ${SET_OPEN[key]?'open':''}>${setHead(key,list.indexOf(key),list.length)}${inner}</details>`;
 
   const bodies={
     groups: rows(  'groups','group',groupsInOrder(),['name'],
@@ -2126,13 +2207,31 @@ async function openSettings(){
         <span style="flex:1">${esc(u.display_name||u.email)}</span>
         <button class="addmore" data-shareall="${u.id}">Share all</button></div>`).join('')
         :'<div class="field"><dd>No one else has an account yet.</dd></div>'}`,
+    hometiles: `<div class="field"><dd style="color:var(--muted);font-size:15px">
+        The tiles on the opening screen are arranged on that screen itself.
+        Tap the four-squares button beside the logo to shuffle them about, rename
+        one, change its colour, or add a tile for a screen you use a lot.</dd></div>
+      <div class="setadd"><button class="btn" id="goArrange"
+        style="border:1.5px solid var(--rule)">Take me there</button></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
         never sit in a public web page.</dd></div>`
   };
 
-  $('setBody').innerHTML=order.map(k=>card(k,bodies[k]||'')).join('');
+  $('setBody').innerHTML=SET_GROUPS.map(g=>{
+    const list=cardsInGroup(g);
+    if(!list.length) return '';
+    return `<p class="dsec">${esc(g.label)}</p>`
+      + list.map(k=>card(k,bodies[k]||'',list)).join('');
+  }).join('');
+
+  const ga=$('goArrange');
+  if(ga) ga.onclick=()=>{
+    $('settings').classList.add('hidden');
+    showHome();
+    ARRANGING=true; $('homeArrange').classList.add('on'); renderHome();
+  };
 
   $('setBody').querySelectorAll('[data-setcard]').forEach(d=>d.ontoggle=()=>{
     SET_OPEN[d.dataset.setcard]=d.open;
@@ -2141,8 +2240,12 @@ async function openSettings(){
   $('setBody').querySelectorAll('[data-setmv]').forEach(b=>b.onclick=ev=>{
     ev.preventDefault(); ev.stopPropagation();
     const [key,dir]=b.dataset.setmv.split(':');
-    const o=mySetOrder(); const i=o.indexOf(key), j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=o.length) return;
+    const g=setGroupOf(key); if(!g) return;
+    const o=mySetOrder(), inG=cardsInGroup(g);
+    const gi=inG.indexOf(key), gj=dir==='up'?gi-1:gi+1;
+    if(gi<0||gj<0||gj>=inG.length) return;
+    const i=o.indexOf(inG[gi]), j=o.indexOf(inG[gj]);
+    if(i<0||j<0) return;
     o.splice(j,0,o.splice(i,1)[0]);
     saveSetOrder(o);
   });
@@ -2415,11 +2518,11 @@ function openHelp(){
   in the main list, and is always your own choice, so the list stays readable.
   Two is about the most that fits.</p>
 
-  <h4>Captain's log</h4>
+  <h4>Daily Log</h4>
   <p>Tap the date in the green bar for a calendar, or the arrows either side to
   step a day at a time. The date stays put while you scroll.</p>
   <p>Most sections start folded up; tap a heading to open one, and it stays that
-  way next time. Menu &rsaquo; Settings &rsaquo; <em>Captain's log &mdash; sections</em>
+  way next time. Settings &rsaquo; Daily Log &rsaquo; <em>Sections to show</em>
   turns any of them off and changes the order.</p>
   <p>The choices behind "who is aboard", medication, bike ride and alcohol are
   yours to edit and reorder in Settings &mdash; type over one to rename it, or use
@@ -2516,8 +2619,8 @@ function openHelp(){
     <li>Close the app fully and reopen it. It reloads everything on start.</li>
     <li>A blank map usually means the canal tile server is busy. Switch layers.</li>
     <li>The app refreshes itself every few minutes while it is sitting open, and
-        whenever you come back to it. Menu &rsaquo; <strong>Refresh from the
-        server</strong> fetches the latest at any time.</li>
+        whenever you come back to it. The <strong>circular arrow</strong> beside
+        the logo on the opening screen fetches the latest at any time.</li>
     <li>If two of you edit the same contact at once, the second save is stopped
         and you are shown the other version rather than quietly overwriting it.</li>
     <li>A contact you cannot find may be one you have not been shared.</li>
@@ -4598,6 +4701,175 @@ function renderShop(){
 }
 
 
+
+/* ============================================================
+   The home screen — a tile for every part of the app
+   ============================================================ */
+const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect x="48.8" y="286" width="414.5" height="26" fill="#D7A82E"/><path d="M 336.7,286 L 394.7,286 L 394.7,422 L 365.7,388 L 336.7,422 Z" fill="#D7A82E"/><path d="M92.91666666666667 286.0V98.30303030303028H140.12878787878788L170.0681818181818 181.78787878787878Q172.9469696969697 190.13636363636363 175.39393939393938 198.62878787878788Q177.8409090909091 207.12121212121212 180.4318181818182 216.33333333333331H181.58333333333334Q184.17424242424244 207.12121212121212 186.47727272727275 198.62878787878788Q188.78030303030306 190.13636363636363 191.65909090909093 181.78787878787878L221.02272727272728 98.30303030303028H268.2348484848485V286.0H229.37121212121212V217.1969696969697Q229.37121212121212 207.9848484848485 230.37878787878788 195.46212121212122Q231.38636363636365 182.93939393939394 232.6818181818182 170.41666666666666Q233.97727272727275 157.89393939393938 235.1287878787879 148.68181818181816H233.97727272727275L218.71969696969697 198.1969696969697L192.2348484848485 269.8787878787879H167.47727272727275L141.28030303030303 198.1969696969697L126.59848484848484 148.68181818181816H125.4469696969697Q126.59848484848484 157.89393939393938 127.89393939393939 170.41666666666666Q129.18939393939394 182.93939393939394 130.0530303030303 195.46212121212122Q130.91666666666669 207.9848484848485 130.91666666666669 217.1969696969697V286.0Z M344.5227272727273 286.0V219.2121212121212L288.0984848484849 98.30303030303028H333.29545454545456L349.99242424242425 141.48484848484847Q353.7348484848485 152.13636363636363 357.47727272727275 162.0681818181818Q361.219696969697 172.0 365.25 182.93939393939394H366.4015151515152Q370.719696969697 172.0 374.6060606060606 162.0681818181818Q378.49242424242425 152.13636363636363 382.2348484848485 141.48484848484847L398.9318181818182 98.30303030303028H443.2651515151515L386.8409090909091 219.2121212121212V286.0Z" fill="currentColor"/></svg>`;
+
+// Everywhere a tile can take you. Add a screen here and it becomes
+// something you can put on the home screen.
+const TILE_DEST={
+  contacts:{label:'Contacts',   go:()=>hideHome()},
+  log:     {label:'Daily Log',  go:openLog},
+  diary:   {label:'Calendar',   go:openDiary},
+  shop:    {label:'Shopping',   go:openShop},
+  where:   {label:'Where I am', go:openWhere},
+  wish:    {label:'Wishlist',   go:openWish},
+  io:      {label:'Import & export', go:openIO},
+  pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
+  help:    {label:'How to use', go:openHelp},
+  settings:{label:'Settings',   go:openSettings}
+};
+
+// Deep and quiet. Cream letters and brass read well on every one of them.
+const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
+  '#4A4A48','#2E5E63','#5A4B2F','#6B3030','#3A4A3C','#55406B'];
+const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
+  shop:'#4A5340', where:'#3C4E6B', wish:'#5B3A52', settings:'#4A4A48',
+  help:'#2E5E63', io:'#5A4B2F', pick:'#6B3030'};
+const TILE_DEFAULTS=['contacts','log','diary','shop','where','wish','settings','help'];
+
+let TILES=[], ARRANGING=false;
+
+function defaultTiles(){
+  return TILE_DEFAULTS.map(d=>({dest:d, label:TILE_DEST[d].label,
+    colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[0]}));
+}
+function loadTiles(){
+  const saved=MY_PROFILE&&MY_PROFILE.home_tiles;
+  TILES = Array.isArray(saved)&&saved.length
+    ? saved.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
+        dest:t.dest,
+        label:t.label||TILE_DEST[t.dest].label,
+        colour:t.colour||TILE_DEFAULT_COLOUR[t.dest]||TILE_COLOURS[0]}))
+    : defaultTiles();
+}
+async function saveTiles(){
+  const {error}=await sb.from('profiles').update({home_tiles:TILES}).eq('id',ME.id);
+  if(error){ toast('Could not save the home screen'); console.error(error); return; }
+  MY_PROFILE={...(MY_PROFILE||{}), home_tiles:TILES};
+}
+
+function renderHome(){
+  const box=$('homeBody'); if(!box) return;
+  const n=TILES.length;
+  box.innerHTML=`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
+    <div class="tilewrap">
+      <button class="tile" data-tile="${i}" style="--tc:${esc(t.colour)}">
+        ${MY_MARK}
+        <span class="tname">${esc(t.label)}</span>
+      </button>
+      ${ARRANGING?`<button class="tgrab" data-tedit="${i}"
+          aria-label="Rename or recolour ${esc(t.label)}">&#9998;</button>
+        <span class="tedit">
+          <button data-tmv="${i}:back" ${i===0?'disabled':''} aria-label="Move back">&lsaquo;</button>
+          <button data-tdrop="${i}" aria-label="Take off the home screen">&times;</button>
+          <button data-tmv="${i}:fwd" ${i===n-1?'disabled':''} aria-label="Move forward">&rsaquo;</button>
+        </span>`:''}
+    </div>`).join('')
+    + (ARRANGING?`<button class="tileadd" id="tileAdd"><span>+</span>Add a tile</button>`:'')
+    }</div>
+    ${ARRANGING?`<p class="homenote">Use &lsaquo; and &rsaquo; to shuffle them about, the
+      pencil to rename or recolour, and &times; to take one off. Nothing is deleted —
+      you can always add it back.</p>`
+     :''}`;
+
+  box.querySelectorAll('[data-tile]').forEach(b=>b.onclick=ev=>{
+    if(ARRANGING) return;                  // in arrange mode the small buttons rule
+    const t=TILES[Number(b.dataset.tile)];
+    if(t&&TILE_DEST[t.dest]) TILE_DEST[t.dest].go();
+  });
+  box.querySelectorAll('[data-tmv]').forEach(b=>b.onclick=async ev=>{
+    ev.stopPropagation();
+    const [i,dir]=b.dataset.tmv.split(':'); const a=Number(i);
+    const j=dir==='back'?a-1:a+1;
+    if(j<0||j>=TILES.length) return;
+    [TILES[a],TILES[j]]=[TILES[j],TILES[a]];
+    renderHome(); await saveTiles();
+  });
+  box.querySelectorAll('[data-tdrop]').forEach(b=>b.onclick=async ev=>{
+    ev.stopPropagation();
+    TILES.splice(Number(b.dataset.tdrop),1);
+    renderHome(); await saveTiles();
+  });
+  box.querySelectorAll('[data-tedit]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation(); editTile(Number(b.dataset.tedit));
+  });
+  const add=$('tileAdd');
+  if(add) add.onclick=addTile;
+}
+
+function editTile(i){
+  const t=TILES[i]; if(!t) return;
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">This tile</p>
+    <label>What to call it
+      <input id="tlName" value="${esc(t.label)}" autocomplete="off"></label>
+    <p class="dsec">Its colour</p>
+    <div class="swatchgrid" id="tlCols">${TILE_COLOURS.map(c=>
+      `<button type="button" data-col="${c}" style="background:${c}"
+        aria-pressed="${c===t.colour}" aria-label="${c}"></button>`).join('')}</div>
+    <div class="pfoot">
+      <button id="tlCancel">Cancel</button>
+      <button id="tlSet" class="go">Save</button>
+    </div></div>`;
+  document.body.appendChild(box);
+  let colour=t.colour;
+  box.querySelectorAll('[data-col]').forEach(b=>b.onclick=()=>{
+    colour=b.dataset.col;
+    box.querySelectorAll('[data-col]').forEach(x=>
+      x.setAttribute('aria-pressed', x.dataset.col===colour));
+  });
+  const close=()=>box.remove();
+  box.querySelector('#tlCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#tlSet').onclick=async()=>{
+    const nm=box.querySelector('#tlName').value.trim();
+    TILES[i]={...t, label:nm||TILE_DEST[t.dest].label, colour};
+    close(); renderHome(); await saveTiles();
+  };
+  setTimeout(()=>box.querySelector('#tlName').focus(),50);
+}
+
+function addTile(){
+  const used=TILES.map(t=>t.dest);
+  const spare=Object.keys(TILE_DEST).filter(d=>!used.includes(d));
+  if(!spare.length){ toast('Every screen is already on there'); return; }
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Add a tile</p>
+    <div class="results">${spare.map(d=>
+      `<button type="button" data-add="${d}">${esc(TILE_DEST[d].label)}</button>`).join('')}</div>
+    <div class="pfoot"><button id="adCancel">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#adCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelectorAll('[data-add]').forEach(b=>b.onclick=async()=>{
+    const d=b.dataset.add;
+    TILES.push({dest:d, label:TILE_DEST[d].label,
+      colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[TILES.length%TILE_COLOURS.length]});
+    close(); renderHome(); await saveTiles();
+  });
+}
+
+function showHome(){
+  loadTiles();
+  ARRANGING=false; $('homeArrange').classList.remove('on');
+  renderHome();
+  $('home').classList.remove('hidden');
+  $('homeBody').scrollTop=0;
+  lockBackground();
+}
+function hideHome(){
+  $('home').classList.add('hidden');
+  lockBackground();
+}
+
 /* ============================================================
    Import and export
    ============================================================ */
@@ -5023,7 +5295,18 @@ $('pwSave').onclick=async()=>{
   $('pw1').value=''; $('pw2').value='';
   toast('Password changed');
 };
-$('refreshBtn').onclick=async()=>{ await loadAll(); toast('Up to date'); };
+$('homeBtn').onclick=showHome;
+$('homeArrange').onclick=()=>{
+  ARRANGING=!ARRANGING;
+  $('homeArrange').classList.toggle('on',ARRANGING);
+  renderHome();
+};
+$('homeRefresh').onclick=async()=>{
+  const b=$('homeRefresh'); b.classList.add('spin'); b.disabled=true;
+  await loadAll();
+  b.classList.remove('spin'); b.disabled=false;
+  renderHome(); toast('Up to date');
+};
 $('refreshPics').onclick=()=>{ $('menu').classList.add('hidden'); lockBackground(); refreshPhotos(); };
 $('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>{$('help').classList.add('hidden');lockBackground();};
@@ -5060,9 +5343,11 @@ document.addEventListener('visibilitychange',async()=>{
 
 async function start(){
   const {data:{user}}=await sb.auth.getUser();
-  if(!user){$('signin').classList.remove('hidden');$('app').classList.add('hidden');return;}
+  if(!user){$('signin').classList.remove('hidden');$('app').classList.add('hidden');
+    $('home').classList.add('hidden');return;}
   ME=user;$('signin').classList.add('hidden');$('app').classList.remove('hidden');
   await loadAll();
+  showHome();            // the front door, with the contacts list waiting behind it
   loadDevices();
   loadShares();
 }

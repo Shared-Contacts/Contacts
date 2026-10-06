@@ -190,6 +190,8 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
   flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .tileadd span{font-size:30px;line-height:1}
 .homenote{color:var(--muted);font-size:15px;margin:16px 2px 0}
+.setrow.cmprow{align-items:flex-start;border-bottom:1px solid var(--rule)}
+.setrow.cmprow:last-of-type{border-bottom:none}
 .setrow.fieldrow{flex-wrap:wrap;align-items:center;
   border-bottom:1px solid var(--rule);padding-bottom:12px}
 .setrow.fieldrow:last-of-type{border-bottom:none}
@@ -645,6 +647,7 @@ i.key{vertical-align:middle}
   <div class="sheetbody">
     <div class="card">
       <button class="menuitem" id="goPick">Delete several contacts &rsaquo;</button>
+      <button class="menuitem" id="goOffers">Contacts sent to you &rsaquo;</button>
       <button class="menuitem" id="goIO">Import and export contacts &rsaquo;</button>
       <button class="menuitem" id="goShop">Shopping list &rsaquo;</button>
       <button class="menuitem" id="goWish">Wishlist &mdash; ideas for these apps &rsaquo;</button>
@@ -689,6 +692,13 @@ i.key{vertical-align:middle}
         <path d="M20.5 3.5V9H15"/></svg></button>
   </div>
   <div class="homebody" id="homeBody"></div>
+</div>
+
+<div id="offers" class="sheet hidden">
+  <div class="sheetbar"><button id="offBack">Back</button>
+    <span class="title">Sent to you</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="offBody"></div>
+  <div id="offBar" class="pickbar hidden"></div>
 </div>
 
 <div id="tray">
@@ -759,7 +769,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -816,7 +826,7 @@ function socialUrl(label,value){
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp,of]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
@@ -828,7 +838,8 @@ async function loadAll(){
     sb.from('contact_favourites').select('*').eq('user_id',ME.id),
     sb.from('items').select('*'),
     sb.from('item_shares').select('*'),
-    sb.from('shopping').select('*')
+    sb.from('shopping').select('*'),
+    sb.from('contact_offers').select('*').is('decided_at',null)
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
@@ -837,6 +848,8 @@ async function loadAll(){
   if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
   PETS=pt.data||[]; FAVS=(fv.data||[]).map(x=>x.contact_id);
   if(!sp.error) SHOP=sp.data||[];
+  OFFERS = of.error ? [] : (of.data||[]);
+  OFFERS_READY = !of.error;
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
   const rt=await sb.from('routines').select('*').order('sort_order');
@@ -1094,18 +1107,23 @@ function paintPickBar(){
   bar.innerHTML=`<span>${PICKED.size} chosen${theirs?' ('+theirs+' not yours)':''}</span>
     <span style="margin-left:auto;display:flex;gap:10px">
       <button id="pickCancel">Cancel</button>
+      <button id="pickSend" ${PICKED.size?'':'disabled'}>Send…</button>
       <button id="pickGo" ${mine?'':'disabled'} style="color:#FFD9D4;font-weight:700">
         Delete ${mine||''}</button>
     </span>`;
   bar.classList.remove('hidden');
   $('pickCancel').onclick=stopPicking;
+  const snd=$('pickSend');
+  if(snd&&PICKED.size) snd.onclick=()=>pickPeople(
+    'Send copies of '+PICKED.size+' contact'+(PICKED.size===1?'':'s')+' to',
+    async who=>{ await sendContacts([...PICKED],who); stopPicking(); });
   const go=$('pickGo');
   if(go&&mine) go.onclick=deletePicked;
 }
 
 function startPicking(){
   PICKING=true; PICKED.clear(); render(); paintPickBar();
-  toast('Tap the contacts you want rid of');
+  toast('Tap the ones you want, then choose what to do with them');
 }
 function stopPicking(){
   PICKING=false; PICKED.clear(); render(); paintPickBar();
@@ -1638,6 +1656,9 @@ async function openDetail(id, keepPlace){
   const ra=$('rmAvatar'); if(ra)ra.onclick=()=>removePhoto(CURRENT.avatar_path,true);
   $('detBody').querySelectorAll('[data-rmphoto]').forEach(b=>
     b.onclick=()=>removePhoto(b.dataset.rmphoto,false));
+  const sc=$('sendCopy');
+  if(sc) sc.onclick=()=>pickPeople('Send a copy of '+fullName(CURRENT)+' to',
+    who=>sendContacts([CURRENT.id],who));
   $('detBody').querySelectorAll('[data-big]').forEach(img=>
     img.onclick=()=>lightbox(SIGNED[img.dataset.big]));
   const flip=async(btn,field)=>{
@@ -1678,8 +1699,11 @@ function shareCard(c){
   if(!USERS.length)
     return `<div class="card"><h3>Sharing</h3><div class="field"><dd>No one else has an account yet.</dd></div></div>`;
   return `<div class="card"><h3>Sharing</h3>
+    <div class="setadd"><button class="btn primary" id="sendCopy">Send a copy to…</button></div>
     <div class="field"><dd style="color:var(--muted);font-size:15px">
-      Only you can see this unless you tick someone here.</dd></div>
+      Sending a copy gives them their own contact to keep and edit. Ticking
+      somebody below is the older arrangement: they see yours, and only you can
+      delete it.</dd></div>
     ${USERS.map(u=>{
       const on=SHARES.some(s=>s.contact_id===c.id&&s.user_id===u.id);
       return `<div class="setrow"><label style="margin:0;display:flex;gap:10px;align-items:center;color:var(--ink);flex:1">
@@ -3084,6 +3108,7 @@ function paintDue(){
 function tilePip(dest){
   if(dest==='diary') return dueSoonCount();
   if(dest==='shop')  return SHOP.filter(x=>!x.got).length;
+  if(dest==='offers') return offersToMe().length;
   return 0;
 }
 
@@ -5394,6 +5419,7 @@ const TILE_DEST={
   io:      {label:'Import & export', go:openIO},
   pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
   settings:{label:'Settings',   go:openSettings},
+  offers:  {label:'Sent to you', go:openOffers},
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
   money:   {label:'Finances',   go:()=>toast('Coming soon')},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
@@ -5404,8 +5430,10 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
   '#4A4A48','#2E5E63','#5A4B2F','#6B3030','#3A4A3C','#55406B'];
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
-  io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030'};
-const TILE_DEFAULTS=['contacts','log','diary','shop','where','money','alarm','settings'];
+  io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
+  offers:'#2E5E63'};
+const TILE_DEFAULTS=['contacts','log','diary','shop','where','offers','money',
+  'alarm','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -5422,7 +5450,7 @@ function shade(hex,amt){
 // Which screens wear a tile's colour. Clearing them first means a tile you
 // took off the home screen hands its screen back to the colour scheme.
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
-  shop:['shop'], where:['where'], io:['io'],
+  shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   settings:['settings'], pick:['app']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -5592,6 +5620,290 @@ function showHome(){
 function hideHome(){
   $('home').classList.add('hidden');
   lockBackground();
+}
+
+
+/* ============================================================
+   Sending a contact to somebody
+   A copy, not a window: whoever accepts it gets their own.
+   ============================================================ */
+let OFFERS=[], OFFERS_READY=true, OFF_PICKED=new Set();
+
+// IO_COLS lives further down the file, so this is worked out when it is
+// first needed rather than while the page is still being read.
+const copyCols = () => IO_COLS.filter(k=>k!=='groups');
+const LISTY=['phones','emails','websites','socials','pets','former_names'];
+
+function offerPayload(c){
+  const o={};
+  copyCols().forEach(k=>{
+    const v=c[k];
+    if(v===undefined||v===null||v==='') return;
+    if(Array.isArray(v)&&!v.length) return;
+    o[k]=v;
+  });
+  return o;
+}
+const matchKey = o => ((o.first_name||'')+'|'+(o.last_name||'')+'|'+(o.company||''))
+  .trim().toLowerCase();
+function myMatchFor(payload){
+  const k=matchKey(payload);
+  if(k==='||') return null;
+  return CONTACTS.find(c=>c.created_by===ME.id && matchKey(c)===k) || null;
+}
+const offersToMe = () => OFFERS.filter(o=>o.to_user===ME.id && !o.decided_at);
+
+async function sendContacts(ids, userIds){
+  const rows=[];
+  ids.forEach(id=>{
+    const c=CONTACTS.find(x=>x.id===id); if(!c) return;
+    userIds.forEach(u=>rows.push({from_user:ME.id, to_user:u, name:fullName(c),
+      payload:offerPayload(c), source_id:c.id}));
+  });
+  if(!rows.length){ toast('Nothing to send'); return 0; }
+  let sent=0;
+  for(let i=0;i<rows.length;i+=50){
+    const {error}=await sb.from('contact_offers').insert(rows.slice(i,i+50));
+    if(error){ toast(OFFERS_READY?'Could not send them':'Run contacts-step31.sql first');
+      console.error(error); return sent; }
+    sent+=rows.slice(i,i+50).length;
+  }
+  const names=namesOf(userIds).join(' and ');
+  toast(sent===1?('Sent to '+names):(ids.length+' sent to '+names));
+  return sent;
+}
+
+// Who to send to, ticked off a list
+function pickPeople(title, onGo){
+  if(!USERS.length){ toast('Nobody else has an account yet'); return; }
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(title)}</p>
+    <div class="checks">${USERS.map(u=>`<label><input type="checkbox"
+      value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+    <div class="pfoot"><button id="ppCancel">Cancel</button>
+      <button id="ppGo" class="go">Send</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#ppCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#ppGo').onclick=async()=>{
+    const who=[...box.querySelectorAll('input:checked')].map(i=>i.value);
+    if(!who.length){ toast('Tick at least one person'); return; }
+    close(); await onGo(who);
+  };
+}
+
+/* ---------- the inbox ---------- */
+function openOffers(){
+  OFF_PICKED.clear();
+  renderOffers();
+  $('offers').classList.remove('hidden'); $('offBody').scrollTop=0; lockBackground();
+}
+function renderOffers(){
+  const list=offersToMe();
+  if(!OFFERS_READY){
+    $('offBody').innerHTML=`<div class="card"><div class="field"><dd>
+      This part needs its database step first. In Supabase, open the SQL Editor
+      and run <strong>contacts-step31.sql</strong>, then come back here.</dd></div></div>`;
+    $('offBar').classList.add('hidden'); return;
+  }
+  if(!list.length){
+    $('offBody').innerHTML=`<div class="card"><div class="field"><dd>
+      Nothing waiting. When somebody sends you a contact it turns up here, and
+      you decide whether to keep it.</dd></div></div>`;
+    $('offBar').classList.add('hidden'); return;
+  }
+  $('offBody').innerHTML=`
+    <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
+      Accepting makes a contact of your own, yours to edit or delete. The person
+      who sent it keeps theirs, and the two are not linked afterwards.</dd></div></div>
+    <div class="card rtlist">${list.map(o=>{
+      const mine=myMatchFor(o.payload||{});
+      const p=o.payload||{};
+      const sub=[p.company, [p.town,p.country].filter(Boolean).join(', '),
+        (arr(p.phones)[0]||{}).value, (arr(p.emails)[0]||{}).value]
+        .filter(Boolean).slice(0,2).join(' · ');
+      return `<div class="item">
+        <button class="tick ${OFF_PICKED.has(o.id)?'on':''}" data-offtick="${o.id}"
+          aria-label="Choose">${OFF_PICKED.has(o.id)?'&#10003;':''}</button>
+        <button class="mid" ${mine?`data-offcmp="${o.id}"`:`data-offone="${o.id}"`}>
+          <span class="t">${esc(o.name||'Someone')}</span>
+          <span class="w">from ${esc(whoWrote(o.from_user))}${sub?' · '+esc(sub):''}</span>
+          ${mine?`<span class="w" style="color:var(--brass);font-weight:700">
+            You already have ${esc(fullName(mine))} &mdash; tap to compare</span>`:''}
+        </button>
+        <button class="del" data-offno="${o.id}" aria-label="No thanks">&times;</button>
+      </div>`;
+    }).join('')}</div>`;
+
+  $('offBody').querySelectorAll('[data-offtick]').forEach(b=>b.onclick=()=>{
+    const id=Number(b.dataset.offtick);
+    OFF_PICKED.has(id)?OFF_PICKED.delete(id):OFF_PICKED.add(id);
+    renderOffers();
+  });
+  $('offBody').querySelectorAll('[data-offone]').forEach(b=>b.onclick=()=>
+    acceptOffers([Number(b.dataset.offone)]));
+  $('offBody').querySelectorAll('[data-offcmp]').forEach(b=>b.onclick=()=>
+    compareOffer(Number(b.dataset.offcmp)));
+  $('offBody').querySelectorAll('[data-offno]').forEach(b=>b.onclick=()=>
+    declineOffers([Number(b.dataset.offno)]));
+
+  const bar=$('offBar'), n=OFF_PICKED.size;
+  if(!n){ bar.classList.add('hidden'); return; }
+  bar.innerHTML=`<span>${n} chosen</span>
+    <span style="margin-left:auto;display:flex;gap:10px">
+      <button id="offNo" style="color:#FFD9D4">No thanks</button>
+      <button id="offYes" style="font-weight:700">Accept ${n}</button></span>`;
+  bar.classList.remove('hidden');
+  $('offYes').onclick=()=>acceptOffers([...OFF_PICKED]);
+  $('offNo').onclick=()=>declineOffers([...OFF_PICKED]);
+}
+
+const FIELD_NAME={first_name:'First name',last_name:'Last name',
+  given_names:'Given names',nickname:'Nickname',company:'Company',
+  birth_date:'Born',death_date:'Died',address:'Address',address_2:'Address line 2',
+  town:'Town',county:'County',postcode:'Postcode',country:'Country',
+  boat_name:'Boat',boat_number:'Boat number',boat_notes:'Boat notes',
+  job_title:'Job title',department:'Department',met_where:'Where we met',
+  met_date:'When we met',what3words:'what3words',notes:'Notes',
+  is_organisation:'Is a business',
+  phones:'Phone numbers',emails:'Email addresses',websites:'Websites',
+  socials:'Social accounts',pets:'Pets',former_names:'Other names'};
+
+function compareOffer(id){
+  const o=offersToMe().find(x=>x.id===id); if(!o) return;
+  const p=o.payload||{};
+  const mine=myMatchFor(p);
+  if(!mine){ acceptOffers([id]); return; }
+
+  // Only the fields that actually differ are worth showing.
+  const rows=[];
+  Object.keys(FIELD_NAME).forEach(k=>{
+    if(LISTY.includes(k)) return;      // the lists are handled on their own below
+    const theirs=p[k], ours=mine[k];
+    const a=(ours===null||ours===undefined)?'':String(ours);
+    const b=(theirs===null||theirs===undefined)?'':String(theirs);
+    if(b==='' || a===b) return;
+    rows.push({k, ours:a, theirs:b});
+  });
+  const adds=[];
+  LISTY.forEach(k=>{
+    const have=arr(mine[k]).map(x=>String(x.value||'').trim().toLowerCase());
+    const extra=arr(p[k]).filter(x=>x&&x.value
+      && !have.includes(String(x.value).trim().toLowerCase()));
+    if(extra.length) adds.push({k, extra});
+  });
+
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(o.name||'Them')} &mdash; what to keep</p>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      You already have <strong>${esc(fullName(mine))}</strong>. Tick anything of
+      theirs you want to take; the rest of yours is left alone.</dd></div>
+    <div style="max-height:46vh;overflow-y:auto">
+    ${rows.length||adds.length ? rows.map(r=>`
+      <div class="setrow cmprow">
+        <label style="margin:0;display:flex;gap:10px;align-items:flex-start;flex:1">
+          <input type="checkbox" style="width:auto;padding:0;margin:4px 0 0;flex:0 0 auto" data-take="${r.k}">
+          <span style="flex:1">
+            <span class="coords" style="display:block">${esc(FIELD_NAME[r.k])}</span>
+            <span style="display:block"><strong>${esc(r.theirs)}</strong></span>
+            <span class="coords" style="display:block">yours:
+              ${r.ours?esc(r.ours):'(empty)'}</span>
+          </span></label>
+      </div>`).join('')
+      + adds.map(a=>`
+      <div class="setrow cmprow">
+        <label style="margin:0;display:flex;gap:10px;align-items:flex-start;flex:1">
+          <input type="checkbox" style="width:auto;padding:0;margin:4px 0 0;flex:0 0 auto" data-add="${a.k}" checked>
+          <span style="flex:1">
+            <span class="coords" style="display:block">${esc(FIELD_NAME[a.k]||a.k)}</span>
+            <span style="display:block">add ${a.extra.length} you do not have:
+              <strong>${esc(a.extra.map(x=>x.value).join(', '))}</strong></span>
+          </span></label>
+      </div>`).join('')
+      : `<div class="field"><dd>Nothing of theirs is different from yours.</dd></div>`}
+    </div>
+    <div class="pfoot">
+      <button id="cmpNew">Keep both</button>
+      <button id="cmpCancel">Leave it</button>
+      <button id="cmpGo" class="go">Update mine</button>
+    </div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#cmpCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#cmpNew').onclick=()=>{ close(); acceptOffers([id]); };
+  box.querySelector('#cmpGo').onclick=async()=>{
+    const patch={};
+    box.querySelectorAll('[data-take]:checked').forEach(i=>{
+      patch[i.dataset.take]=p[i.dataset.take];
+    });
+    box.querySelectorAll('[data-add]:checked').forEach(i=>{
+      const k=i.dataset.add, a=adds.find(x=>x.k===k);
+      if(a) patch[k]=[...arr(mine[k]), ...a.extra];
+    });
+    close();
+    if(Object.keys(patch).length){
+      const {error}=await sb.from('contacts').update(patch).eq('id',mine.id);
+      if(error){ toast('Could not update it'); console.error(error); return; }
+    }
+    await sb.from('contact_offers')
+      .update({decided_at:new Date().toISOString(), outcome:'merged'}).eq('id',id);
+    OFF_PICKED.delete(id);
+    await loadAll(); renderOffers(); render();
+    toast(Object.keys(patch).length?'Yours updated':'Nothing changed');
+  };
+}
+
+async function myInbox(){
+  let box=GROUPS.find(g=>g.name==='Shared with me'&&g.owner_id===ME.id);
+  if(box) return box;
+  const {data}=await sb.from('groups')
+    .insert({name:'Shared with me',owner_id:ME.id,sort_order:900}).select().single();
+  if(data){
+    await sb.from('group_members').insert({group_id:data.id,user_id:ME.id,role:'editor'});
+    GROUPS.push(data);
+  }
+  return data||null;
+}
+
+async function acceptOffers(ids){
+  const list=offersToMe().filter(o=>ids.includes(o.id));
+  if(!list.length) return;
+  const box=await myInbox();
+  let made=0;
+  for(const o of list){
+    const d={created_by:ME.id, ...(o.payload||{})};
+    if(!d.first_name&&!d.last_name&&!d.company) continue;
+    const {data,error}=await sb.from('contacts').insert(d).select().single();
+    if(error||!data){ console.error(error); continue; }
+    made++;
+    if(box) await sb.from('contact_groups')
+      .insert([{contact_id:data.id, group_id:box.id, user_id:ME.id}]);
+    await sb.from('contact_offers')
+      .update({decided_at:new Date().toISOString(), outcome:'accepted'}).eq('id',o.id);
+  }
+  OFF_PICKED.clear();
+  await loadAll(); renderOffers(); render();
+  toast(made===1?'Added to your contacts':made+' added to your contacts');
+}
+
+async function declineOffers(ids){
+  const list=offersToMe().filter(o=>ids.includes(o.id));
+  if(!list.length) return;
+  if(!confirm(list.length===1
+    ? 'Turn down "'+(list[0].name||'this one')+'"?'
+    : 'Turn down all '+list.length+' of these?')) return;
+  for(const o of list)
+    await sb.from('contact_offers')
+      .update({decided_at:new Date().toISOString(), outcome:'declined'}).eq('id',o.id);
+  OFF_PICKED.clear();
+  await loadAll(); renderOffers();
+  toast('Turned down');
 }
 
 /* ============================================================
@@ -5980,6 +6292,8 @@ $('goWhere').onclick=()=>{$('menu').classList.add('hidden');openWhere();};
 $('goWish').onclick=()=>{$('menu').classList.add('hidden');openWish();};
 $('goShop').onclick=()=>{$('menu').classList.add('hidden');openShop();};
 $('goIO').onclick=()=>{$('menu').classList.add('hidden');openIO();};
+$('goOffers').onclick=()=>{$('menu').classList.add('hidden');openOffers();};
+$('offBack').onclick=()=>{$('offers').classList.add('hidden');lockBackground();};
 $('goPick').onclick=()=>{$('menu').classList.add('hidden');lockBackground();startPicking();};
 $('ioBack').onclick=()=>{$('io').classList.add('hidden');lockBackground();};
 $('wishBack').onclick=()=>{$('wish').classList.add('hidden');lockBackground();};

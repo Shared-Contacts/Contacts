@@ -124,7 +124,7 @@ body{--tray:50px}
 ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px))}
 
 /* Every bar reads the same: back on the left, name in the middle, tools right */
-.sheetbar,.plate{position:relative}
+.sheetbar,.plate{position:relative;justify-content:space-between}
 .sheetbar .title:not(.logdate),.plate .title{position:absolute;left:50%;
   transform:translateX(-50%);max-width:46%;text-align:center;
   font-size:20px;font-weight:700;letter-spacing:.01em;
@@ -141,13 +141,14 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 .homescreen{position:fixed;top:0;left:0;right:0;z-index:35;background:var(--paper);
   height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
   display:flex;flex-direction:column;overflow:hidden}
-.homebar{flex:0 0 auto;display:flex;align-items:center;gap:12px;
-  padding:calc(14px + env(safe-area-inset-top)) 18px 12px;border-bottom:1px solid var(--rule)}
-.homebar img{height:46px;width:auto;margin-right:auto;max-width:62%}
-.homebar button{width:44px;height:44px;border-radius:50%;flex:0 0 auto;
+.homebar{flex:0 0 auto;display:flex;align-items:center;gap:8px;
+  padding:calc(14px + env(safe-area-inset-top)) 14px 12px;border-bottom:1px solid var(--rule)}
+.homebar img{height:42px;width:auto;margin-right:auto;max-width:48%}
+@media (min-width:560px){.homebar img{height:48px;max-width:60%}.homebar{gap:12px;padding-left:18px;padding-right:18px}}
+.homebar button{width:40px;height:40px;border-radius:50%;flex:0 0 auto;
   border:1.5px solid var(--rule);color:var(--hull);display:flex;
   align-items:center;justify-content:center}
-.homebar button svg{width:23px;height:23px;display:block}
+.homebar button svg{width:21px;height:21px;display:block}
 .homebar button.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
 #homeRefresh.spin svg{animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -539,7 +540,7 @@ i.key{vertical-align:middle}
   <header class="plate">
     <button id="homeBtn">Back</button>
     <span class="title">Contacts</span>
-    <span class="bartools"><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button><button id="menuBtn" class="bt wordbt">Menu</button></span>
+    <span class="bartools"><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span>
   </header>
   <div class="searchwrap">
     <div class="srow">
@@ -669,6 +670,9 @@ i.key{vertical-align:middle}
         <rect x="13" y="3" width="8" height="8" rx="2.2"/>
         <rect x="3" y="13" width="8" height="8" rx="2.2"/>
         <rect x="13" y="13" width="8" height="8" rx="2.2"/></svg></button>
+    <button id="menuBtn" aria-label="Menu" title="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <button id="homeRefresh" aria-label="Refresh from the server" title="Refresh from the server">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/>
@@ -4035,6 +4039,41 @@ function allSections(){
 }
 const fieldsOf = catId => LOGFIELDS.filter(f=>f.cat_id===catId);
 
+const dayGap=(a,b)=>Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000);
+
+// The pump out carries itself: the date stands until the box is ticked again.
+// Worked out from the log rather than stored, so correcting an old day corrects
+// everything that follows.
+function pumpTally(iso){
+  const last=LOGDAYS
+    .filter(d=>d.pump_out && d.on_date<=iso)
+    .sort((a,b)=>b.on_date.localeCompare(a.on_date))[0];
+  if(!last) return null;
+  const days=dayGap(last.on_date, iso);
+  const nights=LOGDAYS
+    .filter(d=>d.on_date>last.on_date && d.on_date<=iso)
+    .reduce((n,d)=>n+(Number(d.pob_tonight)||0),0);
+  return {when: days===0 ? 'Today' : dayLabel(last.on_date)+' \u2014 '+days
+            +' day'+(days===1?'':'s')+' ago',
+          date:last.on_date, days, nights};
+}
+
+// How long you have sat in the same spot, counted from the log itself.
+function stayRun(iso){
+  const here=LOGDAYS.find(d=>d.on_date===iso);
+  if(!here) return null;
+  const key=d=>((d.boat_address||'').trim().toLowerCase())
+    +'|'+(d.boat_lat==null?'':Number(d.boat_lat).toFixed(4))
+    +','+(d.boat_lng==null?'':Number(d.boat_lng).toFixed(4));
+  const k=key(here);
+  if(k==='|,') return null;                     // nowhere recorded, nothing to count
+  const back=LOGDAYS.filter(d=>d.on_date<=iso)
+    .sort((a,b)=>b.on_date.localeCompare(a.on_date));
+  let first=iso;
+  for(const d of back){ if(key(d)!==k) break; first=d.on_date; }
+  return {from:first, days:dayGap(first,iso)+1};
+}
+
 // Carries yesterday's position and engine hours forward, as they rarely change
 // overnight and retyping them every day would be a chore.
 function carriedFrom(beforeIso){
@@ -4078,7 +4117,7 @@ const LOG_SECTIONS=[
   {id:'body',       label:'Body'},
   {id:'activity',   label:'Activity'},
   {id:'boat',       label:'Boat and services'},
-  {id:'aboard',     label:'Aboard'},
+  {id:'aboard',     label:"Who's Aboard"},
   {id:'day',        label:'The day',    fixed:true}
 ];
 
@@ -4120,7 +4159,7 @@ function renderLog(){
     killMaps(); return;
   }
 
-  const svc=[e.diesel&&'diesel',e.pump_out&&'pump out',e.coal&&'coal',e.lpg_gas&&'gas',
+  const svc=[e.diesel&&'diesel',e.coal&&'coal',e.lpg_gas&&'gas',
     e.water&&'water',e.rubbish&&'rubbish',e.oil_water_checked&&'oil and water checked']
     .filter(Boolean).join(', ');
   const run=(e.hours_end!=null&&e.hours_start!=null)?(e.hours_end-e.hours_start):null;
@@ -4138,7 +4177,10 @@ function renderLog(){
         <button class="addmore" style="padding:0;text-align:left" data-maps="${p.lat},${p.lng}">
           ${p.where?esc(p.where)+'<br>':''}<span style="font-weight:400;color:var(--muted)">
           ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} &rsaquo;</span></button></dd></div>`;
+      const run=stayRun(LOG_DATE);
       return R(esc(e.stay_label||'Stayed'),esc(e.boat_address))
+        + (run ? R('Days here', run.days+(run.days>1
+            ? ' \u2014 since '+dayLabel(run.from) : '')) : '')
         + R('Canal',esc(e.current_canal)) + R('Journey',esc(e.journey))
         + arr(e.places).filter(p=>p.lat==null&&p.place).map(p=>
             R(esc(p.label||'Also'),esc(p.place))).join('')
@@ -4168,7 +4210,12 @@ function renderLog(){
       +R('Coal or gas at',e.coal_gas_at)
       +R('Signal',e.wifi_quality?e.wifi_quality+' out of 5':''),
     aboard: R('Who',e.who_aboard)+R('On board tonight',e.pob_tonight)
-      +R('Guests',e.overnight_guests),
+      +R('Guests',e.overnight_guests)
+      +(()=>{ const t=pumpTally(LOG_DATE); return t
+        ? R('Last pumped out', t.when)
+          + R('Nights aboard since', t.nights ? t.nights+' ('+t.days+' day'
+              +(t.days===1?'':'s')+')' : '')
+        : R('Last pumped out','Not recorded yet'); })(),
     day: (e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:'')
       +R('Chores',e.regular_chores)+R('Drinks',e.drinks)+R('Alcohol',e.alcohol)
       +R('Out at',e.pub_cafe)+R('Visited',e.attractions)
@@ -4367,7 +4414,7 @@ function editLog(iso){
 
     boat:`<fieldset><legend>Engine and services</legend>
       <div class="two">${N('Hours at start','hours_start','0.1')}${N('Hours at end','hours_end','0.1')}</div>
-      <div class="checks">${C('Diesel','diesel')}${C('Pump out','pump_out')}${C('Coal','coal')}
+      <div class="checks">${C('Diesel','diesel')}${C('Coal','coal')}
         ${C('Gas','lpg_gas')}${C('Water','water')}${C('Rubbish','rubbish')}
         ${C('Checked oil and water','oil_water_checked')}</div>
       ${T('Diesel or pump out at','diesel_pumpout_at')}
@@ -4379,12 +4426,14 @@ function editLog(iso){
       <input type="hidden" name="wifi_quality">
     </fieldset>`,
 
-    aboard:`<fieldset><legend>Aboard</legend>
+    aboard:`<fieldset><legend>Who's Aboard</legend>
       <label>Who is aboard<select name="who_aboard">
         <option value="">&mdash;</option>
         ${optsFor('who_aboard').map(v=>`<option>${esc(v)}</option>`).join('')}
       </select></label>
       ${N('On board tonight','pob_tonight')}
+      <div class="checks">${C('Pumped out today','pump_out')}</div>
+      <p class="coords" id="pumpNote"></p>
       <label>Overnight guests
         <input id="guestSearch" placeholder="Start typing a name from your contacts"
                autocomplete="off"></label>
@@ -4445,6 +4494,18 @@ function editLog(iso){
     if(f.elements[k]) f.elements[k].value = e[k]??'';
   });
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) f.elements[k].checked=!!e[k]; });
+
+  const pn=$('pumpNote');
+  if(pn){
+    const t=pumpTally(iso);
+    pn.textContent = t
+      ? (t.days===0
+          ? 'Pumped out today. The count starts again from here.'
+          : 'Last pumped out '+dayLabel(t.date)+' \u2014 '+t.days+' day'
+            +(t.days===1?'':'s')+' ago, '+t.nights+' night'
+            +(t.nights===1?'':'s')+' aboard since.')
+      : 'No pump out recorded yet. Tick the box on the day you have one.';
+  }
 
   const exNow=(e.extra&&typeof e.extra==='object')?e.extra:{};
   const exPrev=(prev.extra&&typeof prev.extra==='object')?prev.extra:{};
@@ -5132,7 +5193,10 @@ const TILE_DEST={
   wish:    {label:'Wishlist',   go:openWish},
   io:      {label:'Import & export', go:openIO},
   pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
-  settings:{label:'Settings',   go:openSettings}
+  settings:{label:'Settings',   go:openSettings},
+  menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
+  money:   {label:'Finances',   go:()=>toast('Coming soon')},
+  alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
 // Deep and quiet. Cream letters and brass read well on every one of them.
@@ -5140,8 +5204,8 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
   '#4A4A48','#2E5E63','#5A4B2F','#6B3030','#3A4A3C','#55406B'];
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
-  io:'#5A4B2F', pick:'#6B3030'};
-const TILE_DEFAULTS=['contacts','log','diary','shop','where','settings'];
+  io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030'};
+const TILE_DEFAULTS=['contacts','log','diary','shop','where','money','alarm','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -5179,19 +5243,31 @@ function defaultTiles(){
   return TILE_DEFAULTS.map(d=>({dest:d, label:TILE_DEST[d].label,
     colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[0]}));
 }
+let TILES_HIDDEN=[];
 function loadTiles(){
   const saved=MY_PROFILE&&MY_PROFILE.home_tiles;
-  TILES = Array.isArray(saved)&&saved.length
-    ? saved.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
-        dest:t.dest,
-        label:t.label||TILE_DEST[t.dest].label,
-        colour:t.colour||TILE_DEFAULT_COLOUR[t.dest]||TILE_COLOURS[0]}))
-    : defaultTiles();
+  // Older arrangements were a plain list; newer ones also remember what you
+  // took off, so a new screen can appear without a tile you binned coming back.
+  const list=Array.isArray(saved)?saved:(saved&&Array.isArray(saved.tiles)?saved.tiles:null);
+  TILES_HIDDEN=(saved&&Array.isArray(saved.hidden))?saved.hidden.slice():[];
+  if(!list||!list.length){ TILES=defaultTiles(); return; }
+  TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
+    dest:t.dest,
+    label:t.label||TILE_DEST[t.dest].label,
+    colour:t.colour||TILE_DEFAULT_COLOUR[t.dest]||TILE_COLOURS[0]}));
+  // Anything new in the app, that you have not already turned down, joins the end.
+  const have=TILES.map(t=>t.dest);
+  TILE_DEFAULTS.forEach(d=>{
+    if(!have.includes(d) && !TILES_HIDDEN.includes(d) && TILE_DEST[d])
+      TILES.push({dest:d, label:TILE_DEST[d].label,
+        colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[0]});
+  });
 }
 async function saveTiles(){
-  const {error}=await sb.from('profiles').update({home_tiles:TILES}).eq('id',ME.id);
+  const blob={tiles:TILES, hidden:TILES_HIDDEN};
+  const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
-  MY_PROFILE={...(MY_PROFILE||{}), home_tiles:TILES};
+  MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
 }
 
 function renderHome(){
@@ -5236,7 +5312,8 @@ function renderHome(){
   });
   box.querySelectorAll('[data-tdrop]').forEach(b=>b.onclick=async ev=>{
     ev.stopPropagation();
-    TILES.splice(Number(b.dataset.tdrop),1);
+    const gone=TILES.splice(Number(b.dataset.tdrop),1)[0];
+    if(gone && !TILES_HIDDEN.includes(gone.dest)) TILES_HIDDEN.push(gone.dest);
     renderHome(); await saveTiles();
   });
   box.querySelectorAll('[data-tedit]').forEach(b=>b.onclick=ev=>{
@@ -5299,6 +5376,7 @@ function addTile(){
     const d=b.dataset.add;
     TILES.push({dest:d, label:TILE_DEST[d].label,
       colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[TILES.length%TILE_COLOURS.length]});
+    TILES_HIDDEN=TILES_HIDDEN.filter(x=>x!==d);
     close(); renderHome(); await saveTiles();
   });
 }

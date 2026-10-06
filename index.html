@@ -560,6 +560,7 @@ i.key{vertical-align:middle}
         <option value="az-first">A&ndash;Z by first name</option>
         <option value="az-company">A&ndash;Z by business name</option>
         <option value="birthdays">Birthdays</option>
+        <option value="deceased">Those who have died</option>
       </select>
     </div>
     <div class="chips" id="chips"></div>
@@ -746,7 +747,9 @@ let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={}
 let VIEW='grouped', SORTBY='last';
 try{ VIEW=localStorage.getItem('view')||'grouped'; }catch(e){}
 function applyView(){
-  MODE   = VIEW==='grouped' ? 'grouped' : VIEW==='birthdays' ? 'birthdays' : 'az';
+  MODE   = VIEW==='grouped' ? 'grouped'
+         : VIEW==='birthdays' ? 'birthdays'
+         : VIEW==='deceased' ? 'deceased' : 'az';
   SORTBY = VIEW==='az-first' ? 'first' : VIEW==='az-company' ? 'company' : 'last';
 }
 applyView();
@@ -1005,6 +1008,18 @@ function render(){
     return;
   }
 
+  // Everywhere except their own view, the departed step aside. They are not
+  // deleted — pick "Those who have died" to see them.
+  rows = MODE==='deceased' ? rows.filter(c=>c.death_date)
+                           : rows.filter(c=>!c.death_date);
+  if(!rows.length){
+    $('count').textContent='0 contacts';
+    list.innerHTML='<li class="empty">'+(MODE==='deceased'
+      ? 'Nobody is marked as having died.'
+      : (q?'Nothing matches that search.':'Nothing to show.'))+'</li>';
+    return;
+  }
+
   const favRows=rows.filter(c=>FAVS.includes(c.id)).sort(byName);
   const favBlock = (!q && favRows.length)
     ? `<li><button class="grouphd open" style="background:#EDEFEA">
@@ -1013,6 +1028,14 @@ function render(){
     : '';
 
   if(q||MODE!=='grouped'){
+    if(MODE==='deceased'&&!q){
+      rows.sort((a,b)=>String(b.death_date).localeCompare(String(a.death_date))
+        ||byName(a,b));
+      $('count').textContent=rows.length+(rows.length===1?' person':' people')
+        +' who have died, most recent first';
+      list.innerHTML=rows.map(c=>rowHtml(c,false,false,(ALT++)%2===1)).join('');
+      wireRows();return;
+    }
     if(MODE==='birthdays'&&!q)
       rows=rows.filter(c=>c.birth_date&&!c.death_date).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
     else rows.sort(byName);
@@ -2698,10 +2721,16 @@ function openHelp(where){
   <p>Ticked items drop into the trolley at the bottom until you clear it.</p>
 
   <h4 id="h-wish">Wishlist</h4>
-  <p>Menu &rsaquo; <strong>Wishlist</strong> is where anyone can put ideas for
-  either app. Tag an idea as Contacts or Calendar Club, and move it between Idea,
-  Maybe, Doing, Done and Not doing as it goes along. You can only remove your own,
-  but anyone can move any of them.</p>
+  <p><strong>Wishlist</strong>, on the strip at the bottom of every screen, is
+  where anyone can put ideas for this app. Move an idea between Idea, Maybe,
+  Doing, Done and Not doing as it goes along. You can only remove your own, but
+  anyone can move any of them. Calendar Club keeps its own list, in that app.</p>
+
+  <h4 id="h-deceased">Those who have died</h4>
+  <p>Anyone with a date in <em>Died</em> is kept out of the everyday list, so it
+  stays about the living. Nothing is deleted. Choose <strong>Those who have
+  died</strong> from the list picker beside the search box to see them, most
+  recent first.</p>
 
   <h4 id="h-pick">Getting rid of several at once</h4>
   <p>Menu &rsaquo; <strong>Delete several contacts</strong>. Tap the ones you want
@@ -4841,6 +4870,10 @@ async function loadShares(){
   SHARE_UNTIL = me ? new Date(me.until) : null;
   SHARED_WITH=(who.data||[]).map(r=>r.viewer_id);
   paintShareBar();
+  // Opening the app afresh used to leave the position frozen where it was
+  // when sharing started, because nothing picked the job back up.
+  if(SHARE_UNTIL && SHARE_UNTIL>new Date()) beginSharingLoop();
+  else endSharingLoop();
 }
 
 // Who the log's two "if not aboard" slots belong to
@@ -4873,29 +4906,75 @@ function paintShareBar(){
   const bar=$('shareBar');
   if(SHARE_UNTIL && SHARE_UNTIL>new Date()){
     const who=namesOf(SHARED_WITH);
-    bar.innerHTML=`<span>Sharing your location with
+    bar.innerHTML=`<span role="button" tabindex="0" id="shareGo"
+      style="cursor:pointer;text-decoration:underline">Sharing your location with
       ${esc(who.length?who.join(' and '):'nobody')} until
       ${esc(SHARE_UNTIL.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))}</span>
       <button id="shareStop">Stop now</button>`;
     bar.classList.remove('hidden');
-    $('shareStop').onclick=stopSharing;
+    $('shareStop').onclick=ev=>{ ev.stopPropagation(); stopSharing(); };
+    const go=$('shareGo');
+    if(go){ go.onclick=openWhere;
+      go.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') openWhere(); }; }
   }else{
     bar.classList.add('hidden');
     SHARE_UNTIL=null;
   }
 }
 
+let SHARE_WATCH=null, LAST_SENT=null;
+
+async function writePosition(pos){
+  if(!SHARE_UNTIL || SHARE_UNTIL<=new Date()){ stopSharing(true); return; }
+  await sb.from('live_locations').upsert({
+    user_id:ME.id, lat:pos.coords.latitude, lng:pos.coords.longitude,
+    accuracy:pos.coords.accuracy, updated_at:new Date().toISOString(),
+    until:SHARE_UNTIL.toISOString(),
+    label:(MY_PROFILE&&MY_PROFILE.display_name)||ME.email
+  },{onConflict:'user_id'});
+  LAST_SENT={lat:pos.coords.latitude, lng:pos.coords.longitude, at:Date.now()};
+}
+
 async function pushMyPosition(){
   if(!SHARE_UNTIL || SHARE_UNTIL<=new Date()){ stopSharing(true); return; }
   if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    await sb.from('live_locations').upsert({
-      user_id:ME.id, lat:pos.coords.latitude, lng:pos.coords.longitude,
-      accuracy:pos.coords.accuracy, updated_at:new Date().toISOString(),
-      until:SHARE_UNTIL.toISOString(),
-      label:(MY_PROFILE&&MY_PROFILE.display_name)||ME.email
-    },{onConflict:'user_id'});
-  },()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+  navigator.geolocation.getCurrentPosition(
+    pos=>writePosition(pos), ()=>{},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+
+// Roughly how far apart two positions are, in metres.
+function metresBetween(a,b){
+  const R=6371000, r=Math.PI/180;
+  const dLat=(b.lat-a.lat)*r, dLng=(b.lng-a.lng)*r;
+  const q=Math.sin(dLat/2)**2
+    + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(q));
+}
+
+// While the app is open, follow the position rather than taking one reading
+// and leaving it there. Writes only when you have actually moved, or every
+// three minutes, so it is not chattering at the database or the battery.
+function beginSharingLoop(){
+  if(!SHARE_UNTIL || SHARE_UNTIL<=new Date()) return;
+  if(SHARE_TIMER) clearInterval(SHARE_TIMER);
+  SHARE_TIMER=setInterval(pushMyPosition, 3*60*1000);
+  pushMyPosition();
+  if(SHARE_WATCH!==null || !navigator.geolocation.watchPosition) return;
+  SHARE_WATCH=navigator.geolocation.watchPosition(pos=>{
+    const now={lat:pos.coords.latitude, lng:pos.coords.longitude};
+    if(LAST_SENT && metresBetween(LAST_SENT,now)<30
+       && Date.now()-LAST_SENT.at < 3*60*1000) return;
+    writePosition(pos);
+  },()=>{},{enableHighAccuracy:true,maximumAge:30000,timeout:20000});
+}
+function endSharingLoop(){
+  if(SHARE_TIMER){ clearInterval(SHARE_TIMER); SHARE_TIMER=null; }
+  if(SHARE_WATCH!==null){
+    try{ navigator.geolocation.clearWatch(SHARE_WATCH); }catch(e){}
+    SHARE_WATCH=null;
+  }
+  LAST_SENT=null;
 }
 
 async function startSharing(hours){
@@ -4910,16 +4989,14 @@ async function startSharing(hours){
   SHARED_WITH=picked;
 
   SHARE_UNTIL=new Date(Date.now()+hours*3600*1000);
-  await pushMyPosition();
-  if(SHARE_TIMER) clearInterval(SHARE_TIMER);
-  SHARE_TIMER=setInterval(pushMyPosition, 3*60*1000);
+  beginSharingLoop();
   paintShareBar();
   toast('Sharing with '+namesOf(picked).join(' and '));
   if(!$('where').classList.contains('hidden')) renderWhere();
 }
 
 async function stopSharing(quiet){
-  if(SHARE_TIMER){ clearInterval(SHARE_TIMER); SHARE_TIMER=null; }
+  endSharingLoop();
   SHARE_UNTIL=null;
   await sb.from('live_locations').delete().eq('user_id',ME.id);
   await sb.from('location_shares').delete().eq('owner_id',ME.id);
@@ -5007,7 +5084,7 @@ function renderWhere(){
 /* ============================================================
    Wishlist and shopping list — both shared by everyone signed in
    ============================================================ */
-let WISHES=[], SHOP=[], WISH_APP='contacts';
+let WISHES=[], SHOP=[], WISH_APP='contacts';   // Calendar Club keeps its own list
 
 const WISH_STATUS=[['idea','Idea'],['maybe','Maybe'],['doing','Doing'],
   ['done','Done'],['no','Not doing']];
@@ -5035,8 +5112,7 @@ function renderWish(){
   live.forEach(w=>{ (byStatus[w.status]=byStatus[w.status]||[]).push(w); });
 
   let html=`<div class="kindpick">
-      <button data-wapp="contacts"      aria-pressed="${WISH_APP==='contacts'}">Contacts</button>
-      <button data-wapp="calendar club" aria-pressed="${WISH_APP==='calendar club'}">Calendar Club</button>
+      <button data-wapp="contacts" aria-pressed="true">Ideas for this app</button>
     </div>
     <div class="card"><h3>Add an idea</h3><div class="setadd">
       <input id="wTitle" placeholder="What would be good?">
@@ -5226,6 +5302,22 @@ function renderShop(){
   $('sAdd').onclick=async()=>{
     const n=$('sName').value.trim();
     if(!n){ toast('Type what is needed'); return; }
+    // Already on this list? Say so rather than quietly adding it twice.
+    const same=items.find(x=>x.name.trim().toLowerCase()===n.toLowerCase());
+    if(same){
+      if(same.got){
+        if(confirm('"'+same.name+'" is already in the trolley.\n\n'
+          +'OK to take it back out and put it on the list again,\n'
+          +'or Cancel to leave it where it is.')){
+          await sb.from('shopping').update({got:false,got_at:null}).eq('id',same.id);
+          $('sName').value=''; $('sQty').value='';
+          await loadShopping(); renderShop(); toast('Back on the list');
+        }
+        return;
+      }
+      if(!confirm('"'+same.name+'" is already on the list.\n\n'
+        +'OK to add another one anyway, or Cancel to leave it.')) return;
+    }
     const {error}=await sb.from('shopping').insert({
       created_by:ME.id, list_id:CUR_LIST, name:n,
       qty:$('sQty').value.trim()||null,
@@ -5992,6 +6084,7 @@ document.addEventListener('visibilitychange',async()=>{
   if(!$('editor').classList.contains('hidden')) return;  // never interrupt an edit
   await loadAll();
   if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
+  if(SHARE_UNTIL && SHARE_UNTIL>new Date()) pushMyPosition();
 });
 
 async function start(){
@@ -6017,6 +6110,32 @@ async function start(){
 })();
 
 start();
+
+/* ---------- putting a reminder off ---------- */
+// The notification's buttons cannot talk to the database themselves, so they
+// hand the job here: push the reminder forward and let it come round again.
+async function snoozeItem(itemId, hours){
+  const when=new Date(Date.now()+hours*3600*1000);
+  const {error}=await sb.from('items')
+    .update({remind_at:when.toISOString(), pushed_at:null})
+    .eq('id',itemId);
+  if(error){ toast('Could not put that off'); console.error(error); return; }
+  await loadAll();
+  toast(hours===24 ? 'Back tomorrow' : 'Back in '+hours+' hour'+(hours===1?'':'s'));
+}
+navigator.serviceWorker && navigator.serviceWorker.addEventListener('message',ev=>{
+  const sn=ev.data&&ev.data.snooze;
+  if(sn&&sn.itemId) snoozeItem(sn.itemId, sn.hours);
+});
+// Tapped while the app was shut: the request arrives in the address instead.
+(function(){
+  const m=/^#snooze=(\d+)-(\d+)$/.exec(location.hash||'');
+  if(!m) return;
+  history.replaceState(null,'',location.pathname+location.search);
+  const go=()=>{ if(ME) snoozeItem(Number(m[1]),Number(m[2]));
+                 else setTimeout(go,400); };
+  setTimeout(go,400);
+})();
 
 if('serviceWorker' in navigator)
   navigator.serviceWorker.register('sw.js')

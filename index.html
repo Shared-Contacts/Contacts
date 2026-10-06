@@ -36,17 +36,11 @@ a{color:var(--hull)}
 
 .plate{background:var(--hull);color:#F2EFE4;padding:calc(14px + env(safe-area-inset-top)) 12px 14px;
   display:flex;align-items:center;gap:4px;border-bottom:3px solid var(--brass)}
-.plate h1{margin:0 auto 0 4px;font-size:19px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
-.plate #homeBtn{padding:6px 8px;border-radius:9px;flex:0 0 auto;display:block}
-.plate .mk{height:26px;width:auto;display:block}
 .plate button{color:#F2EFE4;font-size:15px;padding:8px 9px;border-radius:8px}
 .plate select{background:rgba(255,255,255,.14);color:#F2EFE4;border:1px solid rgba(255,255,255,.3);
   border-radius:8px;padding:7px 6px;font-size:15px;min-width:0;max-width:40vw}
-.plate h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:560px){
-  .plate h1{display:none}
-  .plate .mk{height:24px}
-  .plate{gap:6px;justify-content:space-between}
+  .plate{gap:6px}
   .plate select{max-width:none;flex:1 1 auto}
   .plate button{padding:8px 7px;font-size:14px;flex:0 0 auto}
 }
@@ -95,7 +89,7 @@ ul.list li.fav .name::after{content:'\2605';color:var(--brass);
   font-size:15px;color:#fff;margin-top:8px}
 .pickbox.on{background:var(--red);border-color:var(--red)}
 ul.list li.chosen{background:#FBE9E7}
-.pickbar{position:fixed;left:0;right:0;bottom:0;z-index:35;
+.pickbar{position:fixed;left:0;right:0;bottom:0;z-index:48;
   background:var(--red);color:#fff;display:flex;align-items:center;gap:10px;
   padding:14px 16px calc(14px + env(safe-area-inset-bottom));font-size:16px}
 .pickbar button{color:#fff;font-size:16px;padding:6px 8px}
@@ -111,12 +105,39 @@ ul.list li.chosen{background:#FBE9E7}
 .empty{padding:48px 24px;text-align:center;color:var(--muted)}
 
 .sheetfab{z-index:45}
-.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));
+.fab{position:fixed;right:18px;bottom:calc(18px + var(--tray,50px) + env(safe-area-inset-bottom));
   width:60px;height:60px;border-radius:50%;background:var(--red);color:#fff;
   font-size:32px;line-height:1;box-shadow:0 4px 14px rgba(16,35,28,.3);z-index:30}
 
 /* The front door. It sits above the contacts list but below every sheet,
    so closing Shopping or the Log drops you back here, not somewhere else. */
+/* One bar across the bottom of every screen. Thin, two words, always there. */
+#tray{position:fixed;left:0;right:0;bottom:0;z-index:46;display:flex;
+  background:var(--panel);border-top:1px solid var(--rule);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  box-shadow:0 -2px 8px rgba(16,35,28,.07)}
+#tray button{flex:1;padding:12px 6px;font-size:15px;font-weight:600;color:var(--hull)}
+#tray button+button{border-left:1px solid var(--rule)}
+#tray button:active{background:var(--band,#F3F1EA)}
+body{--tray:50px}
+.sheetbody,.homebody{padding-bottom:calc(var(--tray) + env(safe-area-inset-bottom,0px))}
+ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px))}
+
+/* Every bar reads the same: back on the left, name in the middle, tools right */
+.sheetbar,.plate{position:relative}
+.sheetbar .title:not(.logdate),.plate .title{position:absolute;left:50%;
+  transform:translateX(-50%);max-width:46%;text-align:center;
+  font-size:20px;font-weight:700;letter-spacing:.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+.bartools{margin-left:auto;display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.bt{color:#F2EFE4;padding:8px;border-radius:8px;display:flex;align-items:center}
+.bt svg{width:21px;height:21px;display:block}
+.bt.wordbt{font-size:15px;padding:8px 9px}
+.bt.spin svg{animation:spin .9s linear infinite}
+.srow{display:flex;gap:8px;align-items:center}
+.srow input{flex:1 1 auto;min-width:0}
+.srow select{flex:0 0 auto;max-width:42%}
+
 .homescreen{position:fixed;top:0;left:0;right:0;z-index:35;background:var(--paper);
   height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
   display:flex;flex-direction:column;overflow:hidden}
@@ -137,7 +158,7 @@ ul.list li.chosen{background:#FBE9E7}
 @media (min-width:560px){.tiles{gap:14px;
   grid-template-columns:repeat(auto-fill,minmax(136px,1fr))}}
 .tilewrap{position:relative}
-.tile{width:100%;background:var(--tc,#2F4858);color:#FBFAF7;border-radius:14px;
+.tile{position:relative;width:100%;background:var(--tc,#2F4858);color:#FBFAF7;border-radius:14px;
   aspect-ratio:1/1;display:flex;flex-direction:column;align-items:stretch;
   justify-content:flex-end;padding:0;overflow:hidden;text-align:center;
   box-shadow:0 2px 5px rgba(16,35,28,.16)}
@@ -145,6 +166,8 @@ ul.list li.chosen{background:#FBE9E7}
 .tmy{flex:1 1 auto;display:flex;align-items:center;justify-content:center;
   min-height:0;padding:10px 8px 4px}
 .tile .mys{width:100%;max-width:58px;height:auto;display:block;opacity:.5}
+.tile .pip{position:absolute;top:6px;right:6px;background:var(--red);color:#fff;
+  border-radius:999px;min-width:21px;padding:1px 6px;font-size:12px;font-weight:700}
 .tile .tname{flex:0 0 auto;background:var(--td,rgba(0,0,0,.28));
   padding:7px 5px;font-size:15px;font-weight:700;line-height:1.15;
   letter-spacing:.01em;overflow-wrap:anywhere;hyphens:auto}
@@ -180,6 +203,7 @@ ul.list li.chosen{background:#FBE9E7}
   display:flex;flex-direction:column;overflow:hidden}
 .sheet.hidden{display:none}
 .sheetbar{flex:0 0 auto;position:sticky;top:0;z-index:6;background:var(--hull);color:#F2EFE4;
+  border-bottom:3px solid var(--brass);
   display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 12px 12px}
 .sheetbar button{color:#F2EFE4;padding:8px 10px;border-radius:8px;font-size:16px}
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -513,22 +537,21 @@ i.key{vertical-align:middle}
 <div id="app" class="hidden">
   <div id="topbar">
   <header class="plate">
-    <button id="homeBtn" aria-label="Home" title="Home"><img class="mk"
-      src="logo-mark-bare.svg" alt="" width="33" height="26"></button>
-    <h1>Contacts</h1>
-    <select id="viewPick" aria-label="How to list contacts">
-      <option value="grouped">Grouped</option>
-      <option value="az-last">A&ndash;Z by last name</option>
-      <option value="az-first">A&ndash;Z by first name</option>
-      <option value="az-company">A&ndash;Z by business name</option>
-      <option value="birthdays">Birthdays</option>
-    </select>
-    <button id="diaryBtn">Diary<span id="dueDot"></span></button>
-    <button id="logBtn">Log</button>
-    <button id="menuBtn">Menu</button>
+    <button id="homeBtn">Back</button>
+    <span class="title">Contacts</span>
+    <span class="bartools"><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button><button id="menuBtn" class="bt wordbt">Menu</button></span>
   </header>
   <div class="searchwrap">
-    <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
+    <div class="srow">
+      <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
+      <select id="viewPick" aria-label="How to list contacts">
+        <option value="grouped">Grouped</option>
+        <option value="az-last">A&ndash;Z by last name</option>
+        <option value="az-first">A&ndash;Z by first name</option>
+        <option value="az-company">A&ndash;Z by business name</option>
+        <option value="birthdays">Birthdays</option>
+      </select>
+    </div>
     <div class="chips" id="chips"></div>
   </div>
   </div>
@@ -553,7 +576,7 @@ i.key{vertical-align:middle}
 
 <div id="diary" class="sheet hidden">
   <div class="sheetbar"><button id="diaryBack">Back</button>
-    <span class="title">Diary</span><span style="width:56px"></span></div>
+    <span class="title">Diary</span><span class="bartools"><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="diaryBody"></div>
   <button class="fab sheetfab" id="diaryAdd" aria-label="Add an appointment or to-do">+</button>
 </div>
@@ -566,26 +589,26 @@ i.key{vertical-align:middle}
 
 <div id="io" class="sheet hidden">
   <div class="sheetbar"><button id="ioBack">Back</button>
-    <span class="title">Import and export</span><span style="width:56px"></span></div>
+    <span class="title">Import and export</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="ioBody"></div>
 </div>
 
 <div id="wish" class="sheet hidden">
   <div class="sheetbar"><button id="wishBack">Back</button>
-    <span class="title">Wishlist</span><span style="width:56px"></span></div>
+    <span class="title">Wishlist</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="wishBody"></div>
 </div>
 
 <div id="shop" class="sheet hidden">
   <div class="sheetbar"><button id="shopBack">Back</button>
-    <span class="title">Shopping</span><span style="width:56px"></span></div>
+    <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="shopBody"></div>
   <button class="fab sheetfab" id="shopAdd" aria-label="Add a shopping list">+</button>
 </div>
 
 <div id="where" class="sheet hidden">
   <div class="sheetbar"><button id="whereBack">Back</button>
-    <span class="title">Where we are</span><span style="width:56px"></span></div>
+    <span class="title">Where we are</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="whereBody"></div>
 </div>
 
@@ -594,6 +617,7 @@ i.key{vertical-align:middle}
     <button id="logPrev" aria-label="Earlier day">&#9664;</button>
     <button class="title logdate" id="logPick"></button>
     <button id="logNext" aria-label="Later day">&#9654;</button>
+    <button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button>
     <button id="logEditTop">Edit</button></div>
   <div class="sheetbody" id="logBody"></div>
 </div>
@@ -606,7 +630,7 @@ i.key{vertical-align:middle}
 
 <div id="menu" class="sheet hidden">
   <div class="sheetbar"><button id="menuBack">Back</button>
-    <span class="title">Menu</span><span style="width:56px"></span></div>
+    <span class="title">Menu</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody">
     <div class="card">
       <button class="menuitem" id="goPick">Delete several contacts &rsaquo;</button>
@@ -653,15 +677,20 @@ i.key{vertical-align:middle}
   <div class="homebody" id="homeBody"></div>
 </div>
 
+<div id="tray">
+  <button id="trayWish">Wishlist</button>
+  <button id="trayHelp">Help</button>
+</div>
+
 <div id="help" class="sheet hidden">
   <div class="sheetbar"><button id="helpBack">Back</button>
-    <span class="title">How to use this</span><span style="width:56px"></span></div>
+    <span class="title">How to use this</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="helpBody"></div>
 </div>
 
 <div id="settings" class="sheet hidden">
   <div class="sheetbar"><button id="setBack">Back</button>
-    <span class="title">Settings</span><span style="width:56px"></span></div>
+    <span class="title">Settings</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="setBody"></div>
 </div>
 
@@ -720,6 +749,7 @@ function sheetsOpen(){
 function lockBackground(){
   const home = !$('home').classList.contains('hidden');
   document.body.style.overflow = (sheetsOpen()||home) ? 'hidden' : '';
+  if(typeof paintTray==='function') paintTray();
 }
 
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
@@ -770,7 +800,7 @@ function socialUrl(label,value){
 
 /* ---------- load ---------- */
 async function loadAll(){
-  const [g,s,k,c,l,u,sh,pt,fv,it,ish]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
@@ -781,7 +811,8 @@ async function loadAll(){
     sb.from('pet_types').select('*').order('sort_order'),
     sb.from('contact_favourites').select('*').eq('user_id',ME.id),
     sb.from('items').select('*'),
-    sb.from('item_shares').select('*')
+    sb.from('item_shares').select('*'),
+    sb.from('shopping').select('*')
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
@@ -789,6 +820,7 @@ async function loadAll(){
   MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
   if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
   PETS=pt.data||[]; FAVS=(fv.data||[]).map(x=>x.contact_id);
+  if(!sp.error) SHOP=sp.data||[];
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
   const rt=await sb.from('routines').select('*').order('sort_order');
@@ -2043,6 +2075,28 @@ function catRows(){
     This part needs its database step first. In Supabase, open the SQL Editor
     and run <strong>contacts-step29.sql</strong>, then come back here.</dd></div>`;
   return `
+    <details class="card logsec" style="margin:0 0 10px"><summary>How this works</summary>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        <p style="margin:0 0 8px"><strong>1.</strong> Type a name below and tap
+        <strong>Add heading</strong> — Garden, Sewing, Engine, anything.</p>
+        <p style="margin:0 0 8px"><strong>2.</strong> Tap the
+        <strong>&ldquo;… to fill in &rsaquo;&rdquo;</strong> button beside it to say what
+        goes under that heading.</p>
+        <p style="margin:0 0 8px"><strong>3.</strong> Each thing you add is one of
+        five sorts:</p>
+        <p style="margin:0 0 4px"><strong>A number</strong> — hours, litres, miles.
+        Give it a unit and it shows after the figure.</p>
+        <p style="margin:0 0 4px"><strong>A few words</strong> — one short line.</p>
+        <p style="margin:0 0 4px"><strong>A longer note</strong> — a paragraph.</p>
+        <p style="margin:0 0 4px"><strong>Yes or no</strong> — a tick box.</p>
+        <p style="margin:0 0 8px"><strong>Pick from a list</strong> — a drop-down.
+        A box appears underneath for the choices: type them separated by commas,
+        like <em>Good, Middling, Poor</em>. Until you do, there is nothing in the
+        drop-down to pick.</p>
+        <p style="margin:0"><strong>Carries over</strong> brings yesterday's answer
+        onto a new day; <strong>One day only</strong> starts blank each morning.</p>
+      </dd></div>
+    </details>
     <div class="field"><dd style="color:var(--muted);font-size:15px">
       Headings of your own, with whatever you want to fill in under them.
       They join the list above, so you can put them in order and switch them
@@ -2129,7 +2183,11 @@ function editFields(catId){
           placeholder="Unit, e.g. litres" style="flex:1 1 110px">`:''}
         ${f.kind==='choice'?`<input data-fchoices="${f.id}"
           value="${esc(arr(f.choices).join(', '))}"
-          placeholder="Choices, separated by commas" style="flex:1 1 100%">`:''}
+          placeholder="Choices, separated by commas — Good, Middling, Poor"
+          style="flex:1 1 100%">
+          ${arr(f.choices).length?'':`<span class="coords" style="flex:1 1 100%;color:var(--red)">
+            Type the choices above, separated by commas, or the drop-down will be
+            empty.</span>`}`:''}
         <button class="tg" data-fcarry="${f.id}" aria-pressed="${f.carry}"
           >${f.carry?'Carries over':'One day only'}</button>
       </div>`).join('')
@@ -2146,7 +2204,36 @@ function editFields(catId){
   };
   const refresh=async()=>{ await loadLog(); draw(); };
   const wire=()=>{
-    box.querySelector('#fDone').onclick=()=>{ box.remove(); openSettings(); };
+    // On a phone, tapping Done can close the panel before the box you were
+    // typing in has told anyone. So read them all first, then close.
+    const flush=async()=>{
+      const jobs=[];
+      box.querySelectorAll('[data-flabel]').forEach(i=>{
+        const f=LOGFIELDS.find(x=>String(x.id)===i.dataset.flabel);
+        const v=i.value.trim();
+        if(f&&v&&v!==f.label) jobs.push([f.id,{label:v}]);
+      });
+      box.querySelectorAll('[data-funit]').forEach(i=>{
+        const f=LOGFIELDS.find(x=>String(x.id)===i.dataset.funit);
+        const v=i.value.trim()||null;
+        if(f&&v!==(f.unit||null)) jobs.push([f.id,{unit:v}]);
+      });
+      box.querySelectorAll('[data-fchoices]').forEach(i=>{
+        const f=LOGFIELDS.find(x=>String(x.id)===i.dataset.fchoices);
+        const v=i.value.split(',').map(x=>x.trim()).filter(Boolean);
+        if(f&&v.join('|')!==arr(f.choices).join('|')) jobs.push([f.id,{choices:v}]);
+      });
+      for(const [id,patch] of jobs)
+        await sb.from('log_fields').update(patch).eq('id',id);
+      if(jobs.length) await loadLog();
+      return jobs.length;
+    };
+    box.querySelector('#fDone').onclick=async()=>{
+      const b=box.querySelector('#fDone'); b.disabled=true;
+      const n=await flush();
+      box.remove(); openSettings();
+      if(n) toast('Saved');
+    };
     box.querySelector('#fAdd').onclick=async()=>{
       const label=box.querySelector('#fNew').value.trim();
       if(!label){ toast('Give it a name'); return; }
@@ -2329,7 +2416,7 @@ function pickContact(title, currentId){
   });
 }
 
-async function openSettings(){
+async function openSettings(goTo){
   if(!LOGOPTS.length) await loadLog();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
@@ -2401,6 +2488,12 @@ async function openSettings(){
     return `<p class="dsec">${esc(g.label)}</p>`
       + list.map(k=>card(k,bodies[k]||'',list)).join('');
   }).join('');
+
+  if(goTo) setTimeout(()=>{
+    const heads=[...$('setBody').querySelectorAll('p.dsec')];
+    const h=heads.find(x=>x.textContent.trim()===goTo);
+    if(h) h.scrollIntoView({block:'start'});
+  },30);
 
   const ga=$('goArrange');
   if(ga) ga.onclick=()=>{
@@ -2544,13 +2637,40 @@ async function openSettings(){
 }
 
 
-function openHelp(){
+// Which screen is in front, so Help and the settings button know where you are.
+const SCREEN_ORDER=[['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
+  ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
+  ['wish','wish'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+function currentScreen(){
+  for(const [id,scr] of SCREEN_ORDER)
+    if($(id) && !$(id).classList.contains('hidden')) return scr;
+  return 'contacts';
+}
+const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
+  where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
+  menu:'h-settings', home:'h-home'};
+// Which settings heading belongs to which screen.
+const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen'};
+
+function openHelp(where){
+  const anchor = HELP_AT[where===undefined?currentScreen():where] || '';
   $('helpBody').innerHTML = `
   <div class="helpsec">
   <p class="lead">Everything here is stored online, so you and Sandra see the same
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
 
-  <h4>Shopping list</h4>
+  <h4 id="h-home">The opening screen</h4>
+  <p>Every part of the app has a tile. Tap one to go there; the MY button at the
+  left of any top bar brings you back.</p>
+  <p>The four-squares button beside the logo lets you rearrange them.
+  <strong>&lsaquo;</strong> and <strong>&rsaquo;</strong> shuffle a tile along, the
+  <strong>pencil</strong> renames it and changes its colour, and <strong>&times;</strong>
+  takes it off — nothing is deleted, and you can add it back from the dashed
+  square at the end. Each screen takes its tile's colour, so changing a tile
+  changes the bar at the top of that screen too. Your arrangement is yours alone.</p>
+  <p>The circular arrow fetches the latest from the server.</p>
+
+  <h4 id="h-shop">Shopping list</h4>
   <p>The round <strong>+</strong> adds another list, so you can keep one per shop
   &mdash; Supermarket, Butcher, Chemist, Chandlery. Each appears as a tab along
   the top with a count of what is still to get. A list of yours can be renamed or
@@ -2562,13 +2682,13 @@ function openHelp(){
   shop without it landing on yours.</p>
   <p>Ticked items drop into the trolley at the bottom until you clear it.</p>
 
-  <h4>Wishlist</h4>
+  <h4 id="h-wish">Wishlist</h4>
   <p>Menu &rsaquo; <strong>Wishlist</strong> is where anyone can put ideas for
   either app. Tag an idea as Contacts or Calendar Club, and move it between Idea,
   Maybe, Doing, Done and Not doing as it goes along. You can only remove your own,
   but anyone can move any of them.</p>
 
-  <h4>Getting rid of several at once</h4>
+  <h4 id="h-pick">Getting rid of several at once</h4>
   <p>Menu &rsaquo; <strong>Delete several contacts</strong>. Tap the ones you want
   rid of &mdash; they turn pink with a tick &mdash; then use the red bar at the
   bottom. It counts them first and lists a few by name before anything happens.</p>
@@ -2578,7 +2698,7 @@ function openHelp(){
   shared with you, the bar says so and leaves them alone; ask whoever owns them,
   or simply untick them.</p>
 
-  <h4>Bringing contacts in, and saving a copy</h4>
+  <h4 id="h-io">Bringing contacts in, and saving a copy</h4>
   <p>Menu &rsaquo; <strong>Import and export contacts</strong>. Download a copy of
   everything as a spreadsheet file whenever you like &mdash; worth doing monthly.</p>
   <p>Two kinds of file work. A <strong>.vcf</strong> exported from your phone's
@@ -2592,12 +2712,12 @@ function openHelp(){
   <p>Put group names in the groups column separated by semicolons. Anything it
   does not recognise goes into "Shared with me" so you can file it yourself.</p>
 
-  <h4>Colours</h4>
+  <h4 id="h-colours">Colours</h4>
   <p>Menu &rsaquo; <strong>Colours</strong> offers Canal, Serene, Sombre, Jazzy and
   High contrast. It follows your account, so it looks the same on the phone and
   the laptop, and it is yours alone.</p>
 
-  <h4>Sharing where you are</h4>
+  <h4 id="h-where">Sharing where you are</h4>
   <p>Menu &rsaquo; <strong>Share where I am</strong> lets you hand your position
   to a named person for one, four, eight or twenty-four hours.</p>
   <p>You tick who may see it. Only they can, and only while it is running &mdash;
@@ -2606,20 +2726,20 @@ function openHelp(){
   see it, with a <strong>Stop now</strong> button, so it can never be running
   without you knowing. Your position only updates while the app is open.</p>
 
-  <h4>Your password</h4>
+  <h4 id="h-pw">Your password</h4>
   <p>Menu &rsaquo; <strong>Your password</strong> changes it to whatever you like.
   It takes effect immediately and applies on every device you sign in on, so if
   you are signed in elsewhere, use the new one there next time.</p>
   <p>There is no "forgotten password" email. If you are locked out, Barry can set
   a new one for you.</p>
 
-  <h4>Setting someone up</h4>
+  <h4 id="h-people">Setting someone up</h4>
   <p>Send a new user this link. It gives them the address, how to sign in, how
   to add it to their phone, and what is private versus shared:</p>
   <p><a href="${esc(START_LINK)}" target="_blank" rel="noopener">${esc(START_LINK)}</a></p>
   <p><button class="addmore" id="copyStart" style="padding:0">Copy that link</button></p>
 
-  <h4>Finding someone</h4>
+  <h4 id="h-contacts">Finding someone</h4>
   <p>Type into the search box at the top. It looks at names, previous names,
   nicknames, boat names, towns, companies, phone numbers, pets and notes, so
   a half-remembered detail is usually enough. Several words narrow it down:
@@ -2627,7 +2747,7 @@ function openHelp(){
   <p>The coloured buttons under the search box filter by group. Tap
   <strong>Everyone</strong> to clear it.</p>
 
-  <h4>How the list is ordered</h4>
+  <h4 id="h-order">How the list is ordered</h4>
   <p>The dropdown in the green bar has five choices:</p>
   <ul>
     <li><strong>Grouped</strong> &mdash; group, then country, then last name.
@@ -2647,7 +2767,7 @@ function openHelp(){
   <p>Your choice is remembered on that device. Searching always shows a flat
   list, whichever setting you are on.</p>
 
-  <h4>Adding someone</h4>
+  <h4 id="h-add">Adding someone</h4>
   <p>The red <strong>+</strong> button, bottom right. You must tick at least one
   group before it will save &mdash; a contact with no group is visible only to
   whoever created it, and would never reach the other person.</p>
@@ -2656,14 +2776,14 @@ function openHelp(){
   business name becomes the record's name. That tick only appears when adding;
   afterwards there is a Change link if you got it wrong.</p>
 
-  <h4>Lists that grow</h4>
+  <h4 id="h-lists">Lists that grow</h4>
   <p>Phones, emails, websites, social accounts, pets and previous names all work
   the same way: choose a label from the dropdown, type the value, and press
   <strong>+ Add</strong> for another. There is no limit. The &times; removes one.</p>
   <p>Previous names sit in a panel under the birth date. It opens itself when
   there is something inside.</p>
 
-  <h4>Maps</h4>
+  <h4 id="h-maps">Maps</h4>
   <p>Two maps: where they live, and where you met. Tap the map to drop a pin,
   or drag the pin to adjust it.</p>
   <p>The <strong>Find</strong> box fills itself in from the address you have
@@ -2677,13 +2797,13 @@ function openHelp(){
   <p>On a saved contact the map is a still picture, so the page scrolls
   properly. Tap it to open the location in your phone's maps app.</p>
 
-  <h4>Photos</h4>
+  <h4 id="h-photos">Photos</h4>
   <p>The round photo at the top is their profile picture; the gallery further
   down holds as many as you like. Photos are shrunk on your phone before being
   sent, so there is no need to resize anything first. Tap any photo to see it
   full size.</p>
 
-  <h4>Connections</h4>
+  <h4 id="h-links">Connections</h4>
   <p>At the bottom of a contact, choose how two people are connected, then search
   for the other person. If they are not in the database yet, tap
   <strong>Add &hellip; as a new contact</strong> and the link is made when you save.</p>
@@ -2695,7 +2815,7 @@ function openHelp(){
   in the main list, and is always your own choice, so the list stays readable.
   Two is about the most that fits.</p>
 
-  <h4>Daily Log</h4>
+  <h4 id="h-log">Daily Log</h4>
   <p>Tap the date in the green bar for a calendar, or the arrows either side to
   step a day at a time. The date stays put while you scroll.</p>
   <p>Most sections start folded up; tap a heading to open one, and it stays that
@@ -2729,7 +2849,34 @@ function openHelp(){
   <p>To be reminded, put a repeating daily to-do in the Diary &mdash; "fill in the
   log", every day, at whatever time suits.</p>
 
-  <h4>Diary</h4>
+  <h4 id="h-cats">Sections of your own</h4>
+  <p>The log starts with the headings we built — blood pressure, engine, aboard
+  and so on — but you can add your own: Garden, Sewing, Grandchildren, whatever
+  you keep track of. Settings &rsaquo; Daily Log &rsaquo; <em>Your own sections</em>.</p>
+  <p>Type a name and tap <strong>Add heading</strong>. Then tap the
+  <strong>&ldquo;&hellip; to fill in &rsaquo;&rdquo;</strong> button beside it to say what
+  goes under that heading. Each thing you add is one of five sorts:</p>
+  <ul>
+    <li><strong>A number</strong> &mdash; hours, litres, miles. You can give it a
+        unit, which is shown after the figure.</li>
+    <li><strong>A few words</strong> &mdash; one short line.</li>
+    <li><strong>A longer note</strong> &mdash; a proper paragraph.</li>
+    <li><strong>Yes or no</strong> &mdash; a tick box.</li>
+    <li><strong>Pick from a list</strong> &mdash; a drop-down. Type the choices into
+        the box underneath, separated by commas: <em>Good, Middling, Poor</em>.
+        Until you do, the drop-down has nothing in it to pick.</li>
+  </ul>
+  <p>Each one also says <strong>Carries over</strong> or <strong>One day only</strong>.
+  Carries over brings yesterday's answer onto a new day, the way the mooring does.
+  Good for a meter reading; less good for a one-off job.</p>
+  <p>Your headings join the list in <em>Sections to show</em>, so you can put them
+  in order among the built-in ones and switch them off the same way. Switching one
+  off keeps everything under it; removing one stops it being shown but leaves what
+  you wrote on past days in the database.</p>
+  <p>All of this is yours alone. Nobody else's log, headings or choices are visible
+  to you, and yours are not visible to them.</p>
+
+  <h4 id="h-diary">Diary</h4>
   <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
   number beside it is how many are due today or already overdue.</p>
   <p>Tapping a date opens a calendar showing the whole month, with the weekend
@@ -2768,7 +2915,7 @@ function openHelp(){
   <p>On an iPhone this only works once the app has been added to the home screen,
   and you must open it from that icon rather than in Safari.</p>
 
-  <h4>Sharing</h4>
+  <h4 id="h-sharing">Sharing</h4>
   <p>Everything you add is private to you until you share it. On a contact,
   scroll to <strong>Sharing</strong> and tick the person. If that contact is
   connected to others you have not shared, it offers those too.</p>
@@ -2778,7 +2925,7 @@ function openHelp(){
   <p>Someone you share with can edit the contact but cannot delete it, and they
   file it under their own groups, not yours.</p>
 
-  <h4>Settings</h4>
+  <h4 id="h-settings">Settings</h4>
   <p>Groups, relationship statuses, connection types and kinds of pet are all
   editable. Use the small arrows to reorder them &mdash; that order is what the
   grouped view follows.</p>
@@ -2788,7 +2935,7 @@ function openHelp(){
   <p>New sign-in accounts are the one thing not done here. They are created in
   the Supabase dashboard.</p>
 
-  <h4>If something looks wrong</h4>
+  <h4 id="h-trouble">If something looks wrong</h4>
   <ul>
     <li>Photos missing or showing as broken? The links they use expire after an
         hour. Menu &rsaquo; <strong>Photos not showing? Fetch them again</strong>
@@ -2809,6 +2956,10 @@ function openHelp(){
     catch(e){ toast('Select the link above and copy it'); }
   };
   $('help').classList.remove('hidden');
+  if(anchor) setTimeout(()=>{
+    const h=document.getElementById(anchor);
+    if(h) h.scrollIntoView({block:'start'});
+  },30);
   $('helpBody').scrollTop=0;lockBackground();
 }
 
@@ -2881,8 +3032,15 @@ function dueSoonCount(){
   return ITEMS.filter(it=>!it.done_at&&whenOf(it)&&new Date(whenOf(it))<=end).length;
 }
 function paintDue(){
-  const n=dueSoonCount(), dot=$('dueDot');
-  dot.textContent=n; dot.className=n?'on':'';
+  const dot=$('dueDot');
+  if(dot){ const n=dueSoonCount(); dot.textContent=n; dot.className=n?'on':''; }
+  if($('home') && !$('home').classList.contains('hidden')) renderHome();
+}
+// What a tile should shout about: things due, things still to buy.
+function tilePip(dest){
+  if(dest==='diary') return dueSoonCount();
+  if(dest==='shop')  return SHOP.filter(x=>!x.got).length;
+  return 0;
 }
 
 /* ---------- the diary list ---------- */
@@ -4974,7 +5132,6 @@ const TILE_DEST={
   wish:    {label:'Wishlist',   go:openWish},
   io:      {label:'Import & export', go:openIO},
   pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
-  help:    {label:'How to use', go:openHelp},
   settings:{label:'Settings',   go:openSettings}
 };
 
@@ -4982,9 +5139,9 @@ const TILE_DEST={
 const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
   '#4A4A48','#2E5E63','#5A4B2F','#6B3030','#3A4A3C','#55406B'];
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
-  shop:'#4A5340', where:'#3C4E6B', wish:'#5B3A52', settings:'#4A4A48',
-  help:'#2E5E63', io:'#5A4B2F', pick:'#6B3030'};
-const TILE_DEFAULTS=['contacts','log','diary','shop','where','wish','settings','help'];
+  shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
+  io:'#5A4B2F', pick:'#6B3030'};
+const TILE_DEFAULTS=['contacts','log','diary','shop','where','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -5001,8 +5158,8 @@ function shade(hex,amt){
 // Which screens wear a tile's colour. Clearing them first means a tile you
 // took off the home screen hands its screen back to the colour scheme.
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
-  shop:['shop'], where:['where'], wish:['wish'], io:['io'],
-  settings:['settings'], help:['help'], pick:['app']};
+  shop:['shop'], where:['where'], io:['io'],
+  settings:['settings'], pick:['app']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -5047,6 +5204,7 @@ function renderHome(){
         style="--tc:${esc(t.colour)};--td:${esc(shade(t.colour,.26))}">
         <span class="tmy">${MY_MARK}</span>
         <span class="tname">${esc(t.label)}</span>
+        ${tilePip(t.dest)?`<span class="pip">${tilePip(t.dest)}</span>`:''}
       </button>
       ${ARRANGING?`<button class="tgrab" data-tedit="${i}"
           aria-label="Rename or recolour ${esc(t.label)}">&#9998;</button>
@@ -5535,8 +5693,7 @@ $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBackground();};
 $('detEdit').onclick=()=>openEditor(CURRENT);
 $('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();};
-$('diaryBtn').onclick=openDiary;
-$('logBtn').onclick=openLog;
+
 $('logPrev').onclick=()=>stepDay(-1);
 $('logNext').onclick=()=>stepDay(1);
 $('logPick').onclick=openDayPick;
@@ -5584,6 +5741,28 @@ $('pwSave').onclick=async()=>{
   toast('Password changed');
 };
 $('homeBtn').onclick=showHome;
+$('trayWish').onclick=openWish;
+$('trayHelp').onclick=()=>openHelp();
+
+// The strip steps out of the way while you are typing into a form, and while
+// you are ticking contacts, where the bottom of the screen is already spoken for.
+function paintTray(){
+  const busy=['editor','logEd','itemEd'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
+  $('tray').style.display=(busy||PICKING)?'none':'';
+}
+// One handler for the refresh and settings buttons on every bar.
+document.addEventListener('click',async ev=>{
+  const r=ev.target.closest('[data-barref]');
+  if(r){
+    r.classList.add('spin');
+    await loadAll();
+    r.classList.remove('spin');
+    toast('Up to date');
+    return;
+  }
+  const g=ev.target.closest('[data-barset]');
+  if(g) openSettings(SET_AT[currentScreen()]);
+});
 $('homeArrange').onclick=()=>{
   ARRANGING=!ARRANGING;
   $('homeArrange').classList.toggle('on',ARRANGING);

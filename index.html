@@ -166,6 +166,10 @@ ul.list li.chosen{background:#FBE9E7}
   flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .tileadd span{font-size:30px;line-height:1}
 .homenote{color:var(--muted);font-size:15px;margin:16px 2px 0}
+.setrow.fieldrow{flex-wrap:wrap;align-items:center;
+  border-bottom:1px solid var(--rule);padding-bottom:12px}
+.setrow.fieldrow:last-of-type{border-bottom:none}
+.setrow.fieldrow select{flex:0 1 auto;min-width:0}
 .swatchgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px}
 .swatchgrid button{height:44px;border-radius:9px;border:2px solid transparent}
 .swatchgrid button[aria-pressed="true"]{border-color:var(--ink);
@@ -2031,6 +2035,167 @@ function logSectionRows(){
     }).join('')}`;
 }
 
+const FIELD_KINDS=[['number','A number'],['text','A few words'],
+  ['note','A longer note'],['yesno','Yes or no'],['choice','Pick from a list']];
+
+function catRows(){
+  if(!CATS_READY) return `<div class="field"><dd>
+    This part needs its database step first. In Supabase, open the SQL Editor
+    and run <strong>contacts-step29.sql</strong>, then come back here.</dd></div>`;
+  return `
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Headings of your own, with whatever you want to fill in under them.
+      They join the list above, so you can put them in order and switch them
+      off like the rest. Yours alone — nobody else sees them.</dd></div>
+    ${LOGCATS.map((c,i)=>`<div class="setrow">
+      <span style="display:flex;flex-direction:column;gap:2px">
+        <button class="mv" data-catmv="${c.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+        <button class="mv" data-catmv="${c.id}:down" ${i===LOGCATS.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+      </span>
+      <input data-catname="${c.id}" value="${esc(c.label)}">
+      <button class="addmore" data-catopen="${c.id}">${fieldsOf(c.id).length} to fill in &rsaquo;</button>
+      <button class="x" data-catdrop="${c.id}" aria-label="Remove">&times;</button>
+    </div>`).join('')}
+    <div class="setadd">
+      <input id="catNew" placeholder="New heading, e.g. Garden">
+      <button class="btn primary" id="catAdd">Add heading</button>
+    </div>`;
+}
+
+function wireCats(){
+  const box=$('setBody'); if(!box) return;
+  const add=$('catAdd');
+  if(add) add.onclick=async()=>{
+    const label=$('catNew').value.trim();
+    if(!label){ toast('Give it a name'); return; }
+    const {error}=await sb.from('log_cats').insert({created_by:ME.id, label,
+      sort_order:Math.max(100,...LOGCATS.map(c=>c.sort_order))+1});
+    if(error){ toast(catErr(error)); console.error(error); return; }
+    await loadLog(); openSettings();
+  };
+  box.querySelectorAll('[data-catname]').forEach(inp=>inp.onchange=async()=>{
+    const v=inp.value.trim(); if(!v) return;
+    const {error}=await sb.from('log_cats').update({label:v}).eq('id',inp.dataset.catname);
+    if(error){ toast('Could not rename it'); return; }
+    await loadLog();
+  });
+  box.querySelectorAll('[data-catdrop]').forEach(b=>b.onclick=async()=>{
+    const id=Number(b.dataset.catdrop);
+    const c=LOGCATS.find(x=>x.id===id); if(!c) return;
+    const n=fieldsOf(id).length;
+    if(!confirm('Remove the heading "'+c.label+'"'
+      +(n?' and the '+n+' thing'+(n===1?'':'s')+' under it':'')
+      +'?\n\nWhat you have already written on past days stays in the database '
+      +'but stops being shown.')) return;
+    const {error}=await sb.from('log_cats').delete().eq('id',id);
+    if(error){ toast('Could not remove it'); return; }
+    await loadLog(); openSettings();
+  });
+  box.querySelectorAll('[data-catmv]').forEach(b=>b.onclick=async()=>{
+    const [id,dir]=b.dataset.catmv.split(':');
+    const i=LOGCATS.findIndex(c=>c.id===Number(id)), j=dir==='up'?i-1:i+1;
+    if(i<0||j<0||j>=LOGCATS.length) return;
+    const a=LOGCATS[i], c=LOGCATS[j];
+    await Promise.all([
+      sb.from('log_cats').update({sort_order:c.sort_order}).eq('id',a.id),
+      sb.from('log_cats').update({sort_order:a.sort_order}).eq('id',c.id)]);
+    await loadLog(); openSettings();
+  });
+  box.querySelectorAll('[data-catopen]').forEach(b=>b.onclick=()=>
+    editFields(Number(b.dataset.catopen)));
+}
+const catErr = e => /duplicate|unique/i.test(e.message||'')
+  ? 'You already have one called that' : 'Could not add it';
+
+function editFields(catId){
+  const cat=LOGCATS.find(c=>c.id===catId); if(!cat) return;
+  const box=document.createElement('div');
+  box.className='daypick';
+  const draw=()=>{
+    const list=fieldsOf(catId);
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">${esc(cat.label)} — what to fill in</p>
+      <div style="max-height:52vh;overflow-y:auto">
+      ${list.length?list.map((f,i)=>`<div class="setrow fieldrow">
+        <span style="display:flex;flex-direction:column;gap:2px">
+          <button class="mv" data-fmv="${f.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+          <button class="mv" data-fmv="${f.id}:down" ${i===list.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+        </span>
+        <input data-flabel="${f.id}" value="${esc(f.label)}" style="flex:1 1 120px">
+        <select data-fkind="${f.id}">${FIELD_KINDS.map(([k,l])=>
+          `<option value="${k}" ${k===f.kind?'selected':''}>${l}</option>`).join('')}</select>
+        <button class="x" data-fdrop="${f.id}" aria-label="Remove">&times;</button>
+        ${f.kind==='number'?`<input data-funit="${f.id}" value="${esc(f.unit||'')}"
+          placeholder="Unit, e.g. litres" style="flex:1 1 110px">`:''}
+        ${f.kind==='choice'?`<input data-fchoices="${f.id}"
+          value="${esc(arr(f.choices).join(', '))}"
+          placeholder="Choices, separated by commas" style="flex:1 1 100%">`:''}
+        <button class="tg" data-fcarry="${f.id}" aria-pressed="${f.carry}"
+          >${f.carry?'Carries over':'One day only'}</button>
+      </div>`).join('')
+      :'<div class="field"><dd>Nothing under this heading yet.</dd></div>'}
+      </div>
+      <div class="setadd">
+        <input id="fNew" placeholder="New thing to fill in">
+        <select id="fNewKind">${FIELD_KINDS.map(([k,l])=>
+          `<option value="${k}">${l}</option>`).join('')}</select>
+        <button class="btn primary" id="fAdd">Add it</button>
+      </div>
+      <div class="pfoot"><button id="fDone" class="go">Done</button></div>`;
+    wire();
+  };
+  const refresh=async()=>{ await loadLog(); draw(); };
+  const wire=()=>{
+    box.querySelector('#fDone').onclick=()=>{ box.remove(); openSettings(); };
+    box.querySelector('#fAdd').onclick=async()=>{
+      const label=box.querySelector('#fNew').value.trim();
+      if(!label){ toast('Give it a name'); return; }
+      const {error}=await sb.from('log_fields').insert({created_by:ME.id, cat_id:catId,
+        label, kind:box.querySelector('#fNewKind').value,
+        sort_order:Math.max(100,...fieldsOf(catId).map(f=>f.sort_order))+1});
+      if(error){ toast('Could not add it'); console.error(error); return; }
+      await refresh();
+    };
+    const save=async(id,patch)=>{
+      const {error}=await sb.from('log_fields').update(patch).eq('id',id);
+      if(error){ toast('Could not save that'); return; }
+      await refresh();
+    };
+    box.querySelectorAll('[data-flabel]').forEach(i=>i.onchange=()=>{
+      if(i.value.trim()) save(i.dataset.flabel,{label:i.value.trim()}); });
+    box.querySelectorAll('[data-fkind]').forEach(i=>i.onchange=()=>
+      save(i.dataset.fkind,{kind:i.value}));
+    box.querySelectorAll('[data-funit]').forEach(i=>i.onchange=()=>
+      save(i.dataset.funit,{unit:i.value.trim()||null}));
+    box.querySelectorAll('[data-fchoices]').forEach(i=>i.onchange=()=>
+      save(i.dataset.fchoices,
+        {choices:i.value.split(',').map(x=>x.trim()).filter(Boolean)}));
+    box.querySelectorAll('[data-fcarry]').forEach(b=>b.onclick=()=>{
+      const f=LOGFIELDS.find(x=>String(x.id)===b.dataset.fcarry);
+      if(f) save(f.id,{carry:!f.carry});
+    });
+    box.querySelectorAll('[data-fdrop]').forEach(b=>b.onclick=async()=>{
+      const f=LOGFIELDS.find(x=>String(x.id)===b.dataset.fdrop);
+      if(!f||!confirm('Remove "'+f.label+'"?')) return;
+      const {error}=await sb.from('log_fields').delete().eq('id',f.id);
+      if(error){ toast('Could not remove it'); return; }
+      await refresh();
+    });
+    box.querySelectorAll('[data-fmv]').forEach(b=>b.onclick=async()=>{
+      const [id,dir]=b.dataset.fmv.split(':');
+      const list=fieldsOf(catId);
+      const i=list.findIndex(f=>String(f.id)===id), j=dir==='up'?i-1:i+1;
+      if(i<0||j<0||j>=list.length) return;
+      await Promise.all([
+        sb.from('log_fields').update({sort_order:list[j].sort_order}).eq('id',list[i].id),
+        sb.from('log_fields').update({sort_order:list[i].sort_order}).eq('id',list[j].id)]);
+      await refresh();
+    });
+  };
+  document.body.appendChild(box);
+  draw();
+}
+
 function optionRows(kind,one){
   const list=LOGOPTS.filter(o=>o.kind===kind);
   return `${list.length?list.map((r,i)=>`<div class="setrow">
@@ -2061,21 +2226,21 @@ let SET_OPEN={};
 try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
-  'who_aboard','medication','bike_ride','alcohol','mecontact','shareall',
-  'hometiles','people'];
+  'logcats','who_aboard','medication','bike_ride','alcohol','mecontact',
+  'shareall','hometiles','people'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
   alcohol:'Alcohol — choices',mecontact:'Which contact is you?',
-  shareall:'Share everything',hometiles:'The tiles',
+  logcats:'Your own sections',shareall:'Share everything',hometiles:'The tiles',
   people:'People who can sign in'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
   {label:'Contacts',   cards:['groups','statuses','link_kinds','pet_types',
                               'mecontact','shareall']},
-  {label:'Daily Log',  cards:['logsections','who_aboard','medication',
+  {label:'Daily Log',  cards:['logsections','logcats','who_aboard','medication',
                               'bike_ride','alcohol']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
@@ -2196,6 +2361,7 @@ async function openSettings(){
     link_kinds: rows('link_kinds','type',KINDS,['name','inverse_name'],
       'Each type has an opposite. Store "Parent of" once and the other record shows "Child of".'),
     logsections: logSectionRows(),
+    logcats: catRows(),
     who_aboard: optionRows('who_aboard','choice'),
     medication: optionRows('medication','medicine'),
     bike_ride:  optionRows('bike_ride','choice'),
@@ -2327,6 +2493,7 @@ async function openSettings(){
   const mc=$('meContact');
   if(mc) mc.onclick=()=>setWho('my_contact_id','Which contact is you?',
     MY_PROFILE&&MY_PROFILE.my_contact_id);
+  wireCats();
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
     const [t,id,dir]=b.dataset.mv.split(':');
     if(t==='groups'){
@@ -3663,6 +3830,7 @@ async function pushCard(){
    The daily log
    ============================================================ */
 let LOGDAYS=[], LOG_DATE=null, LOGOPTS=[];
+let LOGCATS=[], LOGFIELDS=[], CATS_READY=true;
 const optsFor = kind => LOGOPTS.filter(o=>o.kind===kind).map(o=>o.name);
 
 const LOG_FIELDS_NUM=['am_sys','am_dia','am_pulse','noon_sys','noon_dia','noon_pulse',
@@ -3686,13 +3854,28 @@ const dayLabel = iso => {
 };
 
 async function loadLog(){
-  const [lg,op]=await Promise.all([
+  const [lg,op,ct,fl]=await Promise.all([
     sb.from('log_days').select('*').order('on_date',{ascending:false}).limit(600),
-    sb.from('log_options').select('*').order('sort_order')
+    sb.from('log_options').select('*').order('sort_order'),
+    sb.from('log_cats').select('*').order('sort_order'),
+    sb.from('log_fields').select('*').order('sort_order')
   ]);
   if(lg.error){ console.error('log',lg.error); toast('Log unavailable'); return; }
   LOGDAYS=lg.data||[]; LOGOPTS=op.data||[];
+  // Missing tables just mean step 29 has not been run yet. Carry on without.
+  CATS_READY = !ct.error;
+  LOGCATS=ct.error?[]:(ct.data||[]);
+  LOGFIELDS=fl.error?[]:(fl.data||[]);
 }
+
+// Your own headings sit in the same list as the built-in ones, so they take
+// their turn in the order and can be switched off the same way.
+const catSecId = c => 'c'+c.id;
+function allSections(){
+  return LOG_SECTIONS.concat(
+    LOGCATS.map(c=>({id:catSecId(c), label:c.label, cat:c})));
+}
+const fieldsOf = catId => LOGFIELDS.filter(f=>f.cat_id===catId);
 
 // Carries yesterday's position and engine hours forward, as they rarely change
 // overnight and retyping them every day would be a chore.
@@ -3742,15 +3925,16 @@ const LOG_SECTIONS=[
 ];
 
 function mySections(){
+  const all=allSections();
   const saved=MY_PROFILE&&MY_PROFILE.log_sections;
   if(!Array.isArray(saved)||!saved.length)
-    return LOG_SECTIONS.map(s=>({id:s.id,on:true}));
-  const known=LOG_SECTIONS.map(s=>s.id);
+    return all.map(s=>({id:s.id,on:true}));
+  const known=all.map(s=>s.id);
   const out=saved.filter(x=>known.includes(x.id));
   known.forEach(id=>{ if(!out.some(x=>x.id===id)) out.push({id,on:true}); });
   return out;
 }
-const secDef = id => LOG_SECTIONS.find(s=>s.id===id);
+const secDef = id => allSections().find(s=>s.id===id);
 
 let LOG_OPEN={};
 try{ LOG_OPEN=JSON.parse(localStorage.getItem('logopen')||'{}'); }catch(e){}
@@ -3831,6 +4015,18 @@ function renderLog(){
       +R('Chores',e.regular_chores)+R('Drinks',e.drinks)+R('Alcohol',e.alcohol)
       +R('Out at',e.pub_cafe)+R('Visited',e.attractions)
   };
+
+  const exShow=(e.extra&&typeof e.extra==='object')?e.extra:{};
+  LOGCATS.forEach(c=>{
+    content[catSecId(c)] = fieldsOf(c.id).map(fd=>{
+      const v=exShow[fd.id];
+      if(v===undefined||v===null||v===''||v===false) return '';
+      const shown = fd.kind==='yesno' ? 'Yes'
+        : fd.kind==='note' ? esc(String(v)).replace(/\n/g,'<br>')
+        : esc(String(v)+(fd.unit?' '+fd.unit:''));
+      return `<div class="field"><dt>${esc(fd.label)}</dt><dd>${shown}</dd></div>`;
+    }).join('');
+  });
 
   let html='';
   mySections().forEach(pref=>{
@@ -4053,6 +4249,28 @@ function editLog(iso){
   };
 
   // Same order as Settings, and nothing you have switched off
+  LOGCATS.forEach(c=>{
+    const fs=fieldsOf(c.id);
+    panes[catSecId(c)] = `<fieldset><legend>${esc(c.label)}</legend>`
+      + (fs.length ? fs.map(fd=>{
+          const k=fd.kind, id=fd.id;
+          if(k==='yesno') return `<div class="checks"><label>
+            <input type="checkbox" data-xf="${id}"> ${esc(fd.label)}</label></div>`;
+          if(k==='note') return `<label>${esc(fd.label)}
+            <textarea data-xf="${id}" rows="3"></textarea></label>`;
+          if(k==='choice') return `<label>${esc(fd.label)}
+            <select data-xf="${id}"><option value=""></option>
+            ${arr(fd.choices).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+            </select></label>`;
+          if(k==='number') return `<label>${esc(fd.label)}${fd.unit?' ('+esc(fd.unit)+')':''}
+            <input data-xf="${id}" type="number" inputmode="decimal"></label>`;
+          return `<label>${esc(fd.label)}<input data-xf="${id}"></label>`;
+        }).join('')
+        : `<p class="coords">Nothing under this heading yet. Settings &rsaquo;
+           Daily Log &rsaquo; Your own sections.</p>`)
+      + `</fieldset>`;
+  });
+
   const wanted=mySections().filter(x=>x.on && panes[x.id]).map(x=>panes[x.id]);
   const half=Math.ceil(wanted.length/2);
 
@@ -4069,6 +4287,16 @@ function editLog(iso){
     if(f.elements[k]) f.elements[k].value = e[k]??'';
   });
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) f.elements[k].checked=!!e[k]; });
+
+  const exNow=(e.extra&&typeof e.extra==='object')?e.extra:{};
+  const exPrev=(prev.extra&&typeof prev.extra==='object')?prev.extra:{};
+  f.querySelectorAll('[data-xf]').forEach(el=>{
+    const fd=LOGFIELDS.find(x=>String(x.id)===el.dataset.xf); if(!fd) return;
+    let v=exNow[el.dataset.xf];
+    if((v===undefined||v===null||v==='') && fd.carry) v=exPrev[el.dataset.xf];
+    if(fd.kind==='yesno') el.checked=!!v;
+    else el.value=(v===undefined||v===null)?'':v;
+  });
 
   LOGDRAFT={
     blat:e.boat_lat??prev.boat_lat??null, blng:e.boat_lng??prev.boat_lng??null,
@@ -4235,6 +4463,24 @@ async function saveLog(iso){
   // A field that is not on the form belongs to a section you have turned off.
   // Leave whatever is stored alone rather than clearing it.
   LOG_FIELDS_BOOL.forEach(k=>{ if(f.elements[k]) d[k]=f.elements[k].checked; });
+
+  // Start from what is stored, so a heading you have switched off keeps
+  // whatever it already holds.
+  if(f.querySelector('[data-xf]')){
+    const was=logEntry(iso), extra={...((was&&was.extra)||{})};
+    f.querySelectorAll('[data-xf]').forEach(el=>{
+      const key=el.dataset.xf;
+      const fd=LOGFIELDS.find(x=>String(x.id)===key); if(!fd) return;
+      if(fd.kind==='yesno'){
+        if(el.checked) extra[key]=true; else delete extra[key];
+        return;
+      }
+      const v=el.value.trim();
+      if(v===''){ delete extra[key]; return; }
+      extra[key] = fd.kind==='number' ? Number(v) : v;
+    });
+    d.extra=extra;
+  }
   if(LOGDRAFT.blat!=null){ d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng; }
   if(document.getElementById('placeList')){
     d.places=LOGDRAFT.places

@@ -265,6 +265,15 @@ details#dtFormer .multi{padding:0 12px 12px}
   border:2px solid var(--rule);background:#EDEFEA}
 .avatar.ph{display:flex;align-items:center;justify-content:center;
   font-size:27px;font-weight:700;color:var(--hull)}
+/* The day's main picture, across the top of Where */
+.hero{margin:0;padding:0 0 4px}
+.hero img{display:block;width:100%;max-height:46vh;object-fit:cover;cursor:pointer;
+  border-radius:0}
+.gallery .mk1{position:absolute;top:2px;left:2px;background:rgba(16,35,28,.72);color:#fff;
+  width:26px;height:26px;border-radius:50%;font-size:15px;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+.gallery .mainpip{position:absolute;top:2px;left:2px;background:var(--brass);color:#fff;
+  border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.04em}
 .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;padding:12px 14px}
 .gallery figure{margin:0;position:relative}
 .gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;
@@ -1135,7 +1144,9 @@ async function refreshPhotos(){
     arr(c.photos).forEach(p=>{ if(p.path) all.push(p.path); });
   });
   await signPaths(all,true);
+  await signLogPhotos(true);
   render();
+  if(!$('log').classList.contains('hidden')) renderLog();
   if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
   toast('Photos refreshed');
 }
@@ -3992,7 +4003,7 @@ async function pushCard(){
    The daily log
    ============================================================ */
 let LOGDAYS=[], LOG_DATE=null, LOGOPTS=[];
-let LOGCATS=[], LOGFIELDS=[], CATS_READY=true;
+let LOGCATS=[], LOGFIELDS=[], CATS_READY=true, PHOTOS_READY=true;
 const optsFor = kind => LOGOPTS.filter(o=>o.kind===kind).map(o=>o.name);
 
 const LOG_FIELDS_NUM=['am_sys','am_dia','am_pulse','noon_sys','noon_dia','noon_pulse',
@@ -4028,6 +4039,9 @@ async function loadLog(){
   CATS_READY = !ct.error;
   LOGCATS=ct.error?[]:(ct.data||[]);
   LOGFIELDS=fl.error?[]:(fl.data||[]);
+  // If step 30 has not been run the column simply is not there.
+  PHOTOS_READY = LOGDAYS.length ? ('photos' in LOGDAYS[0]) : true;
+  await signLogPhotos();
 }
 
 // Your own headings sit in the same list as the built-in ones, so they take
@@ -4074,6 +4088,67 @@ function stayRun(iso){
   return {from:first, days:dayGap(first,iso)+1};
 }
 
+/* ---------- pictures of the day ---------- */
+// Same bucket as the contacts use, but under a folder of your own, so the
+// storage rules can keep your log's pictures as private as the log itself.
+function logShots(iso){
+  const e=logEntry(iso);
+  return e?arr(e.photos):[];
+}
+async function signLogPhotos(force){
+  await signPaths(LOGDAYS.flatMap(d=>arr(d.photos).map(p=>p.path)).filter(Boolean),force);
+}
+async function saveLogPhotos(iso, list){
+  const {error}=await sb.from('log_days').update({photos:list})
+    .eq('created_by',ME.id).eq('on_date',iso);
+  if(error){ toast('Could not save the photos'); console.error(error); return false; }
+  return true;
+}
+async function addLogPhotos(files){
+  if(!files||!files.length) return;
+  const iso=LOG_DATE;
+  if(!logEntry(iso)){ toast('Start the day first'); return; }
+  const many=files.length>1;
+  const added=[];
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    if(!/^image\//.test(f.type)) continue;
+    toast(many?('Adding photo '+(i+1)+' of '+files.length):'Adding the photo\u2026');
+    try{
+      const blob=await shrink(f,1400);
+      const path=`log/${ME.id}/${crypto.randomUUID()}.jpg`;
+      const {error}=await sb.storage.from('photos')
+        .upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(error){ toast('Could not upload it'); console.error(error); continue; }
+      added.push({path});
+    }catch(err){ console.error(err); toast('Could not read that image'); }
+  }
+  if(!added.length) return;
+  const list=[...logShots(iso),...added];
+  if(!await saveLogPhotos(iso,list)) return;
+  await loadLog(); await signLogPhotos();
+  renderLog();
+  toast(added.length>1?added.length+' photos added':'Photo added');
+}
+async function removeLogPhoto(path){
+  if(!confirm('Remove this photo?')) return;
+  const iso=LOG_DATE;
+  await sb.storage.from('photos').remove([path]);
+  const list=logShots(iso).filter(p=>p.path!==path);
+  if(!await saveLogPhotos(iso,list)) return;
+  delete SIGNED[path];
+  await loadLog(); renderLog(); toast('Photo removed');
+}
+async function featureLogPhoto(path){
+  const iso=LOG_DATE;
+  const list=logShots(iso);
+  const i=list.findIndex(p=>p.path===path);
+  if(i<1) return;                       // already the main one, or not here
+  const moved=[list[i],...list.filter((_,n)=>n!==i)];
+  if(!await saveLogPhotos(iso,moved)) return;
+  await loadLog(); renderLog(); toast('That is now the main photo');
+}
+
 // Carries yesterday's position and engine hours forward, as they rarely change
 // overnight and retyping them every day would be a chore.
 function carriedFrom(beforeIso){
@@ -4118,6 +4193,7 @@ const LOG_SECTIONS=[
   {id:'activity',   label:'Activity'},
   {id:'boat',       label:'Boat and services'},
   {id:'aboard',     label:"Who's Aboard"},
+  {id:'photos',     label:'Photos'},
   {id:'day',        label:'The day',    fixed:true}
 ];
 
@@ -4178,7 +4254,10 @@ function renderLog(){
           ${p.where?esc(p.where)+'<br>':''}<span style="font-weight:400;color:var(--muted)">
           ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)} &rsaquo;</span></button></dd></div>`;
       const run=stayRun(LOG_DATE);
-      return R(esc(e.stay_label||'Stayed'),esc(e.boat_address))
+      const hero=arr(e.photos).find(p=>SIGNED[p.path]);
+      return (hero?`<div class="hero"><img src="${esc(SIGNED[hero.path])}" alt=""
+          data-big="${esc(hero.path)}" loading="lazy"></div>`:'')
+        + R(esc(e.stay_label||'Stayed'),esc(e.boat_address))
         + (run ? R('Days here', run.days+(run.days>1
             ? ' \u2014 since '+dayLabel(run.from) : '')) : '')
         + R('Canal',esc(e.current_canal)) + R('Journey',esc(e.journey))
@@ -4216,6 +4295,27 @@ function renderLog(){
           + R('Nights aboard since', t.nights ? t.nights+' ('+t.days+' day'
               +(t.days===1?'':'s')+')' : '')
         : R('Last pumped out','Not recorded yet'); })(),
+    photos: (()=>{
+      if(!PHOTOS_READY) return `<div class="field"><dd>
+        This part needs its database step first. In Supabase, open the SQL Editor
+        and run <strong>contacts-step30.sql</strong>, then come back here.</dd></div>`;
+      const shots=arr(e.photos).filter(p=>SIGNED[p.path]);
+      return (shots.length
+        ? `<div class="gallery">${shots.map((p,i)=>`<figure>
+            <img src="${esc(SIGNED[p.path])}" alt="" data-big="${esc(p.path)}" loading="lazy">
+            ${i===0?'<span class="mainpip">Main</span>'
+                   :`<button class="mk1" data-mainphoto="${esc(p.path)}"
+                      aria-label="Make this the main photo" title="Make this the main photo"
+                      >&#9733;</button>`}
+            <button class="rm" data-rmlogphoto="${esc(p.path)}" aria-label="Remove photo">&times;</button>
+          </figure>`).join('')}</div>`
+        : `<div class="field"><dd style="color:var(--muted);font-size:15px">
+            No photos for this day yet.</dd></div>`)
+        + `<div class="photobar">
+            <label>+ Add photos<input type="file" accept="image/*" multiple id="logAddPhoto"></label>
+            ${shots.length>1?'<span class="coords">The first one is the big one at the top of Where. Tap &#9733; to change it.</span>':''}
+           </div>`;
+    })(),
     day: (e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:'')
       +R('Chores',e.regular_chores)+R('Drinks',e.drinks)+R('Alcohol',e.alcohol)
       +R('Out at',e.pub_cafe)+R('Visited',e.attractions)
@@ -4258,6 +4358,14 @@ function renderLog(){
   if(bt) bt.onclick=async()=>{ LOG_DATE=await ensureToday(); killMaps(); renderLog(); };
   $('logBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(','); openInMaps(la,ln); });
+  $('logBody').querySelectorAll('[data-big]').forEach(img=>
+    img.onclick=()=>lightbox(SIGNED[img.dataset.big]));
+  $('logBody').querySelectorAll('[data-rmlogphoto]').forEach(b=>
+    b.onclick=ev=>{ ev.stopPropagation(); removeLogPhoto(b.dataset.rmlogphoto); });
+  $('logBody').querySelectorAll('[data-mainphoto]').forEach(b=>
+    b.onclick=ev=>{ ev.stopPropagation(); featureLogPhoto(b.dataset.mainphoto); });
+  const ap=$('logAddPhoto');
+  if(ap) ap.onchange=()=>{ const f=[...ap.files]; ap.value=''; addLogPhotos(f); };
   $('logBody').querySelectorAll('[data-sec]').forEach(d=>d.ontoggle=()=>{
     LOG_OPEN[d.dataset.sec]=d.open; rememberOpen(); });
 

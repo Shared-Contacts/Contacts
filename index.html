@@ -573,6 +573,72 @@ i.key{vertical-align:middle}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));
   background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;z-index:60;
   font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3)}
+/* ---------- Finances ---------- */
+/* Room at the bottom so the last row can be scrolled clear of the + button. */
+#moneyBody{padding-bottom:84px}
+
+.acct{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;
+  text-align:left;border-bottom:1px solid #F0EEE7}
+.card .acct:last-of-type{border-bottom:none}
+.acct.on{background:#F4F2EB}
+.acct .an{flex:1;min-width:0}
+.acct .an b{display:block;font-size:16px}
+.acct .an span{display:block;color:var(--muted);font-size:14px}
+.acct .ab{font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;
+  white-space:nowrap;text-align:right}
+.acct .ab.neg{color:var(--red)}
+
+.txn{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;width:100%;
+  text-align:left;border-bottom:1px solid #F0EEE7}
+.card .txn:last-of-type{border-bottom:none}
+.txn .td{flex:0 0 54px;color:var(--muted);font-size:14px;padding-top:2px}
+.txn .tn{flex:1;min-width:0}
+.txn .tn b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.txn .tn span{display:block;color:var(--muted);font-size:14px}
+.txn .ta{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;
+  text-align:right;padding-top:1px}
+.txn .ta.neg{color:var(--red)}
+.txn .rec{color:var(--hull);font-style:normal;margin-left:5px}
+.txn.dup{opacity:.5}
+.txn .tick{flex:0 0 auto;width:24px;height:24px;border-radius:50%;margin-top:1px;
+  border:2px solid var(--rule);background:#fff;display:flex;align-items:center;
+  justify-content:center;font-size:14px;color:transparent}
+.txn .tick.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+.txn.rec.on{background:#F4F2EB}
+
+/* The item lines on a transaction */
+.lhead,.lrow{display:grid;grid-template-columns:1fr 1fr 48px 82px 26px;gap:6px;
+  align-items:center;padding:7px 14px}
+.lhead{color:var(--muted);font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+  background:#F4F2EB;border-bottom:1px solid var(--rule);padding:8px 14px}
+.lrow{border-bottom:1px solid #F0EEE7}
+.lrow:last-child{border-bottom:none}
+.lrow input,.lrow select{min-width:0;width:100%;padding:9px 8px;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff;
+  font:inherit;font-size:15px}
+.lrow input[data-lq],.lrow input[data-la]{text-align:right;font-variant-numeric:tabular-nums}
+.lrow .x{color:var(--red);font-size:21px;padding:0}
+.lrow .x:disabled{opacity:.25}
+/* Wide enough for the headings, so the boxes sit straight in the grid. */
+.ll{display:contents}
+.ll>span{display:none}
+@media (max-width:460px){
+  .lhead{display:none}
+  .lrow{grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 14px}
+  .lrow>[data-ld],.lrow>[data-lc]{grid-column:1 / -1}
+  /* Each number gets its own caption once the headings have gone. */
+  .ll{display:flex;flex-direction:column;gap:3px}
+  .ll>span{display:block;font-size:12px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--muted)}
+  .lrow .x{grid-column:1 / -1;justify-self:end;margin-top:-4px}
+}
+
+/* The reconcile tally. Green only once it actually balances. */
+.recsum .field dt{flex:1;color:var(--muted)}
+.recsum .field dd{flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums}
+.recsum.ok{border-color:#1D4A3A;box-shadow:0 0 0 1px #1D4A3A inset}
+.recsum.ok .field:last-child dd{color:#1D4A3A}
 </style>
 </head>
 <body>
@@ -764,6 +830,31 @@ i.key{vertical-align:middle}
   <div id="offBar" class="pickbar hidden"></div>
 </div>
 
+<div id="money" class="sheet hidden">
+  <div class="sheetbar"><button id="moneyBack">Back</button>
+    <span class="title">Finances</span><span class="bartools"><button class="bt" data-barhelp="money" aria-label="How the cashbook works" title="How the cashbook works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="moneyBody"></div>
+  <button class="fab sheetfab" id="moneyAdd" aria-label="Add a transaction">+</button>
+</div>
+
+<div id="moneyEd" class="sheet hidden">
+  <div class="sheetbar"><button id="moneyEdCancel">Cancel</button>
+    <span class="title" id="moneyEdTitle">Transaction</span><button id="moneyEdSave">Save</button></div>
+  <div class="sheetbody" id="moneyEdBody"></div>
+</div>
+
+<div id="recon" class="sheet hidden">
+  <div class="sheetbar"><button id="reconBack">Back</button>
+    <span class="title">Reconcile</span><span class="bartools"><button class="bt" data-barhelp="recon" aria-label="How reconciling works" title="How reconciling works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
+  <div class="sheetbody" id="reconBody"></div>
+</div>
+
+<div id="moneyImp" class="sheet hidden">
+  <div class="sheetbar"><button id="impBack">Back</button>
+    <span class="title">From the bank</span><span class="bartools"><button class="bt" data-barhelp="import" aria-label="How importing works" title="How importing works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
+  <div class="sheetbody" id="impBody"></div>
+</div>
+
 <div id="tray">
   <button id="trayWish">Wishlist</button>
   <button id="trayHelp">Help</button>
@@ -832,7 +923,8 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers','chats','chat']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers','chats','chat',
+          'money','moneyEd','recon','moneyImp']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -914,6 +1006,13 @@ async function loadAll(){
   OFFERS = of.error ? [] : (of.data||[]);
   OFFERS_READY = !of.error;
   await loadChats(); await loadMsgs();
+  // The refresh button on the Finances screen goes through here, so the books
+  // come with it — but only once they are actually in use, so nobody outside
+  // them pays for a query that will come back empty.
+  if(typeof loadMoney==='function' && (MONEY_ON || !MONEY_WHY)){
+    await loadMoney();
+    if(!$('money').classList.contains('hidden')) renderMoney();
+  }
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
   const rt=await sb.from('routines').select('*').order('sort_order');
@@ -2524,14 +2623,17 @@ try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','who_aboard','medication','bike_ride','alcohol','mecontact',
-  'shareall','hometiles','people'];
+  'shareall','hometiles','people',
+  'accounts','fincats','finpayees','finpeople'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
   alcohol:'Alcohol — choices',mecontact:'Which contact is you?',
   logcats:'Your own sections',shareall:'Hand over what you have shared',hometiles:'The tiles',
-  people:'People who can sign in'};
+  people:'People who can sign in',
+  accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
+  finpeople:'Who can see the books'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
@@ -2539,6 +2641,7 @@ const SET_GROUPS=[
                               'mecontact','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','who_aboard','medication',
                               'bike_ride','alcohol']},
+  {label:'Finances',   cards:['accounts','fincats','finpayees','finpeople']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
 ];
@@ -2628,6 +2731,7 @@ function pickContact(title, currentId){
 
 async function openSettings(goTo){
   if(!LOGOPTS.length) await loadLog();
+  if(!CURRENCIES.length && MONEY_WHY!=='notset') await loadMoney();
   if(!HANDOVER) await loadHandover();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
@@ -2658,6 +2762,10 @@ async function openSettings(goTo){
     pet_types: rows('pet_types','kind',PETS,['name']),
     link_kinds: rows('link_kinds','type',KINDS,['name','inverse_name'],
       'Each type has an opposite. Store "Parent of" once and the other record shows "Child of".'),
+    accounts:   finAccountRows(),
+    fincats:    finCatRows(),
+    finpayees:  finPayeeRows(),
+    finpeople:  finPeopleRows(),
     logsections: logSectionRows(),
     logcats: catRows(),
     who_aboard: optionRows('who_aboard','choice'),
@@ -2793,6 +2901,7 @@ async function openSettings(goTo){
   if(mc) mc.onclick=()=>setWho('my_contact_id','Which contact is you?',
     MY_PROFILE&&MY_PROFILE.my_contact_id);
   wireCats();
+  wireFinance();
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
     b.onclick=()=>doHandover(b.dataset.handover));
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
@@ -2834,6 +2943,7 @@ async function openSettings(goTo){
 
 // Which screen is in front, so Help and the settings button know where you are.
 const SCREEN_ORDER=[['chat','chats'],['chats','chats'],
+  ['moneyImp','money'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
@@ -2844,9 +2954,11 @@ function currentScreen(){
 }
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
-  menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages'};
+  menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
+  money:'h-money', recon:'h-recon', import:'h-import'};
 // Which settings heading belongs to which screen.
-const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen'};
+const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
+  money:'Finances'};
 
 function openHelp(where){
   const anchor = HELP_AT[where===undefined?currentScreen():where] || '';
@@ -2865,6 +2977,59 @@ function openHelp(where){
   square at the end. Each screen takes its tile's colour, so changing a tile
   changes the bar at the top of that screen too. Your arrangement is yours alone.</p>
   <p>The circular arrow fetches the latest from the server.</p>
+
+  <h4 id="h-money">Finances</h4>
+  <p>A cashbook. A <strong>transaction</strong> is the whole event &mdash; a shop
+  visit, a direct debit, a payment in &mdash; and the <strong>lines</strong>
+  beneath it are what the money was actually for, so one trip to the supermarket
+  can split across groceries, coal and a bottle of wine.</p>
+  <p>You never type a minus sign. Choose <strong>Expense</strong>,
+  <strong>Income</strong>, <strong>Refund</strong> or <strong>Transfer</strong> and
+  the app works out which way the money went. Every balance you see is the
+  account's opening balance plus everything recorded since, which is why the
+  opening balance is worth getting right when you set an account up.</p>
+  <p>A <strong>transfer</strong> is recorded as two halves, one leaving and one
+  arriving. They can sit on different dates, and on different statements, because
+  that is what really happens when money moves between banks. If the two accounts
+  are in different currencies you put in what actually arrived rather than working
+  out a rate.</p>
+  <p>Tap an account to see just that one; tap <strong>Everything</strong> to see
+  the lot. Accounts in different currencies are totalled separately, because
+  adding pounds to dollars would be a lie.</p>
+  <p>The whole of Finances is shared with whoever is ticked under
+  <strong>Settings &rsaquo; Finances &rsaquo; Who can see the books</strong>.
+  Everyone else using the app sees none of it and cannot tell it is there.</p>
+
+  <h4 id="h-recon">Reconciling a statement</h4>
+  <p>Ticking things off proves nothing on its own. What catches a missing
+  transaction is the closing balance.</p>
+  <p>Start a statement by putting in its <strong>end date</strong> and its
+  <strong>closing balance</strong>, copied straight off the paper or the screen
+  &mdash; including the minus if it is a credit card. Then tick off everything
+  that appears on it. The panel at the top counts down to zero: when it says
+  <strong>Balanced</strong>, your books and the bank agree.</p>
+  <p><strong>Finish and lock</strong> seals it. Nothing reconciled against a
+  locked statement can be altered afterwards, which is the point &mdash; it stops
+  a tidy-up six months later quietly breaking a balance you already proved. You
+  can always unlock it again if you need to put something right.</p>
+  <p>If the difference will not go to zero, something is missing, duplicated or
+  typed wrong. Work through the statement line by line against the list.</p>
+
+  <h4 id="h-import">Bringing in a bank file</h4>
+  <p>Every bank will let you download your transactions as a <strong>CSV</strong>
+  file. Choose the account, pick the file, and tell the app once which column is
+  the date, which is the description and which is the amount. Some banks use one
+  amount column with minus signs; others use separate <em>money in</em> and
+  <em>money out</em> columns &mdash; both work.</p>
+  <p>Give the layout a name and it is remembered, so next month is just choose
+  file, import.</p>
+  <p>Anything that looks like a transaction already in your books is flagged and
+  skipped, so importing the same file twice does no harm. Everything comes in
+  without a category; tap each one afterwards to say what it was for.</p>
+  <p>Connecting straight to a bank is a different matter. It needs a licensed
+  provider, a secret key that cannot live in a public web page, and re-consent
+  every ninety days &mdash; and it would not cover a New Zealand account at all.
+  The file route is slower to set up once and then much the same each month.</p>
 
   <h4 id="h-shop">Shopping list</h4>
   <p>The round <strong>+</strong> adds another list, so you can keep one per shop
@@ -5691,7 +5856,7 @@ const TILE_DEST={
   offers:  {label:'Sent to you', go:openOffers},
   chats:   {label:'Messages',    go:openChats},
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
-  money:   {label:'Finances',   go:()=>toast('Coming soon')},
+  money:   {label:'Finances',   go:openMoney},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -5721,7 +5886,7 @@ function shade(hex,amt){
 // took off the home screen hands its screen back to the colour scheme.
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
-  chats:['chats','chat'],
+  chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp'],
   settings:['settings'], pick:['app']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -6983,6 +7148,1174 @@ function paintTray(){
   const busy=['editor','logEd','itemEd','chat'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
   $('tray').style.display=(busy||PICKING)?'none':'';
 }
+/* ============================================================
+   Finances — a cashbook
+
+   A transaction is the whole event; the lines beneath it are what
+   the money was for, so one shop visit can split across several
+   categories. Amounts are signed throughout: money out is
+   negative. You never type a minus sign — the kind you picked
+   (Income, Expense, Refund, Transfer) decides it.
+   ============================================================ */
+let ACCOUNTS=[], FCATS=[], PAYEES=[], CURRENCIES=[], BALANCES=[], FINPEOPLE=[];
+let TXNS=[], TXLINES=[], MONEY_ON=false, MONEY_WHY='';
+let MONEY_ACC='all', MONEY_FROM='', MONEY_SHOW=80;
+let TX=null, TXL=[];                    // the transaction being edited
+let RECON={acc:null, st:null, rows:[], tick:{}};
+let IMPORT={acc:null, rows:[], head:[], map:null, name:''};
+
+const FIN_KINDS=[
+  {k:'expense',  label:'Expense',  sign:-1},
+  {k:'income',   label:'Income',   sign: 1},
+  {k:'refund',   label:'Refund',   sign: 1},
+  {k:'transfer', label:'Transfer', sign:-1}
+];
+const PAY_METHODS=['cash','debit card','credit card','auto','cheque','transfer','other'];
+const ACC_KINDS=['current','savings','credit card','cash','processor'];
+
+function kindOf(k){ return FIN_KINDS.find(x=>x.k===k)||FIN_KINDS[0]; }
+function curSym(code){
+  const c=CURRENCIES.find(x=>x.code===code); return (c&&c.symbol)||'';
+}
+function accOf(id){ return ACCOUNTS.find(a=>a.id===id)||null; }
+function accCur(id){ const a=accOf(id); return a?a.currency:'GBP'; }
+
+// Two decimal places, grouped, with the sign in front of the symbol so a
+// column of them lines up.
+function money(n,code){
+  const v=Math.round(Number(n||0)*100)/100;
+  const a=Math.abs(v).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (v<0?'−':'')+curSym(code)+a;
+}
+function num(v){ const n=parseFloat(String(v??'').replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; }
+
+function balOf(id){
+  const b=BALANCES.find(x=>x.account_id===id);
+  if(b) return Number(b.balance||0);
+  const a=accOf(id);
+  return a?Number(a.opening_balance||0):0;
+}
+function payeeName(id){ const p=PAYEES.find(x=>x.id===id); return p?p.name:''; }
+function fcatName(id){ const c=FCATS.find(x=>x.id===id); return c?c.name:''; }
+
+/* ---------- Loading ---------- */
+async function loadMoney(){
+  const [a,c,p,cu,b,m]=await Promise.all([
+    sb.from('accounts').select('*').order('sort').order('name'),
+    sb.from('categories').select('*').order('sort').order('name'),
+    sb.from('payees').select('*').order('name'),
+    sb.from('currencies').select('*').order('sort'),
+    sb.from('account_balances').select('*'),
+    sb.from('finance_members').select('*')
+  ]);
+  // The tables are missing until step 35 has been run, and invisible to
+  // anyone outside the books. Those are different problems, said differently.
+  if(a.error){
+    MONEY_ON=false;
+    MONEY_WHY=/relation|does not exist|schema cache/i.test(a.error.message||'')
+      ? 'notset' : 'error';
+    console.error(a.error);
+    return;
+  }
+  ACCOUNTS=a.data||[]; FCATS=c.data||[]; PAYEES=p.data||[];
+  CURRENCIES=cu.data||[]; BALANCES=b.data||[]; FINPEOPLE=(m.data||[]).map(x=>x.user_id);
+  MONEY_ON = FINPEOPLE.includes(ME.id);
+  if(!MONEY_ON){ MONEY_WHY='notyours'; return; }
+  MONEY_WHY='';
+  await loadTxns();
+}
+
+// Only what is on screen. A cashbook grows for years; a phone should not have
+// to drag all of it down every time.
+async function loadTxns(){
+  let q=sb.from('transactions').select('*').order('tdate',{ascending:false})
+          .order('id',{ascending:false}).limit(MONEY_SHOW);
+  if(MONEY_ACC!=='all') q=q.eq('account_id',MONEY_ACC);
+  if(MONEY_FROM) q=q.gte('tdate',MONEY_FROM);
+  const {data,error}=await q;
+  if(error){ console.error(error); TXNS=[]; TXLINES=[]; return; }
+  TXNS=data||[];
+  const ids=TXNS.map(t=>t.id);
+  if(!ids.length){ TXLINES=[]; return; }
+  const {data:li}=await sb.from('transaction_items').select('*')
+    .in('transaction_id',ids).order('sort').order('id');
+  TXLINES=li||[];
+}
+
+async function openMoney(){
+  $('money').classList.remove('hidden'); lockBackground();
+  $('moneyBody').innerHTML='<p class="empty">Fetching your books…</p>';
+  await loadMoney(); renderMoney(); $('moneyBody').scrollTop=0;
+}
+
+/* ---------- The main screen ---------- */
+function renderMoney(){
+  if(!MONEY_ON){
+    $('moneyBody').innerHTML=`<div class="card"><div class="field"><dd>${
+      MONEY_WHY==='notset'
+        ? 'The finance tables are not in the database yet. Run the step 35 file '
+          +'in Supabase and then pull down to refresh.'
+        : MONEY_WHY==='notyours'
+        ? 'The books have not been shared with you. Whoever set them up can add '
+          +'you under Settings &rsaquo; Finances &rsaquo; Who can see the books.'
+        : 'Could not reach the finances just now. Check your signal and refresh.'
+    }</dd></div></div>`;
+    $('moneyAdd').classList.add('hidden');
+    return;
+  }
+  $('moneyAdd').classList.remove('hidden');
+
+  const live=ACCOUNTS.filter(a=>a.active);
+  const accCard=a=>{
+    const bal=balOf(a.id);
+    // A credit card in credit is the odd one out: a negative balance there is
+    // what you owe, which is the normal state of affairs, so it is not alarming.
+    const bad = a.kind==='credit card' ? false : bal<0;
+    return `<button class="acct ${MONEY_ACC===a.id?'on':''}" data-acc="${a.id}">
+      <span class="an"><b>${esc(a.name)}</b>
+        <span>${esc(a.kind)}${a.currency!=='GBP'?' &middot; '+esc(a.currency):''}</span></span>
+      <span class="ab ${bad?'neg':''}">${money(bal,a.currency)}</span></button>`;
+  };
+
+  // Totals per currency, since adding pounds to dollars would be a lie.
+  const byCur={};
+  live.forEach(a=>{ byCur[a.currency]=(byCur[a.currency]||0)+balOf(a.id); });
+
+  const rows=TXNS.map(t=>{
+    const a=accOf(t.account_id), lines=TXLINES.filter(l=>l.transaction_id===t.id);
+    const what = payeeName(t.payee_id)
+      || lines.map(l=>l.description).filter(Boolean)[0]
+      || (t.kind==='transfer'?'Transfer':kindOf(t.kind).label);
+    const cats=[...new Set(lines.map(l=>fcatName(l.category_id)).filter(Boolean))];
+    return `<button class="txn" data-tx="${t.id}">
+      <span class="td">${esc(shortDate(t.tdate))}</span>
+      <span class="tn"><b>${esc(what)}</b>
+        <span>${esc(a?a.name:'')}${cats.length?' &middot; '+esc(cats.join(', ')):''}${
+          t.business?' &middot; business':''}</span></span>
+      <span class="ta ${Number(t.total)<0?'neg':''}">${money(t.total,a?a.currency:'GBP')}
+        ${t.reconciled?'<i class="rec" title="Reconciled">&#10003;</i>':''}</span>
+    </button>`;
+  }).join('');
+
+  $('moneyBody').innerHTML=`
+    <div class="card">
+      <h3>Accounts</h3>
+      <button class="acct ${MONEY_ACC==='all'?'on':''}" data-acc="all">
+        <span class="an"><b>Everything</b><span>${live.length} account${live.length===1?'':'s'}</span></span>
+        <span class="ab">${Object.entries(byCur)
+          .map(([c,v])=>money(v,c)).join(' &nbsp; ')||'—'}</span></button>
+      ${live.map(accCard).join('')}
+      ${live.length?'':`<div class="field"><dd style="color:var(--muted)">
+        No accounts yet. Add your first under Settings &rsaquo; Finances, or with
+        the button below.</dd></div>`}
+    </div>
+
+    <div class="card">
+      <button class="menuitem" id="goRecon">Reconcile a statement &rsaquo;</button>
+      <button class="menuitem" id="goImport">Import from a bank file &rsaquo;</button>
+      <button class="menuitem" id="goAccts">Accounts, categories and payees &rsaquo;</button>
+    </div>
+
+    <p class="dsec">${MONEY_ACC==='all'?'Recent transactions'
+      :esc((accOf(MONEY_ACC)||{}).name||'')}</p>
+    <div class="card">
+      ${rows||'<div class="field"><dd style="color:var(--muted)">Nothing recorded yet.</dd></div>'}
+    </div>
+    ${TXNS.length>=MONEY_SHOW?`<button class="btn" id="moreTxns"
+      style="border:1.5px solid var(--rule);margin-bottom:20px">Show more</button>`:''}`;
+}
+
+// 3 Feb, or 3 Feb 25 once it is not this year
+function shortDate(iso){
+  if(!iso) return '';
+  const d=new Date(iso+'T00:00:00'), now=new Date();
+  const s=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  return d.getFullYear()===now.getFullYear() ? s
+    : s+' '+String(d.getFullYear()).slice(2);
+}
+
+/* ---------- The transaction editor ---------- */
+function blankLine(){ return {id:null, category_id:null, description:'', qty:1, amount:0, business:false}; }
+
+async function newTxn(){
+  if(!ACCOUNTS.filter(a=>a.active).length){
+    toast('Add an account first'); openSettings('Finances'); return;
+  }
+  const acc = MONEY_ACC!=='all' ? MONEY_ACC : ACCOUNTS.filter(a=>a.active)[0].id;
+  TX={ id:null, account_id:acc, tdate:isoDay(new Date()), kind:'expense',
+       pay_method:'debit card', payee_id:null, reference:'', notes:'',
+       business:false, orig_amount:null, orig_currency:null,
+       transfer_id:null, to_account_id:null, to_amount:null, to_date:null,
+       reconciled:false, statement_id:null };
+  TXL=[blankLine()];
+  showTxnEditor('New transaction');
+}
+
+async function editTxn(id){
+  const t=TXNS.find(x=>x.id===id); if(!t) return;
+  TX={...t, to_account_id:null, to_amount:null, to_date:null};
+  TXL=TXLINES.filter(l=>l.transaction_id===id)
+    .map(l=>({id:l.id, category_id:l.category_id, description:l.description||'',
+              qty:Number(l.qty), amount:Number(l.amount), business:!!l.business}));
+  if(!TXL.length) TXL=[blankLine()];
+  // The other half of a transfer, so it can be shown and kept in step.
+  if(t.transfer_id){
+    const {data}=await sb.from('transactions').select('*')
+      .eq('transfer_id',t.transfer_id).neq('id',t.id).limit(1);
+    if(data&&data[0]){ TX.other=data[0]; }
+  }
+  showTxnEditor('Transaction');
+}
+
+function showTxnEditor(title){
+  $('moneyEdTitle').textContent=title;
+  $('moneyEd').classList.remove('hidden'); lockBackground();
+  renderTxnEditor(); $('moneyEdBody').scrollTop=0;
+}
+
+function txnTotal(){
+  return TXL.reduce((s,l)=>s+Math.round(Number(l.qty||0)*Number(l.amount||0)*100)/100,0);
+}
+
+function renderTxnEditor(){
+  const cur=accCur(TX.account_id);
+  const isTransfer = TX.kind==='transfer';
+  const live=ACCOUNTS.filter(a=>a.active||a.id===TX.account_id);
+
+  const catOpts=(sel,kind)=>`<option value="">Category…</option>`+
+    FCATS.filter(c=>c.active!==false)
+      .filter(c=>kind==='income'?c.kind!=='expense':(kind==='expense'?c.kind!=='income':true))
+      .map(c=>`<option value="${c.id}" ${String(sel)===String(c.id)?'selected':''}>${
+        esc((c.code?c.code+' — ':'')+c.name)}</option>`).join('');
+
+  // The headings only fit on a wide screen, so on a phone each number carries
+  // its own little label. An unlabelled box of digits is a guess waiting to
+  // happen.
+  const line=(l,i)=>`<div class="lrow">
+    <input data-ld="${i}" value="${esc(l.description)}" placeholder="What was it?"
+      list="descList" aria-label="Description">
+    <select data-lc="${i}" aria-label="Category">${catOpts(l.category_id,TX.kind)}</select>
+    <label class="ll"><span>Qty</span>
+      <input data-lq="${i}" value="${l.qty}" inputmode="decimal" aria-label="Quantity"></label>
+    <label class="ll"><span>Each</span>
+      <input data-la="${i}" value="${l.amount?Math.abs(l.amount):''}" inputmode="decimal"
+        placeholder="0.00" aria-label="Amount each"></label>
+    <button class="x" data-lx="${i}" aria-label="Remove this line"
+      ${TXL.length<2?'disabled':''}>&times;</button>
+  </div>`;
+
+  // Every description used before, so a repeat entry is two taps.
+  const seen=[...new Set(TXLINES.map(l=>l.description).filter(Boolean))].slice(0,200);
+
+  $('moneyEdBody').innerHTML=`
+  <datalist id="descList">${seen.map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
+
+  <div class="kindpick">${FIN_KINDS.map(k=>`<button class="chip" data-kind="${k.k}"
+    aria-pressed="${TX.kind===k.k}">${k.label}</button>`).join('')}</div>
+
+  <div class="card">
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Date</label>
+      <input type="date" id="txDate" value="${esc(TX.tdate)}"></div>
+
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">${
+      isTransfer?'Out of':'Account'}</label>
+      <select id="txAcc">${live.map(a=>`<option value="${a.id}"
+        ${a.id===TX.account_id?'selected':''}>${esc(a.name)} (${esc(a.currency)})</option>`).join('')}</select></div>
+
+    ${isTransfer?`
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Into</label>
+      <select id="txAcc2"><option value="">Choose…</option>${live
+        .filter(a=>a.id!==TX.account_id)
+        .map(a=>`<option value="${a.id}" ${String(TX.to_account_id)===String(a.id)?'selected':''}>${
+          esc(a.name)} (${esc(a.currency)})</option>`).join('')}</select></div>
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Arrived on</label>
+      <input type="date" id="txDate2" value="${esc(TX.to_date||TX.tdate)}"></div>
+    <div class="field"><dd style="color:var(--muted);font-size:14px">
+      Money often leaves one bank a day or two before it reaches the other, and
+      the two sides reconcile against their own statements. Leave the arrival
+      date as it is if they landed together.</dd></div>`:''}
+
+    ${!isTransfer?`
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">${
+      TX.kind==='income'?'From':'Paid to'}</label>
+      <button class="btn" id="txPayee" style="border:1.5px solid var(--rule);text-align:left;
+        padding:9px 10px;font-size:16px;font-weight:400">${
+        esc(payeeName(TX.payee_id)||'Choose…')}</button></div>
+
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">How</label>
+      <select id="txMethod">${PAY_METHODS.map(m=>`<option value="${m}"
+        ${TX.pay_method===m?'selected':''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('')}</select></div>`:''}
+
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Reference</label>
+      <input id="txRef" value="${esc(TX.reference||'')}" placeholder="Optional"></div>
+
+    <div class="checks" style="padding:10px 14px"><label>
+      <input type="checkbox" id="txBiz" ${TX.business?'checked':''}> Business</label></div>
+  </div>
+
+  ${isTransfer?`
+  <div class="card"><h3>Amount</h3>
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Leaving (${esc(cur)})</label>
+      <input id="trOut" inputmode="decimal" placeholder="0.00"
+        value="${TXL[0]&&TXL[0].amount?Math.abs(TXL[0].amount):''}"></div>
+    ${TX.to_account_id && accCur(Number(TX.to_account_id))!==cur ? `
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Arriving (${
+      esc(accCur(Number(TX.to_account_id)))})</label>
+      <input id="trIn" inputmode="decimal" placeholder="0.00"
+        value="${TX.to_amount?Math.abs(TX.to_amount):''}"></div>
+    <div class="field"><dd style="color:var(--muted);font-size:14px">
+      Different currencies, so put in what actually arrived rather than working
+      out a rate.</dd></div>`:''}
+  </div>`:`
+  <div class="card"><h3>What it was for</h3>
+    <div class="lhead"><span>Description</span><span>Category</span><span>Qty</span>
+      <span>Each</span><span></span></div>
+    <div class="lines" id="txLines">${TXL.map(line).join('')}</div>
+    <div class="setadd">
+      <button class="btn" id="txAddLine" style="border:1.5px solid var(--rule)">Another line</button>
+    </div>
+    <div class="field" style="font-weight:700;font-size:17px">
+      <dt style="color:var(--muted)">Total</dt>
+      <dd style="text-align:right">${money(kindOf(TX.kind).sign*Math.abs(txnTotal()),cur)}</dd></div>
+  </div>
+
+  <details class="card logsec"><summary>Paid in another currency</summary>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      For a card used abroad. Put the amount above as it appears on your
+      statement, and what the receipt actually said here.</dd></div>
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Receipt said</label>
+      <input id="txOrig" inputmode="decimal" placeholder="0.00"
+        value="${TX.orig_amount?Math.abs(TX.orig_amount):''}">
+      <select id="txOrigCur" style="flex:0 0 100px"><option value="">—</option>${
+        CURRENCIES.map(c=>`<option value="${c.code}"
+          ${TX.orig_currency===c.code?'selected':''}>${esc(c.code)}</option>`).join('')}</select></div>
+  </details>`}
+
+  <div class="card"><h3>Notes</h3>
+    <div style="padding:10px 14px">
+      <textarea id="txNotes" rows="2" style="width:100%;padding:10px;border:1.5px solid var(--rule);
+        border-radius:8px;font:inherit">${esc(TX.notes||'')}</textarea></div>
+  </div>
+
+  ${TX.reconciled?`<div class="card"><div class="field"><dd style="color:var(--muted)">
+    Reconciled${TX.reconciled_on?' against the statement to '+esc(shortDate(TX.reconciled_on)):''}.
+    If that statement is locked this will refuse to save until you unlock it on
+    the reconcile screen.</dd></div></div>`:''}
+
+  ${TX.id?`<button class="btn danger" id="txDel">Delete this transaction${
+    TX.transfer_id?' and its other half':''}</button>`:''}
+  <div style="height:30px"></div>`;
+}
+
+// Read every box before doing anything with them — a select or a text box only
+// reports a change when it loses focus, and tapping Save takes the focus away
+// after the handler has already run.
+function flushTxn(){
+  const b=$('moneyEdBody'); if(!b) return;
+  const g=id=>$(id);
+  if(g('txDate'))   TX.tdate=g('txDate').value||isoDay(new Date());
+  if(g('txAcc'))    TX.account_id=Number(g('txAcc').value);
+  if(g('txAcc2'))   TX.to_account_id=g('txAcc2').value?Number(g('txAcc2').value):null;
+  if(g('txDate2'))  TX.to_date=g('txDate2').value||null;
+  if(g('txMethod')) TX.pay_method=g('txMethod').value;
+  if(g('txRef'))    TX.reference=g('txRef').value.trim();
+  if(g('txNotes'))  TX.notes=g('txNotes').value.trim();
+  if(g('txBiz'))    TX.business=g('txBiz').checked;
+  if(g('txOrig'))   TX.orig_amount=g('txOrig').value?Math.abs(num(g('txOrig').value)):null;
+  if(g('txOrigCur'))TX.orig_currency=g('txOrigCur').value||null;
+
+  if(TX.kind==='transfer'){
+    const out=g('trOut')?Math.abs(num(g('trOut').value)):0;
+    const inn=g('trIn')?Math.abs(num(g('trIn').value)):0;
+    TXL=[{...(TXL[0]||blankLine()), amount:out, qty:1, description:'Transfer'}];
+    TX.to_amount = inn || out;
+  } else {
+    b.querySelectorAll('[data-ld]').forEach(el=>{ TXL[+el.dataset.ld].description=el.value.trim(); });
+    b.querySelectorAll('[data-lc]').forEach(el=>{
+      TXL[+el.dataset.lc].category_id=el.value?Number(el.value):null; });
+    b.querySelectorAll('[data-lq]').forEach(el=>{ TXL[+el.dataset.lq].qty=num(el.value)||1; });
+    b.querySelectorAll('[data-la]').forEach(el=>{ TXL[+el.dataset.la].amount=Math.abs(num(el.value)); });
+  }
+}
+
+async function saveTxn(){
+  flushTxn();
+  const sign=kindOf(TX.kind).sign;
+
+  if(TX.kind==='transfer'){
+    if(!TX.to_account_id){ toast('Which account is it going into?'); return; }
+    if(Number(TX.to_account_id)===Number(TX.account_id)){
+      toast('A transfer needs two different accounts'); return; }
+    if(!TXL[0]||!TXL[0].amount){ toast('How much is moving?'); return; }
+  } else if(!TXL.some(l=>l.amount)){
+    toast('Put an amount against at least one line'); return;
+  }
+
+  const head={ account_id:TX.account_id, tdate:TX.tdate, kind:TX.kind,
+    pay_method:TX.kind==='transfer'?'transfer':TX.pay_method,
+    payee_id:TX.kind==='transfer'?null:TX.payee_id,
+    reference:TX.reference||null, notes:TX.notes||null, business:!!TX.business,
+    orig_amount:TX.orig_amount, orig_currency:TX.orig_currency };
+
+  try{
+    if(TX.kind==='transfer'){
+      await saveTransfer(head);
+    } else {
+      let id=TX.id;
+      if(id){
+        const {error}=await sb.from('transactions').update(head).eq('id',id);
+        if(error) throw error;
+        await sb.from('transaction_items').delete().eq('transaction_id',id);
+      } else {
+        const {data,error}=await sb.from('transactions')
+          .insert({...head, created_by:ME.id}).select().single();
+        if(error) throw error;
+        id=data.id;
+      }
+      const rows=TXL.filter(l=>l.amount).map((l,i)=>({
+        transaction_id:id, category_id:l.category_id,
+        description:l.description||null, qty:Number(l.qty)||1,
+        amount:sign*Math.abs(Number(l.amount)),
+        business:TX.business, sort:i }));
+      const {error:le}=await sb.from('transaction_items').insert(rows);
+      if(le) throw le;
+      await rememberPayee(TX.payee_id, rows[0]&&rows[0].category_id);
+    }
+  }catch(e){
+    console.error(e);
+    toast(/locked/i.test(e.message||'') ? e.message : 'Could not save that');
+    return;
+  }
+
+  $('moneyEd').classList.add('hidden'); lockBackground();
+  await loadMoney(); renderMoney(); toast('Saved');
+}
+
+// Two rows sharing one reference. Written one after the other rather than in
+// one go, so a half-finished transfer can never be left behind.
+async function saveTransfer(head){
+  const amt=Math.abs(Number(TXL[0].amount));
+  const inAmt=Math.abs(Number(TX.to_amount||amt));
+  const ref = TX.transfer_id || (crypto.randomUUID
+    ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+        const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }));
+
+  if(TX.id){
+    const ids=[TX.id].concat(TX.other?[TX.other.id]:[]);
+    await sb.from('transaction_items').delete().in('transaction_id',ids);
+    await sb.from('transactions').delete().in('id',ids);
+  }
+  const both=[
+    {...head, transfer_id:ref, account_id:Number(TX.account_id),
+      tdate:TX.tdate, created_by:ME.id},
+    {...head, transfer_id:ref, account_id:Number(TX.to_account_id),
+      tdate:TX.to_date||TX.tdate, created_by:ME.id}
+  ];
+  const {data,error}=await sb.from('transactions').insert(both).select();
+  if(error) throw error;
+  const out=data.find(r=>Number(r.account_id)===Number(TX.account_id));
+  const inn=data.find(r=>r.id!==out.id);
+  const {error:le}=await sb.from('transaction_items').insert([
+    {transaction_id:out.id, description:'To '+(accOf(Number(TX.to_account_id))||{}).name,
+      qty:1, amount:-amt, business:!!TX.business, sort:0},
+    {transaction_id:inn.id, description:'From '+(accOf(Number(TX.account_id))||{}).name,
+      qty:1, amount:inAmt, business:!!TX.business, sort:0}
+  ]);
+  if(le) throw le;
+}
+
+// A payee you keep putting against the same category starts filling it in.
+async function rememberPayee(pid,cid){
+  if(!pid||!cid) return;
+  const p=PAYEES.find(x=>x.id===pid);
+  if(p&&!p.category_id) await sb.from('payees').update({category_id:cid}).eq('id',pid);
+}
+
+async function delTxn(){
+  if(!TX.id) return;
+  const both=!!TX.transfer_id;
+  if(!confirm(both
+    ? 'Delete both halves of this transfer?'
+    : 'Delete this transaction?')) return;
+  const ids=both&&TX.other?[TX.id,TX.other.id]:[TX.id];
+  const {error}=await sb.from('transactions').delete().in('id',ids);
+  if(error){
+    toast(/locked/i.test(error.message||'')?error.message:'Could not delete it');
+    console.error(error); return;
+  }
+  $('moneyEd').classList.add('hidden'); lockBackground();
+  await loadMoney(); renderMoney(); toast('Deleted');
+}
+
+/* ---------- Choosing a payee ---------- */
+// Type to find one, or type a name that is not there yet and add it.
+function pickPayee(){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Who?</p>
+      <input id="pyQ" placeholder="Start typing" autocomplete="off"
+        style="width:100%;padding:12px;border:1.5px solid var(--rule);border-radius:8px">
+      <div class="results" id="pyHits" style="max-height:46vh;margin-top:10px"></div>
+      <button class="btn" id="pyNone" style="border:1.5px solid var(--rule);margin-top:10px">Nobody</button>
+      <button class="btn" id="pyCancel" style="margin-top:8px">Cancel</button></div>`;
+    document.body.appendChild(box);
+    const q=box.querySelector('#pyQ'), hits=box.querySelector('#pyHits');
+    const done=v=>{ box.remove(); resolve(v); };
+
+    const draw=()=>{
+      const s=q.value.trim().toLowerCase();
+      const list=PAYEES.filter(p=>!s||p.name.toLowerCase().includes(s)).slice(0,40);
+      const exact=PAYEES.some(p=>p.name.toLowerCase()===s);
+      hits.innerHTML=list.map(p=>`<button class="menuitem" data-py="${p.id}">${esc(p.name)}${
+        p.contact_id?' <span class="w" style="color:var(--muted)">— in your contacts</span>':''
+      }</button>`).join('')
+      + (s&&!exact?`<button class="menuitem" data-pynew="1"
+          style="font-weight:700">Add &ldquo;${esc(q.value.trim())}&rdquo;</button>`:'');
+    };
+    draw();
+    q.oninput=draw;
+    box.onclick=async ev=>{
+      const b=ev.target.closest('[data-py]');
+      if(b) return done(Number(b.dataset.py));
+      if(ev.target.closest('[data-pynew]')){
+        const name=q.value.trim();
+        const {data,error}=await sb.from('payees')
+          .insert({name, created_by:ME.id}).select().single();
+        if(error){ toast('Could not add that'); console.error(error); return; }
+        PAYEES.push(data); PAYEES.sort((a,b)=>a.name.localeCompare(b.name));
+        return done(data.id);
+      }
+      if(ev.target.id==='pyNone')   return done(null);
+      if(ev.target.id==='pyCancel'||ev.target===box) return done(undefined);
+    };
+    setTimeout(()=>q.focus(),60);
+  });
+}
+
+/* ---------- Reconciling ---------- */
+async function openRecon(accId){
+  RECON={acc:accId||MONEY_ACC!=='all'&&MONEY_ACC||((ACCOUNTS.filter(a=>a.active)[0]||{}).id||null),
+         st:null, rows:[], tick:{}, stmts:[]};
+  $('recon').classList.remove('hidden'); lockBackground();
+  await reconLoad(); renderRecon(); $('reconBody').scrollTop=0;
+}
+
+async function reconLoad(){
+  if(!RECON.acc){ RECON.rows=[]; RECON.stmts=[]; return; }
+  const {data:st}=await sb.from('statements').select('*')
+    .eq('account_id',RECON.acc).order('ends_on',{ascending:false});
+  RECON.stmts=st||[];
+  if(!RECON.st&&RECON.stmts.length&&!RECON.stmts[0].locked) RECON.st=RECON.stmts[0].id;
+
+  // Everything not yet reconciled, plus whatever is already on this statement,
+  // so you can untick something you put there by mistake.
+  const cur=RECON.stmts.find(s=>s.id===RECON.st);
+  let q=sb.from('transactions').select('*').eq('account_id',RECON.acc)
+        .order('tdate').order('id');
+  if(cur) q=q.lte('tdate',cur.ends_on);
+  const {data}=await q;
+  RECON.rows=(data||[]).filter(t=>!t.reconciled||String(t.statement_id)===String(RECON.st));
+  RECON.tick={};
+  RECON.rows.forEach(t=>{ if(t.reconciled&&String(t.statement_id)===String(RECON.st))
+    RECON.tick[t.id]=true; });
+
+  // What was already settled before this statement — the figure the new ticks
+  // build on top of.
+  const {data:before}=await sb.from('transactions').select('total')
+    .eq('account_id',RECON.acc).eq('reconciled',true)
+    .neq('statement_id',RECON.st||-1);
+  const a=accOf(RECON.acc);
+  RECON.opening=Number((a&&a.opening_balance)||0)
+    + (before||[]).reduce((s,r)=>s+Number(r.total||0),0);
+}
+
+function renderRecon(){
+  const a=accOf(RECON.acc), cur=a?a.currency:'GBP';
+  const st=RECON.stmts.find(s=>s.id===RECON.st);
+  const ticked=RECON.rows.filter(t=>RECON.tick[t.id])
+    .reduce((s,t)=>s+Number(t.total||0),0);
+  const got=RECON.opening+ticked;
+  const target=st?Number(st.closing_balance):null;
+  const diff=target===null?null:Math.round((target-got)*100)/100;
+
+  const row=t=>`<button class="txn rec ${RECON.tick[t.id]?'on':''}" data-rt="${t.id}">
+    <span class="tick ${RECON.tick[t.id]?'on':''}">${RECON.tick[t.id]?'&#10003;':''}</span>
+    <span class="td">${esc(shortDate(t.tdate))}</span>
+    <span class="tn"><b>${esc(payeeName(t.payee_id)||t.reference||kindOf(t.kind).label)}</b></span>
+    <span class="ta ${Number(t.total)<0?'neg':''}">${money(t.total,cur)}</span></button>`;
+
+  $('reconBody').innerHTML=`
+  <div class="card">
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Account</label>
+      <select id="rcAcc">${ACCOUNTS.filter(x=>x.active).map(x=>`<option value="${x.id}"
+        ${x.id===RECON.acc?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Statement</label>
+      <select id="rcSt"><option value="">New one…</option>${RECON.stmts.map(s=>`
+        <option value="${s.id}" ${s.id===RECON.st?'selected':''}>to ${
+          esc(shortDate(s.ends_on))} &mdash; ${money(s.closing_balance,cur)}${
+          s.locked?' (locked)':''}</option>`).join('')}</select></div>
+    ${!st?`
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Ends on</label>
+      <input type="date" id="rcDate" value="${isoDay(new Date())}"></div>
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Closing balance</label>
+      <input id="rcBal" inputmode="decimal" placeholder="0.00"></div>
+    <div class="setadd"><button class="btn primary" id="rcMake">Start this statement</button></div>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Copy the closing balance straight off the paper or the screen, including
+      the minus if it is a credit card. Then tick off what appears on it until
+      the difference below reaches zero.</dd></div>`:''}
+  </div>
+
+  ${st?`
+  <div class="card recsum ${diff===0?'ok':''}">
+    <div class="field"><dt>Settled before this</dt><dd>${money(RECON.opening,cur)}</dd></div>
+    <div class="field"><dt>Ticked here</dt><dd>${money(ticked,cur)}</dd></div>
+    <div class="field"><dt>Which comes to</dt><dd>${money(got,cur)}</dd></div>
+    <div class="field"><dt>The statement says</dt><dd>${money(target,cur)}</dd></div>
+    <div class="field" style="font-weight:700;font-size:18px">
+      <dt>${diff===0?'Balanced':'Still to find'}</dt>
+      <dd>${diff===0?'&#10003; nothing left over':money(diff,cur)}</dd></div>
+  </div>
+
+  <div class="card">${RECON.rows.map(row).join('')
+    ||'<div class="field"><dd style="color:var(--muted)">Nothing waiting to be reconciled.</dd></div>'}</div>
+
+  ${st.locked
+    ? `<button class="btn" id="rcUnlock" style="border:1.5px solid var(--rule)">Unlock this statement</button>`
+    : `<button class="btn primary" id="rcSave">Save what I have ticked</button>
+       <button class="btn ${diff===0?'primary':''}" id="rcLock"
+         style="${diff===0?'margin-top:10px':'border:1.5px solid var(--rule);margin-top:10px'}"
+         ${diff===0?'':'disabled'}>Finish and lock</button>
+       ${diff!==0?`<p class="coords" style="text-align:center;margin-top:10px">
+         Locking waits until the difference is zero.</p>`:''}`}
+  <button class="btn danger" id="rcDrop">Delete this statement</button>
+  <div style="height:30px"></div>`:''}`;
+}
+
+async function reconSave(lock){
+  const ids=RECON.rows.filter(t=>RECON.tick[t.id]).map(t=>t.id);
+  const off=RECON.rows.filter(t=>!RECON.tick[t.id]&&t.reconciled).map(t=>t.id);
+  const st=RECON.stmts.find(s=>s.id===RECON.st);
+  if(!st) return;
+  if(off.length){
+    const {error}=await sb.from('transactions')
+      .update({reconciled:false, statement_id:null, reconciled_on:null}).in('id',off);
+    if(error){ toast('Could not undo those'); console.error(error); return; }
+  }
+  if(ids.length){
+    const {error}=await sb.from('transactions')
+      .update({reconciled:true, statement_id:st.id, reconciled_on:st.ends_on}).in('id',ids);
+    if(error){
+      toast(/locked/i.test(error.message||'')?error.message:'Could not save those');
+      console.error(error); return;
+    }
+  }
+  if(lock) await sb.from('statements').update({locked:true}).eq('id',st.id);
+  await reconLoad(); renderRecon();
+  await loadMoney();
+  toast(lock?'Statement locked':'Saved');
+}
+
+/* ---------- Importing a bank file ---------- */
+// Handles quoted fields and commas inside them, which every bank produces
+// sooner or later.
+function parseCSV(text){
+  const rows=[]; let row=[], cell='', q=false;
+  text=String(text).replace(/\r\n?/g,'\n');
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ cell+='"'; i++; } else q=false; }
+      else cell+=c;
+    } else if(c==='"') q=true;
+    else if(c===','){ row.push(cell); cell=''; }
+    else if(c==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+    else cell+=c;
+  }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(x=>String(x).trim()!==''));
+}
+
+// Banks write dates every way there is. Guess, but let it be corrected.
+function parseDate(s,fmt){
+  s=String(s||'').trim();
+  let m;
+  if(fmt==='ymd'&&(m=s.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/)))
+    return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  if(fmt==='mdy'&&(m=s.match(/^(\d{1,2})\D(\d{1,2})\D(\d{2,4})/)))
+    return isoFrom(m[3],m[1],m[2]);
+  if(m=s.match(/^(\d{1,2})\D(\d{1,2})\D(\d{2,4})/)) return isoFrom(m[3],m[2],m[1]);
+  if(m=s.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/))
+    return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  const d=new Date(s);
+  return isNaN(d) ? '' : d.toISOString().slice(0,10);
+}
+function isoFrom(y,mo,da){
+  y=String(y); if(y.length===2) y='20'+y;
+  return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
+}
+
+function guessCol(head,words){
+  const i=head.findIndex(h=>words.some(w=>String(h).toLowerCase().includes(w)));
+  return i<0?'':String(i);
+}
+
+async function openImport(){
+  IMPORT={acc:(MONEY_ACC!=='all'?MONEY_ACC:(ACCOUNTS.filter(a=>a.active)[0]||{}).id)||null,
+          rows:[], head:[], map:null, name:''};
+  $('moneyImp').classList.remove('hidden'); lockBackground();
+  renderImport(); $('impBody').scrollTop=0;
+}
+
+function renderImport(){
+  const picked=IMPORT.rows.length>0;
+  const head=IMPORT.head;
+  const m=IMPORT.map||{};
+  const colSel=(key,label,extra)=>`<div class="setrow">
+    <label style="flex:0 0 38%;color:var(--muted)">${label}</label>
+    <select data-imap="${key}"><option value="">${extra||'—'}</option>${
+      head.map((h,i)=>`<option value="${i}" ${String(m[key])===String(i)?'selected':''}>${
+        esc(h||('Column '+(i+1)))}</option>`).join('')}</select></div>`;
+
+  $('impBody').innerHTML=`
+  <div class="card">
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Into</label>
+      <select id="impAcc">${ACCOUNTS.filter(a=>a.active).map(a=>`<option value="${a.id}"
+        ${a.id===IMPORT.acc?'selected':''}>${esc(a.name)} (${esc(a.currency)})</option>`).join('')}</select></div>
+    <div class="setadd">
+      <input type="file" id="impFile" accept=".csv,text/csv,text/plain"
+        style="width:100%;padding:10px;border:1.5px dashed var(--rule);border-radius:8px;background:#fff">
+      <p class="coords" style="margin:8px 0 0">Or paste the rows in:</p>
+      <textarea id="impPaste" rows="3" placeholder="Date,Description,Amount"
+        style="width:100%;padding:10px;border:1.5px solid var(--rule);border-radius:8px;font:inherit"></textarea>
+      <button class="btn" id="impRead" style="border:1.5px solid var(--rule);margin-top:8px">Read it</button>
+    </div>
+  </div>
+
+  ${picked?`
+  <p class="dsec">Which column is which</p>
+  <div class="card">
+    ${colSel('date','Date')}
+    ${colSel('desc','Description')}
+    ${colSel('amount','Amount','Not one column — see below')}
+    ${String(m.amount)===''||m.amount===undefined?`
+      ${colSel('in','Money in')}
+      ${colSel('out','Money out')}`:''}
+    ${colSel('ref','Their reference','None')}
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Dates look like</label>
+      <select data-imap="fmt">
+        <option value="dmy" ${m.fmt==='dmy'?'selected':''}>31/01/2026 — day first</option>
+        <option value="mdy" ${m.fmt==='mdy'?'selected':''}>01/31/2026 — month first</option>
+        <option value="ymd" ${m.fmt==='ymd'?'selected':''}>2026-01-31</option>
+      </select></div>
+    <div class="checks" style="padding:10px 14px"><label>
+      <input type="checkbox" data-imap="head" ${m.head?'checked':''}>
+      The first row is headings</label></div>
+    <div class="setadd">
+      <input id="impName" placeholder="Remember this layout as…" value="${esc(IMPORT.name||'')}">
+      <button class="btn" id="impPreview" style="border:1.5px solid var(--rule)">See what it will do</button>
+    </div>
+  </div>
+  <div id="impOut"></div>`:''}
+  <div style="height:30px"></div>`;
+}
+
+function importPreview(){
+  const m=IMPORT.map||{};
+  const body=IMPORT.rows.slice(m.head?1:0);
+  const cur=accCur(IMPORT.acc);
+  const seen=new Set(TXNS.filter(t=>t.account_id===IMPORT.acc)
+    .map(t=>t.tdate+'|'+Number(t.total).toFixed(2)));
+
+  const out=body.map(r=>{
+    const date=parseDate(r[m.date],m.fmt);
+    let amt;
+    if(m.amount!==''&&m.amount!==undefined) amt=num(r[m.amount]);
+    else amt=Math.abs(num(r[m.in]))-Math.abs(num(r[m.out]));
+    return { date, desc:String(r[m.desc]??'').trim(),
+             ref:(m.ref!==''&&m.ref!==undefined)?String(r[m.ref]??'').trim():'',
+             amount:Math.round(amt*100)/100 };
+  }).filter(x=>x.date&&x.amount);
+
+  out.forEach(x=>{ x.dup = seen.has(x.date+'|'+x.amount.toFixed(2)); });
+  IMPORT.ready=out;
+
+  const dups=out.filter(x=>x.dup).length;
+  $('impOut').innerHTML=`
+  <p class="dsec">${out.length} row${out.length===1?'':'s'} read${
+    dups?`, ${dups} already look${dups===1?'s':''} to be in your books`:''}</p>
+  <div class="card">
+    ${out.slice(0,40).map((x,i)=>`<div class="txn ${x.dup?'dup':''}">
+      <span class="tick ${x.dup?'':'on'}">${x.dup?'':'&#10003;'}</span>
+      <span class="td">${esc(shortDate(x.date))}</span>
+      <span class="tn"><b>${esc(x.desc||'—')}</b>${
+        x.dup?'<span>already there — will be skipped</span>':''}</span>
+      <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></div>`).join('')}
+    ${out.length>40?`<div class="field"><dd style="color:var(--muted)">
+      …and ${out.length-40} more.</dd></div>`:''}
+  </div>
+  ${out.length?`<button class="btn primary" id="impGo">Import ${
+    out.length-dups} transaction${out.length-dups===1?'':'s'}</button>`:''}
+  <p class="coords" style="text-align:center;margin-top:10px">
+    Everything comes in without a category. Tap any of them afterwards to say
+    what it was for.</p>`;
+}
+
+async function doImport(){
+  const rows=(IMPORT.ready||[]).filter(x=>!x.dup);
+  if(!rows.length){ toast('Nothing new to bring in'); return; }
+  const now=new Date().toISOString();
+  const heads=rows.map(x=>({
+    account_id:IMPORT.acc, tdate:x.date,
+    kind:x.amount<0?'expense':'income',
+    reference:x.desc||null,
+    bank_ref:x.ref||(x.date+'|'+x.amount.toFixed(2)+'|'+(x.desc||'').slice(0,40)),
+    imported_at:now, created_by:ME.id
+  }));
+  const {data,error}=await sb.from('transactions').insert(heads).select();
+  if(error){
+    toast(/duplicate key/i.test(error.message||'')
+      ? 'Some of those are already in — run the preview again'
+      : 'Could not import that');
+    console.error(error); return;
+  }
+  const lines=data.map((t,i)=>({
+    transaction_id:t.id, description:rows[i].desc||null,
+    qty:1, amount:rows[i].amount, sort:0 }));
+  await sb.from('transaction_items').insert(lines);
+
+  if(IMPORT.name){
+    await sb.from('import_maps').insert({account_id:IMPORT.acc, name:IMPORT.name,
+      map:IMPORT.map, created_by:ME.id});
+  }
+  $('moneyImp').classList.add('hidden'); lockBackground();
+  await loadMoney(); renderMoney();
+  toast(data.length+' brought in');
+}
+
+/* ---------- Wiring ---------- */
+$('moneyBack').onclick=()=>{ $('money').classList.add('hidden'); lockBackground(); };
+$('moneyEdCancel').onclick=()=>{ $('moneyEd').classList.add('hidden'); lockBackground(); };
+$('moneyEdSave').onclick=saveTxn;
+$('moneyAdd').onclick=newTxn;
+$('reconBack').onclick=()=>{ $('recon').classList.add('hidden'); lockBackground(); };
+$('impBack').onclick=()=>{ $('moneyImp').classList.add('hidden'); lockBackground(); };
+
+$('moneyBody').addEventListener('click',async ev=>{
+  const a=ev.target.closest('[data-acc]');
+  if(a){ MONEY_ACC=a.dataset.acc==='all'?'all':Number(a.dataset.acc);
+         await loadTxns(); renderMoney(); return; }
+  const t=ev.target.closest('[data-tx]');
+  if(t){ editTxn(Number(t.dataset.tx)); return; }
+  if(ev.target.id==='goRecon')  { openRecon(); return; }
+  if(ev.target.id==='goImport') { openImport(); return; }
+  if(ev.target.id==='goAccts')  { openSettings('Finances'); return; }
+  if(ev.target.id==='moreTxns') { MONEY_SHOW+=80; await loadTxns(); renderMoney(); return; }
+});
+
+$('moneyEdBody').addEventListener('click',async ev=>{
+  const k=ev.target.closest('[data-kind]');
+  if(k){ flushTxn(); TX.kind=k.dataset.kind; renderTxnEditor(); return; }
+  const x=ev.target.closest('[data-lx]');
+  if(x){ flushTxn(); TXL.splice(+x.dataset.lx,1); if(!TXL.length) TXL=[blankLine()];
+         renderTxnEditor(); return; }
+  if(ev.target.id==='txAddLine'){ flushTxn(); TXL.push(blankLine()); renderTxnEditor();
+    setTimeout(()=>{ const f=$('moneyEdBody').querySelector(`[data-ld="${TXL.length-1}"]`);
+      if(f) f.focus(); },30); return; }
+  if(ev.target.id==='txPayee'){
+    flushTxn();
+    const v=await pickPayee();
+    if(v!==undefined){
+      TX.payee_id=v;
+      // A payee that always means the same thing fills the category in.
+      const p=PAYEES.find(y=>y.id===v);
+      if(p&&p.category_id&&TXL.length===1&&!TXL[0].category_id)
+        TXL[0].category_id=p.category_id;
+      renderTxnEditor();
+    }
+    return;
+  }
+  if(ev.target.id==='txDel'){ delTxn(); return; }
+});
+// The account and the kind change what the rest of the form looks like.
+$('moneyEdBody').addEventListener('change',ev=>{
+  if(['txAcc','txAcc2'].includes(ev.target.id)){ flushTxn(); renderTxnEditor(); }
+});
+
+$('reconBody').addEventListener('click',async ev=>{
+  const r=ev.target.closest('[data-rt]');
+  if(r){ const id=Number(r.dataset.rt);
+         RECON.tick[id]=!RECON.tick[id]; renderRecon(); return; }
+  if(ev.target.id==='rcMake'){
+    const d=$('rcDate').value, b=$('rcBal').value;
+    if(!d||b===''){ toast('Both the date and the closing balance, please'); return; }
+    const {data,error}=await sb.from('statements').insert({
+      account_id:RECON.acc, ends_on:d, closing_balance:num(b), created_by:ME.id})
+      .select().single();
+    if(error){
+      toast(/duplicate/i.test(error.message||'')
+        ? 'There is already a statement ending that day' : 'Could not start that');
+      console.error(error); return;
+    }
+    RECON.st=data.id; await reconLoad(); renderRecon(); return;
+  }
+  if(ev.target.id==='rcSave')  { reconSave(false); return; }
+  if(ev.target.id==='rcLock')  { reconSave(true);  return; }
+  if(ev.target.id==='rcUnlock'){
+    await sb.from('statements').update({locked:false}).eq('id',RECON.st);
+    await reconLoad(); renderRecon(); toast('Unlocked'); return; }
+  if(ev.target.id==='rcDrop'){
+    const st=RECON.stmts.find(s=>s.id===RECON.st); if(!st) return;
+    if(!confirm('Delete this statement? What you ticked against it goes back to '
+      +'being unreconciled — no transaction is deleted.')) return;
+    await sb.from('statements').update({locked:false}).eq('id',st.id);
+    await sb.from('transactions')
+      .update({reconciled:false, statement_id:null, reconciled_on:null})
+      .eq('statement_id',st.id);
+    await sb.from('statements').delete().eq('id',st.id);
+    RECON.st=null; await reconLoad(); renderRecon(); await loadMoney(); toast('Deleted'); return; }
+});
+$('reconBody').addEventListener('change',async ev=>{
+  if(ev.target.id==='rcAcc'){ RECON.acc=Number(ev.target.value); RECON.st=null;
+    await reconLoad(); renderRecon(); return; }
+  if(ev.target.id==='rcSt'){ RECON.st=ev.target.value?Number(ev.target.value):null;
+    await reconLoad(); renderRecon(); return; }
+});
+
+$('impBody').addEventListener('change',ev=>{
+  if(ev.target.id==='impAcc'){ IMPORT.acc=Number(ev.target.value); return; }
+  const m=ev.target.closest('[data-imap]');
+  if(m){
+    IMPORT.map=IMPORT.map||{};
+    IMPORT.map[m.dataset.imap]= m.type==='checkbox' ? m.checked : m.value;
+    renderImport(); return;
+  }
+  if(ev.target.id==='impFile'&&ev.target.files&&ev.target.files[0]){
+    const fr=new FileReader();
+    fr.onload=()=>{ takeCSV(fr.result); };
+    fr.readAsText(ev.target.files[0]);
+  }
+});
+$('impBody').addEventListener('click',ev=>{
+  if(ev.target.id==='impRead'){
+    const t=$('impPaste').value;
+    if(!t.trim()){ toast('Choose a file or paste some rows first'); return; }
+    takeCSV(t); return;
+  }
+  if(ev.target.id==='impPreview'){
+    IMPORT.name=($('impName')&&$('impName').value.trim())||'';
+    importPreview(); return;
+  }
+  if(ev.target.id==='impGo'){ doImport(); return; }
+});
+
+function takeCSV(text){
+  const rows=parseCSV(text);
+  if(!rows.length){ toast('Nothing readable in that'); return; }
+  IMPORT.rows=rows;
+  IMPORT.head=rows[0].map(h=>String(h).trim());
+  const h=IMPORT.head;
+  // A first guess from the headings, and from any layout already remembered.
+  IMPORT.map={ head:true,
+    date:guessCol(h,['date']),
+    desc:guessCol(h,['description','details','narrative','reference','payee','memo']),
+    amount:guessCol(h,['amount','value']),
+    in:guessCol(h,['paid in','credit','money in','deposit']),
+    out:guessCol(h,['paid out','debit','money out','withdraw']),
+    ref:guessCol(h,['transaction id','reference number','id']),
+    fmt:'dmy' };
+  if(IMPORT.map.in!==''||IMPORT.map.out!=='') IMPORT.map.amount='';
+  renderImport();
+  setTimeout(()=>{ const o=$('impOut'); if(o) o.innerHTML=''; },0);
+}
+
+/* ---------- Settings: accounts, categories, payees, who can see ---------- */
+function finAccountRows(){
+  if(!MONEY_ON) return `<div class="field"><dd style="color:var(--muted)">${
+    MONEY_WHY==='notset'
+      ? 'Run the step 35 file in Supabase first.'
+      : 'The books have not been shared with you.'}</dd></div>`;
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    The opening balance is what was in the account on the opening date. Every
+    balance the app shows is that plus everything recorded since, so it is worth
+    getting right. A credit card normally sits below zero.</dd></div>
+  ${ACCOUNTS.map(a=>`<div class="setrow fieldrow" data-arow="${a.id}">
+    <input data-afield="${a.id}:name" value="${esc(a.name)}" style="flex:1 1 150px">
+    <select data-afield="${a.id}:kind" style="flex:0 1 130px">${ACC_KINDS.map(k=>
+      `<option value="${k}" ${a.kind===k?'selected':''}>${k}</option>`).join('')}</select>
+    <select data-afield="${a.id}:currency" style="flex:0 0 90px">${CURRENCIES.map(c=>
+      `<option value="${c.code}" ${a.currency===c.code?'selected':''}>${esc(c.code)}</option>`).join('')}</select>
+    <input data-afield="${a.id}:opening_balance" value="${a.opening_balance}"
+      inputmode="decimal" style="flex:0 0 110px" aria-label="Opening balance">
+    <input data-afield="${a.id}:opening_date" type="date" value="${esc(a.opening_date)}"
+      style="flex:0 0 150px">
+    <label style="flex:0 0 auto;color:var(--muted);font-size:15px">
+      <input type="checkbox" data-afield="${a.id}:active" ${a.active?'checked':''}> in use</label>
+    <button class="x" data-adrop="${a.id}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd">
+    <input data-anew="name" placeholder="New account">
+    <button class="btn primary" data-aadd="1">Add account</button>
+  </div>`;
+}
+
+function finCatRows(){
+  if(!MONEY_ON) return '';
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    The code is your own shorthand and can be left empty. Marking one
+    <strong>business</strong> means anything put against it counts as business
+    by default — you can still change it on the transaction itself.</dd></div>
+  ${FCATS.map(c=>`<div class="setrow fieldrow">
+    <input data-cfield="${c.id}:code" value="${esc(c.code||'')}" placeholder="Code"
+      style="flex:0 0 80px">
+    <input data-cfield="${c.id}:name" value="${esc(c.name)}" style="flex:1 1 140px">
+    <select data-cfield="${c.id}:kind" style="flex:0 0 110px">${
+      ['expense','income','both'].map(k=>`<option value="${k}"
+        ${c.kind===k?'selected':''}>${k}</option>`).join('')}</select>
+    <label style="flex:0 0 auto;color:var(--muted);font-size:15px">
+      <input type="checkbox" data-cfield="${c.id}:business" ${c.business?'checked':''}> business</label>
+    <button class="x" data-cdrop="${c.id}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd">
+    <input data-cnew="name" placeholder="New category">
+    <button class="btn primary" data-cadd="1">Add category</button>
+  </div>`;
+}
+
+function finPayeeRows(){
+  if(!MONEY_ON) return '';
+  const list=PAYEES.slice(0,250);
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    Shops, suppliers and anyone who pays you. Most are not people in your
+    contacts, but a payee can point at one — useful for a tradesman or a
+    friend you split bills with. New payees are usually added as you go,
+    straight from the transaction.</dd></div>
+  ${list.map(p=>`<div class="setrow fieldrow">
+    <input data-pfield="${p.id}:name" value="${esc(p.name)}" style="flex:1 1 150px">
+    <select data-pfield="${p.id}:category_id" style="flex:0 1 160px">
+      <option value="">Usually…</option>${FCATS.map(c=>`<option value="${c.id}"
+        ${String(p.category_id)===String(c.id)?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    <button class="btn" data-plink="${p.id}" style="flex:0 1 150px;border:1.5px solid var(--rule);
+      padding:8px;font-size:15px;font-weight:400;text-align:left">${
+      esc(nameOfContact(p.contact_id)||'Link a contact…')}</button>
+    <button class="x" data-pdrop="${p.id}" aria-label="Remove">&times;</button></div>`).join('')}
+  ${PAYEES.length>250?`<div class="field"><dd style="color:var(--muted)">
+    Showing the first 250 of ${PAYEES.length}.</dd></div>`:''}
+  <div class="setadd">
+    <input data-pnew="name" placeholder="New payee">
+    <button class="btn primary" data-padd="1">Add payee</button>
+  </div>`;
+}
+
+function finPeopleRows(){
+  if(!MONEY_ON) return `<div class="field"><dd style="color:var(--muted)">${
+    MONEY_WHY==='notset' ? 'Run the step 35 file in Supabase first.'
+      : 'Only the people already in the books can change who is in them.'}</dd></div>`;
+  const all=[MY_PROFILE].concat(USERS).filter(Boolean);
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    Everyone ticked here sees all of the finances — every account, every
+    transaction. Everyone else using the app sees none of it, and cannot tell it
+    is there. Unticking someone shuts them out immediately.</dd></div>
+  ${all.map(u=>`<div class="setrow">
+    <label style="flex:1;display:flex;align-items:center;gap:10px">
+      <input type="checkbox" data-finwho="${u.id}" ${FINPEOPLE.includes(u.id)?'checked':''}
+        ${u.id===ME.id&&FINPEOPLE.length<2?'disabled':''}>
+      ${esc(u.display_name||u.email||'Somebody')}${u.id===ME.id?' (you)':''}</label>
+  </div>`).join('')}
+  <div class="field"><dd style="color:var(--muted);font-size:14px">
+    You cannot take yourself out while you are the only one in, or nobody could
+    get back in without the Supabase dashboard.</dd></div>`;
+}
+
+function wireFinance(){
+  const body=$('setBody'); if(!body) return;
+  const after=async(msg)=>{ await loadMoney(); openSettings('Finances'); if(msg) toast(msg); };
+  const fail=(e,what)=>{ console.error(e); toast(what); };
+
+  const saveField=async(table,id,field,el)=>{
+    let v = el.type==='checkbox' ? el.checked : el.value;
+    if(field==='opening_balance') v=num(v);
+    if(field==='category_id')     v=v?Number(v):null;
+    if(typeof v==='string')       v=v.trim();
+    if(field==='name'&&!v){ toast('It needs a name'); await after(); return; }
+    const {error}=await sb.from(table).update({[field]:v}).eq('id',Number(id));
+    if(error) return fail(error,'Could not save that');
+    await loadMoney();
+  };
+
+  body.querySelectorAll('[data-afield]').forEach(el=>el.onchange=()=>{
+    const [id,f]=el.dataset.afield.split(':'); saveField('accounts',id,f,el); });
+  body.querySelectorAll('[data-cfield]').forEach(el=>el.onchange=()=>{
+    const [id,f]=el.dataset.cfield.split(':'); saveField('categories',id,f,el); });
+  body.querySelectorAll('[data-pfield]').forEach(el=>el.onchange=()=>{
+    const [id,f]=el.dataset.pfield.split(':'); saveField('payees',id,f,el); });
+
+  const addRow=async(table,sel,what)=>{
+    const inp=body.querySelector(sel);
+    const name=inp&&inp.value.trim();
+    if(!name){ toast('Type a name first'); return; }
+    const rec={name, created_by:ME.id};
+    if(table==='accounts'){ rec.currency='GBP'; rec.opening_date=isoDay(new Date()); }
+    const {error}=await sb.from(table).insert(rec);
+    if(error) return fail(error,'Could not add that — the name may already be in use');
+    await after(what+' added');
+  };
+  const a=body.querySelector('[data-aadd]'); if(a) a.onclick=()=>addRow('accounts','[data-anew]','Account');
+  const c=body.querySelector('[data-cadd]'); if(c) c.onclick=()=>addRow('categories','[data-cnew]','Category');
+  const p=body.querySelector('[data-padd]'); if(p) p.onclick=()=>addRow('payees','[data-pnew]','Payee');
+
+  // Deleting an account would take its transactions with it, so the database
+  // refuses. Say so plainly rather than showing the raw complaint.
+  body.querySelectorAll('[data-adrop]').forEach(b=>b.onclick=async()=>{
+    const acc=accOf(Number(b.dataset.adrop)); if(!acc) return;
+    if(!confirm('Remove the account "'+acc.name+'"?')) return;
+    const {error}=await sb.from('accounts').delete().eq('id',acc.id);
+    if(error){
+      toast('That account has transactions against it. Untick "in use" to put it '
+        +'away instead.'); console.error(error); return;
+    }
+    await after('Removed');
+  });
+  body.querySelectorAll('[data-cdrop]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Remove this category? Anything filed under it keeps its amount '
+      +'but loses the category.')) return;
+    const {error}=await sb.from('categories').delete().eq('id',Number(b.dataset.cdrop));
+    if(error) return fail(error,'Could not remove that');
+    await after('Removed');
+  });
+  body.querySelectorAll('[data-pdrop]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Remove this payee? Transactions keep their amounts.')) return;
+    const {error}=await sb.from('payees').delete().eq('id',Number(b.dataset.pdrop));
+    if(error) return fail(error,'Could not remove that');
+    await after('Removed');
+  });
+  body.querySelectorAll('[data-plink]').forEach(b=>b.onclick=async()=>{
+    const id=Number(b.dataset.plink);
+    const cur=(PAYEES.find(x=>x.id===id)||{}).contact_id;
+    const v=await pickContact('Which contact is this payee?',cur);
+    if(v===undefined) return;
+    const {error}=await sb.from('payees').update({contact_id:v}).eq('id',id);
+    if(error) return fail(error,'Could not link that');
+    await after('Linked');
+  });
+
+  body.querySelectorAll('[data-finwho]').forEach(el=>el.onchange=async()=>{
+    const uid=el.dataset.finwho;
+    if(el.checked){
+      const {error}=await sb.from('finance_members').insert({user_id:uid});
+      if(error) return fail(error,'Could not add them');
+      await after('They can see the books now');
+    } else {
+      if(!confirm('Shut them out of the finances?')){ el.checked=true; return; }
+      const {error}=await sb.from('finance_members').delete().eq('user_id',uid);
+      if(error) return fail(error,'Could not remove them');
+      await after('Removed');
+    }
+  });
+}
+
+
 // One handler for the refresh and settings buttons on every bar.
 document.addEventListener('click',async ev=>{
   const r=ev.target.closest('[data-barref]');

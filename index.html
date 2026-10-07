@@ -111,6 +111,33 @@ ul.list li.chosen{background:#FBE9E7}
 
 /* The front door. It sits above the contacts list but below every sheet,
    so closing Shopping or the Log drops you back here, not somewhere else. */
+/* Messages */
+#chat .sheetbody{padding-bottom:0}
+#chatFoot{flex:0 0 auto;display:flex;gap:8px;align-items:flex-end;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--rule);background:var(--panel)}
+#chatFoot textarea{flex:1;min-width:0;max-height:38vh;padding:11px 12px;
+  border:1.5px solid var(--rule);border-radius:12px;resize:none;
+  font-size:16px;line-height:1.35;background:#fff}
+#chatFoot textarea:focus{border-color:var(--hull);outline:none}
+#chatSend{flex:0 0 auto;width:46px;height:46px;border-radius:50%;
+  background:var(--hull);color:var(--paper);font-size:19px;line-height:1}
+#chatSend:disabled{opacity:.4}
+.bubbles{display:flex;flex-direction:column;gap:9px;padding:14px}
+.bub{max-width:82%;padding:9px 13px;border-radius:15px;font-size:16px;
+  line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.bub.them{align-self:flex-start;background:var(--panel);
+  border:1px solid var(--rule);border-bottom-left-radius:5px}
+.bub.me{align-self:flex-end;background:var(--hull);color:var(--paper);
+  border-bottom-right-radius:5px}
+.bub .nm{display:block;font-size:13px;font-weight:700;color:var(--brass);
+  margin-bottom:2px}
+.bub .tm{display:block;font-size:12px;opacity:.65;margin-top:3px;text-align:right}
+.daystamp{align-self:center;font-size:13px;color:var(--muted);font-weight:600;
+  background:var(--band,#F3F1EA);border-radius:999px;padding:3px 12px}
+.unread{background:var(--red);color:#fff;border-radius:999px;min-width:22px;
+  padding:1px 7px;font-size:13px;font-weight:700;flex:0 0 auto;text-align:center}
+
 /* One bar across the bottom of every screen. Thin, two words, always there. */
 #tray{position:fixed;left:0;right:0;bottom:0;z-index:46;display:flex;
   background:var(--panel);border-top:1px solid var(--rule);
@@ -657,6 +684,7 @@ i.key{vertical-align:middle}
   <div class="sheetbody">
     <div class="card">
       <button class="menuitem" id="goPick">Delete several contacts &rsaquo;</button>
+      <button class="menuitem" id="goChats">Messages &rsaquo;</button>
       <button class="menuitem" id="goOffers">Contacts sent to you &rsaquo;</button>
       <button class="menuitem" id="goIO">Import and export contacts &rsaquo;</button>
       <button class="menuitem" id="goShop">Shopping list &rsaquo;</button>
@@ -702,6 +730,24 @@ i.key{vertical-align:middle}
         <path d="M20.5 3.5V9H15"/></svg></button>
   </div>
   <div class="homebody" id="homeBody"></div>
+</div>
+
+<div id="chats" class="sheet hidden">
+  <div class="sheetbar"><button id="chatsBack">Back</button>
+    <span class="title">Messages</span>
+    <button id="chatNew">New</button></div>
+  <div class="sheetbody" id="chatsBody"></div>
+</div>
+
+<div id="chat" class="sheet hidden">
+  <div class="sheetbar"><button id="chatBack">Back</button>
+    <span class="title" id="chatTitle"></span>
+    <button id="chatWho">Who</button></div>
+  <div class="sheetbody" id="chatBody"></div>
+  <div id="chatFoot">
+    <textarea id="chatText" rows="1" placeholder="Write a message"></textarea>
+    <button id="chatSend" aria-label="Send">&#10148;</button>
+  </div>
 </div>
 
 <div id="offers" class="sheet hidden">
@@ -779,7 +825,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers']
+  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers','chats','chat']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -860,6 +906,7 @@ async function loadAll(){
   if(!sp.error) SHOP=sp.data||[];
   OFFERS = of.error ? [] : (of.data||[]);
   OFFERS_READY = !of.error;
+  await loadChats(); await loadMsgs();
   if(PETS.length)LAB.pets=PETS.map(t=>t.name);
   ITEMS=it.data||[]; ITEM_SHARES=ish.data||[];
   const rt=await sb.from('routines').select('*').order('sort_order');
@@ -3186,6 +3233,7 @@ function tilePip(dest){
   if(dest==='diary') return dueSoonCount();
   if(dest==='shop')  return SHOP.filter(x=>!x.got).length;
   if(dest==='offers') return offersToMe().length;
+  if(dest==='chats')  return unreadTotal();
   return 0;
 }
 
@@ -5497,6 +5545,7 @@ const TILE_DEST={
   pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
   settings:{label:'Settings',   go:openSettings},
   offers:  {label:'Sent to you', go:openOffers},
+  chats:   {label:'Messages',    go:openChats},
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
   money:   {label:'Finances',   go:()=>toast('Coming soon')},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
@@ -5508,9 +5557,9 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
-  offers:'#2E5E63'};
-const TILE_DEFAULTS=['contacts','log','diary','shop','where','offers','money',
-  'alarm','settings'];
+  offers:'#2E5E63', chats:'#3F5A46'};
+const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
+  'money','alarm','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -5528,6 +5577,7 @@ function shade(hex,amt){
 // took off the home screen hands its screen back to the colour scheme.
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
+  chats:['chats','chat'],
   settings:['settings'], pick:['app']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -5732,6 +5782,287 @@ function hideHome(){
   lockBackground();
 }
 
+
+
+/* ============================================================
+   Messages
+   Conversations inside the app: one person, a group, or everybody.
+   ============================================================ */
+let CHATS=[], CHATMEM=[], MSGS=[], CHATS_READY=true, CUR_CHAT=null, MSG_SUB=null;
+
+async function loadChats(){
+  const [ch,mm]=await Promise.all([
+    sb.from('chats').select('*'),
+    sb.from('chat_members').select('*')
+  ]);
+  CHATS_READY = !ch.error;
+  CHATS=ch.error?[]:(ch.data||[]);
+  CHATMEM=mm.error?[]:(mm.data||[]);
+  // Anybody added to the app later joins the Everyone channel themselves.
+  const all=CHATS.find(c=>c.is_everyone);
+  if(all && !CHATMEM.some(m=>m.chat_id===all.id && m.user_id===ME.id)){
+    const {error}=await sb.from('chat_members').insert({chat_id:all.id,user_id:ME.id});
+    if(!error){
+      const {data}=await sb.from('chat_members').select('*');
+      CHATMEM=data||[];
+    }
+  }
+}
+async function loadMsgs(){
+  const mine=CHATMEM.filter(m=>m.user_id===ME.id).map(m=>m.chat_id);
+  if(!mine.length){ MSGS=[]; return; }
+  const {data,error}=await sb.from('messages').select('*')
+    .in('chat_id',mine).order('created_at',{ascending:true}).limit(2000);
+  MSGS=error?[]:(data||[]);
+}
+
+const myChats = () => CHATS.filter(c=>
+  CHATMEM.some(m=>m.chat_id===c.id && m.user_id===ME.id));
+const chatMsgs = id => MSGS.filter(m=>m.chat_id===id);
+const membersOf = id => CHATMEM.filter(m=>m.chat_id===id).map(m=>m.user_id);
+const myRow = id => CHATMEM.find(m=>m.chat_id===id && m.user_id===ME.id);
+
+function chatName(c){
+  if(c.title) return c.title;
+  const others=membersOf(c.id).filter(u=>u!==ME.id);
+  if(!others.length) return 'Just you';
+  return others.map(u=>whoWrote(u)).join(', ');
+}
+function unreadIn(c){
+  const row=myRow(c.id);
+  const since=row&&row.last_read?new Date(row.last_read):null;
+  return chatMsgs(c.id).filter(m=>m.from_user!==ME.id
+    && (!since || new Date(m.created_at)>since)).length;
+}
+const unreadTotal = () => myChats().reduce((n,c)=>n+unreadIn(c),0);
+
+function whenShort(iso){
+  const d=new Date(iso), now=new Date();
+  const same = d.toDateString()===now.toDateString();
+  if(same) return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const y=new Date(now); y.setDate(y.getDate()-1);
+  if(d.toDateString()===y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+
+/* ---------- the list of conversations ---------- */
+function openChats(){
+  renderChats();
+  $('chats').classList.remove('hidden'); $('chatsBody').scrollTop=0; lockBackground();
+}
+function renderChats(){
+  if(!CHATS_READY){
+    $('chatsBody').innerHTML=`<div class="card"><div class="field"><dd>
+      This part needs its database step first. In Supabase, open the SQL Editor
+      and run <strong>contacts-step33.sql</strong>, then come back here.</dd></div></div>`;
+    return;
+  }
+  const list=myChats().slice().sort((a,b)=>{
+    const la=chatMsgs(a.id).slice(-1)[0], lb=chatMsgs(b.id).slice(-1)[0];
+    return new Date((lb&&lb.created_at)||b.created_at)
+         - new Date((la&&la.created_at)||a.created_at);
+  });
+  $('chatsBody').innerHTML = list.length
+    ? `<div class="card rtlist">${list.map(c=>{
+        const last=chatMsgs(c.id).slice(-1)[0];
+        const n=unreadIn(c);
+        const who=last&&last.from_user!==ME.id?whoWrote(last.from_user)+': ':
+                  last?'You: ':'';
+        return `<div class="item">
+          <button class="mid" data-chat="${c.id}">
+            <span class="t">${esc(chatName(c))}${c.is_everyone
+              ? ' <span class="scope">everyone</span>':''}</span>
+            <span class="w">${last?esc(who+last.body.replace(/\s+/g,' ').slice(0,70))
+              :'Nothing said yet'}</span>
+          </button>
+          <span style="display:flex;flex-direction:column;align-items:flex-end;
+            gap:4px;padding:0 12px 0 0">
+            <span class="coords" style="margin:0">${last?esc(whenShort(last.created_at)):''}</span>
+            ${n?`<span class="unread">${n}</span>`:''}
+          </span></div>`;
+      }).join('')}</div>`
+    : `<div class="card"><div class="field"><dd>No conversations yet. Tap
+        <strong>New</strong> to start one.</dd></div></div>`;
+  $('chatsBody').querySelectorAll('[data-chat]').forEach(b=>
+    b.onclick=()=>openChat(Number(b.dataset.chat)));
+}
+
+/* ---------- one conversation ---------- */
+async function openChat(id){
+  CUR_CHAT=id;
+  const c=CHATS.find(x=>x.id===id); if(!c) return;
+  $('chatTitle').textContent=chatName(c);
+  $('chatWho').style.display=(c.title||c.is_everyone)?'':'none';
+  renderChat();
+  $('chat').classList.remove('hidden'); lockBackground();
+  setTimeout(()=>{ const b=$('chatBody'); b.scrollTop=b.scrollHeight; },30);
+  await markRead(id);
+  watchMessages();
+}
+function renderChat(){
+  const c=CHATS.find(x=>x.id===CUR_CHAT); if(!c) return;
+  const list=chatMsgs(c.id);
+  const group=!!(c.title||c.is_everyone);
+  let day='';
+  $('chatBody').innerHTML=`<div class="bubbles">${
+    list.length?list.map(m=>{
+      const d=new Date(m.created_at).toDateString();
+      const stamp = d!==day ? (day=d, `<span class="daystamp">${esc(
+        new Date(m.created_at).toLocaleDateString('en-GB',
+          {weekday:'short',day:'numeric',month:'short'}))}</span>`) : '';
+      const mine=m.from_user===ME.id;
+      // Built without line breaks on purpose: the bubble keeps whitespace, so
+      // tidy indentation inside it would show up as blank lines.
+      const nm=(!mine&&group)?'<span class="nm">'+esc(whoWrote(m.from_user))+'</span>':'';
+      const tm='<span class="tm">'+esc(new Date(m.created_at)
+        .toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))+'</span>';
+      return stamp+'<span class="bub '+(mine?'me':'them')+'" data-msg="'+m.id+'">'
+        +nm+esc(m.body)+tm+'</span>';
+    }).join('')
+    :`<span class="daystamp">Nothing said yet</span>`}</div>`;
+  // Long-press or long-click your own to take it back
+  $('chatBody').querySelectorAll('[data-msg]').forEach(el=>{
+    const m=MSGS.find(x=>String(x.id)===el.dataset.msg);
+    if(!m||m.from_user!==ME.id) return;
+    el.oncontextmenu=ev=>{ ev.preventDefault(); unsend(m.id); };
+  });
+}
+async function markRead(id){
+  const row=myRow(id);
+  const last=chatMsgs(id).slice(-1)[0];
+  if(!last) return;
+  if(row&&row.last_read&&new Date(row.last_read)>=new Date(last.created_at)) return;
+  await sb.from('chat_members').update({last_read:new Date().toISOString()})
+    .eq('chat_id',id).eq('user_id',ME.id);
+  const r=myRow(id); if(r) r.last_read=new Date().toISOString();
+  if($('home')&&!$('home').classList.contains('hidden')) renderHome();
+}
+async function sendMsg(){
+  const box=$('chatText'), body=box.value.trim();
+  if(!body||!CUR_CHAT) return;
+  $('chatSend').disabled=true;
+  const {data,error}=await sb.from('messages')
+    .insert({chat_id:CUR_CHAT, from_user:ME.id, body}).select().single();
+  $('chatSend').disabled=false;
+  if(error){ toast('Could not send it'); console.error(error); return; }
+  box.value=''; box.style.height='';
+  if(data && !MSGS.some(m=>m.id===data.id)) MSGS.push(data);
+  renderChat();
+  const b=$('chatBody'); b.scrollTop=b.scrollHeight;
+  await markRead(CUR_CHAT);
+}
+async function unsend(id){
+  if(!confirm('Take this message back? It disappears for everyone.')) return;
+  const {error}=await sb.from('messages').delete().eq('id',id);
+  if(error){ toast('Could not take it back'); return; }
+  MSGS=MSGS.filter(m=>m.id!==id);
+  renderChat(); renderChats();
+}
+
+// A reply appears as it is sent, while both of you have the app open.
+function watchMessages(){
+  if(MSG_SUB||!sb.channel) return;
+  try{
+    MSG_SUB=sb.channel('msgs')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},
+        async payload=>{
+          const m=payload.new;
+          if(!m||MSGS.some(x=>x.id===m.id)) return;
+          if(!CHATMEM.some(x=>x.chat_id===m.chat_id&&x.user_id===ME.id)) return;
+          MSGS.push(m);
+          if(CUR_CHAT===m.chat_id && !$('chat').classList.contains('hidden')){
+            renderChat();
+            const b=$('chatBody'); b.scrollTop=b.scrollHeight;
+            await markRead(m.chat_id);
+          }
+          if(!$('chats').classList.contains('hidden')) renderChats();
+          if($('home')&&!$('home').classList.contains('hidden')) renderHome();
+        })
+      .subscribe();
+  }catch(e){ /* realtime not switched on: the five-minute refresh covers it */ }
+}
+
+/* ---------- starting one ---------- */
+function newChat(){
+  if(!USERS.length){ toast('Nobody else has an account yet'); return; }
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Who is it for?</p>
+    <div class="checks">${USERS.map(u=>`<label><input type="checkbox"
+      value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+    <label>A name for it, if it is a group
+      <input id="ncName" placeholder="Boaters, Family, The crew…" autocomplete="off"></label>
+    <p class="coords" style="margin-top:8px">Tick one person for a quiet word, or
+    several for a group. Everybody at once already has its own conversation.</p>
+    <div class="pfoot"><button id="ncCancel">Cancel</button>
+      <button id="ncGo" class="go">Start it</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#ncCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#ncGo').onclick=async()=>{
+    const who=[...box.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value);
+    if(!who.length){ toast('Tick at least one person'); return; }
+    const name=box.querySelector('#ncName').value.trim();
+    close();
+    await startChat(who, who.length>1?(name||null):null);
+  };
+  setTimeout(()=>box.querySelector('input')&&box.querySelector('input').focus(),50);
+}
+async function startChat(userIds, title){
+  // One to one: reuse the conversation you already have with them.
+  if(userIds.length===1 && !title){
+    const found=myChats().find(c=>!c.title && !c.is_everyone
+      && membersOf(c.id).length===2 && membersOf(c.id).includes(userIds[0]));
+    if(found){ $('chats').classList.add('hidden'); openChat(found.id); return; }
+  }
+  const {data,error}=await sb.from('chats')
+    .insert({created_by:ME.id, title:title||null}).select().single();
+  if(error||!data){ toast(CHATS_READY?'Could not start it'
+    :'Run contacts-step33.sql first'); console.error(error); return; }
+  const rows=[{chat_id:data.id,user_id:ME.id},
+    ...userIds.filter(u=>u!==ME.id).map(u=>({chat_id:data.id,user_id:u}))];
+  const {error:e2}=await sb.from('chat_members').insert(rows);
+  if(e2){ toast('Started it, but could not add everyone'); console.error(e2); }
+  await loadChats(); await loadMsgs();
+  renderChats();
+  $('chats').classList.add('hidden');
+  openChat(data.id);
+}
+function showWho(){
+  const c=CHATS.find(x=>x.id===CUR_CHAT); if(!c) return;
+  const here=membersOf(c.id);
+  const spare=USERS.filter(u=>!here.includes(u.id));
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(chatName(c))}</p>
+    <div class="field"><dd>${here.map(u=>esc(u===ME.id?'You':whoWrote(u)))
+      .join(', ')}</dd></div>
+    ${(!c.is_everyone&&spare.length)?`<p class="dsec">Bring somebody in</p>
+      <div class="checks">${spare.map(u=>`<label><input type="checkbox"
+        value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>`:''}
+    <div class="pfoot"><button id="whoClose">Close</button>
+      ${(!c.is_everyone&&spare.length)?'<button id="whoAdd" class="go">Add them</button>':''}
+    </div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#whoClose').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  const add=box.querySelector('#whoAdd');
+  if(add) add.onclick=async()=>{
+    const who=[...box.querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value);
+    if(!who.length){ close(); return; }
+    close();
+    const {error}=await sb.from('chat_members')
+      .insert(who.map(u=>({chat_id:c.id,user_id:u})));
+    if(error){ toast('Could not add them'); console.error(error); return; }
+    await loadChats();
+    $('chatTitle').textContent=chatName(c);
+    toast(who.length===1?'Added':who.length+' added');
+  };
+}
 
 /* ============================================================
    Sending a contact to somebody
@@ -6428,6 +6759,26 @@ $('goWish').onclick=()=>{$('menu').classList.add('hidden');openWish();};
 $('goShop').onclick=()=>{$('menu').classList.add('hidden');openShop();};
 $('goIO').onclick=()=>{$('menu').classList.add('hidden');openIO();};
 $('goOffers').onclick=()=>{$('menu').classList.add('hidden');openOffers();};
+$('goChats').onclick=()=>{$('menu').classList.add('hidden');openChats();};
+$('chatsBack').onclick=()=>{$('chats').classList.add('hidden');lockBackground();};
+$('chatNew').onclick=newChat;
+$('chatBack').onclick=()=>{
+  $('chat').classList.add('hidden'); CUR_CHAT=null; lockBackground();
+  renderChats();
+};
+$('chatWho').onclick=showWho;
+$('chatSend').onclick=sendMsg;
+$('chatText').addEventListener('input',()=>{
+  const t=$('chatText');
+  t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,300)+'px';
+});
+$('chatText').addEventListener('keydown',ev=>{
+  // Enter sends on a keyboard; shift-enter makes a new line. On a phone the
+  // return key just makes a new line, which is what people expect there.
+  if(ev.key==='Enter'&&!ev.shiftKey&&window.matchMedia('(min-width:700px)').matches){
+    ev.preventDefault(); sendMsg();
+  }
+});
 $('offBack').onclick=()=>{$('offers').classList.add('hidden');lockBackground();};
 $('goPick').onclick=()=>{$('menu').classList.add('hidden');lockBackground();startPicking();};
 $('ioBack').onclick=()=>{$('io').classList.add('hidden');lockBackground();};
@@ -6474,7 +6825,7 @@ $('trayHelp').onclick=()=>openHelp();
 // The strip steps out of the way while you are typing into a form, and while
 // you are ticking contacts, where the bottom of the screen is already spoken for.
 function paintTray(){
-  const busy=['editor','logEd','itemEd'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
+  const busy=['editor','logEd','itemEd','chat'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
   $('tray').style.display=(busy||PICKING)?'none':'';
 }
 // One handler for the refresh and settings buttons on every bar.

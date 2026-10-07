@@ -190,6 +190,16 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
   flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .tileadd span{font-size:30px;line-height:1}
 .homenote{color:var(--muted);font-size:15px;margin:16px 2px 0}
+/* A word about what has changed, until it has been read and put away */
+.notice{position:relative;background:#F6E7C9;border:1.5px solid var(--brass);
+  border-radius:12px;padding:14px 40px 14px 15px;margin:0 0 16px;font-size:15px;
+  line-height:1.45}
+.notice h4{margin:0 0 6px;font-size:16px}
+.notice p{margin:0 0 9px}
+.notice .go{background:var(--hull);color:var(--paper);border-radius:9px;
+  padding:9px 14px;font-weight:700;font-size:15px}
+.notice .x{position:absolute;top:6px;right:8px;font-size:22px;line-height:1;
+  color:var(--muted);padding:4px 8px}
 .setrow.cmprow{align-items:flex-start;border-bottom:1px solid var(--rule)}
 .setrow.cmprow:last-of-type{border-bottom:none}
 .setrow.fieldrow{flex-wrap:wrap;align-items:center;
@@ -1107,15 +1117,17 @@ function paintPickBar(){
   bar.innerHTML=`<span>${PICKED.size} chosen${theirs?' ('+theirs+' not yours)':''}</span>
     <span style="margin-left:auto;display:flex;gap:10px">
       <button id="pickCancel">Cancel</button>
-      <button id="pickSend" ${PICKED.size?'':'disabled'}>Send…</button>
+      <button id="pickSend" ${mine?'':'disabled'}>Send ${mine||''}…</button>
       <button id="pickGo" ${mine?'':'disabled'} style="color:#FFD9D4;font-weight:700">
         Delete ${mine||''}</button>
     </span>`;
   bar.classList.remove('hidden');
   $('pickCancel').onclick=stopPicking;
   const snd=$('pickSend');
-  if(snd&&PICKED.size) snd.onclick=()=>pickPeople(
-    'Send copies of '+PICKED.size+' contact'+(PICKED.size===1?'':'s')+' to',
+  if(snd&&mine) snd.onclick=()=>pickPeople(
+    'Send copies of '+mine+' contact'+(mine===1?'':'s')+' to'
+      +(theirs?'\n\n'+theirs+' of the ones you tapped belong to somebody else, '
+        +'so they stay where they are.':''),
     async who=>{ await sendContacts([...PICKED],who); stopPicking(); });
   const go=$('pickGo');
   if(go&&mine) go.onclick=deletePicked;
@@ -1673,8 +1685,12 @@ async function openDetail(id, keepPlace){
   $('detBody').querySelectorAll('[data-tile]').forEach(b=>b.onclick=()=>flip(b,'on_tile'));
   $('detBody').querySelectorAll('[data-maps]').forEach(b=>b.onclick=()=>{
     const [la,ln]=b.dataset.maps.split(',');openInMaps(la,ln);});
-  $('detBody').querySelectorAll('[data-share]').forEach(b=>
-    b.onchange=()=>toggleShare(b.dataset.share,b.checked));
+  $('detBody').querySelectorAll('[data-unshare]').forEach(b=>
+    b.onclick=()=>{
+      if(!confirm('Stop '+whoWrote(b.dataset.unshare)+' seeing this record?\n\n'
+        +'If they have not taken a copy, it disappears from their list.')) return;
+      toggleShare(b.dataset.unshare,false);
+    });
   wireLinkSearch();
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
@@ -1694,22 +1710,30 @@ async function toggleFav(id){
 
 function shareCard(c){
   if(c.created_by!==ME.id)
-    return `<div class="card"><h3>Sharing</h3><div class="field"><dd>Shared with you by someone else.
-      You can edit it, but only its owner can delete it or change who sees it.</dd></div></div>`;
+    return `<div class="card"><h3>Sharing</h3><div class="field"><dd>Shared with you by
+      ${esc(whoWrote(c.created_by))}. You can edit it, but only they can delete it,
+      change who sees it, or pass it on to anyone else.</dd></div></div>`;
   if(!USERS.length)
     return `<div class="card"><h3>Sharing</h3><div class="field"><dd>No one else has an account yet.</dd></div></div>`;
-  return `<div class="card"><h3>Sharing</h3>
+  const old=SHARES.filter(x=>x.contact_id===c.id);
+  const from = c.came_from
+    ? `<div class="field"><dt>Came from</dt><dd>${esc(whoWrote(c.came_from))}${
+        c.came_at?' · '+esc(fmtDate(String(c.came_at).slice(0,10))):''}</dd></div>`
+    : '';
+  return `<div class="card"><h3>Sharing</h3>${from}
     <div class="setadd"><button class="btn primary" id="sendCopy">Send a copy to…</button></div>
     <div class="field"><dd style="color:var(--muted);font-size:15px">
-      Sending a copy gives them their own contact to keep and edit. Ticking
-      somebody below is the older arrangement: they see yours, and only you can
-      delete it.</dd></div>
-    ${USERS.map(u=>{
-      const on=SHARES.some(s=>s.contact_id===c.id&&s.user_id===u.id);
-      return `<div class="setrow"><label style="margin:0;display:flex;gap:10px;align-items:center;color:var(--ink);flex:1">
-        <input type="checkbox" style="width:auto;margin:0" data-share="${u.id}" ${on?'checked':''}>
-        ${esc(u.display_name||u.email)}</label></div>`;
-    }).join('')}</div>`;
+      They get their own contact, theirs to edit, file or delete. Yours stays
+      yours.</dd></div>
+    ${old.length?`
+      <div class="field"><dt>Also still shared the old way</dt><dd>
+        They are looking at this very record. Once they have taken a copy you can
+        stop that.</dd></div>
+      ${old.map(x=>`<div class="setrow">
+        <span style="flex:1">${esc(whoWrote(x.user_id))}</span>
+        <button class="addmore" data-unshare="${x.user_id}"
+          style="color:var(--red)">Stop</button></div>`).join('')}`:''}
+    </div>`;
 }
 
 async function toggleShare(uid,on){
@@ -2132,6 +2156,63 @@ function logSectionRows(){
 const FIELD_KINDS=[['number','A number'],['text','A few words'],
   ['note','A longer note'],['yesno','Yes or no'],['choice','Pick from a list']];
 
+// How far along the changeover is, per person. Fetched when Settings opens
+// rather than on every load, since it is only needed here.
+let HANDOVER=null;
+async function loadHandover(){
+  const {data,error}=await sb.from('contact_offers')
+    .select('to_user,decided_at,source_id').eq('from_user',ME.id);
+  HANDOVER = error ? [] : (data||[]);
+}
+function handoverRows(){
+  const mineIds=new Set(CONTACTS.filter(c=>c.created_by===ME.id).map(c=>c.id));
+  const per=USERS.map(u=>{
+    const shared=SHARES.filter(x=>x.user_id===u.id&&mineIds.has(x.contact_id));
+    const sent=(HANDOVER||[]).filter(o=>o.to_user===u.id);
+    const taken=sent.filter(o=>o.decided_at).length;
+    const waiting=sent.filter(o=>!o.decided_at).length;
+    const sentFor=new Set(sent.map(o=>o.source_id));
+    const todo=shared.map(x=>x.contact_id).filter(id=>!sentFor.has(id));
+    return {u, shared:shared.length, taken, waiting, todo};
+  });
+  const anyOld=per.some(x=>x.shared>0);
+  const allDone=anyOld && per.every(x=>!x.todo.length && !x.waiting);
+  return `
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Sharing is being replaced by sending copies, so everyone keeps their own
+      book. Send copies of whatever you have already shared; once each person has
+      taken theirs, the old sharing can be switched off for good.</dd></div>
+    ${!USERS.length?'<div class="field"><dd>Nobody else has an account yet.</dd></div>'
+     :!anyOld?'<div class="field"><dd>You are not sharing anything the old way. Nothing to hand over.</dd></div>'
+     :per.filter(x=>x.shared||x.taken||x.waiting).map(x=>`
+      <div class="setrow" style="flex-wrap:wrap">
+        <span style="flex:1 1 100%;font-weight:600">${esc(x.u.display_name||x.u.email)}</span>
+        <span style="flex:1 1 100%;color:var(--muted);font-size:15px">
+          ${x.shared} shared the old way${x.taken?' · '+x.taken+' now theirs':''}${
+            x.waiting?' · '+x.waiting+' waiting in their inbox':''}</span>
+        ${x.todo.length
+          ? `<button class="btn primary" data-handover="${x.u.id}"
+              style="flex:1 1 100%">Send copies of ${x.todo.length}</button>`
+          : `<span class="coords" style="flex:1 1 100%">${
+              x.waiting?'Waiting on them to accept.':'All sent.'}</span>`}
+      </div>`).join('')}
+    ${allDone?`<div class="field"><dd style="color:var(--hull);font-weight:600">
+      Everyone has taken a copy. The old sharing can be switched off now —
+      ask for the last step.</dd></div>`:''}`;
+}
+async function doHandover(uid){
+  const mineIds=new Set(CONTACTS.filter(c=>c.created_by===ME.id).map(c=>c.id));
+  const sentFor=new Set((HANDOVER||[]).filter(o=>o.to_user===uid).map(o=>o.source_id));
+  const ids=SHARES.filter(x=>x.user_id===uid&&mineIds.has(x.contact_id))
+    .map(x=>x.contact_id).filter(id=>!sentFor.has(id));
+  if(!ids.length){ toast('Nothing left to send'); return; }
+  if(!confirm('Send '+ids.length+' cop'+(ids.length===1?'y':'ies')+' to '
+    +whoWrote(uid)+'?\n\nThey choose what to accept. Nothing you have shared '
+    +'stops being shared until you say so.')) return;
+  await sendContacts(ids,[uid]);
+  await loadHandover(); openSettings('Contacts');
+}
+
 function catRows(){
   if(!CATS_READY) return `<div class="field"><dd>
     This part needs its database step first. In Supabase, open the SQL Editor
@@ -2382,7 +2463,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
   alcohol:'Alcohol — choices',mecontact:'Which contact is you?',
-  logcats:'Your own sections',shareall:'Share everything',hometiles:'The tiles',
+  logcats:'Your own sections',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in'};
 
 // Everything to do with one screen sits under that screen's heading.
@@ -2480,6 +2561,7 @@ function pickContact(title, currentId){
 
 async function openSettings(goTo){
   if(!LOGOPTS.length) await loadLog();
+  if(!HANDOVER) await loadHandover();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
       ${list.map((r,i)=>`<div class="setrow">
@@ -2526,12 +2608,7 @@ async function openSettings(goTo){
         <button class="btn" id="paContactPick" style="border:1.5px solid var(--rule);text-align:left">
           ${esc(nameOfContact(MY_PROFILE&&MY_PROFILE.partner_contact_id)||'Choose\u2026')}</button>
       </div>`,
-    shareall: `<div class="field"><dd style="color:var(--muted);font-size:15px">
-        Gives someone every contact you own. Ones you add later need sharing too.</dd></div>
-      ${USERS.length?USERS.map(u=>`<div class="setrow">
-        <span style="flex:1">${esc(u.display_name||u.email)}</span>
-        <button class="addmore" data-shareall="${u.id}">Share all</button></div>`).join('')
-        :'<div class="field"><dd>No one else has an account yet.</dd></div>'}`,
+    shareall: handoverRows(),
     hometiles: `<div class="field"><dd style="color:var(--muted);font-size:15px">
         The tiles on the opening screen are arranged on that screen itself.
         Tap the four-squares button beside the logo to shuffle them about, rename
@@ -2649,6 +2726,8 @@ async function openSettings(goTo){
   if(mc) mc.onclick=()=>setWho('my_contact_id','Which contact is you?',
     MY_PROFILE&&MY_PROFILE.my_contact_id);
   wireCats();
+  $('setBody').querySelectorAll('[data-handover]').forEach(b=>
+    b.onclick=()=>doHandover(b.dataset.handover));
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
     const [t,id,dir]=b.dataset.mv.split(':');
     if(t==='groups'){
@@ -2669,19 +2748,6 @@ async function openSettings(goTo){
       sb.from(t).update({sort_order:(n+1)*10}).eq('id',r.id)));
     if(res.some(r=>r.error)){toast('Could not reorder');console.error(res);return;}
     await loadAll();openSettings();
-  });
-
-  $('setBody').querySelectorAll('[data-shareall]').forEach(b=>b.onclick=async()=>{
-    const uid=b.dataset.shareall;
-    const mineIds=CONTACTS.filter(c=>c.created_by===ME.id).map(c=>c.id);
-    if(!mineIds.length){toast('You have no contacts of your own yet');return;}
-    if(!confirm('Share all '+mineIds.length+' of your contacts with this person?'))return;
-    const {error}=await sb.from('contact_shares')
-      .upsert(mineIds.map(id=>({contact_id:id,user_id:uid,can_edit:true})),
-              {onConflict:'contact_id,user_id'});
-    if(error){toast('Could not share them all');console.error(error);return;}
-    const {data}=await sb.from('contact_shares').select('*');SHARES=data||[];
-    toast('Shared '+mineIds.length+' contacts');
   });
 
   $('setBody').querySelectorAll('[data-addrow]').forEach(b=>b.onclick=async()=>{
@@ -2710,7 +2776,7 @@ function currentScreen(){
 }
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
-  menu:'h-settings', home:'h-home'};
+  menu:'h-settings', home:'h-home', sharing:'h-sharing'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen'};
 
@@ -2983,15 +3049,26 @@ function openHelp(where){
   <p>On an iPhone this only works once the app has been added to the home screen,
   and you must open it from that icon rather than in Safari.</p>
 
-  <h4 id="h-sharing">Sharing</h4>
-  <p>Everything you add is private to you until you share it. On a contact,
-  scroll to <strong>Sharing</strong> and tick the person. If that contact is
-  connected to others you have not shared, it offers those too.</p>
-  <p>Menu &rsaquo; Settings &rsaquo; <strong>Share everything</strong> hands over
-  every contact you own in one go. It is not automatic, so anyone added later
-  needs sharing as well.</p>
-  <p>Someone you share with can edit the contact but cannot delete it, and they
-  file it under their own groups, not yours.</p>
+  <h4 id="h-sharing">Sending a contact to someone</h4>
+  <p>Everything you add is private to you. To pass somebody on, open the contact
+  and use <strong>Send a copy to&hellip;</strong>, or tick several in Menu &rsaquo;
+  Tidy up contacts and use <strong>Send</strong>.</p>
+  <p>It arrives in their <strong>Sent to you</strong> screen, where they accept
+  it, turn it down, or &mdash; if they already have that person &mdash; compare the
+  two and take only the bits they want. Whatever they accept becomes a contact of
+  their own, theirs to edit, file or delete. Yours is untouched, and the two are
+  not linked afterwards, so later changes do not travel.</p>
+  <p>You can only pass on contacts you own. Somebody shared theirs with you, not
+  with whoever you might send it to next.</p>
+  <p>Photos and connections do not travel. A photo belongs to the contact it was
+  put on, and connections point at records that mean nothing in another person's
+  book.</p>
+  <p><strong>The older arrangement.</strong> Sharing used to mean the other person
+  looked at your record. That still works for anything already shared, but nothing
+  new can be shared that way. Settings &rsaquo; Contacts &rsaquo;
+  <em>Hand over what you have shared</em> turns those into copies, person by
+  person, and tells you who has taken theirs. Once everyone has, the old sharing
+  gets switched off altogether.</p>
 
   <h4 id="h-settings">Settings</h4>
   <p>Groups, relationship statuses, connection types and kinds of pet are all
@@ -5498,11 +5575,33 @@ async function saveTiles(){
   MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
 }
 
+// One notice, once, so nobody has to be told by hand what changed.
+const NOTICE_KEY='notice-sharing-1';
+function noticeDone(){ try{ return localStorage.getItem(NOTICE_KEY)==='1'; }catch(e){ return false; } }
+function noticeHtml(){
+  if(noticeDone()) return '';
+  const n=offersToMe().length;
+  return `<div class="notice">
+    <button class="x" id="noticeX" aria-label="Close">&times;</button>
+    <h4>${n?('Someone has sent you '+n+' contact'+(n===1?'':'s')):'Sharing has changed'}</h4>
+    <p>Contacts are no longer shared by looking at somebody else's record. They
+    are <strong>sent to you as a copy</strong>, and you decide whether to keep it.
+    Anything you accept becomes yours — edit it, file it, delete it, as you like.</p>
+    <p>${n?'Tap below to see what is waiting.'
+         :'Nothing is waiting for you at the moment. When something is, the '
+          +'<strong>Sent to you</strong> tile will show a red number.'}</p>
+    <p style="margin:0">Anything already shared with you the old way is still
+    there and still works. It will be replaced by copies before it goes.</p>
+    <p style="margin:12px 0 0"><button class="go" id="noticeGo">${
+      n?'Show me':'How it works'}</button></p>
+  </div>`;
+}
+
 function renderHome(){
   const box=$('homeBody'); if(!box) return;
   applySkins();
   const n=TILES.length;
-  box.innerHTML=`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
+  box.innerHTML=(ARRANGING?'':noticeHtml())+`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
     <div class="tilewrap">
       <button class="tile" data-tile="${i}"
         style="--tc:${esc(t.colour)};--td:${esc(shade(t.colour,.26))}">
@@ -5525,6 +5624,17 @@ function renderHome(){
       you can always add it back.</p>`
      :''}`;
 
+  const nx=$('noticeX');
+  if(nx) nx.onclick=()=>{
+    try{ localStorage.setItem(NOTICE_KEY,'1'); }catch(e){}
+    renderHome();
+  };
+  const ng=$('noticeGo');
+  if(ng) ng.onclick=()=>{
+    try{ localStorage.setItem(NOTICE_KEY,'1'); }catch(e){}
+    if(offersToMe().length) openOffers(); else openHelp('sharing');
+    renderHome();
+  };
   box.querySelectorAll('[data-tile]').forEach(b=>b.onclick=ev=>{
     if(ARRANGING) return;                  // in arrange mode the small buttons rule
     const t=TILES[Number(b.dataset.tile)];
@@ -5655,12 +5765,26 @@ const offersToMe = () => OFFERS.filter(o=>o.to_user===ME.id && !o.decided_at);
 
 async function sendContacts(ids, userIds){
   const rows=[];
+  let skipped=0, already=0;
+  const waiting=(cid,uid)=>OFFERS.some(o=>o.from_user===ME.id && o.to_user===uid
+    && o.source_id===cid && !o.decided_at);
   ids.forEach(id=>{
     const c=CONTACTS.find(x=>x.id===id); if(!c) return;
-    userIds.forEach(u=>rows.push({from_user:ME.id, to_user:u, name:fullName(c),
-      payload:offerPayload(c), source_id:c.id}));
+    // Only ever pass on your own. Somebody shared theirs with you, not with
+    // whoever you might send it to next — that is their decision to make.
+    if(c.created_by!==ME.id){ skipped++; return; }
+    userIds.forEach(u=>{
+      // Already sitting in their inbox: sending again would only confuse them.
+      if(waiting(c.id,u)){ already++; return; }
+      rows.push({from_user:ME.id, to_user:u, name:fullName(c),
+        payload:offerPayload(c), source_id:c.id});
+    });
   });
-  if(!rows.length){ toast('Nothing to send'); return 0; }
+  if(!rows.length){
+    toast(already?'Already waiting in their inbox'
+      :skipped?'Those are not yours to pass on':'Nothing to send');
+    return 0;
+  }
   let sent=0;
   for(let i=0;i<rows.length;i+=50){
     const {error}=await sb.from('contact_offers').insert(rows.slice(i,i+50));
@@ -5669,7 +5793,13 @@ async function sendContacts(ids, userIds){
     sent+=rows.slice(i,i+50).length;
   }
   const names=namesOf(userIds).join(' and ');
-  toast(sent===1?('Sent to '+names):(ids.length+' sent to '+names));
+  const n=Math.round(rows.length/userIds.length);
+  const notes=[];
+  if(skipped) notes.push(skipped+' not yours');
+  if(already) notes.push(already+' already waiting');
+  toast((n===1?('Sent to '+names):(n+' sent to '+names))
+    + (notes.length?' — '+notes.join(', ')+' left out':''));
+  await loadAll();
   return sent;
 }
 
@@ -5682,6 +5812,9 @@ function pickPeople(title, onGo){
     <p class="dsec" style="padding-top:0">${esc(title)}</p>
     <div class="checks">${USERS.map(u=>`<label><input type="checkbox"
       value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+    <p class="coords" style="margin-top:10px">Once somebody accepts a copy it is
+    theirs, which means they can pass it on again. Your own record is not
+    affected either way.</p>
     <div class="pfoot"><button id="ppCancel">Cancel</button>
       <button id="ppGo" class="go">Send</button></div></div>`;
   document.body.appendChild(box);
@@ -5877,7 +6010,9 @@ async function acceptOffers(ids){
   const box=await myInbox();
   let made=0;
   for(const o of list){
-    const d={created_by:ME.id, ...(o.payload||{})};
+    // Provenance last, so nothing in the payload can overwrite it.
+    const d={created_by:ME.id, ...(o.payload||{}),
+             came_from:o.from_user, came_at:new Date().toISOString()};
     if(!d.first_name&&!d.last_name&&!d.company) continue;
     const {data,error}=await sb.from('contacts').insert(d).select().single();
     if(error||!data){ console.error(error); continue; }

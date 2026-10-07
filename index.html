@@ -479,6 +479,9 @@ input[name="postcode"]{text-transform:uppercase}
 .item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;
   border-bottom:1px solid #F0EEE7;width:100%;text-align:left}
 .card .item:last-child{border-bottom:none}
+.item.dlywrap{flex-wrap:wrap}
+.pickrow.dly{flex:1 1 100%;margin:6px 0 0 44px;gap:6px}
+.pickrow.dly button{padding:5px 12px;font-size:14px;color:var(--muted)}
 .rtlist .item{padding:7px 14px}
 .rtlist .item .t{font-size:16px}
 .mvhead{flex:0 0 auto;color:var(--muted);font-size:20px;padding:0 8px}
@@ -735,7 +738,11 @@ i.key{vertical-align:middle}
 <div id="chats" class="sheet hidden">
   <div class="sheetbar"><button id="chatsBack">Back</button>
     <span class="title">Messages</span>
-    <button id="chatNew">New</button></div>
+    <span class="bartools">
+      <button class="bt" data-barhelp="chats" aria-label="How messages work"
+        title="How messages work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button>
+      <button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
+      <button id="chatNew" class="bt wordbt">New</button></span></div>
   <div class="sheetbody" id="chatsBody"></div>
 </div>
 
@@ -1024,6 +1031,15 @@ function listName(c){
   return fullName(c);
 }
 
+// Somebody is counted as gone if there is a date, or the status says so even
+// without one. Either way they step out of the everyday lists.
+const DIED_STATUS = () => STATUSES.find(x=>/^died$/i.test(x.name||''));
+function isGone(c){
+  if(c.death_date) return true;
+  const d=DIED_STATUS();
+  return !!(d && c.status_id===d.id);
+}
+
 function rowHtml(c,nested,birthdayView,alt){
   const d=daysToBirthday(c);
   const age=ageOf(c);
@@ -1080,8 +1096,7 @@ function render(){
 
   // Everywhere except their own view, the departed step aside. They are not
   // deleted — pick "Those who have died" to see them.
-  rows = MODE==='deceased' ? rows.filter(c=>c.death_date)
-                           : rows.filter(c=>!c.death_date);
+  rows = MODE==='deceased' ? rows.filter(isGone) : rows.filter(c=>!isGone(c));
   if(!rows.length){
     $('count').textContent='0 contacts';
     list.innerHTML='<li class="empty">'+(MODE==='deceased'
@@ -1099,15 +1114,20 @@ function render(){
 
   if(q||MODE!=='grouped'){
     if(MODE==='deceased'&&!q){
-      rows.sort((a,b)=>String(b.death_date).localeCompare(String(a.death_date))
-        ||byName(a,b));
+      // Dated ones first, most recent at the top; undated at the end by name.
+      rows.sort((a,b)=>{
+        if(!!a.death_date!==!!b.death_date) return a.death_date?-1:1;
+        if(a.death_date&&b.death_date)
+          return String(b.death_date).localeCompare(String(a.death_date))||byName(a,b);
+        return byName(a,b);
+      });
       $('count').textContent=rows.length+(rows.length===1?' person':' people')
         +' who have died, most recent first';
       list.innerHTML=rows.map(c=>rowHtml(c,false,false,(ALT++)%2===1)).join('');
       wireRows();return;
     }
     if(MODE==='birthdays'&&!q)
-      rows=rows.filter(c=>c.birth_date&&!c.death_date).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
+      rows=rows.filter(c=>c.birth_date&&!isGone(c)).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
     else rows.sort(byName);
     const bd = MODE==='birthdays'&&!q;
     $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')
@@ -2813,7 +2833,8 @@ async function openSettings(goTo){
 
 
 // Which screen is in front, so Help and the settings button know where you are.
-const SCREEN_ORDER=[['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
+const SCREEN_ORDER=[['chat','chats'],['chats','chats'],
+  ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
@@ -2823,7 +2844,7 @@ function currentScreen(){
 }
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
-  menu:'h-settings', home:'h-home', sharing:'h-sharing'};
+  menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen'};
 
@@ -2857,17 +2878,39 @@ function openHelp(where){
   shop without it landing on yours.</p>
   <p>Ticked items drop into the trolley at the bottom until you clear it.</p>
 
+  <h4 id="h-messages">Messages</h4>
+  <p>Conversations inside the app, between the people who have an account here.
+  The <strong>Messages</strong> tile shows a red count when something is unread.</p>
+  <p><strong>Everyone</strong> is an open group with all of you in it &mdash; anybody
+  can post. <strong>Notices</strong> is read by everyone but written only by the
+  person who owns it, for things that need reading rather than discussing. Both
+  are always there, and anybody added to the app later joins them on their first
+  visit.</p>
+  <p><strong>New</strong> starts a conversation: tick one person for a quiet word,
+  or several for a group you can name. Pick somebody you already have a
+  conversation with and it simply reopens that one. In a group, <strong>Who</strong>
+  shows who is in it and lets you bring somebody else in.</p>
+  <p>Your messages sit on the right, theirs on the left with their name above it
+  in a group. Long-press one of your own to take it back &mdash; it goes for
+  everybody. A reply appears as it is sent while you both have the app open.</p>
+  <p>Nothing buzzes your phone when a message arrives, because reminders only
+  work for diary entries at the moment. Messages are for things that can wait
+  until somebody next opens the app.</p>
+
   <h4 id="h-wish">Wishlist</h4>
   <p><strong>Wishlist</strong>, on the strip at the bottom of every screen, is
   where anyone can put ideas for this app. Move an idea between Idea, Maybe,
   Doing, Done and Not doing as it goes along. You can only remove your own, but
   anyone can move any of them. Calendar Club keeps its own list, in that app.</p>
+  <p>The pencil beside one of your own ideas lets you reword it or change the
+  explanation.</p>
 
   <h4 id="h-deceased">Those who have died</h4>
-  <p>Anyone with a date in <em>Died</em> is kept out of the everyday list, so it
-  stays about the living. Nothing is deleted. Choose <strong>Those who have
-  died</strong> from the list picker beside the search box to see them, most
-  recent first.</p>
+  <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
+  <em>Died</em> even without a date, is kept out of the everyday list so it stays
+  about the living. Nothing is deleted. Choose <strong>Those who have died</strong>
+  from the list picker beside the search box to see them &mdash; dated ones first,
+  most recent at the top, then anyone with no date.</p>
 
   <h4 id="h-pick">Getting rid of several at once</h4>
   <p>Menu &rsaquo; <strong>Delete several contacts</strong>. Tap the ones you want
@@ -3056,6 +3099,14 @@ function openHelp(where){
   you wrote on past days in the database.</p>
   <p>All of this is yours alone. Nobody else's log, headings or choices are visible
   to you, and yours are not visible to them.</p>
+
+  <h4 id="h-delay">Putting something off</h4>
+  <p>Each to-do and appointment carries <strong>+1 hr</strong>,
+  <strong>+8 hr</strong> and <strong>+1 day</strong> under it. Tapping one moves
+  the whole thing along, and rebuilds the reminder from the new time so a
+  reminder that was already overdue does not stay overdue. The same three
+  buttons are on the reminder itself when it appears on your phone.</p>
+  <p>Something with no date at all gets one: the date becomes that far from now.</p>
 
   <h4 id="h-diary">Diary</h4>
   <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
@@ -3264,14 +3315,48 @@ function itemsOn(day){
 function itemRow(it){
   const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
   const shared=ITEM_SHARES.some(x=>x.item_id===it.id)||it.created_by!==ME.id;
-  return `<div class="item">
+  return `<div class="item dlywrap">
     <button class="tick ${it.done_at?'on':''}" data-done="${it.id}"
       aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
     <button class="mid" data-item="${it.id}">
       <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
       <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}</span>
       ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
-    </button></div>`;
+    </button>
+    ${it.done_at?'':`<span class="pickrow dly">
+      <button type="button" data-dly="${it.id}:1">+1 hr</button>
+      <button type="button" data-dly="${it.id}:8">+8 hr</button>
+      <button type="button" data-dly="${it.id}:24">+1 day</button>
+    </span>`}</div>`;
+}
+
+// Push something back by an hour, a working day, or until tomorrow. The
+// reminder is rebuilt from the new time rather than nudged, so a reminder that
+// was already overdue does not stay overdue.
+async function delayItem(id,hours){
+  const it=ITEMS.find(x=>x.id===id);
+  if(!it) return;
+  const ms=hours*3600*1000;
+  const from=new Date(Date.now()+ms).toISOString();
+  const bump=v=>v?new Date(new Date(v).getTime()+ms).toISOString():null;
+  const d={};
+  if(it.kind==='appointment'){
+    d.starts_at = it.starts_at?bump(it.starts_at):from;
+    d.ends_at   = bump(it.ends_at);
+  }else{
+    d.due_at   = it.due_at?bump(it.due_at):from;
+    d.due_from = bump(it.due_from);
+  }
+  const when = d.starts_at || d.due_at;
+  if(when && it.remind_mins!=null && it.remind_mins!=='')
+    d.remind_at=new Date(new Date(when).getTime()-Number(it.remind_mins)*60000).toISOString();
+  else if(it.remind_at) d.remind_at=bump(it.remind_at);
+  d.pushed_at=null;               // so the reminder comes round again
+
+  const {error}=await sb.from('items').update(d).eq('id',id);
+  if(error){ toast('Could not put it off'); console.error(error); return; }
+  await loadAll(); renderDiary();
+  toast(hours===24?'Put off until tomorrow':'Put off '+hours+' hour'+(hours===1?'':'s'));
 }
 
 function renderDiary(){
@@ -3309,6 +3394,11 @@ function renderDiary(){
     b.onclick=()=>toggleDone(Number(b.dataset.done)));
   $('diaryBody').querySelectorAll('[data-item]').forEach(b=>
     b.onclick=()=>openItem(ITEMS.find(x=>x.id===Number(b.dataset.item))));
+  $('diaryBody').querySelectorAll('[data-dly]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation();
+    const [id,hrs]=b.dataset.dly.split(':');
+    delayItem(Number(id),Number(hrs));
+  });
   $('diaryBody').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{
     DIARY_DAY=b.dataset.day; renderDiary(); });
   $('diaryBody').querySelectorAll('[data-mshift]').forEach(b=>b.onclick=()=>{
@@ -3825,11 +3915,10 @@ function openItem(it, presetContact){
     </div>
     <fieldset><legend>What</legend>
       <label>Title<input name="title" required></label>
-      <label>About which contact<select name="contact_id">
-        <option value="">&mdash; nobody in particular &mdash;</option>
-        ${CONTACTS.slice().sort(byName).map(c=>
-          `<option value="${c.id}">${esc(fullName(c))}</option>`).join('')}
-      </select></label>
+      <p class="coords" style="margin:12px 0 2px">About which contact</p>
+      <button type="button" class="btn" id="itWho"
+        style="border:1.5px solid var(--rule);text-align:left">&mdash; nobody in particular &mdash;</button>
+      <input type="hidden" name="contact_id">
       <label>Notes<textarea name="notes" rows="3"></textarea></label>
     </fieldset>
 
@@ -3885,17 +3974,37 @@ function openItem(it, presetContact){
     f.elements['starts_at'].value=localValue(soon);
     f.elements['remind_mins'].value='60';
   }
+  const paintWho=()=>{
+    const v=f.elements['contact_id'].value;
+    const c=v?CONTACTS.find(x=>x.id===Number(v)):null;
+    $('itWho').textContent = c ? fullName(c) : '\u2014 nobody in particular \u2014';
+  };
   if(cid) f.elements['contact_id'].value=String(cid);
+  paintWho();
+  $('itWho').onclick=async()=>{
+    const picked=await pickContact('Who is it about?',
+      f.elements['contact_id'].value?Number(f.elements['contact_id'].value):null);
+    if(picked===undefined) return;          // cancelled
+    f.elements['contact_id'].value = picked===null?'':String(picked);
+    paintWho();
+  };
   if(it) ITEM_SHARES.filter(x=>x.item_id===it.id).forEach(x=>{
     const b=f.querySelector(`input[name="alsoremind"][value="${x.user_id}"]`);
     if(b) b.checked=true;
   });
 
+  // Two different jobs, so they look different while you are doing them.
+  const KIND_COLOUR={todo:'#4A5340', appointment:'#6B3F2A'};
   const applyKind=()=>{
     $('fsWhenAppt').style.display = ITEM_KIND==='appointment' ? '' : 'none';
     $('fsTodo').style.display = ITEM_KIND==='todo' ? '' : 'none';
     $('itBody').querySelectorAll('[data-kind]').forEach(b=>
       b.setAttribute('aria-pressed', b.dataset.kind===ITEM_KIND));
+    const col=KIND_COLOUR[ITEM_KIND]||KIND_COLOUR.todo;
+    $('itemEd').style.setProperty('--hull', col);
+    $('itemEd').style.setProperty('--hull-dark', shade(col,.3));
+    $('itTitle').textContent=(EDIT_ITEM?'Edit ':'New ')
+      + (ITEM_KIND==='appointment'?'appointment':'to-do');
   };
   $('itBody').querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{
     ITEM_KIND=b.dataset.kind; applyKind(); });
@@ -5256,6 +5365,36 @@ async function openWish(){
   $('wish').classList.remove('hidden'); $('wishBody').scrollTop=0; lockBackground();
 }
 
+// Your own ideas can be reworded. Anybody can still move any of them along.
+function editWish(id){
+  const w=WISHES.find(x=>x.id===id);
+  if(!w) return;
+  if(w.created_by!==ME.id){ toast('You can only change your own'); return; }
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Change this idea</p>
+    <label>What would be good?<input id="weTitle" value="${esc(w.title)}"></label>
+    <label>Anything worth explaining
+      <textarea id="weNotes" rows="3">${esc(w.notes||'')}</textarea></label>
+    <div class="pfoot"><button id="weCancel">Cancel</button>
+      <button id="weGo" class="go">Save</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#weCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#weGo').onclick=async()=>{
+    const t=box.querySelector('#weTitle').value.trim();
+    if(!t){ toast('It needs a title'); return; }
+    const {error}=await sb.from('wishes')
+      .update({title:t, notes:box.querySelector('#weNotes').value.trim()||null})
+      .eq('id',id);
+    if(error){ toast('Could not save it'); console.error(error); return; }
+    close(); await loadLists(); renderWish(); toast('Saved');
+  };
+  setTimeout(()=>box.querySelector('#weTitle').focus(),50);
+}
+
 function renderWish(){
   const live=WISHES.filter(w=>w.app===WISH_APP);
   const byStatus={};
@@ -5278,9 +5417,12 @@ function renderWish(){
       text-transform:none;letter-spacing:0">${rows.length}</span></p>
       <div class="card wcard w-${key}">`;
     rows.forEach(w=>{
+      const mineW = w.created_by===ME.id;
       html+=`<div class="item" style="align-items:flex-start">
         <span class="mid">
-          <span class="t" style="${key==='done'||key==='no'?'color:var(--muted)':''}">${esc(w.title)}</span>
+          <span class="t" style="${key==='done'||key==='no'?'color:var(--muted)':''}">${esc(w.title)}${
+            mineW?` <button class="addmore" data-wedit="${w.id}"
+              style="padding:0 0 0 6px;font-size:15px" aria-label="Change this">&#9998;</button>`:''}</span>
           ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
           <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
             ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
@@ -5310,6 +5452,8 @@ function renderWish(){
     if(error){ toast('Could not add it'); console.error(error); return; }
     await loadLists(); renderWish(); toast('Added');
   };
+  $('wishBody').querySelectorAll('[data-wedit]').forEach(b=>b.onclick=()=>
+    editWish(Number(b.dataset.wedit)));
   $('wishBody').querySelectorAll('[data-wset]').forEach(b=>b.onclick=async()=>{
     const [id,st]=b.dataset.wset.split(':');
     const {error}=await sb.from('wishes').update({status:st}).eq('id',Number(id));
@@ -6849,6 +6993,8 @@ document.addEventListener('click',async ev=>{
     toast('Up to date');
     return;
   }
+  const h=ev.target.closest('[data-barhelp]');
+  if(h){ openHelp(h.dataset.barhelp); return; }
   const g=ev.target.closest('[data-barset]');
   if(g) openSettings(SET_AT[currentScreen()]);
 });

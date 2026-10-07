@@ -5798,10 +5798,12 @@ async function loadChats(){
   CHATS_READY = !ch.error;
   CHATS=ch.error?[]:(ch.data||[]);
   CHATMEM=mm.error?[]:(mm.data||[]);
-  // Anybody added to the app later joins the Everyone channel themselves.
-  const all=CHATS.find(c=>c.is_everyone);
-  if(all && !CHATMEM.some(m=>m.chat_id===all.id && m.user_id===ME.id)){
-    const {error}=await sb.from('chat_members').insert({chat_id:all.id,user_id:ME.id});
+  // Anybody added to the app later joins the standing channels themselves.
+  const standing=CHATS.filter(c=>c.is_everyone||c.announce)
+    .filter(c=>!CHATMEM.some(m=>m.chat_id===c.id && m.user_id===ME.id));
+  if(standing.length){
+    const {error}=await sb.from('chat_members')
+      .insert(standing.map(c=>({chat_id:c.id,user_id:ME.id})));
     if(!error){
       const {data}=await sb.from('chat_members').select('*');
       CHATMEM=data||[];
@@ -5821,6 +5823,9 @@ const myChats = () => CHATS.filter(c=>
 const chatMsgs = id => MSGS.filter(m=>m.chat_id===id);
 const membersOf = id => CHATMEM.filter(m=>m.chat_id===id).map(m=>m.user_id);
 const myRow = id => CHATMEM.find(m=>m.chat_id===id && m.user_id===ME.id);
+
+// Everyone is an open group. Notices is read by all and written by one.
+const canPost = c => !c || !c.announce || c.created_by===ME.id;
 
 function chatName(c){
   if(c.title) return c.title;
@@ -5871,7 +5876,8 @@ function renderChats(){
         return `<div class="item">
           <button class="mid" data-chat="${c.id}">
             <span class="t">${esc(chatName(c))}${c.is_everyone
-              ? ' <span class="scope">everyone</span>':''}</span>
+              ? ' <span class="scope">everyone</span>'
+              : c.announce ? ' <span class="scope">notices</span>':''}</span>
             <span class="w">${last?esc(who+last.body.replace(/\s+/g,' ').slice(0,70))
               :'Nothing said yet'}</span>
           </button>
@@ -5892,7 +5898,9 @@ async function openChat(id){
   CUR_CHAT=id;
   const c=CHATS.find(x=>x.id===id); if(!c) return;
   $('chatTitle').textContent=chatName(c);
-  $('chatWho').style.display=(c.title||c.is_everyone)?'':'none';
+  $('chatWho').style.display=(c.title||c.is_everyone||c.announce)?'':'none';
+  const mine=canPost(c);
+  $('chatFoot').style.display = mine ? '' : 'none';
   renderChat();
   $('chat').classList.remove('hidden'); lockBackground();
   setTimeout(()=>{ const b=$('chatBody'); b.scrollTop=b.scrollHeight; },30);
@@ -5919,7 +5927,10 @@ function renderChat(){
       return stamp+'<span class="bub '+(mine?'me':'them')+'" data-msg="'+m.id+'">'
         +nm+esc(m.body)+tm+'</span>';
     }).join('')
-    :`<span class="daystamp">Nothing said yet</span>`}</div>`;
+    :`<span class="daystamp">Nothing said yet</span>`}</div>`
+    + (canPost(c)?'' : `<p class="homenote" style="text-align:center;padding:0 16px 18px">
+        Only ${esc(whoWrote(c.created_by))} posts here. Anything that needs a reply
+        is better in <strong>Everyone</strong> or a message of its own.</p>`);
   // Long-press or long-click your own to take it back
   $('chatBody').querySelectorAll('[data-msg]').forEach(el=>{
     const m=MSGS.find(x=>String(x.id)===el.dataset.msg);

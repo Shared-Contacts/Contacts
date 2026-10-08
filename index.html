@@ -570,9 +570,13 @@ i.key{vertical-align:middle}
 .signin p{color:var(--muted);margin:0 0 24px}
 .msg{padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:16px}
 .msg.error{background:#FBE9E7;color:#7E241E}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));
-  background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;z-index:60;
-  font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3)}
+/* Messages stack upwards instead of landing on top of one another, which made
+   two at once unreadable. */
+#toasts{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom));
+  z-index:60;display:flex;flex-direction:column-reverse;align-items:center;gap:8px;
+  pointer-events:none;padding:0 16px}
+.toast{background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;
+  font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3);max-width:100%;text-align:center}
 /* ---------- Finances ---------- */
 /* Room at the bottom so the last row can be scrolled clear of the + button. */
 #moneyBody{padding-bottom:84px}
@@ -633,6 +637,12 @@ i.key{vertical-align:middle}
     text-transform:uppercase;color:var(--muted)}
   .lrow .x{grid-column:1 / -1;justify-self:end;margin-top:-4px}
 }
+
+/* How much of an imported amount is still unaccounted for. Green when the
+   split adds up, red when it has gone past. */
+#txLeftRow dd{font-weight:700}
+#txLeftRow.ok dd{color:#1D4A3A}
+#txLeftRow.over dd{color:var(--red)}
 
 /* The reconcile tally. Green only once it actually balances. */
 .recsum .field dt{flex:1;color:var(--muted)}
@@ -933,8 +943,12 @@ function lockBackground(){
   if(typeof paintTray==='function') paintTray();
 }
 
-function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;
-  d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
+function toast(t){
+  let box=$('toasts');
+  if(!box){ box=document.createElement('div'); box.id='toasts';
+            box.setAttribute('aria-live','polite'); document.body.appendChild(box); }
+  const d=document.createElement('div');d.className='toast';d.textContent=t;
+  d.setAttribute('role','status');box.appendChild(d);setTimeout(()=>d.remove(),2600);}
 
 const CAPS=['first_name','last_name','given_names','nickname','address','address_2',
   'town','county','country','boat_name','met_where','company','employer_name',
@@ -7170,7 +7184,8 @@ const FIN_KINDS=[
   {k:'refund',   label:'Refund',   sign: 1},
   {k:'transfer', label:'Transfer', sign:-1}
 ];
-const PAY_METHODS=['cash','debit card','credit card','auto','cheque','transfer','other'];
+// Most-used first, so the one that is right most of the time is already showing.
+const PAY_METHODS=['debit card','credit card','cash','auto','cheque','transfer','other'];
 const ACC_KINDS=['current','savings','credit card','cash','processor'];
 
 function kindOf(k){ return FIN_KINDS.find(x=>x.k===k)||FIN_KINDS[0]; }
@@ -7283,8 +7298,11 @@ function renderMoney(){
 
   const rows=TXNS.map(t=>{
     const a=accOf(t.account_id), lines=TXLINES.filter(l=>l.transaction_id===t.id);
+    // Your own name for it if you have given one; failing that whatever the
+    // bank called it, which is what an imported transaction arrives with.
     const what = payeeName(t.payee_id)
       || lines.map(l=>l.description).filter(Boolean)[0]
+      || t.reference
       || (t.kind==='transfer'?'Transfer':kindOf(t.kind).label);
     const cats=[...new Set(lines.map(l=>fcatName(l.category_id)).filter(Boolean))];
     return `<button class="txn" data-tx="${t.id}">
@@ -7354,6 +7372,16 @@ async function newTxn(){
 async function editTxn(id){
   const t=TXNS.find(x=>x.id===id); if(!t) return;
   TX={...t, to_account_id:null, to_amount:null, to_date:null};
+  // What the transaction came to when it was opened. Splitting it across
+  // several lines should still add up to this, so each new line starts with
+  // whatever is left over.
+  TX.target=Math.abs(Number(t.total||0))||null;
+  // Only a transaction that arrived from a bank file gets told what the bank
+  // said — for one you typed yourself there is nothing to reconcile against.
+  TX.fromBank=!!(t.bank_ref||t.imported_at);
+  // A bank file says nothing about how you paid. Debit card is right far more
+  // often than not; nothing is written until you save.
+  if(!TX.pay_method) TX.pay_method='debit card';
   TXL=TXLINES.filter(l=>l.transaction_id===id)
     .map(l=>({id:l.id, category_id:l.category_id, description:l.description||'',
               qty:Number(l.qty), amount:Number(l.amount), business:!!l.business}));
@@ -7476,7 +7504,11 @@ function renderTxnEditor(){
     </div>
     <div class="field" style="font-weight:700;font-size:17px">
       <dt style="color:var(--muted)">Total</dt>
-      <dd style="text-align:right">${money(kindOf(TX.kind).sign*Math.abs(txnTotal()),cur)}</dd></div>
+      <dd style="text-align:right" id="txTotal"></dd></div>
+    ${TX.fromBank&&TX.target?`<div class="field" id="txLeftRow">
+      <dt style="color:var(--muted)">The bank said ${money(
+        kindOf(TX.kind).sign*TX.target,cur)}</dt>
+      <dd style="text-align:right" id="txLeft"></dd></div>`:''}
   </div>
 
   <details class="card logsec"><summary>Paid in another currency</summary>
@@ -7505,6 +7537,26 @@ function renderTxnEditor(){
   ${TX.id?`<button class="btn danger" id="txDel">Delete this transaction${
     TX.transfer_id?' and its other half':''}</button>`:''}
   <div style="height:30px"></div>`;
+
+  paintTotals();
+}
+
+// The total and the amount still to account for, written straight into the two
+// places they show. Done this way rather than by redrawing the form, because a
+// redraw while you are typing would throw you out of the box you are in.
+function paintTotals(){
+  const cur=accCur(TX.account_id), sign=kindOf(TX.kind).sign;
+  const sum=Math.round(Math.abs(txnTotal())*100)/100;
+  const t=$('txTotal'); if(t) t.textContent=money(sign*sum,cur);
+
+  const row=$('txLeftRow'), left=$('txLeft');
+  if(!row||!left||!TX.target) return;
+  const d=Math.round((TX.target-sum)*100)/100;
+  left.textContent = d===0 ? '✓ all accounted for'
+    : d>0 ? money(d,cur)+' still to put somewhere'
+    : money(-d,cur)+' more than the bank said';
+  row.classList.toggle('ok',  d===0);
+  row.classList.toggle('over',d<0);
 }
 
 // Read every box before doing anything with them — a select or a text box only
@@ -8022,7 +8074,16 @@ $('moneyEdBody').addEventListener('click',async ev=>{
   const x=ev.target.closest('[data-lx]');
   if(x){ flushTxn(); TXL.splice(+x.dataset.lx,1); if(!TXL.length) TXL=[blankLine()];
          renderTxnEditor(); return; }
-  if(ev.target.id==='txAddLine'){ flushTxn(); TXL.push(blankLine()); renderTxnEditor();
+  if(ev.target.id==='txAddLine'){
+    flushTxn();
+    const l=blankLine();
+    // Splitting one amount across several lines: whatever is left over starts
+    // in the new line, so a three-way split is two numbers typed, not three.
+    if(TX.target){
+      const left=Math.round((TX.target-Math.abs(txnTotal()))*100)/100;
+      if(left>0) l.amount=left;
+    }
+    TXL.push(l); renderTxnEditor();
     setTimeout(()=>{ const f=$('moneyEdBody').querySelector(`[data-ld="${TXL.length-1}"]`);
       if(f) f.focus(); },30); return; }
   if(ev.target.id==='txPayee'){
@@ -8040,9 +8101,25 @@ $('moneyEdBody').addEventListener('click',async ev=>{
   }
   if(ev.target.id==='txDel'){ delTxn(); return; }
 });
+// The total keeps up with you as you type, so it can be trusted. No redraw:
+// that would take the cursor out of the box mid-number.
+$('moneyEdBody').addEventListener('input',ev=>{
+  if(ev.target.matches('[data-la],[data-lq]')){ flushTxn(); paintTotals(); }
+});
 // The account and the kind change what the rest of the form looks like.
 $('moneyEdBody').addEventListener('change',ev=>{
-  if(['txAcc','txAcc2'].includes(ev.target.id)){ flushTxn(); renderTxnEditor(); }
+  if(['txAcc','txAcc2'].includes(ev.target.id)){ flushTxn(); renderTxnEditor(); return; }
+  // Picking a category that is marked as business ticks the box for you. It can
+  // always be unticked — it is a head start, not a ruling.
+  const c=ev.target.closest('[data-lc]');
+  if(c&&ev.target.value){
+    const cat=FCATS.find(x=>String(x.id)===String(ev.target.value));
+    const box=$('txBiz');
+    if(cat&&cat.business&&box&&!box.checked){
+      box.checked=true; TX.business=true;
+      toast('Marked as business — untick it if that is wrong');
+    }
+  }
 });
 
 $('reconBody').addEventListener('click',async ev=>{

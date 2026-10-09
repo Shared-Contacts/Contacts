@@ -630,6 +630,7 @@ i.key{vertical-align:middle}
   text-align:left;border-bottom:1px solid #F0EEE7}
 .card .txn:last-of-type{border-bottom:none}
 .txn .td{flex:0 0 54px;color:var(--muted);font-size:14px;padding-top:2px}
+.txn .td.wide{flex:0 0 84px}
 .txn .tn{flex:1;min-width:0}
 .txn .tn b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
@@ -2760,7 +2761,7 @@ try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','who_aboard','medication','bike_ride','alcohol','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','finpeople'];
+  'accounts','fincats','finpayees','fincur','finpeople'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
@@ -2769,7 +2770,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   logcats:'Your own sections',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
-  finpeople:'Who can see the books'};
+  fincur:'Currencies', finpeople:'Who can see the books'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
@@ -2777,7 +2778,7 @@ const SET_GROUPS=[
                               'mecontact','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','who_aboard','medication',
                               'bike_ride','alcohol']},
-  {label:'Finances',   cards:['accounts','fincats','finpayees','finpeople']},
+  {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','finpeople']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
 ];
@@ -2901,6 +2902,7 @@ async function openSettings(goTo){
     accounts:   finAccountRows(),
     fincats:    finCatRows(),
     finpayees:  finPayeeRows(),
+    fincur:     finCurRows(),
     finpeople:  finPeopleRows(),
     logsections: logSectionRows(),
     logcats: catRows(),
@@ -3185,8 +3187,23 @@ function openHelp(where){
   <strong>Currency</strong> column to point at. Rows in any other currency are
   left out and counted, and you bring them in by importing the very same file
   again with the other account chosen.</p>
+  <p><strong>How it was paid</strong> can be read off their type column, if the
+  file has one &mdash; a card payment comes in as a debit card, a transfer as a
+  transfer, a cash machine as cash. It is only a first guess, and the How box on
+  each transaction is still yours to change.</p>
+  <p><strong>Only rows where&hellip;</strong> is for a file that lists things not
+  yet settled. Point it at their status column, choose the settled one, and
+  anything still pending stays out until it is real. If the file has a column
+  like that, the app points this at it and picks the right value by itself.</p>
   <p>Point the <strong>Fee</strong> column at their fee column if the file has
-  one. The fee comes in as a second line on the transaction, so the total still
+  one.</p>
+  <p><strong>A currency you have not got yet</strong> &mdash; Hong Kong dollars,
+  say &mdash; is added under Settings &rsaquo; Finances &rsaquo; Currencies. Put
+  in the three-letter code (HKD, AUD, CHF), a name and a sign, and it is then
+  offered wherever a currency can be chosen. Several currencies sharing a $ sign
+  is no problem: the code is what keeps them apart. A currency with accounts
+  against it has no remove button, so one cannot vanish from under an account.</p>
+  <p>The rest: The fee comes in as a second line on the transaction, so the total still
   matches the statement and you can see what the bank took.</p>
   <p>Every row in the preview can be <strong>tapped to leave it out</strong>.
   Useful for anything still showing as pending, which is better brought in once
@@ -7587,6 +7604,14 @@ function renderMoney(){
       style="border:1.5px solid var(--rule);margin-bottom:20px">Show more</button>`:''}`;
 }
 
+// Always the year as well. Checking a list against a bank statement is no
+// place to be guessing which year a row belongs to.
+function fullDate(iso){
+  if(!iso) return '';
+  return new Date(iso+'T00:00:00')
+    .toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
 // 3 Feb, or 3 Feb 25 once it is not this year
 function shortDate(iso){
   if(!iso) return '';
@@ -8206,6 +8231,37 @@ function guessCol(head,words){
   return i<0?'':String(i);
 }
 
+// The values actually in a column, so a filter offers real choices rather than
+// asking you to type one exactly right.
+function valuesIn(col){
+  const m=IMPORT.map||{};
+  return [...new Set(IMPORT.rows.slice(m.head?1:0)
+    .map(r=>String(r[col]??'').trim()).filter(Boolean))].slice(0,30);
+}
+
+// What the bank called it, turned into how you paid. Only ever a starting
+// guess — the How box on each transaction is yours to change.
+const TYPE_TO_METHOD=[
+  [/atm|cash\s*with/i,                        'cash'],
+  [/credit\s*card/i,                          'credit card'],
+  [/card|pos\b|contactless|purchase/i,        'debit card'],
+  [/direct\s*debit|standing|subscription|recurring/i, 'auto'],
+  [/cheque|check/i,                           'cheque'],
+  [/transfer|topup|top-?up|exchange|payment/i,'transfer'],
+  [/fee|charge|interest/i,                    'other']
+];
+function methodFrom(word,accKind){
+  const s=String(word||'');
+  for(const [re,m] of TYPE_TO_METHOD){
+    if(re.test(s)){
+      // On a credit card account, a card payment is the credit card.
+      if(m==='debit card'&&accKind==='credit card') return 'credit card';
+      return m;
+    }
+  }
+  return null;
+}
+
 async function openImport(){
   IMPORT={acc:(MONEY_ACC!=='all'?MONEY_ACC:(ACCOUNTS.filter(a=>a.active)[0]||{}).id)||null,
           rows:[], head:[], map:null, name:''};
@@ -8249,7 +8305,17 @@ function renderImport(){
       ${colSel('out','Money out')}`:''}
     ${colSel('cur','Currency','The whole file is one currency')}
     ${colSel('fee','Fee','None')}
+    ${colSel('kind','How it was paid','Leave them all as Debit card')}
     ${colSel('ref','Their reference','None')}
+    ${colSel('only','Only rows where','Bring in every row')}
+    ${(m.only!==''&&m.only!==undefined)?`
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">is</label>
+      <select data-imap="onlyVal">${valuesIn(Number(m.only)).map(v=>`<option value="${esc(v)}"
+        ${m.onlyVal===v?'selected':''}>${esc(v)}</option>`).join('')}</select></div>
+    <div class="field"><dd style="color:var(--muted);font-size:14px">
+      For a file that lists things not yet settled. Pointing this at their
+      status column and choosing the settled one keeps anything still pending
+      out until it is real.</dd></div>`:''}
     <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Dates look like</label>
       <select data-imap="fmt">
         <option value="dmy" ${m.fmt==='dmy'?'selected':''}>31/01/2026 — day first</option>
@@ -8288,12 +8354,17 @@ function importPreview(keepTicks){
     // out everything that does not belong in this account.
     const rowCur=col('cur')!==null
       ? String(r[m.cur]??'').trim().toUpperCase() : '';
+    const acc=accOf(IMPORT.acc)||{};
     return { date, desc:String(r[m.desc]??'').trim(),
              ref:col('ref')!==null?String(r[m.ref]??'').trim():'',
              amount:Math.round(amt*100)/100,
              fee:Math.round(fee*100)/100,
-             cur:rowCur };
-  }).filter(x=>x.date&&(x.amount||x.fee));
+             cur:rowCur,
+             method:col('kind')!==null
+               ? methodFrom(r[m.kind],acc.kind) : null,
+             keep:col('only')===null || !m.onlyVal
+               || String(r[m.only]??'').trim()===m.onlyVal };
+  }).filter(x=>x.date&&(x.amount||x.fee)&&x.keep);
 
   // Rows in another currency are not an error and not a duplicate - they
   // belong to a different account of yours.
@@ -8323,7 +8394,7 @@ function importPreview(keepTicks){
   <div class="card">
     ${mine.slice(0,60).map(x=>`<button class="txn rec ${x.take?'on':''}" data-imp="${esc(x.key)}">
       <span class="tick ${x.take?'on':''}">${x.take?'&#10003;':''}</span>
-      <span class="td">${esc(shortDate(x.date))}</span>
+      <span class="td wide">${esc(fullDate(x.date))}</span>
       <span class="tn"><b>${esc(x.desc||'—')}</b>${
         x.dup?'<span>looks like one you already have</span>'
         :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`:''}</span>
@@ -8347,6 +8418,7 @@ async function doImport(){
   const heads=rows.map(x=>({
     account_id:IMPORT.acc, tdate:x.date,
     kind:x.amount<0?'expense':'income',
+    pay_method:x.method||'debit card',
     reference:x.desc||null,
     bank_ref:x.ref||(x.date+'|'+x.amount.toFixed(2)+'|'+(x.desc||'').slice(0,40)),
     imported_at:now, created_by:ME.id
@@ -8552,8 +8624,16 @@ function takeCSV(text){
     out:guessCol(h,['paid out','debit','money out','withdraw']),
     cur:guessCol(h,['currency','ccy']),
     fee:guessCol(h,['fee','charge']),
+    kind:guessCol(h,['type','transaction type']),
     ref:guessCol(h,['transaction id','reference number','id']),
+    only:guessCol(h,['state','status']),
     fmt:'dmy' };
+  // A status column almost always means some rows are not settled yet. Pick
+  // the one that looks completed, so pending rows stay out by default.
+  if(IMPORT.map.only!==''){
+    const vals=valuesIn(Number(IMPORT.map.only));
+    IMPORT.map.onlyVal=vals.find(v=>/complete|settled|posted|cleared|ok/i.test(v))||vals[0]||'';
+  }
   if(IMPORT.map.in!==''||IMPORT.map.out!=='') IMPORT.map.amount='';
   renderImport();
   setTimeout(()=>{ const o=$('impOut'); if(o) o.innerHTML=''; },0);
@@ -8632,6 +8712,37 @@ function finPayeeRows(){
   <div class="setadd">
     <input data-pnew="name" placeholder="New payee">
     <button class="btn primary" data-padd="1">Add payee</button>
+  </div>`;
+}
+
+function finCurRows(){
+  if(!MONEY_ON) return '';
+  const used={};
+  ACCOUNTS.forEach(a=>{ used[a.currency]=(used[a.currency]||0)+1; });
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    The three-letter code is the standard one &mdash; HKD for Hong Kong dollars,
+    AUD for Australian, CHF for Swiss francs. The symbol is only what gets shown
+    in front of an amount, so several currencies sharing a $ is perfectly
+    all right; the code is what keeps them apart.</dd></div>
+  ${CURRENCIES.map(c=>`<div class="setrow fieldrow">
+    <span style="flex:0 0 58px;font-weight:700;font-variant-numeric:tabular-nums">${esc(c.code)}</span>
+    <input data-curfield="${esc(c.code)}:name" value="${esc(c.name||'')}"
+      style="flex:1 1 150px" placeholder="Name">
+    <input data-curfield="${esc(c.code)}:symbol" value="${esc(c.symbol||'')}"
+      style="flex:0 0 64px;text-align:center" placeholder="Sign" maxlength="3">
+    ${used[c.code]
+      ? `<span class="scope">${used[c.code]} account${used[c.code]===1?'':'s'}</span>`
+      : `<button class="x" data-curdrop="${esc(c.code)}" aria-label="Remove">&times;</button>`}
+  </div>`).join('')}
+  <div class="setadd">
+    <div class="pickrow" style="gap:8px">
+      <input data-curnew="code" placeholder="HKD" maxlength="3"
+        style="flex:0 0 90px;text-transform:uppercase">
+      <input data-curnew="name" placeholder="Hong Kong dollar" style="flex:1">
+      <input data-curnew="symbol" placeholder="$" maxlength="3"
+        style="flex:0 0 64px;text-align:center">
+    </div>
+    <button class="btn primary" data-curadd="1" style="margin-top:10px">Add currency</button>
   </div>`;
 }
 
@@ -8725,6 +8836,37 @@ function wireFinance(){
     const {error}=await sb.from('payees').update({contact_id:v}).eq('id',id);
     if(error) return fail(error,'Could not link that');
     await after('Linked');
+  });
+
+  // Currencies are keyed by their code, not a number, so they save on their own.
+  body.querySelectorAll('[data-curfield]').forEach(el=>el.onchange=async()=>{
+    const [code,f]=el.dataset.curfield.split(':');
+    const {error}=await sb.from('currencies')
+      .update({[f]:el.value.trim()}).eq('code',code);
+    if(error) return fail(error,'Could not save that');
+    await loadMoney();
+  });
+  const cadd=body.querySelector('[data-curadd]');
+  if(cadd) cadd.onclick=async()=>{
+    const g=k=>{const e=body.querySelector(`[data-curnew="${k}"]`);return e?e.value.trim():'';};
+    const code=g('code').toUpperCase();
+    if(!/^[A-Z]{3}$/.test(code)){ toast('Three letters, such as HKD'); return; }
+    if(CURRENCIES.some(c=>c.code===code)){ toast('That one is already here'); return; }
+    const {error}=await sb.from('currencies').insert({
+      code, name:g('name')||code, symbol:g('symbol')||'',
+      sort:(CURRENCIES.length+1)*10});
+    if(error) return fail(error,'Could not add that');
+    await after(code+' added');
+  };
+  body.querySelectorAll('[data-curdrop]').forEach(b=>b.onclick=async()=>{
+    const code=b.dataset.curdrop;
+    if(!confirm('Remove '+code+'?')) return;
+    const {error}=await sb.from('currencies').delete().eq('code',code);
+    if(error){
+      toast('Something is still using '+code+'. Change those accounts first.');
+      console.error(error); return;
+    }
+    await after('Removed');
   });
 
   body.querySelectorAll('[data-finwho]').forEach(el=>el.onchange=async()=>{

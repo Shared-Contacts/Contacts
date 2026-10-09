@@ -3173,6 +3173,14 @@ function openHelp(where){
   nothing. Moving money between them is a <strong>transfer</strong>, which asks
   what left one side and what arrived at the other, so the rate you actually got
   is recorded rather than guessed.</p>
+  <p>As you type both amounts the app tells you the <strong>rate you actually
+  got</strong> &mdash; "1.1568 EUR to the pound" &mdash; and writes it into the
+  wording of the transfer, so it is there when you look back. It is worked out
+  from your two figures and nothing else, so it can never disagree with them,
+  and it includes the fee and the bank's margin. That makes it the real rate
+  rather than the published one, which you were never going to be given. It is
+  also a useful check: if the number looks nothing like what you expected, a
+  digit has gone astray somewhere.</p>
   <p>Their export puts every currency in one file, which is why there is a
   <strong>Currency</strong> column to point at. Rows in any other currency are
   left out and counted, and you bring them in by importing the very same file
@@ -7727,9 +7735,12 @@ function renderTxnEditor(){
       esc(accCur(Number(TX.to_account_id)))})</label>
       <input id="trIn" inputmode="decimal" placeholder="0.00"
         value="${TX.to_amount?Math.abs(TX.to_amount):''}"></div>
+    <div class="field" id="trRateRow"><dt style="color:var(--muted)">Which works out at</dt>
+      <dd style="text-align:right" id="trRate"></dd></div>
     <div class="field"><dd style="color:var(--muted);font-size:14px">
-      Different currencies, so put in what actually arrived rather than working
-      out a rate.</dd></div>`:''}
+      Put in what actually arrived rather than working out a rate. The rate
+      below is then the one you really got, fees and the bank's margin and all
+      &mdash; which is rarely the rate you would find published anywhere.</dd></div>`:''}
   </div>`:`
   <div class="card"><h3>What it was for</h3>
     <div class="lhead"><span>Description</span><span>Category</span><span>Qty</span>
@@ -7780,10 +7791,43 @@ function renderTxnEditor(){
 // The total and the amount still to account for, written straight into the two
 // places they show. Done this way rather than by redrawing the form, because a
 // redraw while you are typing would throw you out of the box you are in.
+// What one unit of the money that left bought of the money that arrived.
+// Worked out from the two real figures, so it carries the fee and the bank's
+// margin inside it — which is the rate that actually happened to you.
+function rateBetween(out,inn){
+  out=Math.abs(Number(out)||0); inn=Math.abs(Number(inn)||0);
+  if(!out||!inn) return null;
+  return inn/out;
+}
+function showRate(n){
+  // Enough places to be useful without pretending to a precision we have not
+  // got: a big number needs fewer than a small one.
+  const dp = n>=100 ? 2 : n>=1 ? 4 : 6;
+  return Number(n.toFixed(dp)).toString();
+}
+function rateWords(outCur,inCur,out,inn){
+  const r=rateBetween(out,inn);
+  if(!r) return '';
+  return `${showRate(r)} ${inCur} to the ${outCur==='GBP'?'pound':outCur}`;
+}
+
 function paintTotals(){
   const cur=accCur(TX.account_id), sign=kindOf(TX.kind).sign;
   const sum=Math.round(Math.abs(txnTotal())*100)/100;
   const t=$('txTotal'); if(t) t.textContent=money(sign*sum,cur);
+
+  const rr=$('trRate');
+  if(rr){
+    const o=$('trOut')?num($('trOut').value):0;
+    const i=$('trIn') ?num($('trIn').value) :0;
+    const r=rateBetween(o,i);
+    const inCur=accCur(Number(TX.to_account_id));
+    rr.textContent = r
+      ? rateWords(cur,inCur,o,i)
+      : 'both amounts, and it will tell you';
+    rr.style.fontWeight = r ? '700' : '400';
+    rr.style.color = r ? '' : 'var(--muted)';
+  }
 
   const row=$('txLeftRow'), left=$('txLeft');
   if(!row||!left||!TX.target) return;
@@ -7904,10 +7948,21 @@ async function saveTransfer(head){
   if(error) throw error;
   const out=data.find(r=>Number(r.account_id)===Number(TX.account_id));
   const inn=data.find(r=>r.id!==out.id);
+
+  // Across currencies, the rate goes into the wording. It is only ever worked
+  // out from the two real amounts, so it can never disagree with them, and it
+  // travels with the transaction into any export or report.
+  const fromCur=accCur(Number(TX.account_id));
+  const toCur=accCur(Number(TX.to_account_id));
+  const at = fromCur!==toCur
+    ? ' at '+rateWords(fromCur,toCur,amt,inAmt) : '';
+
   const {error:le}=await sb.from('transaction_items').insert([
-    {transaction_id:out.id, description:'To '+(accOf(Number(TX.to_account_id))||{}).name,
+    {transaction_id:out.id,
+      description:'To '+(accOf(Number(TX.to_account_id))||{}).name+at,
       qty:1, amount:-amt, business:!!TX.business, sort:0},
-    {transaction_id:inn.id, description:'From '+(accOf(Number(TX.account_id))||{}).name,
+    {transaction_id:inn.id,
+      description:'From '+(accOf(Number(TX.account_id))||{}).name+at,
       qty:1, amount:inAmt, business:!!TX.business, sort:0}
   ]);
   if(le) throw le;
@@ -8391,7 +8446,7 @@ $('moneyEdBody').addEventListener('focusin',ev=>{
 // The total keeps up with you as you type, so it can be trusted. No redraw:
 // that would take the cursor out of the box mid-number.
 $('moneyEdBody').addEventListener('input',ev=>{
-  if(ev.target.matches('[data-la],[data-lq]')){ flushTxn(); paintTotals(); }
+  if(ev.target.matches('[data-la],[data-lq],#trOut,#trIn')){ flushTxn(); paintTotals(); }
 });
 // The account and the kind change what the rest of the form looks like.
 $('moneyEdBody').addEventListener('change',ev=>{

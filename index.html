@@ -893,6 +893,12 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="moneyEdBody"></div>
 </div>
 
+<div id="pairs" class="sheet hidden">
+  <div class="sheetbar"><button id="pairsBack">Back</button>
+    <span class="title">Transfers</span><span class="bartools"><button class="bt" data-barhelp="pairs" aria-label="How joining transfers works" title="How joining transfers works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
+  <div class="sheetbody" id="pairsBody"></div>
+</div>
+
 <div id="recon" class="sheet hidden">
   <div class="sheetbar"><button id="reconBack">Back</button>
     <span class="title">Reconcile</span><span class="bartools"><button class="bt" data-barhelp="recon" aria-label="How reconciling works" title="How reconciling works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
@@ -979,7 +985,7 @@ const arr = v => Array.isArray(v) ? v : [];
 
 function sheetsOpen(){
   return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers','chats','chat',
-          'money','moneyEd','recon','moneyImp']
+          'money','moneyEd','recon','moneyImp','pairs']
     .some(id=>!$(id).classList.contains('hidden'));
 }
 function lockBackground(){
@@ -3081,7 +3087,7 @@ async function openSettings(goTo){
 
 // Which screen is in front, so Help and the settings button know where you are.
 const SCREEN_ORDER=[['chat','chats'],['chats','chats'],
-  ['moneyImp','money'],['recon','money'],['moneyEd','money'],['money','money'],
+  ['moneyImp','money'],['pairs','money'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
@@ -3093,7 +3099,7 @@ function currentScreen(){
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
-  money:'h-money', recon:'h-recon', import:'h-import'};
+  money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances'};
@@ -3144,6 +3150,28 @@ function openHelp(where){
   <p>The whole of Finances is shared with whoever is ticked under
   <strong>Settings &rsaquo; Finances &rsaquo; Who can see the books</strong>.
   Everyone else using the app sees none of it and cannot tell it is there.</p>
+
+  <h4 id="h-pairs">Transfers that came in as two loose halves</h4>
+  <p>Money moved between two of your own accounts appears on <em>both</em>
+  statements. Import them both and you get two unconnected rows &mdash; £100
+  leaving one, the money arriving at the other &mdash; with nothing to say they
+  are the same money and no rate recorded.</p>
+  <p><strong>Finances &rsaquo; Find transfers between my accounts</strong> looks
+  for them. Where both accounts are in the same currency the two halves are the
+  same number with opposite signs a few days apart, which is a confident match,
+  so those are listed for you to join with one tap. Nothing is deleted and no
+  amount is altered: the two simply become one transfer.</p>
+  <p>Across currencies there is nothing dependable to match on &mdash; £100 and
+  €120.83 are not the same number, and guessing would join the wrong things. For
+  those, open either side and use <strong>"This is money moved between my own
+  accounts"</strong>. It offers everything in your other accounts moving the
+  other way within ten days, floats same-amount matches to the top, and works
+  the rate out from the two amounts once you pick one.</p>
+  <p>Either way is reversible. <strong>Separate these two again</strong> undoes
+  the join and leaves both transactions exactly as they were.</p>
+  <p>Easier still is to <strong>enter a transfer as you make it</strong>. Then
+  both sides and the rate are recorded properly from the start, and when the
+  statements arrive the matching rows are left out of the import for you.</p>
 
   <h4 id="h-recon">Reconciling a statement</h4>
   <p>Ticking things off proves nothing on its own. What catches a missing
@@ -6124,7 +6152,7 @@ function shade(hex,amt){
 // took off the home screen hands its screen back to the colour scheme.
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
-  chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp'],
+  chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs'],
   settings:['settings'], pick:['app']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -7594,6 +7622,7 @@ function renderMoney(){
     <div class="card">
       <button class="menuitem" id="goRecon">Reconcile a statement &rsaquo;</button>
       <button class="menuitem" id="goImport">Import from a bank file &rsaquo;</button>
+      <button class="menuitem" id="goPairs">Find transfers between my accounts &rsaquo;</button>
       <button class="menuitem" id="goAccts">Accounts, categories and payees &rsaquo;</button>
     </div>`}
 
@@ -7816,6 +7845,22 @@ function renderTxnEditor(){
     If that statement is locked this will refuse to save until you unlock it on
     the reconcile screen.</dd></div></div>`:''}
 
+  ${TX.id&&!TX.transfer_id?`
+    <button class="btn" id="txPair" style="border:1.5px solid var(--rule)">
+      This is money moved between my own accounts&hellip;</button>
+    <p class="coords" style="text-align:center;margin:8px 0 18px">
+      Joins it to the other side, wherever that landed.</p>`:''}
+
+  ${TX.id&&TX.transfer_id?`<div class="card"><div class="field"><dd style="color:var(--muted)">
+      Joined to its other half${TX.other
+        ? ' in <strong>'+esc((accOf(TX.other.account_id)||{}).name||'another account')
+          +'</strong> on '+esc(shortDate(TX.other.tdate))
+        : ''}. Edit either side and both stay in step.</dd></div></div>
+    <button class="btn" id="txUnpair" style="border:1.5px solid var(--rule)">
+      Separate these two again</button>
+    <p class="coords" style="text-align:center;margin:8px 0 18px">
+      Leaves both transactions exactly as they are, just no longer joined.</p>`:''}
+
   ${TX.id?`<button class="btn danger" id="txDel">Delete this transaction${
     TX.transfer_id?' and its other half':''}</button>`:''}
   <div style="height:30px"></div>`;
@@ -8026,6 +8071,175 @@ async function delTxn(){
   await loadMoney(); renderMoney(); toast('Deleted');
 }
 
+/* ============================================================
+   Joining two transactions into a transfer
+
+   Import both statements and the same £100 arrives twice: once leaving
+   one account, once arriving at the other, with nothing to say they are
+   the same money. This joins them — one reference shared between them,
+   the rate worked out from the two real amounts, and both renamed so
+   either side says where the money went.
+
+   Nothing is deleted and no amount is altered. Separating them again
+   leaves both transactions exactly as they were.
+   ============================================================ */
+const PAIR_DAYS=10;
+
+// What to call a transaction in a list, when all you have is the row.
+function txLabel(t,lines){
+  const first=(lines||[]).find(l=>l.transaction_id===t.id&&l.description);
+  return payeeName(t.payee_id)||(first&&first.description)||t.reference
+    ||kindOf(t.kind).label;
+}
+
+// Anything in another account, not already joined to something, moving the
+// opposite way, around the same time. The amount cannot be used across
+// currencies — that is the whole reason a rate exists — so same-currency
+// matches of the same amount are simply floated to the top.
+async function transferMates(tx){
+  const amt=Number(tx.total);
+  const from=new Date(tx.tdate+'T00:00:00'); from.setDate(from.getDate()-PAIR_DAYS);
+  const to  =new Date(tx.tdate+'T00:00:00'); to.setDate(to.getDate()+PAIR_DAYS);
+  const {data,error}=await sb.from('transactions').select('*')
+    .neq('account_id',tx.account_id)
+    .is('transfer_id',null)
+    .gte('tdate',isoDay(from)).lte('tdate',isoDay(to));
+  if(error){ console.error(error); return {rows:[],lines:[]}; }
+
+  const rows=(data||[]).filter(t=>t.id!==tx.id
+    && Math.sign(Number(t.total))===-Math.sign(amt));
+  const ids=rows.map(t=>t.id);
+  let lines=[];
+  if(ids.length){
+    const {data:li}=await sb.from('transaction_items')
+      .select('transaction_id,description').in('transaction_id',ids).order('sort');
+    lines=li||[];
+  }
+  const sameCur=t=>accCur(t.account_id)===accCur(tx.account_id);
+  const exact=t=>sameCur(t)&&Math.abs(Math.abs(Number(t.total))-Math.abs(amt))<0.005;
+  rows.sort((a,b)=>
+    (exact(b)-exact(a))
+    || (daysApart(a.tdate,tx.tdate)-daysApart(b.tdate,tx.tdate)));
+  return {rows,lines,exact};
+}
+
+function pickTransferMate(tx){
+  return new Promise(async resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick';
+    box.innerHTML=`<div class="inner"><p class="dsec" style="padding-top:0">
+      Where did it go?</p><p class="empty">Looking&hellip;</p></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(undefined); };
+
+    const {rows,lines,exact}=await transferMates(tx);
+    const amt=Number(tx.total);
+    const cur=accCur(tx.account_id);
+
+    box.querySelector('.inner').innerHTML=`
+      <p class="dsec" style="padding-top:0">${amt<0?'Where did it go?':'Where did it come from?'}</p>
+      <p class="coords" style="margin:0 0 10px">${esc(money(amt,cur))} ${
+        amt<0?'left':'arrived at'} ${esc((accOf(tx.account_id)||{}).name||'')} on ${
+        esc(shortDate(tx.tdate))}. Pick the other side.</p>
+      <div class="results" style="max-height:52vh">${
+        rows.length?rows.map(t=>{
+          const c=accCur(t.account_id);
+          return `<button class="menuitem" data-mate="${t.id}"
+            style="display:flex;gap:10px;align-items:baseline">
+            <span style="flex:1;min-width:0">${esc(txLabel(t,lines))}
+              <span class="w" style="display:block;color:var(--muted);font-size:14px">${
+              esc((accOf(t.account_id)||{}).name||'')} &middot; ${esc(shortDate(t.tdate))}${
+              exact(t)?' &middot; same amount':''}</span></span>
+            <span style="font-weight:700;white-space:nowrap">${esc(money(t.total,c))}</span>
+          </button>`;}).join('')
+        :`<p class="empty">Nothing in another account moving the other way within
+           ${PAIR_DAYS} days. Import that account's statement first, or enter the
+           other side by hand.</p>`}</div>
+      <button class="btn" id="mateCancel" style="margin-top:10px">Cancel</button>`;
+
+    box.onclick=ev=>{
+      const b=ev.target.closest('[data-mate]');
+      if(b) return done(Number(b.dataset.mate));
+      if(ev.target.id==='mateCancel'||ev.target===box) done(undefined);
+    };
+  });
+}
+
+// Join them. The amounts are left exactly as they are — they are what the
+// statements say — and the rate is read off them.
+async function joinAsTransfer(aId,bId){
+  const {data:both,error}=await sb.from('transactions').select('*').in('id',[aId,bId]);
+  if(error||!both||both.length!==2){ toast('Could not find both sides'); return false; }
+  const {data:lines}=await sb.from('transaction_items')
+    .select('*').in('transaction_id',[aId,bId]).order('sort');
+
+  const out=both.find(t=>Number(t.total)<0);
+  const inn=both.find(t=>t.id!==(out||{}).id);
+  if(!out||!inn||Number(inn.total)<=0){
+    toast('One side has to be money out and the other money in'); return false;
+  }
+  if(out.account_id===inn.account_id){
+    toast('Both of those are in the same account'); return false;
+  }
+  const many=id=>(lines||[]).filter(l=>l.transaction_id===id&&Number(l.amount)).length>1;
+  if(many(out.id)||many(inn.id)){
+    toast('One of those is split across several lines, so it is not a simple transfer');
+    return false;
+  }
+
+  const outCur=accCur(out.account_id), inCur=accCur(inn.account_id);
+  const at = outCur!==inCur
+    ? ' at '+rateWords(outCur,inCur,Math.abs(out.total),Math.abs(inn.total)) : '';
+  const ref = crypto.randomUUID ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+        const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });
+
+  const head={kind:'transfer', transfer_id:ref, payee_id:null, pay_method:'transfer'};
+  const r1=await sb.from('transactions').update(head).eq('id',out.id);
+  if(r1.error){
+    toast(/locked/i.test(r1.error.message||'')?r1.error.message:'Could not join those');
+    console.error(r1.error); return false;
+  }
+  const r2=await sb.from('transactions').update(head).eq('id',inn.id);
+  if(r2.error){
+    // Put the first one back rather than leave a transfer with one side.
+    await sb.from('transactions').update({kind:out.kind, transfer_id:null,
+      payee_id:out.payee_id, pay_method:out.pay_method}).eq('id',out.id);
+    toast(/locked/i.test(r2.error.message||'')?r2.error.message:'Could not join those');
+    console.error(r2.error); return false;
+  }
+
+  // Rename both sides so either one says where the money went.
+  const name=id=>(accOf(id)||{}).name||'another account';
+  const outLine=(lines||[]).find(l=>l.transaction_id===out.id);
+  const innLine=(lines||[]).find(l=>l.transaction_id===inn.id);
+  if(outLine) await sb.from('transaction_items')
+    .update({description:'To '+name(inn.account_id)+at}).eq('id',outLine.id);
+  if(innLine) await sb.from('transaction_items')
+    .update({description:'From '+name(out.account_id)+at}).eq('id',innLine.id);
+  return true;
+}
+
+async function splitTransfer(tx){
+  if(!tx.transfer_id) return false;
+  const {data}=await sb.from('transactions').select('id')
+    .eq('transfer_id',tx.transfer_id);
+  const ids=(data||[]).map(t=>t.id);
+  if(!ids.length) return false;
+  const {error}=await sb.from('transactions')
+    .update({transfer_id:null, kind:'expense'}).in('id',ids);
+  if(error){
+    toast(/locked/i.test(error.message||'')?error.message:'Could not separate those');
+    console.error(error); return false;
+  }
+  // Money coming in is income once it is on its own again.
+  const {data:rows}=await sb.from('transactions').select('id,total').in('id',ids);
+  for(const r of (rows||[])) if(Number(r.total)>0)
+    await sb.from('transactions').update({kind:'income'}).eq('id',r.id);
+  return true;
+}
+
 /* ---------- Choosing a payee ---------- */
 // Type to find one, or type a name that is not there yet and add it.
 function pickPayee(){
@@ -8071,6 +8285,95 @@ function pickPayee(){
     };
     setTimeout(()=>q.focus(),60);
   });
+}
+
+/* ---------- Finding transfers that are already in, as two loose halves ----------
+   Looking through months of statements for pairs by eye is nobody's idea of an
+   afternoon. Where both accounts are in the same currency the two halves are
+   the same number with opposite signs, which is a confident match. Across
+   currencies there is nothing reliable to match on — that is what the rate is
+   for — so those are left to be paired by hand from the transaction itself. */
+let PAIRS=[];
+
+async function openPairs(){
+  $('pairs').classList.remove('hidden'); lockBackground();
+  $('pairsBody').innerHTML='<p class="empty">Looking through your accounts…</p>';
+  await findPairs(); renderPairs(); $('pairsBody').scrollTop=0;
+}
+
+async function findPairs(){
+  PAIRS=[];
+  const {data,error}=await sb.from('transactions').select('*')
+    .is('transfer_id',null).order('tdate',{ascending:false}).limit(1500);
+  if(error){ console.error(error); return; }
+  const rows=data||[];
+  const ids=rows.map(t=>t.id);
+  let lines=[];
+  for(let i=0;i<ids.length;i+=300){
+    const {data:li}=await sb.from('transaction_items')
+      .select('transaction_id,description,amount')
+      .in('transaction_id',ids.slice(i,i+300)).order('sort');
+    lines=lines.concat(li||[]);
+  }
+  // Anything split across several lines is somebody's shopping, not a transfer.
+  const multi=new Set();
+  const count={};
+  lines.forEach(l=>{ if(Number(l.amount)){
+    count[l.transaction_id]=(count[l.transaction_id]||0)+1;
+    if(count[l.transaction_id]>1) multi.add(l.transaction_id); } });
+
+  const usable=rows.filter(t=>!multi.has(t.id)&&Number(t.total));
+  const taken=new Set();
+  usable.filter(t=>Number(t.total)<0).forEach(out=>{
+    if(taken.has(out.id)) return;
+    const mate=usable.find(inn=>
+      !taken.has(inn.id) && inn.id!==out.id
+      && inn.account_id!==out.account_id
+      && accCur(inn.account_id)===accCur(out.account_id)
+      && Math.abs(Number(inn.total)+Number(out.total))<0.005
+      && daysApart(inn.tdate,out.tdate)<=PAIR_DAYS);
+    if(mate){
+      taken.add(out.id); taken.add(mate.id);
+      PAIRS.push({out,inn:mate,
+        outName:txLabel(out,lines), innName:txLabel(mate,lines)});
+    }
+  });
+}
+
+function renderPairs(){
+  if(!PAIRS.length){
+    $('pairsBody').innerHTML=`<div class="card"><div class="field"><dd>
+      Nothing here looks like two halves of the same transfer.</dd></div></div>
+      ${pairsFootnote()}`;
+    return;
+  }
+  $('pairsBody').innerHTML=`
+    <p class="dsec">${PAIRS.length} possible transfer${PAIRS.length===1?'':'s'}</p>
+    <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
+      Each of these is the same amount leaving one account and arriving at
+      another within ${PAIR_DAYS} days. Join one and the two become a single
+      transfer; nothing is deleted and no amount changes.</dd></div></div>
+    ${PAIRS.map((p,i)=>`<div class="card">
+      <div class="txn"><span class="td wide">${esc(shortDate(p.out.tdate))}</span>
+        <span class="tn"><b>${esc(p.outName)}</b>
+          <span>out of ${esc((accOf(p.out.account_id)||{}).name||'')}</span></span>
+        <span class="ta neg">${esc(money(p.out.total,accCur(p.out.account_id)))}</span></div>
+      <div class="txn"><span class="td wide">${esc(shortDate(p.inn.tdate))}</span>
+        <span class="tn"><b>${esc(p.innName)}</b>
+          <span>into ${esc((accOf(p.inn.account_id)||{}).name||'')}</span></span>
+        <span class="ta">${esc(money(p.inn.total,accCur(p.inn.account_id)))}</span></div>
+      <div class="setadd"><button class="btn primary" data-join="${i}">Join these two</button></div>
+    </div>`).join('')}
+    ${pairsFootnote()}`;
+}
+
+function pairsFootnote(){
+  return `<div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
+    Only accounts in the same currency are matched here, because two halves in
+    different currencies are different numbers and there is nothing dependable
+    to match on. For one of those, open either side and use
+    <strong>&ldquo;This is money moved between my own accounts&rdquo;</strong>.
+    </dd></div></div><div style="height:20px"></div>`;
 }
 
 /* ---------- Reconciling ---------- */
@@ -8537,6 +8840,18 @@ $('moneyEdCancel').onclick=()=>{ $('moneyEd').classList.add('hidden'); lockBackg
 $('moneyEdSave').onclick=saveTxn;
 $('moneyAdd').onclick=newTxn;
 $('reconBack').onclick=()=>{ $('recon').classList.add('hidden'); lockBackground(); };
+$('pairsBack').onclick=()=>{ $('pairs').classList.add('hidden'); lockBackground(); };
+$('pairsBody').addEventListener('click',async ev=>{
+  const j=ev.target.closest('[data-join]');
+  if(!j) return;
+  const p=PAIRS[+j.dataset.join]; if(!p) return;
+  j.disabled=true; j.textContent='Joining\u2026';
+  if(await joinAsTransfer(p.out.id,p.inn.id)){
+    await findPairs(); renderPairs(); await loadMoney();
+    if(!$('money').classList.contains('hidden')) renderMoney();
+    toast('Joined as a transfer');
+  } else { j.disabled=false; j.textContent='Join these two'; }
+});
 $('impBack').onclick=()=>{ $('moneyImp').classList.add('hidden'); lockBackground(); };
 
 $('moneyBody').addEventListener('click',async ev=>{
@@ -8548,6 +8863,7 @@ $('moneyBody').addEventListener('click',async ev=>{
   const td=ev.target.closest('[data-todo]');
   if(td){ MONEY_TODO=td.dataset.todo==='1'; MONEY_SHOW=80;
           await loadTxns(); renderMoney(); $('moneyBody').scrollTop=0; return; }
+  if(ev.target.id==='goPairs')  { openPairs(); return; }
   if(ev.target.id==='goRecon')  { openRecon(); return; }
   if(ev.target.id==='goImport') { openImport(); return; }
   if(ev.target.id==='goAccts')  { openSettings('Finances'); return; }
@@ -8586,6 +8902,25 @@ $('moneyEdBody').addEventListener('click',async ev=>{
     return;
   }
   if(ev.target.id==='txDel'){ delTxn(); return; }
+
+  if(ev.target.id==='txPair'){
+    const mate=await pickTransferMate(TX);
+    if(mate===undefined) return;
+    if(await joinAsTransfer(TX.id,mate)){
+      $('moneyEd').classList.add('hidden'); lockBackground();
+      await loadMoney(); renderMoney(); toast('Joined as a transfer');
+    }
+    return;
+  }
+  if(ev.target.id==='txUnpair'){
+    if(!confirm('Separate these two? Both stay exactly as they are, just no '
+      +'longer joined to each other.')) return;
+    if(await splitTransfer(TX)){
+      $('moneyEd').classList.add('hidden'); lockBackground();
+      await loadMoney(); renderMoney(); toast('Separated');
+    }
+    return;
+  }
 });
 // Tapping into a number selects what is there, so a new figure types straight
 // over the old one. Nothing is deleted until you type, so tapping in by mistake

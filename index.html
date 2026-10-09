@@ -3209,7 +3209,17 @@ function openHelp(where){
   Useful for anything still showing as pending, which is better brought in once
   it has settled.</p>
   <p>Anything that looks like a transaction already in your books is flagged and
-  skipped, so importing the same file twice does no harm. Everything comes in
+  left unticked, so importing the same file twice does no harm. A bank rarely
+  agrees with you about the date &mdash; you move money on the Tuesday and the
+  statement shows the Wednesday &mdash; so anything of the same amount within
+  four days of something already in that account is taken to be the same
+  payment. It tells you which one it matched, and you can tick it back on if it
+  really was separate.</p>
+  <p>This matters most for <strong>transfers</strong>. Enter a transfer by hand
+  and it records both sides and the rate; the statement then shows the same
+  money leaving, a day or two later. That statement row is the one to leave out,
+  and it is left out for you.</p>
+  <p>The rest of it: Everything comes in
   without a category; tap each one afterwards to say what it was for.</p>
   <p>Connecting straight to a bank is a different matter. It needs a licensed
   provider, a secret key that cannot live in a public web page, and re-consent
@@ -8334,13 +8344,76 @@ function renderImport(){
   <div style="height:30px"></div>`;
 }
 
+/* ---------- Is this row already in the books? ----------
+   A bank almost never agrees with you about the date. You move £100 to Revolut
+   on the Tuesday; Barclays shows it on the Wednesday, or the following Monday
+   if it was a weekend. Matching the date exactly meant the transfer you had
+   already entered by hand came in a second time off the statement.
+
+   So: same account, same amount, within a few days either way. And the whole
+   span of the file is fetched from the database, because what is loaded on the
+   Finances screen is only the most recent page and may not reach back far
+   enough to see the match at all. */
+const MATCH_DAYS=4;
+
+async function scanBooks(){
+  IMPORT.have=[]; IMPORT.labels={};
+  const m=IMPORT.map||{};
+  const dates=IMPORT.rows.slice(m.head?1:0)
+    .map(r=>parseDate(r[m.date],m.fmt)).filter(Boolean).sort();
+  if(!dates.length||!IMPORT.acc) return;
+  const from=new Date(dates[0]+'T00:00:00');
+  from.setDate(from.getDate()-MATCH_DAYS-1);
+  const to=new Date(dates[dates.length-1]+'T00:00:00');
+  to.setDate(to.getDate()+MATCH_DAYS+1);
+
+  const {data,error}=await sb.from('transactions')
+    .select('id,tdate,total,reference,kind,payee_id,bank_ref')
+    .eq('account_id',IMPORT.acc)
+    .gte('tdate',isoDay(from)).lte('tdate',isoDay(to));
+  if(error){ console.error(error); return; }
+  IMPORT.have=data||[];
+
+  // What to call each one when explaining why a row was left out.
+  const ids=IMPORT.have.map(t=>t.id);
+  let lines=[];
+  if(ids.length){
+    const {data:li}=await sb.from('transaction_items')
+      .select('transaction_id,description').in('transaction_id',ids).order('sort');
+    lines=li||[];
+  }
+  IMPORT.have.forEach(t=>{
+    const first=lines.find(l=>l.transaction_id===t.id&&l.description);
+    IMPORT.labels[t.id]=payeeName(t.payee_id)||(first&&first.description)
+      ||t.reference||kindOf(t.kind).label;
+  });
+}
+
+function daysApart(a,b){
+  return Math.abs(new Date(a+'T00:00:00')-new Date(b+'T00:00:00'))/86400000;
+}
+
+// The closest unclaimed transaction of the same amount within the window, so
+// two identical payments in one week match one each rather than both to the
+// same existing row.
+function matchInBooks(x,claimed){
+  const want=[x.amount, x.amount-x.fee, x.amount+ -Math.abs(x.fee)];
+  const near=(IMPORT.have||[]).filter(t=>{
+    if(claimed.has(t.id)) return false;
+    if(daysApart(t.tdate,x.date)>MATCH_DAYS) return false;
+    const tot=Number(t.total);
+    return want.some(w=>Math.abs(tot-w)<0.005);
+  });
+  if(!near.length) return null;
+  near.sort((a,b)=>daysApart(a.tdate,x.date)-daysApart(b.tdate,x.date));
+  return near[0];
+}
+
 function importPreview(keepTicks){
   const m=IMPORT.map||{};
   const body=IMPORT.rows.slice(m.head?1:0);
   const cur=accCur(IMPORT.acc);
   const col=k=>(m[k]!==''&&m[k]!==undefined)?m[k]:null;
-  const seen=new Set(TXNS.filter(t=>t.account_id===IMPORT.acc)
-    .map(t=>t.tdate+'|'+Number(t.total).toFixed(2)));
   const was=keepTicks&&IMPORT.ready
     ? new Map(IMPORT.ready.map(x=>[x.key,x.take])) : null;
 
@@ -8371,10 +8444,11 @@ function importPreview(keepTicks){
   const otherCur=out.filter(x=>x.cur&&x.cur!==cur);
   const mine=out.filter(x=>!x.cur||x.cur===cur);
 
+  const claimed=new Set();
   mine.forEach((x,i)=>{
     x.key=x.date+'|'+x.amount.toFixed(2)+'|'+x.desc.slice(0,30)+'|'+i;
-    x.dup=seen.has(x.date+'|'+(x.amount-x.fee).toFixed(2))
-        ||seen.has(x.date+'|'+x.amount.toFixed(2));
+    const hit=matchInBooks(x,claimed);
+    if(hit){ claimed.add(hit.id); x.dup=true; x.was=hit; } else { x.dup=false; x.was=null; }
     x.take = was&&was.has(x.key) ? was.get(x.key) : !x.dup;
   });
   IMPORT.ready=mine;
@@ -8386,6 +8460,11 @@ function importPreview(keepTicks){
   $('impOut').innerHTML=`
   <p class="dsec">${mine.length} row${mine.length===1?'':'s'} for this account${
     dups?`, ${dups} already in your books`:''}</p>
+  ${dups?`<div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
+    A bank rarely agrees with you about the date, so anything of the same amount
+    within ${MATCH_DAYS} days of something already in this account is taken to be
+    the same payment and left unticked. Tick one back on if it really was a
+    separate payment.</dd></div></div>`:''}
   ${curs.length?`<div class="card"><div class="field"><dd style="color:var(--muted)">
     <strong>${otherCur.length} row${otherCur.length===1?'':'s'}</strong> in
     ${esc(curs.join(', '))} left out &mdash; they belong to your
@@ -8396,7 +8475,8 @@ function importPreview(keepTicks){
       <span class="tick ${x.take?'on':''}">${x.take?'&#10003;':''}</span>
       <span class="td wide">${esc(fullDate(x.date))}</span>
       <span class="tn"><b>${esc(x.desc||'—')}</b>${
-        x.dup?'<span>looks like one you already have</span>'
+        x.dup?`<span>already here as &ldquo;${esc((IMPORT.labels||{})[x.was.id]||'one you entered')}&rdquo;${
+          x.was.tdate!==x.date?' on '+esc(shortDate(x.was.tdate)):''}</span>`
         :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`:''}</span>
       <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></button>`).join('')
       ||'<div class="field"><dd style="color:var(--muted)">Nothing in this file for this account.</dd></div>'}
@@ -8598,7 +8678,10 @@ $('impBody').addEventListener('click',ev=>{
   }
   if(ev.target.id==='impPreview'){
     IMPORT.name=($('impName')&&$('impName').value.trim())||'';
-    importPreview(); return;
+    ev.target.disabled=true;
+    $('impOut').innerHTML='<p class="empty">Checking against your books…</p>';
+    scanBooks().then(()=>{ importPreview(); });
+    return;
   }
   const row=ev.target.closest('[data-imp]');
   if(row){

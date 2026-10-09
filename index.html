@@ -63,6 +63,10 @@ body{overflow-x:hidden}
 .count{padding:10px 16px 4px;color:var(--muted);font-size:15px}
 ul.list{list-style:none;margin:0;padding:0 0 96px}
 ul.list li{border-bottom:1px solid var(--rule);display:flex;align-items:center}
+/* The row is width:100% for its own sake elsewhere. Sharing a line with the
+   icons, that 100% is of the whole row, so the icons were added on top of it
+   and pushed every row off the side of the screen. Here it shares instead. */
+ul.list li>.row{width:auto;flex:1 1 auto;min-width:0}
 /* Ways to reach somebody. Outside the row button, because a link inside a
    button is not valid and the browser quietly closes the button early. */
 .ways{flex:0 0 auto;display:flex;gap:1px;padding-right:8px}
@@ -73,6 +77,17 @@ ul.list li{border-bottom:1px solid var(--rule);display:flex;align-items:center}
 .way .initial{width:22px;height:22px;border:1.6px solid currentColor;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
 @media (max-width:370px){ .ways .way:nth-child(n+4){display:none} }
+/* The same marks on a contact's own screen, beside each way of reaching them */
+.tmark{display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;margin-right:9px;vertical-align:-4px;color:var(--muted)}
+.tmark svg{width:17px;height:17px}
+.tmark .initial{width:19px;height:19px;border:1.5px solid currentColor;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.alsoway{display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:50%;margin-left:6px;vertical-align:-9px;
+  color:var(--hull)}
+.alsoway svg{width:17px;height:17px}
+.alsoway:active{background:#E8E5DC}
 .grouphd,.countryhd{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:13px 16px}
 .grouphd{background:#EDEFEA;font-weight:700}
 .countryhd{background:#F5F4EE;padding-left:32px;font-weight:600;color:var(--muted);font-size:15px}
@@ -1796,12 +1811,26 @@ async function openDetail(id, keepPlace){
     +(formerRows?`<details class="inpanel"><summary>Previous or other names</summary>
         ${formerRows}</details>`:'');
 
-  const touch=chan(c.phones,e=>`<a href="tel:${esc(e.value)}">${esc(e.value)}</a>`)
-    +chan(c.emails,e=>`<a href="mailto:${esc(e.value)}">${esc(e.value)}</a>`)
-    +chan(c.websites,e=>link(webUrl(e.value),e.value))
+  // Each way of reaching somebody wears the same mark here as it does in the
+  // list, so the two screens read as one thing.
+  const mark=(k,letter)=>`<span class="tmark" aria-hidden="true">${
+    k==='tag'?`<span class="initial">${esc(letter)}</span>`:WAY_ICON[k]}</span>`;
+  const isMobile=e=>/mob|cell/i.test(e.label||'')
+    || /^(07|\+?447|\+?614|\+?6421|\+?6422|\+?6427)/.test(tidyNum(e.value));
+
+  const touch=chan(c.phones,e=>`${mark('phone')}<a href="tel:${esc(tidyNum(e.value))}">${
+      esc(e.value)}</a>${isMobile(e)
+        ?` <a class="alsoway" href="sms:${esc(tidyNum(e.value))}"
+             title="Text message" aria-label="Text message">${WAY_ICON.chat}</a>`:''}`)
+    +chan(c.emails,e=>`${mark('mail')}<a href="mailto:${esc(String(e.value).trim())}">${
+      esc(e.value)}</a>`)
+    +chan(c.websites,e=>`${mark('web')}${link(webUrl(e.value),e.value)}`)
     +chan(c.socials,e=>{
         const u=socialUrl(e.label,e.value);
-        return u?link(u,e.value):esc(e.value);
+        const m=/whatsapp/i.test(e.label||'')
+          ? mark('chat')
+          : mark('tag',String(e.label||'?').trim().charAt(0).toUpperCase());
+        return m+(u?link(u,e.value):esc(e.value));
       });
 
   const where=R('Address',[c.address,c.address_2].filter(Boolean).map(esc).join('<br>'))
@@ -3137,6 +3166,23 @@ function openHelp(where){
   <em>money out</em> columns &mdash; both work.</p>
   <p>Give the layout a name and it is remembered, so next month is just choose
   file, import.</p>
+  <p><strong>An account holding several currencies</strong>, such as Revolut,
+  needs one account here per currency &mdash; Revolut GBP, Revolut EUR and so
+  on. That is not the app being awkward: Revolut really does keep a separate
+  balance for each, and a single balance mixing pounds and euros would mean
+  nothing. Moving money between them is a <strong>transfer</strong>, which asks
+  what left one side and what arrived at the other, so the rate you actually got
+  is recorded rather than guessed.</p>
+  <p>Their export puts every currency in one file, which is why there is a
+  <strong>Currency</strong> column to point at. Rows in any other currency are
+  left out and counted, and you bring them in by importing the very same file
+  again with the other account chosen.</p>
+  <p>Point the <strong>Fee</strong> column at their fee column if the file has
+  one. The fee comes in as a second line on the transaction, so the total still
+  matches the statement and you can see what the bank took.</p>
+  <p>Every row in the preview can be <strong>tapped to leave it out</strong>.
+  Useful for anything still showing as pending, which is better brought in once
+  it has settled.</p>
   <p>Anything that looks like a transaction already in your books is flagged and
   skipped, so importing the same file twice does no harm. Everything comes in
   without a category; tap each one afterwards to say what it was for.</p>
@@ -8146,6 +8192,8 @@ function renderImport(){
     ${String(m.amount)===''||m.amount===undefined?`
       ${colSel('in','Money in')}
       ${colSel('out','Money out')}`:''}
+    ${colSel('cur','Currency','The whole file is one currency')}
+    ${colSel('fee','Fee','None')}
     ${colSel('ref','Their reference','None')}
     <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Dates look like</label>
       <select data-imap="fmt">
@@ -8165,50 +8213,81 @@ function renderImport(){
   <div style="height:30px"></div>`;
 }
 
-function importPreview(){
+function importPreview(keepTicks){
   const m=IMPORT.map||{};
   const body=IMPORT.rows.slice(m.head?1:0);
   const cur=accCur(IMPORT.acc);
+  const col=k=>(m[k]!==''&&m[k]!==undefined)?m[k]:null;
   const seen=new Set(TXNS.filter(t=>t.account_id===IMPORT.acc)
     .map(t=>t.tdate+'|'+Number(t.total).toFixed(2)));
+  const was=keepTicks&&IMPORT.ready
+    ? new Map(IMPORT.ready.map(x=>[x.key,x.take])) : null;
 
   const out=body.map(r=>{
     const date=parseDate(r[m.date],m.fmt);
     let amt;
-    if(m.amount!==''&&m.amount!==undefined) amt=num(r[m.amount]);
+    if(col('amount')!==null) amt=num(r[m.amount]);
     else amt=Math.abs(num(r[m.in]))-Math.abs(num(r[m.out]));
+    const fee=col('fee')!==null ? Math.abs(num(r[m.fee])) : 0;
+    // A file that carries its own currency - Revolut's does - lets us leave
+    // out everything that does not belong in this account.
+    const rowCur=col('cur')!==null
+      ? String(r[m.cur]??'').trim().toUpperCase() : '';
     return { date, desc:String(r[m.desc]??'').trim(),
-             ref:(m.ref!==''&&m.ref!==undefined)?String(r[m.ref]??'').trim():'',
-             amount:Math.round(amt*100)/100 };
-  }).filter(x=>x.date&&x.amount);
+             ref:col('ref')!==null?String(r[m.ref]??'').trim():'',
+             amount:Math.round(amt*100)/100,
+             fee:Math.round(fee*100)/100,
+             cur:rowCur };
+  }).filter(x=>x.date&&(x.amount||x.fee));
 
-  out.forEach(x=>{ x.dup = seen.has(x.date+'|'+x.amount.toFixed(2)); });
-  IMPORT.ready=out;
+  // Rows in another currency are not an error and not a duplicate - they
+  // belong to a different account of yours.
+  const otherCur=out.filter(x=>x.cur&&x.cur!==cur);
+  const mine=out.filter(x=>!x.cur||x.cur===cur);
 
-  const dups=out.filter(x=>x.dup).length;
+  mine.forEach((x,i)=>{
+    x.key=x.date+'|'+x.amount.toFixed(2)+'|'+x.desc.slice(0,30)+'|'+i;
+    x.dup=seen.has(x.date+'|'+(x.amount-x.fee).toFixed(2))
+        ||seen.has(x.date+'|'+x.amount.toFixed(2));
+    x.take = was&&was.has(x.key) ? was.get(x.key) : !x.dup;
+  });
+  IMPORT.ready=mine;
+
+  const take=mine.filter(x=>x.take).length;
+  const dups=mine.filter(x=>x.dup).length;
+  const curs=[...new Set(otherCur.map(x=>x.cur))];
+
   $('impOut').innerHTML=`
-  <p class="dsec">${out.length} row${out.length===1?'':'s'} read${
-    dups?`, ${dups} already look${dups===1?'s':''} to be in your books`:''}</p>
+  <p class="dsec">${mine.length} row${mine.length===1?'':'s'} for this account${
+    dups?`, ${dups} already in your books`:''}</p>
+  ${curs.length?`<div class="card"><div class="field"><dd style="color:var(--muted)">
+    <strong>${otherCur.length} row${otherCur.length===1?'':'s'}</strong> in
+    ${esc(curs.join(', '))} left out &mdash; they belong to your
+    ${esc(curs.join('/'))} account${curs.length===1?'':'s'}. Import the same file
+    again with that account chosen and they will come in then.</dd></div></div>`:''}
   <div class="card">
-    ${out.slice(0,40).map((x,i)=>`<div class="txn ${x.dup?'dup':''}">
-      <span class="tick ${x.dup?'':'on'}">${x.dup?'':'&#10003;'}</span>
+    ${mine.slice(0,60).map(x=>`<button class="txn rec ${x.take?'on':''}" data-imp="${esc(x.key)}">
+      <span class="tick ${x.take?'on':''}">${x.take?'&#10003;':''}</span>
       <span class="td">${esc(shortDate(x.date))}</span>
       <span class="tn"><b>${esc(x.desc||'—')}</b>${
-        x.dup?'<span>already there — will be skipped</span>':''}</span>
-      <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></div>`).join('')}
-    ${out.length>40?`<div class="field"><dd style="color:var(--muted)">
-      …and ${out.length-40} more.</dd></div>`:''}
+        x.dup?'<span>looks like one you already have</span>'
+        :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`:''}</span>
+      <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></button>`).join('')
+      ||'<div class="field"><dd style="color:var(--muted)">Nothing in this file for this account.</dd></div>'}
+    ${mine.length>60?`<div class="field"><dd style="color:var(--muted)">
+      …and ${mine.length-60} more, all ticked.</dd></div>`:''}
   </div>
-  ${out.length?`<button class="btn primary" id="impGo">Import ${
-    out.length-dups} transaction${out.length-dups===1?'':'s'}</button>`:''}
+  ${mine.length?`<button class="btn primary" id="impGo" ${take?'':'disabled'}>Import ${
+    take} transaction${take===1?'':'s'}</button>`:''}
   <p class="coords" style="text-align:center;margin-top:10px">
-    Everything comes in without a category. Tap any of them afterwards to say
-    what it was for.</p>`;
+    Tap any row to leave it out &mdash; useful for anything still pending.
+    Everything comes in without a category; tap each one afterwards to say what
+    it was for.</p>`;
 }
 
 async function doImport(){
-  const rows=(IMPORT.ready||[]).filter(x=>!x.dup);
-  if(!rows.length){ toast('Nothing new to bring in'); return; }
+  const rows=(IMPORT.ready||[]).filter(x=>x.take);
+  if(!rows.length){ toast('Nothing ticked to bring in'); return; }
   const now=new Date().toISOString();
   const heads=rows.map(x=>({
     account_id:IMPORT.acc, tdate:x.date,
@@ -8224,9 +8303,16 @@ async function doImport(){
       : 'Could not import that');
     console.error(error); return;
   }
-  const lines=data.map((t,i)=>({
-    transaction_id:t.id, description:rows[i].desc||null,
-    qty:1, amount:rows[i].amount, sort:0 }));
+  // A fee gets its own line rather than being folded into the amount, so you
+  // can see what the bank took and put it against a category of its own.
+  const lines=[];
+  data.forEach((t,i)=>{
+    const x=rows[i];
+    lines.push({transaction_id:t.id, description:x.desc||null,
+                qty:1, amount:x.amount, sort:0});
+    if(x.fee) lines.push({transaction_id:t.id, description:'Fee',
+                qty:1, amount:-Math.abs(x.fee), sort:1});
+  });
   await sb.from('transaction_items').insert(lines);
 
   if(IMPORT.name){
@@ -8387,6 +8473,12 @@ $('impBody').addEventListener('click',ev=>{
     IMPORT.name=($('impName')&&$('impName').value.trim())||'';
     importPreview(); return;
   }
+  const row=ev.target.closest('[data-imp]');
+  if(row){
+    const x=(IMPORT.ready||[]).find(y=>y.key===row.dataset.imp);
+    if(x){ x.take=!x.take; importPreview(true); }
+    return;
+  }
   if(ev.target.id==='impGo'){ doImport(); return; }
 });
 
@@ -8403,6 +8495,8 @@ function takeCSV(text){
     amount:guessCol(h,['amount','value']),
     in:guessCol(h,['paid in','credit','money in','deposit']),
     out:guessCol(h,['paid out','debit','money out','withdraw']),
+    cur:guessCol(h,['currency','ccy']),
+    fee:guessCol(h,['fee','charge']),
     ref:guessCol(h,['transaction id','reference number','id']),
     fmt:'dmy' };
   if(IMPORT.map.in!==''||IMPORT.map.out!=='') IMPORT.map.amount='';
@@ -8669,8 +8763,16 @@ async function start(){
   const {data:{user}}=await sb.auth.getUser();
   if(!user){$('signin').classList.remove('hidden');$('app').classList.add('hidden');
     $('home').classList.add('hidden');return;}
-  ME=user;$('signin').classList.add('hidden');$('app').classList.remove('hidden');
+  ME=user;$('signin').classList.add('hidden');
+  // The front door goes up first. It used to unhide the contacts list, spend a
+  // second or two fetching everything, and only then put the home screen over
+  // the top — so every start flashed the wrong screen at you. The list is only
+  // revealed once there is something in front of it.
+  $('home').classList.remove('hidden');
+  $('homeBody').innerHTML='<p class="empty">Just a moment…</p>';
+  lockBackground();
   await loadAll();
+  $('app').classList.remove('hidden');
   showHome();            // the front door, with the contacts list waiting behind it
   loadDevices();
   loadShares();

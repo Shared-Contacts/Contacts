@@ -3294,7 +3294,7 @@ function openHelp(where){
 
   <h4 id="h-jotter">MY Jotter &mdash; putting somebody in the book on the spot</h4>
   <p>There is a second, much smaller app at
-  <strong>shared-contacts.github.io/Contacts/jot.html</strong> for the moment you
+  <strong>shared-contacts.github.io/Contacts/jot/</strong> for the moment you
   meet a boater at a lock and have about twenty seconds. It opens straight onto
   an empty form with the cursor waiting: first name, last name, boat name, a
   phone number, a photo from the camera, where you met and a line of notes. A
@@ -6297,10 +6297,10 @@ function noticeHtml(){
    between an Android and an iPhone that showing both would only confuse, so
    the phone is asked what it is and told only what applies to it. */
 const JOT_KEY='notice-jotter-1';
-const JOT_URL='https://shared-contacts.github.io/Contacts/jot.html';
+const JOT_URL='https://shared-contacts.github.io/Contacts/jot/';
 
 function jotAsked(){ try{ return localStorage.getItem(JOT_KEY)||''; }catch(e){ return 'skip'; } }
-// jot.html writes this the first time it runs as an installed app. Same web
+// The Jotter writes this the first time it runs as an installed app. Same web
 // address, so the two share it — which means we never nag about installing
 // something that is already on the phone.
 function jotInstalled(){ try{ return localStorage.getItem('jot-installed')==='1'; }catch(e){ return false; } }
@@ -6446,7 +6446,7 @@ function renderHome(){
   if(jo) jo.onclick=()=>{
     // Leave it marked as asked, so it does not greet them again on the way back.
     try{ localStorage.setItem(JOT_KEY,'done'); }catch(e){}
-    location.href='jot.html';
+    location.href='jot/';
   };
   box.querySelectorAll('[data-tile]').forEach(b=>b.onclick=ev=>{
     if(ARRANGING) return;                  // in arrange mode the small buttons rule

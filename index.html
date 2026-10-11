@@ -971,6 +971,18 @@ const VAPID_PUBLIC_KEY = 'BCZGMULyiOQCp6wXtnOIzNBCRVI_kZG5whqiIEtPMMzteGkJUxjyZb
 const START_LINK = 'https://shared-contacts.github.io/Contacts/start.html';
 
 const CANAL_GEOJSON_URL = 'canals.geojson';
+
+/* This app's own patch is now just this page, rather than everything in the
+   folder — which is what lets the Jotter be installed as an app of its own
+   rather than being mistaken for this one. The address bar is tidied to match,
+   without reloading anything, so arriving at the bare folder address still
+   counts as being in the right place. */
+(function(){
+  try{
+    if(/\/$/.test(location.pathname) && history.replaceState)
+      history.replaceState(null,'','index.html'+location.search+location.hash);
+  }catch(e){}
+})();
 /* ========================================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

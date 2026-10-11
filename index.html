@@ -6284,11 +6284,103 @@ function noticeHtml(){
   </div>`;
 }
 
+/* ---------- Offering the Jotter to somebody new ----------
+   Asked once, early, and never again once answered. The steps differ enough
+   between an Android and an iPhone that showing both would only confuse, so
+   the phone is asked what it is and told only what applies to it. */
+const JOT_KEY='notice-jotter-1';
+const JOT_URL='https://shared-contacts.github.io/Contacts/jot.html';
+
+function jotAsked(){ try{ return localStorage.getItem(JOT_KEY)||''; }catch(e){ return 'skip'; } }
+// jot.html writes this the first time it runs as an installed app. Same web
+// address, so the two share it — which means we never nag about installing
+// something that is already on the phone.
+function jotInstalled(){ try{ return localStorage.getItem('jot-installed')==='1'; }catch(e){ return false; } }
+
+function phoneKind(){
+  const ua=navigator.userAgent||'';
+  if(/iPad|iPhone|iPod/.test(ua)
+     || (/Macintosh/.test(ua) && navigator.maxTouchPoints>1)) return 'apple';
+  if(/Android/.test(ua)) return 'android';
+  return 'other';
+}
+// On an iPhone, only Safari can put something on the home screen. Chrome there
+// simply has no such button, and sending somebody looking for one is cruel.
+function iosNotSafari(){
+  const ua=navigator.userAgent||'';
+  return phoneKind()==='apple' && /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+}
+
+function jotSteps(){
+  const kind=phoneKind();
+  if(kind==='apple'){
+    return `${iosNotSafari()?`<p style="margin:0 0 9px"><strong>First, open this
+      page in Safari.</strong> On an iPhone only Safari can add something to the
+      home screen &mdash; there is no such button in Chrome.</p>`:''}
+      <ol style="margin:0 0 10px;padding-left:20px">
+        <li>Tap the <strong>Share</strong> button at the bottom of Safari &mdash;
+          the square with an arrow coming out of the top.</li>
+        <li>Scroll down the list and tap <strong>Add to Home Screen</strong>.</li>
+        <li>Tap <strong>Add</strong> at the top right.</li>
+      </ol>`;
+  }
+  if(kind==='android'){
+    return `<ol style="margin:0 0 10px;padding-left:20px">
+        <li>Tap the <strong>three dots</strong> at the top right of Chrome.</li>
+        <li>Tap <strong>Add to Home screen</strong>.</li>
+        <li>Tap <strong>Install</strong>, or <strong>Add</strong>.</li>
+      </ol>`;
+  }
+  return `<p style="margin:0 0 10px">This one is for a phone. Open
+    <strong>${esc(JOT_URL)}</strong> on your phone and add it to the home screen
+    from the browser's own menu.</p>`;
+}
+
+function jotHtml(){
+  if(ARRANGING) return '';
+  const state=jotAsked();
+  if(state==='no'||state==='done'||jotInstalled()) return '';
+  // One thing at a time. Two notices stacked on a first opening is a wall,
+  // and this one waits its turn behind the other.
+  if(!noticeDone() && state!=='yes') return '';
+
+  if(state==='yes'){
+    return `<div class="notice">
+      <button class="x" id="jotX" aria-label="Close">&times;</button>
+      <h4>Putting MY Jotter on your home screen</h4>
+      ${jotSteps()}
+      <p style="margin:0 0 10px">You will get a second icon &mdash; the same MY
+      mark, but teal with a little brass plus, so you will not mix the two up.
+      It uses the sign-in you already have here.</p>
+      <p style="margin:0"><button class="go" id="jotOpen">Open the Jotter</button>
+        <button id="jotDone" style="margin-left:10px;text-decoration:underline;
+          font-weight:600;color:var(--hull)">Done, thanks</button></p>
+    </div>`;
+  }
+
+  return `<div class="notice">
+    <button class="x" id="jotX" aria-label="Close">&times;</button>
+    <h4>Would you like the quick-add app as well?</h4>
+    <p><strong>MY Jotter</strong> is a second, much smaller icon for your home
+    screen. You meet a boater at a lock, tap it, and you are straight into an
+    empty form: name, boat name, a photo, where you met. A boat name on its own
+    is enough to save.</p>
+    <p>It uses the same sign-in as this app, so there is nothing to set up, and
+    whatever you jot down turns up here as an ordinary contact. It is built for a
+    poor signal &mdash; if nothing can get through it waits on your phone and
+    goes later.</p>
+    <p style="margin:12px 0 0"><button class="go" id="jotYes">Yes, show me how</button>
+      <button id="jotNo" style="margin-left:12px;text-decoration:underline;
+        font-weight:600;color:var(--muted)">No thanks</button></p>
+  </div>`;
+}
+
 function renderHome(){
   const box=$('homeBody'); if(!box) return;
   applySkins();
   const n=TILES.length;
-  box.innerHTML=(ARRANGING?'':noticeHtml())+`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
+  box.innerHTML=(ARRANGING?'':noticeHtml())+(ARRANGING?'':jotHtml())
+    +`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
     <div class="tilewrap">
       <button class="tile" data-tile="${i}"
         style="--tc:${esc(t.colour)};--td:${esc(shade(t.colour,.26))}">
@@ -6321,6 +6413,20 @@ function renderHome(){
     try{ localStorage.setItem(NOTICE_KEY,'1'); }catch(e){}
     if(offersToMe().length) openOffers(); else openHelp('sharing');
     renderHome();
+  };
+
+  // The Jotter offer. Answered once and not asked again, whichever way it goes.
+  const jotSay=v=>{ try{ localStorage.setItem(JOT_KEY,v); }catch(e){} renderHome(); };
+  const jy=$('jotYes');  if(jy) jy.onclick=()=>jotSay('yes');
+  const jn=$('jotNo');   if(jn) jn.onclick=()=>{ jotSay('no');
+    toast('Righto. It is written up under Help if you change your mind.'); };
+  const jx=$('jotX');    if(jx) jx.onclick=()=>jotSay(jotAsked()==='yes'?'done':'no');
+  const jd=$('jotDone'); if(jd) jd.onclick=()=>{ jotSay('done'); toast('Good stuff'); };
+  const jo=$('jotOpen');
+  if(jo) jo.onclick=()=>{
+    // Leave it marked as asked, so it does not greet them again on the way back.
+    try{ localStorage.setItem(JOT_KEY,'done'); }catch(e){}
+    location.href='jot.html';
   };
   box.querySelectorAll('[data-tile]').forEach(b=>b.onclick=ev=>{
     if(ARRANGING) return;                  // in arrange mode the small buttons rule

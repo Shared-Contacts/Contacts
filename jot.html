@@ -509,7 +509,20 @@ if('serviceWorker' in navigator){
     .catch(e=>console.warn('service worker did not register:',e));
 }
 
+// Running as an installed app rather than a browser tab means the icon is on
+// the home screen. The main app shares this web address, so it reads this and
+// stops offering to help you install something you already have.
+function noteInstalled(){
+  const standalone = (window.matchMedia
+      && window.matchMedia('(display-mode: standalone)').matches)
+    || window.navigator.standalone===true;   // how an iPhone says it
+  if(!standalone) return;
+  // Written raw, not as JSON, because that is how the main app reads it.
+  try{ localStorage.setItem('jot-installed','1'); }catch(e){}
+}
+
 (async function start(){
+  noteInstalled();
   $('fDate').value=isoDay(new Date());
   paintRecent();
   await whoAmI();

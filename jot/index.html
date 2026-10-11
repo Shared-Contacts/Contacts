@@ -590,13 +590,16 @@ function paintInstall(){
          : `<br>Tap the <strong>Share</strong> button at the bottom &mdash; the
             square with an arrow out of the top &mdash; then scroll down to
             <strong>Add to Home Screen</strong>.`)
-      : `<br>Tap the <strong>three dots</strong> at the top right, then the item
-         with the little download arrow. Depending on your phone it is called
-         <strong>Install</strong>, <strong>Install app</strong>,
-         <strong>Install and create shortcut</strong>, or
-         <strong>Add to Home screen</strong> &mdash; they all do the same thing.
-         <br>If it says <em>already installed</em>, it is on there: look for the
-         teal <strong>MY</strong> with a brass plus among your apps.`}
+      : `<br>Tap the <strong>three dots</strong> at the top right, then
+         <strong>Install and create shortcut</strong> (your phone may call it
+         <strong>Install</strong>, <strong>Install app</strong> or
+         <strong>Add to Home screen</strong>).
+         <br><br>If it says <strong>&ldquo;This app is already
+         installed&rdquo;</strong>, that is about the main app, not this one
+         &mdash; Android will not install two apps at the same address. Tap
+         <strong>Create shortcut</strong> on that same screen instead. You get
+         the teal icon on your home screen and it opens straight into this. The
+         only difference is a browser bar across the top.`}
     <br><button id="noInstall">Hide this</button></div>`;
   const n=$('noInstall');
   if(n) n.onclick=()=>{ try{ localStorage.setItem('jot-nag','off'); }catch(e){}

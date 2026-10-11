@@ -119,6 +119,22 @@ ul.list li.chosen{background:#FBE9E7}
   padding:14px 16px calc(14px + env(safe-area-inset-bottom));font-size:16px}
 .pickbar button{color:#fff;font-size:16px;padding:6px 8px}
 .pickbar button:disabled{opacity:.5}
+/* Choosing transactions: the count and what is being shown get their own line
+   on a phone, so the buttons are not squeezed into the corner. */
+#moneyPickBar{flex-wrap:wrap;gap:4px 10px}
+.mpwho{flex:1 1 100%;line-height:1.3}
+.mpscope{display:block;font-size:14px;opacity:.85}
+.mpbtns{flex:1 1 100%;display:flex;gap:6px;justify-content:flex-end;
+  margin-top:2px}
+.mpbtns button{border:1.5px solid rgba(255,255,255,.55);border-radius:8px;
+  padding:7px 12px}
+.mpbtns #mpDel{background:#fff;color:var(--red);font-weight:700;border-color:#fff}
+.mpbtns #mpDel:disabled{background:transparent;color:#fff;
+  border-color:rgba(255,255,255,.45)}
+@media (min-width:560px){
+  .mpwho{flex:1 1 auto}
+  .mpbtns{flex:0 0 auto;margin-top:0}
+}
 .sharedot{color:#0F6E8C;font-size:22px;line-height:0;vertical-align:middle}
 .row .rel{color:#37564A;font-size:15px;line-height:1.3;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -892,6 +908,8 @@ i.key{vertical-align:middle}
     <span class="title" id="moneyEdTitle">Transaction</span><button id="moneyEdSave">Save</button></div>
   <div class="sheetbody" id="moneyEdBody"></div>
 </div>
+
+<div id="moneyPickBar" class="pickbar hidden"></div>
 
 <div id="pairs" class="sheet hidden">
   <div class="sheetbar"><button id="pairsBack">Back</button>
@@ -2852,8 +2870,10 @@ function pickContact(title, currentId){
 
     const done=v=>{ box.remove(); resolve(v); };
     box.onclick=ev=>{ if(ev.target===box) done(undefined); };
-    $('pkCancel').onclick=()=>done(undefined);
-    $('pkNone').onclick=()=>done(null);
+    // Scoped to this overlay. Two pickers share these names, and a plain
+    // lookup by name finds whichever was put on the page first.
+    box.querySelector('#pkCancel').onclick=()=>done(undefined);
+    box.querySelector('#pkNone').onclick=()=>done(null);
 
     const paint=()=>{
       const q=$('pkQ').value.trim();
@@ -3150,6 +3170,24 @@ function openHelp(where){
   <p>The whole of Finances is shared with whoever is ticked under
   <strong>Settings &rsaquo; Finances &rsaquo; Who can see the books</strong>.
   Everyone else using the app sees none of it and cannot tell it is there.</p>
+
+  <h4 id="h-moneypick">Getting rid of several at once</h4>
+  <p><strong>Choose several to delete</strong> puts a tick box on every row.
+  Tapping one then picks it rather than opening it, and a red bar along the
+  bottom counts what you have chosen.</p>
+  <p><strong>Select all</strong> takes everything the screen is currently
+  showing &mdash; and that means everything, not just the rows loaded so far.
+  So to clear out a whole account: tap that account at the top, then
+  <strong>Choose several to delete</strong>, then <strong>Select all</strong>.
+  The bar says which view you are selecting within, so you can see what you are
+  about to take. Tapping Select all again lets them all go.</p>
+  <p>Choosing one half of a transfer brings the other half with it, since
+  leaving one side stranded would quietly put an account out. You are told how
+  many extra that is before anything happens.</p>
+  <p>Deleting cannot be undone. Anything sitting on a <strong>locked
+  statement</strong> refuses to go, and you are told how many were refused
+  rather than being left to wonder; unlock that statement first if you really
+  meant it.</p>
 
   <h4 id="h-pairs">Transfers that came in as two loose halves</h4>
   <p>Money moved between two of your own accounts appears on <em>both</em>
@@ -4217,9 +4255,9 @@ function whenPicker(opts){
           if(!sel) sel=new Date(now.getFullYear(),now.getMonth(),now.getDate());
           draw(); }
       };
-      $('pkClear').onclick=()=>done('');
-      $('pkCancel').onclick=()=>done(undefined);
-      const go=$('pkSet');
+      box.querySelector('#pkClear').onclick=()=>done('');
+      box.querySelector('#pkCancel').onclick=()=>done(undefined);
+      const go=box.querySelector('#pkSet');
       if(go&&sel) go.onclick=()=>done(out());
     };
     draw();
@@ -7430,6 +7468,8 @@ let MONEY_ACC='all', MONEY_FROM='', MONEY_SHOW=80;
 // Transactions still waiting for a category, so you can see at a glance what
 // is left and pick up where you stopped.
 let TODO_IDS=new Set(), TODO_CAPPED=false, MONEY_TODO=false;
+// Choosing several at once, to get rid of them together.
+let MONEY_PICKING=false, MONEY_PICKED=new Set();
 let TX=null, TXL=[];                    // the transaction being edited
 let RECON={acc:null, st:null, rows:[], tick:{}};
 let IMPORT={acc:null, rows:[], head:[], map:null, name:''};
@@ -7564,7 +7604,7 @@ function renderMoney(){
   // The + button sits over the right-hand end of a row, which is where the
   // amounts are. While you are working through a batch it is in the way and
   // adding a transaction is not what you are doing, so it steps aside.
-  $('moneyAdd').classList.toggle('hidden', MONEY_TODO);
+  $('moneyAdd').classList.toggle('hidden', MONEY_TODO||MONEY_PICKING);
 
   const live=ACCOUNTS.filter(a=>a.active);
   const accCard=a=>{
@@ -7592,7 +7632,10 @@ function renderMoney(){
       || (t.kind==='transfer'?'Transfer':kindOf(t.kind).label);
     const cats=[...new Set(lines.map(l=>fcatName(l.category_id)).filter(Boolean))];
     const todo=needsCat(t,lines);
-    return `<button class="txn ${todo?'nocat':''}" data-tx="${t.id}">
+    const on=MONEY_PICKED.has(t.id);
+    return `<button class="txn ${todo?'nocat':''} ${MONEY_PICKING?'rec':''} ${on?'on':''}"
+      data-tx="${t.id}">
+      ${MONEY_PICKING?`<span class="tick ${on?'on':''}">${on?'&#10003;':''}</span>`:''}
       <span class="td">${esc(shortDate(t.tdate))}</span>
       <span class="tn"><b>${esc(what)}</b>
         <span>${esc(a?a.name:'')}${cats.length?' &middot; '+esc(cats.join(', ')):''}${
@@ -7622,6 +7665,7 @@ function renderMoney(){
     <div class="card">
       <button class="menuitem" id="goRecon">Reconcile a statement &rsaquo;</button>
       <button class="menuitem" id="goImport">Import from a bank file &rsaquo;</button>
+      <button class="menuitem" id="goMoneyPick">Choose several to delete &rsaquo;</button>
       <button class="menuitem" id="goPairs">Find transfers between my accounts &rsaquo;</button>
       <button class="menuitem" id="goAccts">Accounts, categories and payees &rsaquo;</button>
     </div>`}
@@ -7658,6 +7702,110 @@ function shortDate(iso){
   const s=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   return d.getFullYear()===now.getFullYear() ? s
     : s+' '+String(d.getFullYear()).slice(2);
+}
+
+/* ---------- Choosing several at once ----------
+   Ticking two hundred rows by hand to clear out an account is no kind of
+   answer, so "All" takes everything the current view is showing — that
+   account, that filter — straight from the database rather than only the
+   page that happens to be loaded. */
+function startMoneyPicking(){
+  MONEY_PICKING=true; MONEY_PICKED.clear();
+  renderMoney(); paintMoneyPickBar();
+  toast('Tap the ones to get rid of');
+}
+function stopMoneyPicking(){
+  MONEY_PICKING=false; MONEY_PICKED.clear();
+  renderMoney(); paintMoneyPickBar();
+}
+
+// The ids behind whatever is on screen, however many pages deep it goes.
+async function idsInView(){
+  let q=sb.from('transactions').select('id').limit(5000);
+  if(MONEY_ACC!=='all') q=q.eq('account_id',MONEY_ACC);
+  if(MONEY_FROM) q=q.gte('tdate',MONEY_FROM);
+  if(MONEY_TODO) q=q.in('id',[...TODO_IDS].slice(0,400));
+  const {data,error}=await q;
+  if(error){ console.error(error); return null; }
+  return (data||[]).map(r=>r.id);
+}
+
+function viewName(){
+  if(MONEY_TODO) return 'still to sort out';
+  if(MONEY_ACC!=='all') return (accOf(MONEY_ACC)||{}).name||'this account';
+  return 'every account';
+}
+
+function paintMoneyPickBar(){
+  const bar=$('moneyPickBar');
+  if(!MONEY_PICKING||$('money').classList.contains('hidden')){
+    bar.classList.add('hidden'); lockBackground(); return;
+  }
+  const n=MONEY_PICKED.size;
+  bar.innerHTML=`<span class="mpwho">${n?'<strong>'+n+' chosen</strong>':'Tap the ones to get rid of'}
+      <span class="mpscope">showing ${esc(viewName())}</span></span>
+    <span class="mpbtns">
+      <button id="mpAll">Select all</button>
+      <button id="mpDel" ${n?'':'disabled'}>Delete</button>
+      <button id="mpStop">Cancel</button></span>`;
+  bar.classList.remove('hidden');
+
+  $('mpStop').onclick=stopMoneyPicking;
+  $('mpAll').onclick=async()=>{
+    $('mpAll').disabled=true;
+    const ids=await idsInView();
+    $('mpAll').disabled=false;
+    if(!ids){ toast('Could not fetch those'); return; }
+    if(ids.length===MONEY_PICKED.size){ MONEY_PICKED.clear(); }
+    else ids.forEach(id=>MONEY_PICKED.add(id));
+    renderMoney(); paintMoneyPickBar();
+  };
+  $('mpDel').onclick=deletePickedTxns;
+}
+
+async function deletePickedTxns(){
+  const ids=[...MONEY_PICKED];
+  if(!ids.length) return;
+
+  // Deleting one half of a transfer would leave the other stranded, so both
+  // go. Say so before anything happens rather than after.
+  const halves=TXNS.filter(t=>ids.includes(t.id)&&t.transfer_id);
+  let extra=0;
+  if(halves.length){
+    const refs=[...new Set(halves.map(t=>t.transfer_id))];
+    const {data}=await sb.from('transactions').select('id,transfer_id')
+      .in('transfer_id',refs);
+    (data||[]).forEach(t=>{ if(!MONEY_PICKED.has(t.id)){ ids.push(t.id); extra++; } });
+  }
+
+  if(!confirm('Delete '+ids.length+' transaction'+(ids.length===1?'':'s')+'?'
+    +(extra?'\n\nThat includes '+extra+' on the other side of a transfer, which '
+      +'would be left stranded otherwise.':'')
+    +'\n\nThis cannot be undone.')) return;
+
+  const bar=$('moneyPickBar');
+  bar.innerHTML='<span style="flex:1">Deleting…</span>';
+
+  // In batches, so a few hundred does not go out as one enormous request.
+  let gone=0, stuck=0;
+  for(let i=0;i<ids.length;i+=100){
+    const slice=ids.slice(i,i+100);
+    const {error}=await sb.from('transactions').delete().in('id',slice);
+    if(error){
+      // A locked statement refuses the whole batch, so retry them one by one
+      // to get rid of everything that can go.
+      for(const id of slice){
+        const r=await sb.from('transactions').delete().eq('id',id);
+        if(r.error) stuck++; else gone++;
+      }
+    } else gone+=slice.length;
+  }
+
+  MONEY_PICKING=false; MONEY_PICKED.clear();
+  await loadMoney(); renderMoney(); paintMoneyPickBar();
+  toast(stuck
+    ? gone+' deleted, '+stuck+' refused — those are on a locked statement'
+    : gone+' deleted');
 }
 
 /* ---------- The transaction editor ---------- */
@@ -8835,7 +8983,8 @@ async function doImport(){
 }
 
 /* ---------- Wiring ---------- */
-$('moneyBack').onclick=()=>{ $('money').classList.add('hidden'); lockBackground(); };
+$('moneyBack').onclick=()=>{ MONEY_PICKING=false; MONEY_PICKED.clear();
+  $('money').classList.add('hidden'); paintMoneyPickBar(); lockBackground(); };
 $('moneyEdCancel').onclick=()=>{ $('moneyEd').classList.add('hidden'); lockBackground(); };
 $('moneyEdSave').onclick=saveTxn;
 $('moneyAdd').onclick=newTxn;
@@ -8857,12 +9006,21 @@ $('impBack').onclick=()=>{ $('moneyImp').classList.add('hidden'); lockBackground
 $('moneyBody').addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-acc]');
   if(a){ MONEY_ACC=a.dataset.acc==='all'?'all':Number(a.dataset.acc);
-         await loadTxns(); renderMoney(); return; }
+         await loadTxns(); renderMoney(); paintMoneyPickBar(); return; }
   const t=ev.target.closest('[data-tx]');
-  if(t){ editTxn(Number(t.dataset.tx)); return; }
+  if(t){
+    const id=Number(t.dataset.tx);
+    if(MONEY_PICKING){
+      MONEY_PICKED.has(id)?MONEY_PICKED.delete(id):MONEY_PICKED.add(id);
+      renderMoney(); paintMoneyPickBar(); return;
+    }
+    editTxn(id); return;
+  }
+  if(ev.target.id==='goMoneyPick'){ startMoneyPicking(); return; }
   const td=ev.target.closest('[data-todo]');
   if(td){ MONEY_TODO=td.dataset.todo==='1'; MONEY_SHOW=80;
-          await loadTxns(); renderMoney(); $('moneyBody').scrollTop=0; return; }
+          await loadTxns(); renderMoney(); paintMoneyPickBar();
+          $('moneyBody').scrollTop=0; return; }
   if(ev.target.id==='goPairs')  { openPairs(); return; }
   if(ev.target.id==='goRecon')  { openRecon(); return; }
   if(ev.target.id==='goImport') { openImport(); return; }

@@ -3311,10 +3311,18 @@ function openHelp(where){
   <p>Tap <strong>Find</strong> at the top to look somebody up by name or boat
   without opening all of this &mdash; a tap to ring them, or a tap to open their
   full record here.</p>
-  <p><strong>To put it on your home screen</strong>, open that address in Chrome,
-  then the three dots and <strong>Add to Home screen</strong>. It installs as its
-  own icon &mdash; the MY mark in teal with a brass plus, so you will not mix it
-  up with this one.</p>
+  <p><strong>To put it on your home screen</strong>, open that address on your
+  phone. On an Android a green <strong>Install</strong> button usually appears at
+  the top of the page &mdash; tap that and you are done. If it does not, the
+  three-dot menu in Chrome has an item with a little download arrow, called
+  <strong>Install</strong>, <strong>Install app</strong>, <strong>Install and
+  create shortcut</strong> or <strong>Add to Home screen</strong> depending on
+  the phone; they all do the same thing. On an iPhone it must be Safari, and it
+  is the <strong>Share</strong> button then <strong>Add to Home Screen</strong>.</p>
+  <p>It installs as its own icon &mdash; the MY mark in teal with a brass plus,
+  so you will not mix it up with this one. If your phone tells you it is
+  <em>already installed</em>, then it is, and that icon is already among your
+  apps somewhere.</p>
 
   <h4 id="h-shop">Shopping list</h4>
   <p>The round <strong>+</strong> adds another list, so you can keep one per shop
@@ -6325,11 +6333,23 @@ function jotSteps(){
       </ol>`;
   }
   if(kind==='android'){
+    // Chrome has called this four different things over the years, and which
+    // one you get depends on the phone, so naming just one sends people
+    // hunting for something that is not there.
     return `<ol style="margin:0 0 10px;padding-left:20px">
-        <li>Tap the <strong>three dots</strong> at the top right of Chrome.</li>
-        <li>Tap <strong>Add to Home screen</strong>.</li>
-        <li>Tap <strong>Install</strong>, or <strong>Add</strong>.</li>
-      </ol>`;
+        <li>Tap <strong>Open the Jotter</strong> below. If a green
+          <strong>Install</strong> button appears at the top, tap that and you
+          are done.</li>
+        <li>If it does not, tap the <strong>three dots</strong> at the top right
+          of Chrome and look for the item with a little download arrow. It is
+          called <strong>Install</strong>, <strong>Install app</strong>,
+          <strong>Install and create shortcut</strong> or <strong>Add to Home
+          screen</strong>, depending on your phone &mdash; they all do the same
+          thing.</li>
+        <li>Confirm with <strong>Install</strong> or <strong>Add</strong>.</li>
+      </ol>
+      <p style="margin:0 0 9px">If your phone says <em>already installed</em>,
+      then it is: look for the teal MY with a brass plus among your apps.</p>`;
   }
   return `<p style="margin:0 0 10px">This one is for a phone. Open
     <strong>${esc(JOT_URL)}</strong> on your phone and add it to the home screen

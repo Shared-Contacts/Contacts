@@ -108,6 +108,7 @@ footer a{color:var(--hull);font-weight:600}
 </div>
 
 <main>
+  <div id="install"></div>
   <div id="status"></div>
 
   <!-- ---------------- Adding somebody ---------------- -->
@@ -512,17 +513,99 @@ if('serviceWorker' in navigator){
 // Running as an installed app rather than a browser tab means the icon is on
 // the home screen. The main app shares this web address, so it reads this and
 // stops offering to help you install something you already have.
-function noteInstalled(){
-  const standalone = (window.matchMedia
+function standalone(){
+  return (window.matchMedia
       && window.matchMedia('(display-mode: standalone)').matches)
     || window.navigator.standalone===true;   // how an iPhone says it
-  if(!standalone) return;
+}
+function noteInstalled(){
+  if(!standalone()) return;
   // Written raw, not as JSON, because that is how the main app reads it.
   try{ localStorage.setItem('jot-installed','1'); }catch(e){}
 }
 
+/* ---------- Putting it on the home screen ----------
+   Chrome keeps renaming the menu item that does this — Add to Home screen,
+   Install app, Install and create shortcut, depending on the version and the
+   phone — so sending somebody hunting through a menu for a particular wording
+   is a losing game. Chrome will offer to do it properly if asked, so ask. The
+   written steps are only there for when it will not. */
+let INSTALL_PROMPT=null;
+
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  INSTALL_PROMPT=e;
+  paintInstall();
+});
+window.addEventListener('appinstalled', ()=>{
+  INSTALL_PROMPT=null;
+  try{ localStorage.setItem('jot-installed','1'); }catch(e){}
+  paintInstall();
+  toast('On your home screen now — the teal MY with a plus');
+});
+
+function paintInstall(){
+  const box=$('install'); if(!box) return;
+  if(standalone()){ box.innerHTML=''; return; }
+
+  if(INSTALL_PROMPT){
+    box.innerHTML=`<div class="strip ok" style="display:flex;gap:10px;
+        align-items:center;flex-wrap:wrap">
+      <span style="flex:1;min-width:150px">Put this on your home screen so it is
+        one tap away.</span>
+      <button id="doInstall" style="background:var(--hull);color:#F2EFE4;
+        border-radius:9px;padding:10px 16px;font-weight:700">Install</button>
+      <button id="noInstall" style="text-decoration:underline;font-weight:600">Not now</button>
+    </div>`;
+    $('doInstall').onclick=async()=>{
+      const e=INSTALL_PROMPT; if(!e) return;
+      INSTALL_PROMPT=null;
+      e.prompt();
+      try{ await e.userChoice; }catch(err){}
+      paintInstall();
+    };
+    $('noInstall').onclick=()=>{ INSTALL_PROMPT=null;
+      try{ localStorage.setItem('jot-nag','off'); }catch(err){}
+      paintInstall(); };
+    return;
+  }
+
+  // No offer from the browser. Either it is already on there, or this is an
+  // iPhone, where it is only ever done by hand.
+  let off=false; try{ off=localStorage.getItem('jot-nag')==='off'; }catch(e){}
+  if(off){ box.innerHTML=''; return; }
+
+  const ua=navigator.userAgent||'';
+  const apple=/iPad|iPhone|iPod/.test(ua)
+    || (/Macintosh/.test(ua) && navigator.maxTouchPoints>1);
+  const chromeOnIos=/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+
+  box.innerHTML=`<div class="strip warn">
+    <strong>To put this on your home screen</strong>
+    ${apple
+      ? (chromeOnIos
+         ? `<br>Open this page in <strong>Safari</strong> first &mdash; on an
+            iPhone only Safari can do it. Then the <strong>Share</strong> button
+            at the bottom, and <strong>Add to Home Screen</strong>.`
+         : `<br>Tap the <strong>Share</strong> button at the bottom &mdash; the
+            square with an arrow out of the top &mdash; then scroll down to
+            <strong>Add to Home Screen</strong>.`)
+      : `<br>Tap the <strong>three dots</strong> at the top right, then the item
+         with the little download arrow. Depending on your phone it is called
+         <strong>Install</strong>, <strong>Install app</strong>,
+         <strong>Install and create shortcut</strong>, or
+         <strong>Add to Home screen</strong> &mdash; they all do the same thing.
+         <br>If it says <em>already installed</em>, it is on there: look for the
+         teal <strong>MY</strong> with a brass plus among your apps.`}
+    <br><button id="noInstall">Hide this</button></div>`;
+  const n=$('noInstall');
+  if(n) n.onclick=()=>{ try{ localStorage.setItem('jot-nag','off'); }catch(e){}
+    paintInstall(); };
+}
+
 (async function start(){
   noteInstalled();
+  paintInstall();
   $('fDate').value=isoDay(new Date());
   paintRecent();
   await whoAmI();

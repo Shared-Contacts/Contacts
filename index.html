@@ -114,7 +114,7 @@ ul.list li.fav .name::after{content:'\2605';color:var(--brass);
   font-size:15px;color:#fff;margin-top:8px}
 .pickbox.on{background:var(--red);border-color:var(--red)}
 ul.list li.chosen{background:#FBE9E7}
-.pickbar{position:fixed;left:0;right:0;bottom:0;z-index:48;
+.pickbar{position:fixed;left:0;right:0;bottom:0;z-index:52;
   background:var(--red);color:#fff;display:flex;align-items:center;gap:10px;
   padding:14px 16px calc(14px + env(safe-area-inset-bottom));font-size:16px}
 .pickbar button{color:#fff;font-size:16px;padding:6px 8px}
@@ -180,7 +180,7 @@ ul.list li.chosen{background:#FBE9E7}
   padding:1px 7px;font-size:13px;font-weight:700;flex:0 0 auto;text-align:center}
 
 /* One bar across the bottom of every screen. Thin, two words, always there. */
-#tray{position:fixed;left:0;right:0;bottom:0;z-index:46;display:flex;
+#tray{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;
   background:var(--panel);border-top:1px solid var(--rule);
   padding-bottom:env(safe-area-inset-bottom,0px);
   box-shadow:0 -2px 8px rgba(16,35,28,.07)}
@@ -290,6 +290,12 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheetbar .logdate{color:#F2EFE4;text-align:center;border-bottom:1px dotted rgba(255,255,255,.5);
   padding:6px 4px;font-size:16px}
+/* A small phone, with five things wanting a place on one bar. */
+@media (max-width:380px){
+  .sheetbar{gap:3px;padding-left:8px;padding-right:8px}
+  .sheetbar button{padding:8px 6px}
+  .sheetbar .logdate{font-size:15px;padding:6px 2px}
+}
 .daypick{position:fixed;inset:0;z-index:75;background:rgba(16,35,28,.6);
   display:flex;align-items:center;justify-content:center;padding:16px}
 .daypick .inner{background:var(--paper);border-radius:12px;padding:16px;max-width:420px;width:100%}
@@ -317,7 +323,7 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 .guestrow .g button{color:var(--red);font-size:17px;padding:0}
 /* Sits above everything except a message, so it shows on whichever screen you
    happen to be on. Just above the Wishlist/Help strip. */
-.sharebar{position:fixed;left:0;right:0;z-index:47;
+.sharebar{position:fixed;left:0;right:0;z-index:51;
   bottom:calc(var(--tray) + env(safe-area-inset-bottom,0px));
   background:var(--red);color:#fff;padding:9px 14px;font-size:15px;
   display:flex;gap:10px;align-items:center;
@@ -757,10 +763,9 @@ i.key{vertical-align:middle}
 <div id="app" class="hidden">
   <div id="topbar">
   <header class="plate">
-    <button id="homeBtn">Back</button>
+    <button class="bt" id="homeBtn" data-menu="contacts" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Contacts</span>
-    <span class="bartools"><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span>
-  </header>
+    <span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></header>
   <div class="searchwrap">
     <div class="srow">
       <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
@@ -795,8 +800,8 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="diary" class="sheet hidden">
-  <div class="sheetbar"><button id="diaryBack">Back</button>
-    <span class="title">Diary</span><span class="bartools"><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbar"><button class="bt" id="diaryMenu" data-menu="diary" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Diary</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="diaryBody"></div>
   <button class="fab sheetfab" id="diaryAdd" aria-label="Add an appointment or to-do">+</button>
 </div>
@@ -814,30 +819,30 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="wish" class="sheet hidden">
-  <div class="sheetbar"><button id="wishBack">Back</button>
-    <span class="title">Wishlist</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbar"><button class="bt" id="wishMenu" data-menu="wish" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Wishlist</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="wishBody"></div>
 </div>
 
 <div id="shop" class="sheet hidden">
-  <div class="sheetbar"><button id="shopBack">Back</button>
-    <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbar"><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="shopBody"></div>
   <button class="fab sheetfab" id="shopAdd" aria-label="Add a shopping list">+</button>
 </div>
 
 <div id="where" class="sheet hidden">
-  <div class="sheetbar"><button id="whereBack">Back</button>
-    <span class="title">Where we are</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbar"><button class="bt" id="whereMenu" data-menu="where" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Where we are</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="whereBody"></div>
 </div>
 
 <div id="log" class="sheet hidden">
-  <div class="sheetbar"><button id="logBack">Back</button>
+  <div class="sheetbar"><button class="bt" id="logMenu" data-menu="log" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <button id="logPrev" aria-label="Earlier day">&#9664;</button>
     <button class="title logdate" id="logPick"></button>
     <button id="logNext" aria-label="Later day">&#9654;</button>
-    <button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button>
+    <button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
     <button id="logEditTop">Edit</button></div>
   <div class="sheetbody" id="logBody"></div>
 </div>
@@ -849,22 +854,10 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="menu" class="sheet hidden">
-  <div class="sheetbar"><button id="menuBack">Back</button>
-    <span class="title">Menu</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbar"><button id="menuBack">Close</button>
+    <span class="title" id="menuTitle">Menu</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody">
-    <div class="card">
-      <button class="menuitem" id="goPick">Delete several contacts &rsaquo;</button>
-      <button class="menuitem" id="goChats">Messages &rsaquo;</button>
-      <button class="menuitem" id="goOffers">Contacts sent to you &rsaquo;</button>
-      <button class="menuitem" id="goIO">Import and export contacts &rsaquo;</button>
-      <button class="menuitem" id="goShop">Shopping list &rsaquo;</button>
-      <button class="menuitem" id="goWish">Wishlist &mdash; ideas for these apps &rsaquo;</button>
-      <button class="menuitem" id="goWhere">Share where I am &rsaquo;</button>
-      <button class="menuitem" id="refreshPics">Photos not showing? Fetch them again</button>
-      <button class="menuitem" id="goHelp">How to use this &rsaquo;</button>
-      <button class="menuitem" id="setBtn">Settings &rsaquo;</button>
-      <button class="menuitem" id="signoutBtn">Sign out</button>
-    </div>
+    <div id="menuBody"></div>
     <details class="card logsec"><summary>Colours</summary>
       <div class="setadd"><div class="swatches" id="themePick"></div></div>
     </details>
@@ -878,6 +871,7 @@ i.key{vertical-align:middle}
         <input id="pw2" type="password" placeholder="Type it again" autocomplete="new-password">
         <button class="btn primary" id="pwSave">Change my password</button>
       </div></details>
+    <div class="card"><button class="menuitem" id="signoutBtn">Sign out</button></div>
     <p class="coords" id="whoami"></p>
   </div>
 </div>
@@ -903,12 +897,10 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="chats" class="sheet hidden">
-  <div class="sheetbar"><button id="chatsBack">Back</button>
+  <div class="sheetbar"><button class="bt" id="chatsMenu" data-menu="chats" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Messages</span>
     <span class="bartools">
-      <button class="bt" data-barhelp="chats" aria-label="How messages work"
-        title="How messages work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button>
-      <button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
+      <button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
       <button id="chatNew" class="bt wordbt">New</button></span></div>
   <div class="sheetbody" id="chatsBody"></div>
 </div>
@@ -932,8 +924,8 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="money" class="sheet hidden">
-  <div class="sheetbar"><button id="moneyBack">Back</button>
-    <span class="title">Finances</span><span class="bartools"><button class="bt" data-barhelp="money" aria-label="How the cashbook works" title="How the cashbook works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button><button class="bt" data-barset="1" aria-label="Settings for this screen" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6l1.5 2.2 2.6-.5.6 2.6 2.4 1.1-1.1 2.4 1.7 2-2 1.7.3 2.6-2.6.4-1.3 2.3L12 18.6l-2.1 1.1-1.3-2.3-2.6-.4.3-2.6-2-1.7 1.7-2L5 8.3l2.4-1.1.6-2.62.6.5z"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbar"><button class="bt" id="moneyMenu" data-menu="money" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Finances</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="moneyBody"></div>
   <button class="fab sheetfab" id="moneyAdd" aria-label="Add a transaction">+</button>
 </div>
@@ -1048,12 +1040,43 @@ const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr = v => Array.isArray(v) ? v : [];
 
+const SHEET_IDS=['detail','editor','settings','menu','help','diary','itemEd','log',
+  'logEd','where','wish','shop','io','offers','chats','chat',
+  'money','moneyEd','recon','moneyImp','pairs'];
 function sheetsOpen(){
-  return ['detail','editor','settings','menu','help','diary','itemEd','log','logEd','where','wish','shop','io','offers','chats','chat',
-          'money','moneyEd','recon','moneyImp','pairs']
-    .some(id=>!$(id).classList.contains('hidden'));
+  return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
+
+/* Whatever was opened last belongs in front. Every screen sits at the same
+   height in the stack, so without this the one that happens to come later in
+   the page wins, and something opened on top of it — the Wishlist, usually —
+   quietly appears behind. Worked out here rather than at each opening, so it
+   holds for every screen whether or not anybody remembered to ask for it. */
+let SHEET_STACK=[];
+
+/* Opening a screen says so, even when it was already open behind something
+   else — tapping Wishlist in the bottom strip while the Wishlist is sitting
+   under the Finances screen changes nothing in the page, so there is nothing
+   for anything else to notice. That was the whole of the bug. */
+function showSheet(id){
+  const el=$(id); if(!el) return;
+  el.classList.remove('hidden');
+  SHEET_STACK=SHEET_STACK.filter(x=>x!==id).concat(id);
+  stackSheets();
+}
+
+function stackSheets(){
+  const open=SHEET_IDS.filter(id=>$(id)&&!$(id).classList.contains('hidden'));
+  SHEET_STACK.filter(id=>!open.includes(id)).forEach(id=>{ $(id).style.zIndex=''; });
+  SHEET_STACK=SHEET_STACK.filter(id=>open.includes(id))
+    .concat(open.filter(id=>!SHEET_STACK.includes(id)));
+  // Nine steps is more than anyone can stack up, and the bottom tray and the
+  // red banner live above the top of that range.
+  SHEET_STACK.forEach((id,i)=>{ $(id).style.zIndex = 40 + Math.min(i,9); });
+}
+
 function lockBackground(){
+  stackSheets();
   const home = !$('home').classList.contains('hidden');
   document.body.style.overflow = (sheetsOpen()||home) ? 'hidden' : '';
   if(typeof paintTray==='function') paintTray();
@@ -1548,8 +1571,8 @@ async function signPaths(paths,force){
 
 // Links to photos expire after an hour. Leave the app open longer than that
 // and pictures start failing; this fetches them all again.
-async function refreshPhotos(){
-  toast('Fetching the photos again\u2026');
+async function refreshPhotos(quiet){
+  if(!quiet) toast('Fetching the photos again\u2026');
   SIGNED={};
   const all=[];
   CONTACTS.forEach(c=>{
@@ -1561,7 +1584,18 @@ async function refreshPhotos(){
   render();
   if(!$('log').classList.contains('hidden')) renderLog();
   if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
-  toast('Photos refreshed');
+  if(!quiet) toast('Photos refreshed');
+}
+
+/* The figures and the pictures, in one command. They were two, which only ever
+   raised the question of which to try first when something looked wrong. The
+   links to photos expire after an hour, so anything left open overnight needs
+   both anyway. */
+async function refreshAll(){
+  await loadAll();
+  await refreshPhotos(true);
+  if(!$('home').classList.contains('hidden')) renderHome();
+  toast('Up to date');
 }
 
 // Several at once, one after another so a slow signal cannot overlap them
@@ -2068,7 +2102,7 @@ async function openDetail(id, keepPlace){
   wireLinkSearch();
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
-  $('detail').classList.remove('hidden');$('detBody').scrollTop=wasAt;lockBackground();
+  showSheet('detail');$('detBody').scrollTop=wasAt;lockBackground();
 }
 
 async function toggleFav(id){
@@ -2404,7 +2438,7 @@ async function openEditor(c){
       : 'Centred on where you are. Tap the map to drop a pin.';
   };
   showCoords();
-  $('editor').classList.remove('hidden');$('edBody').scrollTop=0;lockBackground();
+  showSheet('editor');$('edBody').scrollTop=0;lockBackground();
 
   setTimeout(()=>{
     const hm=showMap('homeMap',DRAFT.lat,DRAFT.lng,(la,ln)=>{DRAFT.lat=la;DRAFT.lng=ln;showCoords();});
@@ -3147,7 +3181,7 @@ async function openSettings(goTo){
     if(error){toast('Could not add \u2014 that name may already exist');return;}
     await loadAll();openSettings();toast('Added');
   });
-  $('settings').classList.remove('hidden');$('setBody').scrollTop=0;lockBackground();
+  showSheet('settings');$('setBody').scrollTop=0;lockBackground();
 }
 
 
@@ -3178,15 +3212,27 @@ function openHelp(where){
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
 
   <h4 id="h-home">The opening screen</h4>
-  <p>Every part of the app has a tile. Tap one to go there; the MY button at the
-  left of any top bar brings you back.</p>
+  <p>Every part of the app has a tile. Tap one to go there.</p>
+  <p>Once you are in, the <strong>three lines</strong> at the left of the top bar
+  open the menu for wherever you happen to be. What you can do in that part of
+  the app is at the top, then <strong>its</strong> settings and
+  <strong>its</strong> help &mdash; not everybody's &mdash; and underneath, a
+  list to take you anywhere else, the home screen included. Leaving a screen
+  that way puts it away behind you, so you never end up with half the app open
+  at once.</p>
+  <p>The screens you open from inside one of those &mdash; editing a contact, a
+  transaction, a day &mdash; keep <strong>Cancel</strong> and
+  <strong>Save</strong>, so you can always back out of a change without
+  keeping it.</p>
+  <p>The circular arrow at the right of every bar fetches everything again: the
+  figures <em>and</em> the photographs. It is worth a tap if something looks
+  stale or a picture will not load.</p>
   <p>The four-squares button beside the logo lets you rearrange them.
   <strong>&lsaquo;</strong> and <strong>&rsaquo;</strong> shuffle a tile along, the
   <strong>pencil</strong> renames it and changes its colour, and <strong>&times;</strong>
   takes it off — nothing is deleted, and you can add it back from the dashed
   square at the end. Each screen takes its tile's colour, so changing a tile
   changes the bar at the top of that screen too. Your arrangement is yours alone.</p>
-  <p>The circular arrow fetches the latest from the server.</p>
 
   <h4 id="h-money">Finances</h4>
   <p>A cashbook. A <strong>transaction</strong> is the whole event &mdash; a shop
@@ -3717,7 +3763,7 @@ function openHelp(where){
     try{ await navigator.clipboard.writeText(START_LINK); toast('Link copied'); }
     catch(e){ toast('Select the link above and copy it'); }
   };
-  $('help').classList.remove('hidden');
+  showSheet('help');
   if(anchor) setTimeout(()=>{
     const h=document.getElementById(anchor);
     if(h) h.scrollIntoView({block:'start'});
@@ -3810,7 +3856,7 @@ function tilePip(dest){
 /* ---------- the diary list ---------- */
 function openDiary(){
   renderDiary();
-  $('diary').classList.remove('hidden'); $('diaryBody').scrollTop=0; lockBackground();
+  showSheet('diary'); $('diaryBody').scrollTop=0; lockBackground();
 }
 
 // An appointment occupies every day from its start to its end, so ten days
@@ -4530,7 +4576,7 @@ function openItem(it, presetContact){
   applyKind();
 
   useWhenPicker(f,['starts_at','ends_at','due_at','due_from']);
-  $('itemEd').classList.remove('hidden'); $('itBody').scrollTop=0; lockBackground();
+  showSheet('itemEd'); $('itBody').scrollTop=0; lockBackground();
 }
 
 async function saveItem(){
@@ -4832,6 +4878,15 @@ const dayLabel = iso => {
   return new Date(y,m-1,d).toLocaleDateString('en-GB',
     {weekday:'long',day:'numeric',month:'long',year:'numeric'});
 };
+// The top bar has four other things on it, so the date goes short up there.
+// Everywhere with room to spare keeps the long form.
+const dayLabelShort = iso => {
+  const [y,m,d]=iso.split('-').map(Number);
+  const s=new Date(y,m-1,d).toLocaleDateString('en-GB',
+    {weekday:'short',day:'numeric',month:'short'}).replace(',','');
+  // The year only when it is not this one, as everywhere else in the app.
+  return y===new Date().getFullYear() ? s : s+' '+String(y).slice(2);
+};
 
 async function loadLog(){
   const [lg,op,ct,fl]=await Promise.all([
@@ -4985,7 +5040,7 @@ async function openLog(){
   // Show the page BEFORE drawing it. A map built inside a hidden box has no
   // width to measure, so it used to open on a blank patch of sea and only
   // came right once you stepped a day back and forward again.
-  $('log').classList.remove('hidden'); lockBackground();
+  showSheet('log'); lockBackground();
   renderLog();
   $('logBody').scrollTop=0;
 }
@@ -5022,7 +5077,7 @@ function rememberOpen(){ try{ localStorage.setItem('logopen',JSON.stringify(LOG_
 
 function renderLog(){
   const e=logEntry(LOG_DATE);
-  $('logPick').textContent=dayLabel(LOG_DATE);
+  $('logPick').textContent=dayLabelShort(LOG_DATE);
   const isToday = LOG_DATE===isoDay(new Date());
   $('log').classList.toggle('pastday',!isToday);
   $('logEd').classList.toggle('pastday',!isToday);
@@ -5557,7 +5612,7 @@ function editLog(iso){
   useWhenPicker(f,['met_date'],{dateOnly:['met_date']});
   showC();
 
-  $('logEd').classList.remove('hidden'); $('logEdBody').scrollTop=0; lockBackground();
+  showSheet('logEd'); $('logEdBody').scrollTop=0; lockBackground();
   setTimeout(()=>{
     if(!$('logEditMap')) return;
     const m=showMap('logEditMap',LOGDRAFT.blat,LOGDRAFT.blng,
@@ -5793,7 +5848,7 @@ async function stopSharing(quiet){
 async function openWhere(){
   await loadShares();
   renderWhere();
-  $('where').classList.remove('hidden'); $('whereBody').scrollTop=0; lockBackground();
+  showSheet('where'); $('whereBody').scrollTop=0; lockBackground();
   watchOthers();
 }
 
@@ -5924,7 +5979,7 @@ function whoWrote(id){
 /* ---------- wishlist ---------- */
 async function openWish(){
   await loadLists(); renderWish();
-  $('wish').classList.remove('hidden'); $('wishBody').scrollTop=0; lockBackground();
+  showSheet('wish'); $('wishBody').scrollTop=0; lockBackground();
 }
 
 // Your own ideas can be reworded. Anybody can still move any of them along.
@@ -6052,7 +6107,7 @@ async function loadShopping(){
 
 async function openShop(){
   await loadShopping(); renderShop();
-  $('shop').classList.remove('hidden'); $('shopBody').scrollTop=0; lockBackground();
+  showSheet('shop'); $('shopBody').scrollTop=0; lockBackground();
 }
 
 async function binList(id){
@@ -6254,6 +6309,7 @@ const TILE_DEST={
   chats:   {label:'Messages',    go:openChats},
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
   money:   {label:'Finances',   go:openMoney},
+  recipes: {label:'Recipes',    go:()=>toast('Recipes \u2014 coming soon')},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -6263,9 +6319,9 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
-  offers:'#2E5E63', chats:'#3F5A46'};
+  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','alarm','settings'];
+  'money','recipes','alarm','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -6677,7 +6733,7 @@ function whenShort(iso){
 /* ---------- the list of conversations ---------- */
 function openChats(){
   renderChats();
-  $('chats').classList.remove('hidden'); $('chatsBody').scrollTop=0; lockBackground();
+  showSheet('chats'); $('chatsBody').scrollTop=0; lockBackground();
 }
 function renderChats(){
   if(!CHATS_READY){
@@ -6726,7 +6782,7 @@ async function openChat(id){
   const mine=canPost(c);
   $('chatFoot').style.display = mine ? '' : 'none';
   renderChat();
-  $('chat').classList.remove('hidden'); lockBackground();
+  showSheet('chat'); lockBackground();
   setTimeout(()=>{ const b=$('chatBody'); b.scrollTop=b.scrollHeight; },30);
   await markRead(id);
   watchMessages();
@@ -6998,7 +7054,7 @@ function pickPeople(title, onGo){
 function openOffers(){
   OFF_PICKED.clear();
   renderOffers();
-  $('offers').classList.remove('hidden'); $('offBody').scrollTop=0; lockBackground();
+  showSheet('offers'); $('offBody').scrollTop=0; lockBackground();
 }
 function renderOffers(){
   const list=offersToMe();
@@ -7400,7 +7456,7 @@ function openIO(){
     };
     r.readAsText(f);
   };
-  $('io').classList.remove('hidden'); $('ioBody').scrollTop=0; lockBackground();
+  showSheet('io'); $('ioBody').scrollTop=0; lockBackground();
 }
 
 let IMPORT_ROWS=[], IMPORT_KIND='csv';
@@ -7589,13 +7645,6 @@ $('logPrev').onclick=()=>stepDay(-1);
 $('logNext').onclick=()=>stepDay(1);
 $('logPick').onclick=openDayPick;
 $('logEditTop').onclick=()=>editLog(LOG_DATE);
-$('goWhere').onclick=()=>{$('menu').classList.add('hidden');openWhere();};
-$('goWish').onclick=()=>{$('menu').classList.add('hidden');openWish();};
-$('goShop').onclick=()=>{$('menu').classList.add('hidden');openShop();};
-$('goIO').onclick=()=>{$('menu').classList.add('hidden');openIO();};
-$('goOffers').onclick=()=>{$('menu').classList.add('hidden');openOffers();};
-$('goChats').onclick=()=>{$('menu').classList.add('hidden');openChats();};
-$('chatsBack').onclick=()=>{$('chats').classList.add('hidden');lockBackground();};
 $('chatNew').onclick=newChat;
 $('chatBack').onclick=()=>{
   $('chat').classList.add('hidden'); CUR_CHAT=null; lockBackground();
@@ -7615,11 +7664,9 @@ $('chatText').addEventListener('keydown',ev=>{
   }
 });
 $('offBack').onclick=()=>{$('offers').classList.add('hidden');lockBackground();};
-$('goPick').onclick=()=>{$('menu').classList.add('hidden');lockBackground();startPicking();};
 $('ioBack').onclick=()=>{$('io').classList.add('hidden');lockBackground();};
-$('wishBack').onclick=()=>{$('wish').classList.add('hidden');lockBackground();};
-$('shopBack').onclick=()=>{$('shop').classList.add('hidden');lockBackground();};
-$('shopAdd').onclick=async()=>{
+$('shopAdd').onclick=newShopList;
+async function newShopList(){
   const n=prompt('What is the new list called?\n\nA shop, a place, whatever suits '
     +'\u2014 Butcher, Chemist, Chandlery.','');
   if(n===null||!n.trim()) return;
@@ -7628,21 +7675,13 @@ $('shopAdd').onclick=async()=>{
   if(error){ toast('Could not add it'); console.error(error); return; }
   CUR_LIST=data.id;
   await loadShopping(); renderShop(); toast('List added');
-};
-$('whereBack').onclick=()=>{killMaps();stopWatchingOthers();
-  $('where').classList.add('hidden');lockBackground();};
-$('logBack').onclick=()=>{killMaps();$('log').classList.add('hidden');lockBackground();};
+}
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
-$('diaryBack').onclick=()=>{$('diary').classList.add('hidden');lockBackground();};
 $('diaryAdd').onclick=()=>openItem(null);
 $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
-$('menuBtn').onclick=()=>{
-  $('whoami').textContent='Signed in as '+(ME.email||'');
-  paintThemePick();
-  $('menu').classList.remove('hidden');lockBackground();
-};
-$('menuBack').onclick=()=>{$('menu').classList.add('hidden');lockBackground();};
+$('menuBtn').onclick=()=>openMenu('home');
+$('menuBack').onclick=shutMenu;
 $('pwSave').onclick=async()=>{
   const a=$('pw1').value, b=$('pw2').value;
   if(a.length<8){ toast('Make it at least eight characters'); return; }
@@ -7654,7 +7693,6 @@ $('pwSave').onclick=async()=>{
   $('pw1').value=''; $('pw2').value='';
   toast('Password changed');
 };
-$('homeBtn').onclick=showHome;
 $('trayWish').onclick=openWish;
 $('trayHelp').onclick=()=>openHelp();
 
@@ -7835,7 +7873,7 @@ function needsCat(t,lines){
 }
 
 async function openMoney(){
-  $('money').classList.remove('hidden'); lockBackground();
+  showSheet('money'); lockBackground();
   $('moneyBody').innerHTML='<p class="empty">Fetching your books…</p>';
   await loadMoney(); renderMoney(); $('moneyBody').scrollTop=0;
 }
@@ -8110,7 +8148,7 @@ async function editTxn(id){
 
 function showTxnEditor(title){
   $('moneyEdTitle').textContent=title;
-  $('moneyEd').classList.remove('hidden'); lockBackground();
+  showSheet('moneyEd'); lockBackground();
   renderTxnEditor(); $('moneyEdBody').scrollTop=0;
 }
 
@@ -8764,7 +8802,7 @@ function pickPayee(){
 let PAIRS=[];
 
 async function openPairs(){
-  $('pairs').classList.remove('hidden'); lockBackground();
+  showSheet('pairs'); lockBackground();
   $('pairsBody').innerHTML='<p class="empty">Looking through your accounts…</p>';
   await findPairs(); renderPairs(); $('pairsBody').scrollTop=0;
 }
@@ -8848,7 +8886,7 @@ function pairsFootnote(){
 async function openRecon(accId){
   RECON={acc:accId||MONEY_ACC!=='all'&&MONEY_ACC||((ACCOUNTS.filter(a=>a.active)[0]||{}).id||null),
          st:null, rows:[], tick:{}, stmts:[]};
-  $('recon').classList.remove('hidden'); lockBackground();
+  showSheet('recon'); lockBackground();
   await reconLoad(); renderRecon(); $('reconBody').scrollTop=0;
 }
 
@@ -9046,7 +9084,7 @@ function methodFrom(word,accKind){
 async function openImport(){
   IMPORT={acc:(MONEY_ACC!=='all'?MONEY_ACC:(ACCOUNTS.filter(a=>a.active)[0]||{}).id)||null,
           rows:[], head:[], map:null, name:''};
-  $('moneyImp').classList.remove('hidden'); lockBackground();
+  showSheet('moneyImp'); lockBackground();
   renderImport(); $('impBody').scrollTop=0;
 }
 
@@ -9417,8 +9455,7 @@ function bankFileBox(accId){
 }
 
 /* ---------- Wiring ---------- */
-$('moneyBack').onclick=()=>{ MONEY_PICKING=false; MONEY_PICKED.clear();
-  $('money').classList.add('hidden'); paintMoneyPickBar(); lockBackground(); };
+
 $('moneyEdCancel').onclick=()=>{ $('moneyEd').classList.add('hidden'); lockBackground(); };
 $('moneyEdSave').onclick=saveTxn;
 $('moneyAdd').onclick=newTxn;
@@ -9987,16 +10024,144 @@ function wireFinance(){
 }
 
 
+/* ---------- The menu ----------
+   One menu, dressed for wherever you opened it from. What you can do in this
+   part of the app comes first, then that part's own settings and its own help,
+   then a way out to everywhere else. Every screen used to carry its own
+   scattering of buttons and the same thing sat in a different place depending
+   where you were; this puts the lot in one place, in the same order, every
+   time. */
+const AREAS={
+  contacts:{title:'Contacts',     set:'Contacts',  help:'contacts'},
+  money:   {title:'Finances',     set:'Finances',  help:'money'},
+  log:     {title:'Daily Log',    set:'Daily Log', help:'log'},
+  diary:   {title:'Calendar',     set:null,        help:'diary'},
+  shop:    {title:'Shopping',     set:null,        help:'shop'},
+  wish:    {title:'Wishlist',     set:null,        help:'wish'},
+  where:   {title:'Where we are', set:null,        help:'where'},
+  chats:   {title:'Messages',     set:null,        help:'chats'},
+  home:    {title:'Menu',         set:null,        help:'home'}
+};
+
+// Leaving an area. Some of them have something to put down on the way out —
+// a map still running, a half-finished tick list.
+const AREA_SHUT={
+  contacts:()=>showHome(),
+  log:  ()=>{ killMaps(); $('log').classList.add('hidden'); },
+  where:()=>{ killMaps(); stopWatchingOthers(); $('where').classList.add('hidden'); },
+  money:()=>{ MONEY_PICKING=false; MONEY_PICKED.clear();
+              $('money').classList.add('hidden');
+              if(typeof paintMoneyPickBar==='function') paintMoneyPickBar(); },
+  diary:()=>$('diary').classList.add('hidden'),
+  shop: ()=>$('shop').classList.add('hidden'),
+  wish: ()=>$('wish').classList.add('hidden'),
+  chats:()=>$('chats').classList.add('hidden'),
+  home: ()=>{}
+};
+const AREA_OPEN={
+  contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
+  shop:openShop, wish:openWish, where:openWhere, chats:openChats, home:showHome
+};
+
+// What you can do in each one. Everything else — settings, help, fetching
+// again, getting somewhere else — is the same wherever you are.
+function areaItems(area){
+  const it=(label,fn)=>({label,fn});
+  if(area==='contacts') return [
+    it('Delete several contacts', ()=>{ shutMenu(); startPicking(); }),
+    it('Contacts sent to you',    ()=>{ shutMenu(); openOffers(); }),
+    it('Messages',                ()=>{ shutMenu(); openChats(); }),
+    it('Import and export contacts', ()=>{ shutMenu(); openIO(); })];
+  if(area==='money') return [
+    it('Reconcile a statement',   ()=>{ shutMenu(); openRecon(); }),
+    it('Import from a bank file', ()=>{ shutMenu(); openImport(); }),
+    it('Find transfers between my accounts', ()=>{ shutMenu(); openPairs(); }),
+    it('Choose several to delete',()=>{ shutMenu(); startMoneyPicking(); })];
+  if(area==='diary') return [
+    it('Add an entry',            ()=>{ shutMenu(); openItem(null); })];
+  if(area==='shop') return [
+    it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
+  if(area==='chats') return [
+    it('Start a message',         ()=>{ shutMenu(); newChat(); })];
+  return [];
+}
+
+let MENU_AREA='home', MENU_ITEMS=[];
+function shutMenu(){ $('menu').classList.add('hidden'); lockBackground(); }
+
+function openMenu(area){
+  MENU_AREA = AREAS[area] ? area : 'home';
+  const a=AREAS[MENU_AREA], here=MENU_AREA!=='home';
+  MENU_ITEMS=areaItems(MENU_AREA);
+  const row=(label,attr)=>`<button class="menuitem" ${attr}>${label} &rsaquo;</button>`;
+  const others=Object.keys(AREAS).filter(k=>k!=='home'&&k!==MENU_AREA);
+
+  $('menuTitle').textContent = here ? a.title : 'Menu';
+  $('menuBody').innerHTML=`
+    ${MENU_ITEMS.length?`<p class="dsec">In ${esc(a.title)}</p>
+      <div class="card">${MENU_ITEMS.map((x,i)=>
+        row(esc(x.label),`data-mi="${i}"`)).join('')}</div>`:''}
+
+    <div class="card">
+      ${a.set ? row('Settings for '+esc(a.title),'data-mset="1"')
+              : row('Settings','data-mset="1"')}
+      ${row(here?'How '+esc(a.title)+' works':'How to use this','data-mhelp="1"')}
+      <button class="menuitem" data-mref="1">Fetch everything again</button>
+    </div>
+
+    <p class="dsec">Go somewhere else</p>
+    <div class="card">
+      ${here?row('Home screen','data-mgo="home"'):''}
+      ${others.map(k=>row(esc(AREAS[k].title),`data-mgo="${k}"`)).join('')}
+    </div>`;
+
+  $('menuBody').querySelectorAll('[data-mi]').forEach(b=>
+    b.onclick=()=>{ const x=MENU_ITEMS[+b.dataset.mi]; if(x) x.fn(); });
+  $('menuBody').querySelector('[data-mset]').onclick=()=>{
+    shutMenu(); openSettings(a.set||undefined); };
+  $('menuBody').querySelector('[data-mhelp]').onclick=()=>{
+    shutMenu(); openHelp(a.help); };
+  $('menuBody').querySelector('[data-mref]').onclick=async b=>{
+    shutMenu(); await refreshAll(); };
+  $('menuBody').querySelectorAll('[data-mgo]').forEach(b=>
+    b.onclick=()=>goArea(b.dataset.mgo));
+
+  // The menu wears the colour of whatever it was opened from, so it is
+  // obvious at a glance which part of the app you are looking at.
+  const tile=TILES.find(x=>x.dest===MENU_AREA);
+  const sheet=$('menu');
+  if(tile){ sheet.style.setProperty('--hull',tile.colour);
+            sheet.style.setProperty('--hull-dark',shade(tile.colour,.3)); }
+  else { sheet.style.removeProperty('--hull'); sheet.style.removeProperty('--hull-dark'); }
+
+  $('whoami').textContent='Signed in as '+(ME.email||'');
+  paintThemePick();
+  showSheet('menu');
+  lockBackground();
+  $('menu').querySelector('.sheetbody').scrollTop=0;
+}
+
+// Somewhere else means somewhere else: the one you were in is put away rather
+// than left open underneath, which is how screens used to end up in a pile.
+function goArea(k){
+  shutMenu();
+  (AREA_SHUT[MENU_AREA]||(()=>{}))();
+  if(k!=='home') (AREA_OPEN[k]||(()=>{}))();
+  else showHome();
+  lockBackground();
+}
+
 // One handler for the refresh and settings buttons on every bar.
 document.addEventListener('click',async ev=>{
   const r=ev.target.closest('[data-barref]');
   if(r){
     r.classList.add('spin');
-    await loadAll();
+    await refreshAll();
     r.classList.remove('spin');
-    toast('Up to date');
     return;
   }
+  const m=ev.target.closest('[data-menu]');
+  if(m){ openMenu(m.dataset.menu); return; }
   const h=ev.target.closest('[data-barhelp]');
   if(h){ openHelp(h.dataset.barhelp); return; }
   const g=ev.target.closest('[data-barset]');
@@ -10009,14 +10174,10 @@ $('homeArrange').onclick=()=>{
 };
 $('homeRefresh').onclick=async()=>{
   const b=$('homeRefresh'); b.classList.add('spin'); b.disabled=true;
-  await loadAll();
+  await refreshAll();
   b.classList.remove('spin'); b.disabled=false;
-  renderHome(); toast('Up to date');
 };
-$('refreshPics').onclick=()=>{ $('menu').classList.add('hidden'); lockBackground(); refreshPhotos(); };
-$('goHelp').onclick=openHelp;
 $('helpBack').onclick=()=>{$('help').classList.add('hidden');lockBackground();};
-$('setBtn').onclick=openSettings;
 $('setBack').onclick=()=>{$('settings').classList.add('hidden');lockBackground();};
 $('viewPick').value=VIEW;
 $('viewPick').onchange=()=>{

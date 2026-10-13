@@ -290,8 +290,8 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 .sheetbar .title{flex:1;font-weight:700;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheetbar .logdate{color:#F2EFE4;text-align:center;border-bottom:1px dotted rgba(255,255,255,.5);
   padding:6px 4px;font-size:16px}
-/* A small phone, with five things wanting a place on one bar. */
-@media (max-width:380px){
+/* A phone, with six things wanting a place on one bar. */
+@media (max-width:430px){
   .sheetbar{gap:3px;padding-left:8px;padding-right:8px}
   .sheetbar button{padding:8px 6px}
   .sheetbar .logdate{font-size:15px;padding:6px 2px}
@@ -644,6 +644,14 @@ i.key{vertical-align:middle}
   border:1.5px solid var(--rule);font-weight:700;font-size:15px;
   text-decoration:none;color:var(--hull);white-space:nowrap}
 .frow .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:0 4px}
+
+/* Jumping straight to a date in the Daily Log, rather than stepping back a
+   month at a time. */
+.godate{display:flex;gap:8px;align-items:center;padding:0 0 12px}
+.godate input{flex:1 1 auto;min-width:0;padding:11px 10px;border:1.5px solid var(--rule);
+  border-radius:8px;background:#fff;font:inherit;font-size:16px}
+.godate .btn{flex:0 0 auto;width:auto;padding:11px 14px;font-size:16px;
+  border:1.5px solid var(--rule)}
 
 /* ---------- Finances ---------- */
 /* Room at the bottom so the last row can be scrolled clear of the + button. */
@@ -1642,15 +1650,33 @@ function lightbox(url){
   document.body.appendChild(box);
 }
 
+/* One of the photos already there, promoted. Nothing is uploaded and nothing
+   is copied: the profile photo simply points at a picture the contact already
+   has, which is why the same file can now be in two places and why removing
+   one has to be careful below. */
+async function setFace(path){
+  if(!path||!CURRENT) return;
+  const {error}=await sb.from('contacts').update({avatar_path:path}).eq('id',CURRENT.id);
+  if(error){ toast('Could not use that one'); console.error(error); return; }
+  const at=$('detBody').scrollTop; await loadAll(); await openDetail(CURRENT.id,true);
+  $('detBody').scrollTop=at; toast('Profile photo changed');
+}
+
 async function removePhoto(path, isAvatar){
   if(!confirm('Remove this photo?'))return;
-  await sb.storage.from('photos').remove([path]);
+  // The profile photo may be one of the gallery photos. Take the file itself
+  // away only when nothing is left pointing at it, or the gallery would be
+  // left showing a picture that is no longer there.
+  const inGallery = arr(CURRENT.photos).some(x=>x.path===path);
+  const isFace = CURRENT.avatar_path===path;
+  if(!(isAvatar && inGallery)) await sb.storage.from('photos').remove([path]);
   const patch = isAvatar
     ? {avatar_path:null}
-    : {photos:arr(CURRENT.photos).filter(p=>p.path!==path)};
+    : Object.assign({photos:arr(CURRENT.photos).filter(p=>p.path!==path)},
+                    isFace?{avatar_path:null}:{});
   const {error}=await sb.from('contacts').update(patch).eq('id',CURRENT.id);
   if(error){toast('Could not remove it');return;}
-  delete SIGNED[path];
+  if(!(isAvatar&&inGallery)) delete SIGNED[path];
   const at=$('detBody').scrollTop; await loadAll(); openDetail(CURRENT.id,true);
   $('detBody').scrollTop=at; toast('Photo removed');
 }
@@ -1965,11 +1991,18 @@ async function openDetail(id, keepPlace){
   const gallery=`
     ${shots.length?`<div class="gallery">${shots.map(p=>`<figure>
         <img src="${esc(SIGNED[p.path])}" alt="" data-big="${esc(p.path)}" loading="lazy">
+        ${c.avatar_path===p.path
+          ? '<span class="mainpip">Profile</span>'
+          : `<button class="mk1" data-setface="${esc(p.path)}"
+               aria-label="Use this as the profile photo"
+               title="Use this as the profile photo">&#9733;</button>`}
         <button class="rm" data-rmphoto="${esc(p.path)}" aria-label="Remove photo">&times;</button>
       </figure>`).join('')}</div>`
       :'<div class="field"><dd style="color:var(--muted);font-size:15px">No photos yet.</dd></div>'}
     <div class="photobar">
       <label>+ Add photos<input type="file" accept="image/*" multiple id="addPhoto"></label>
+      ${shots.length?'<span class="coords">Tap &#9733; on any of them to make it the '
+        +'profile photo.</span>':''}
     </div>
     <div class="field"><dd style="color:var(--muted);font-size:14px">
       Photos are resized on your phone before they are sent, so there is no need to
@@ -2076,6 +2109,8 @@ async function openDetail(id, keepPlace){
   const ra=$('rmAvatar'); if(ra)ra.onclick=()=>removePhoto(CURRENT.avatar_path,true);
   $('detBody').querySelectorAll('[data-rmphoto]').forEach(b=>
     b.onclick=()=>removePhoto(b.dataset.rmphoto,false));
+  $('detBody').querySelectorAll('[data-setface]').forEach(b=>
+    b.onclick=()=>setFace(b.dataset.setface));
   const sc=$('sendCopy');
   if(sc) sc.onclick=()=>pickPeople('Send a copy of '+fullName(CURRENT)+' to',
     who=>sendContacts([CURRENT.id],who));
@@ -3529,6 +3564,13 @@ function openHelp(where){
   <p><a href="${esc(START_LINK)}" target="_blank" rel="noopener">${esc(START_LINK)}</a></p>
   <p><button class="addmore" id="copyStart" style="padding:0">Copy that link</button></p>
 
+  <h4 id="h-photos-note">Photographs</h4>
+  <p>Add as many as you like under <strong>Photos</strong> on somebody's page.
+  The <strong>&#9733;</strong> in the corner of any of them makes that one the
+  <strong>profile photo</strong> &mdash; the round one at the top and the little
+  one beside their name in the list &mdash; so there is no need to find and send
+  the same picture twice. The one in use is marked <em>Profile</em>.</p>
+
   <h4 id="h-contacts">Finding someone</h4>
   <p>Type into the search box at the top. It looks at names, previous names,
   nicknames, boat names, towns, companies, phone numbers, pets and notes, so
@@ -3606,8 +3648,11 @@ function openHelp(where){
   Two is about the most that fits.</p>
 
   <h4 id="h-log">Daily Log</h4>
-  <p>Tap the date in the green bar for a calendar, or the arrows either side to
+  <p>Tap the date in the bar for a calendar, or the arrows either side to
   step a day at a time. The date stays put while you scroll.</p>
+  <p>The calendar has a <strong>date box</strong> at the top: tap it and your
+  phone's own date wheel opens, which beats stepping back a month at a time to
+  reach something years ago. <strong>Today</strong> brings you home again.</p>
   <p>Most sections start folded up; tap a heading to open one, and it stays that
   way next time. Settings &rsaquo; Daily Log &rsaquo; <em>Sections to show</em>
   turns any of them off and changes the order.</p>
@@ -5275,6 +5320,10 @@ function drawDayPick(){
   const box=document.createElement('div');
   box.className='daypick';
   box.innerHTML=`<div class="inner">
+    <div class="godate">
+      <input type="date" id="pickGo" value="${esc(LOG_DATE)}" aria-label="Go to a date">
+      <button class="btn" id="pickToday">Today</button>
+    </div>
     <div class="mnav">
       <button data-pm="-1" aria-label="Previous month">&#9664;</button>
       <span>${esc(first.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))}</span>
@@ -5293,6 +5342,14 @@ function drawDayPick(){
   box.querySelectorAll('[data-pickday]').forEach(b=>b.onclick=()=>{
     LOG_DATE=b.dataset.pickday; box.remove(); killMaps(); renderLog(); });
   $('pickClose').onclick=()=>box.remove();
+
+  // Typing or tapping a date beats stepping back through the months. The box
+  // opens the phone's own date wheel, which knows how to get to 1998.
+  const go=box.querySelector('#pickGo');
+  const jump=iso=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||'')) return;
+    LOG_DATE=iso; box.remove(); killMaps(); renderLog(); };
+  go.onchange=()=>jump(go.value);
+  box.querySelector('#pickToday').onclick=()=>jump(isoDay(new Date()));
 }
 
 function stepDay(n){

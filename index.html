@@ -763,7 +763,7 @@ i.key{vertical-align:middle}
 <div id="app" class="hidden">
   <div id="topbar">
   <header class="plate">
-    <button class="bt" id="homeBtn" data-menu="contacts" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <button class="bt" data-home="contacts" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="homeBtn" data-menu="contacts" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Contacts</span>
     <span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></header>
   <div class="searchwrap">
@@ -800,7 +800,7 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="diary" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="diaryMenu" data-menu="diary" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="diary" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="diaryMenu" data-menu="diary" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Diary</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="diaryBody"></div>
   <button class="fab sheetfab" id="diaryAdd" aria-label="Add an appointment or to-do">+</button>
@@ -819,26 +819,26 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="wish" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="wishMenu" data-menu="wish" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="wish" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="wishMenu" data-menu="wish" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Wishlist</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="wishBody"></div>
 </div>
 
 <div id="shop" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="shop" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="shopBody"></div>
   <button class="fab sheetfab" id="shopAdd" aria-label="Add a shopping list">+</button>
 </div>
 
 <div id="where" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="whereMenu" data-menu="where" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="where" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="whereMenu" data-menu="where" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Where we are</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="whereBody"></div>
 </div>
 
 <div id="log" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="logMenu" data-menu="log" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="log" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="logMenu" data-menu="log" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <button id="logPrev" aria-label="Earlier day">&#9664;</button>
     <button class="title logdate" id="logPick"></button>
     <button id="logNext" aria-label="Later day">&#9654;</button>
@@ -897,7 +897,7 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="chats" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="chatsMenu" data-menu="chats" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="chats" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="chatsMenu" data-menu="chats" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Messages</span>
     <span class="bartools">
       <button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
@@ -924,7 +924,7 @@ i.key{vertical-align:middle}
 </div>
 
 <div id="money" class="sheet hidden">
-  <div class="sheetbar"><button class="bt" id="moneyMenu" data-menu="money" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div class="sheetbar"><button class="bt" data-home="money" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="moneyMenu" data-menu="money" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Finances</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="moneyBody"></div>
   <button class="fab sheetfab" id="moneyAdd" aria-label="Add a transaction">+</button>
@@ -3213,7 +3213,8 @@ function openHelp(where){
 
   <h4 id="h-home">The opening screen</h4>
   <p>Every part of the app has a tile. Tap one to go there.</p>
-  <p>Once you are in, the <strong>three lines</strong> at the left of the top bar
+  <p>Once you are in, the <strong>arrow</strong> at the left of the top bar
+  brings you straight back here, and the <strong>three lines</strong> beside it
   open the menu for wherever you happen to be. What you can do in that part of
   the app is at the top, then <strong>its</strong> settings and
   <strong>its</strong> help &mdash; not everybody's &mdash; and underneath, a
@@ -10141,6 +10142,15 @@ function openMenu(area){
   $('menu').querySelector('.sheetbody').scrollTop=0;
 }
 
+// Straight out to the home screen, putting down whatever this part of the app
+// was holding on the way. The menu can get you there too, but one tap is one
+// tap, and this is the way out people reach for without thinking.
+function backHome(area){
+  (AREA_SHUT[area]||(()=>{}))();
+  showHome();
+  lockBackground();
+}
+
 // Somewhere else means somewhere else: the one you were in is put away rather
 // than left open underneath, which is how screens used to end up in a pile.
 function goArea(k){
@@ -10162,6 +10172,8 @@ document.addEventListener('click',async ev=>{
   }
   const m=ev.target.closest('[data-menu]');
   if(m){ openMenu(m.dataset.menu); return; }
+  const hm=ev.target.closest('[data-home]');
+  if(hm){ backHome(hm.dataset.home); return; }
   const h=ev.target.closest('[data-barhelp]');
   if(h){ openHelp(h.dataset.barhelp); return; }
   const g=ev.target.closest('[data-barset]');

@@ -5321,7 +5321,9 @@ function drawDayPick(){
   box.className='daypick';
   box.innerHTML=`<div class="inner">
     <div class="godate">
-      <input type="date" id="pickGo" value="${esc(LOG_DATE)}" aria-label="Go to a date">
+      <input type="text" id="pickGo" inputmode="numeric" autocomplete="off"
+        placeholder="dd/mm/yyyy" maxlength="10"
+        value="${esc(LOG_DATE.split('-').reverse().join('/'))}" aria-label="Type a date, dd/mm/yyyy">
       <button class="btn" id="pickToday">Today</button>
     </div>
     <div class="mnav">
@@ -5343,12 +5345,34 @@ function drawDayPick(){
     LOG_DATE=b.dataset.pickday; box.remove(); killMaps(); renderLog(); });
   $('pickClose').onclick=()=>box.remove();
 
-  // Typing or tapping a date beats stepping back through the months. The box
-  // opens the phone's own date wheel, which knows how to get to 1998.
+  // Typing a date beats stepping back through the months. A plain text box
+  // (not type="date", which on Android only opens another calendar) brings up
+  // the number pad. Slashes go in by themselves; the 8th digit jumps there.
   const go=box.querySelector('#pickGo');
   const jump=iso=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||'')) return;
     LOG_DATE=iso; box.remove(); killMaps(); renderLog(); };
-  go.onchange=()=>jump(go.value);
+  const toIso=txt=>{
+    const p=String(txt).trim().split(/[\/.\-\s]+/);
+    if(p.length!==3) return null;
+    let [d,m,y]=p.map(Number);
+    if(!d||!m||isNaN(y)) return null;
+    if(p[2].length<=2) y+= y>50?1900:2000;
+    const dt=new Date(y,m-1,d);
+    if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d) return null;
+    return isoDay(dt);
+  };
+  const bad=()=>{ go.style.borderColor='#b33'; setTimeout(()=>go.style.borderColor='',1200); };
+  go.onfocus=()=>{ go.value=''; };
+  go.oninput=ev=>{
+    if(ev.inputType&&ev.inputType.startsWith('delete')) return;
+    if(/[^\d]/.test(go.value.replace(/\//g,''))) return; // typed own separators
+    const dg=go.value.replace(/\D/g,'').slice(0,8);
+    go.value=dg.length>4?dg.slice(0,2)+'/'+dg.slice(2,4)+'/'+dg.slice(4)
+           :dg.length>2?dg.slice(0,2)+'/'+dg.slice(2):dg;
+    if(dg.length===8){ const iso=toIso(go.value); iso?jump(iso):bad(); }
+  };
+  go.onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault();
+    const iso=toIso(go.value); iso?jump(iso):bad(); } };
   box.querySelector('#pickToday').onclick=()=>jump(isoDay(new Date()));
 }
 

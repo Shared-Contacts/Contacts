@@ -605,7 +605,7 @@ i.key{vertical-align:middle}
 .helpsec ul{margin:0 0 10px;padding-left:20px}
 .helpsec li{margin-bottom:5px}
 .helpsec .lead{color:var(--muted)}
-.setrow .mv{color:var(--hull);font-size:11px;line-height:1.1;padding:1px 4px}
+.setrow .mv{color:var(--hull);font-size:13px;line-height:1.1;padding:3px 8px}
 .setrow .mv:disabled{opacity:.25}
 .setrow .scope{flex:0 0 auto;font-size:13px;color:var(--muted)}
 .setmv{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:2px}
@@ -627,6 +627,18 @@ i.key{vertical-align:middle}
   pointer-events:none;padding:0 16px}
 .toast{background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;
   font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3);max-width:100%;text-align:center}
+/* A statement file kept against an account */
+.frow{display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid #F0EEE7}
+.frow:last-of-type{border-bottom:none}
+.frow .fn{flex:1 1 auto;min-width:0}
+.frow .fn b{display:block;font-size:16px;word-break:break-all}
+.frow .fn span{display:block;color:var(--muted);font-size:14px}
+.frow .get{flex:0 0 auto;padding:9px 13px;border-radius:8px;background:#fff;
+  border:1.5px solid var(--rule);font-weight:700;font-size:15px;
+  text-decoration:none;color:var(--hull);white-space:nowrap}
+.frow .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:0 4px}
+
 /* ---------- Finances ---------- */
 /* Room at the bottom so the last row can be scrolled clear of the + button. */
 #moneyBody{padding-bottom:84px}
@@ -655,6 +667,29 @@ i.key{vertical-align:middle}
   text-align:right;padding-top:1px}
 .txn .ta.neg{color:var(--red)}
 .txn .rec{color:var(--hull);font-style:normal;margin-left:5px}
+/* How recently an account was agreed with the bank. Green is fine, amber has
+   been left long enough that finding a difference will be harder. */
+.acct .recon{font-style:normal;font-weight:700}
+.acct .recon.ok{color:#1D4A3A}
+.acct .recon.late{color:#8A6D12}
+.acct .recon.never{color:var(--muted);font-weight:400}
+/* Receipts against a transaction */
+.shots{display:flex;flex-wrap:wrap;gap:10px;padding:12px 14px}
+.shotwrap{position:relative}
+.shot{width:88px;height:88px;object-fit:cover;border-radius:9px;
+  border:1.5px solid var(--rule);background:#EDEFEA;display:block;cursor:pointer}
+.shot.ph{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.shotwrap .x{position:absolute;top:-7px;right:-7px;width:24px;height:24px;
+  border-radius:50%;background:var(--red);color:#fff;font-size:15px;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+.shot-add{display:flex;gap:10px;padding:0 14px 12px}
+.shot-add .act{flex:1;text-align:center;border:1.5px solid var(--rule);
+  border-radius:8px;padding:11px;background:#fff;font-weight:600}
+.shot-add input{display:none}
+
+/* Who an account is shared with, under its row in Settings */
+.shr{flex:1 1 100%;color:var(--muted);font-size:14.5px;padding-top:2px}
+.shr button{padding:0}
 /* Still waiting for a category. A brass edge down the left, so a column of
    them is obvious at arm's length without shouting. */
 .txn.nocat{border-left:4px solid var(--brass);padding-left:10px}
@@ -2797,7 +2832,7 @@ try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','who_aboard','medication','bike_ride','alcohol','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur','finpeople'];
+  'accounts','fincats','finpayees','fincur'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
@@ -2806,7 +2841,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   logcats:'Your own sections',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
-  fincur:'Currencies', finpeople:'Who can see the books'};
+  fincur:'Currencies'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
@@ -2814,7 +2849,7 @@ const SET_GROUPS=[
                               'mecontact','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','who_aboard','medication',
                               'bike_ride','alcohol']},
-  {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','finpeople']},
+  {label:'Finances',   cards:['accounts','fincats','finpayees','fincur']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
 ];
@@ -2941,7 +2976,6 @@ async function openSettings(goTo){
     fincats:    finCatRows(),
     finpayees:  finPayeeRows(),
     fincur:     finCurRows(),
-    finpeople:  finPeopleRows(),
     logsections: logSectionRows(),
     logcats: catRows(),
     who_aboard: optionRows('who_aboard','choice'),
@@ -3179,9 +3213,19 @@ function openHelp(where){
   so a batch you were halfway through is easy to pick up again. Each one you sort
   out drops off the list. Transfers are never flagged: money moving between your
   own accounts was not spent on anything.</p>
-  <p>The whole of Finances is shared with whoever is ticked under
-  <strong>Settings &rsaquo; Finances &rsaquo; Who can see the books</strong>.
-  Everyone else using the app sees none of it and cannot tell it is there.</p>
+  <p>Finances is there for everyone using the app, and <strong>an account
+  belongs to whoever made it</strong>. Yours is private: nobody else sees a penny
+  of it until you say so under <strong>Settings &rsaquo; Finances &rsaquo;
+  Accounts</strong>, where each one says who can see it. You can share an account
+  to <em>look only</em> &mdash; useful for an accountant &mdash; or to
+  <em>look and change</em>, and you can take it back whenever you like. The
+  lists of currencies, categories and payees stay common to everyone, because a
+  shared account would otherwise show rows of blanks.</p>
+  <p>Each account shows when it was last agreed with the bank, in
+  <strong>green</strong> if that was within about five weeks and
+  <strong>amber</strong> once it has been left longer than that.</p>
+  <p>You can photograph a till receipt or an invoice against any transaction, so
+  it is still to hand come tax time.</p>
 
   <h4 id="h-moneypick">Getting rid of several at once</h4>
   <p><strong>Choose several to delete</strong> puts a tick box on every row.
@@ -3297,8 +3341,13 @@ function openHelp(where){
   and it records both sides and the rate; the statement then shows the same
   money leaving, a day or two later. That statement row is the one to leave out,
   and it is left out for you.</p>
-  <p>The rest of it: Everything comes in
-  without a category; tap each one afterwards to say what it was for.</p>
+  <p>Everything comes in without a category; tap each one afterwards to say
+  what it was for.</p>
+  <p>The file itself is kept, filed against the account under
+  <strong>Settings &rsaquo; Finances &rsaquo; Accounts &rsaquo; Statement
+  files</strong>, so you still have the bank's own copy years later, long after
+  its download has expired. You can put one there by hand as well, without
+  importing it.</p>
   <p>Connecting straight to a bank is a different matter. It needs a licensed
   provider, a secret key that cannot live in a public web page, and re-consent
   every ninety days &mdash; and it would not cover a New Zealand account at all.
@@ -7669,17 +7718,41 @@ function balOf(id){
   return a?Number(a.opening_balance||0):0;
 }
 function payeeName(id){ const p=PAYEES.find(x=>x.id===id); return p?p.name:''; }
+
+/* How far an account has been reconciled, and whether that is recent enough
+   to feel good about. Green once it is agreed with the bank to within about
+   five weeks, since a monthly statement plus a few days of slippage is
+   perfectly healthy. Amber after that, because the longer it is left the
+   harder it is to find where the two parted company. */
+let STATEMENTS=[], SHARED_ACCS=[];
+async function loadShares2(){
+  const {data,error}=await sb.from('account_shares').select('*');
+  SHARED_ACCS = error?[]:(data||[]);
+}
+function reconState(accId){
+  const mine=STATEMENTS.filter(s=>s.account_id===accId);
+  if(!mine.length) return {cls:'never', words:'never reconciled'};
+  const last=mine.map(s=>s.ends_on).sort().pop();
+  // Whole days between two dates, not hours between two moments, so the
+  // colour cannot change halfway through the afternoon.
+  const midnight=new Date(); midnight.setHours(0,0,0,0);
+  const days=Math.round((midnight-new Date(last+'T00:00:00'))/86400000);
+  return { cls: days<=38?'ok':'late',
+           words: 'agreed to '+shortDate(last) };
+}
 function fcatName(id){ const c=FCATS.find(x=>x.id===id); return c?c.name:''; }
 
 /* ---------- Loading ---------- */
 async function loadMoney(){
-  const [a,c,p,cu,b,m]=await Promise.all([
+  const [a,c,p,cu,b,m,st,sh]=await Promise.all([
     sb.from('accounts').select('*').order('sort').order('name'),
     sb.from('categories').select('*').order('sort').order('name'),
     sb.from('payees').select('*').order('name'),
     sb.from('currencies').select('*').order('sort'),
     sb.from('account_balances').select('*'),
-    sb.from('finance_members').select('*')
+    sb.from('finance_members').select('*'),
+    sb.from('statements').select('account_id,ends_on,closing_balance,locked'),
+    sb.from('account_shares').select('*')
   ]);
   // The tables are missing until step 35 has been run, and invisible to
   // anyone outside the books. Those are different problems, said differently.
@@ -7692,8 +7765,11 @@ async function loadMoney(){
   }
   ACCOUNTS=a.data||[]; FCATS=c.data||[]; PAYEES=p.data||[];
   CURRENCIES=cu.data||[]; BALANCES=b.data||[]; FINPEOPLE=(m.data||[]).map(x=>x.user_id);
-  MONEY_ON = FINPEOPLE.includes(ME.id);
-  if(!MONEY_ON){ MONEY_WHY='notyours'; return; }
+  STATEMENTS=st&&!st.error?(st.data||[]):[];
+  SHARED_ACCS=sh&&!sh.error?(sh.data||[]):[];
+  await loadBankFiles();
+  // Finances is open to anyone signed in. You simply see your own accounts.
+  MONEY_ON = true;
   MONEY_WHY='';
   await loadTodo();
   await loadTxns();
@@ -7774,9 +7850,11 @@ function renderMoney(){
     // A credit card in credit is the odd one out: a negative balance there is
     // what you owe, which is the normal state of affairs, so it is not alarming.
     const bad = a.kind==='credit card' ? false : bal<0;
+    const r=reconState(a.id);
     return `<button class="acct ${MONEY_ACC===a.id?'on':''}" data-acc="${a.id}">
       <span class="an"><b>${esc(a.name)}</b>
-        <span>${esc(a.kind)}${a.currency!=='GBP'?' &middot; '+esc(a.currency):''}</span></span>
+        <span>${esc(a.kind)}${a.currency!=='GBP'?' &middot; '+esc(a.currency):''}${
+          r?` &middot; <i class="recon ${r.cls}">${esc(r.words)}</i>`:''}</span></span>
       <span class="ab ${bad?'neg':''}">${money(bal,a.currency)}</span></button>`;
   };
 
@@ -8004,6 +8082,7 @@ async function editTxn(id){
     .map(l=>({id:l.id, category_id:l.category_id, description:l.description||'',
               qty:Number(l.qty), amount:Number(l.amount), business:!!l.business}));
   if(!TXL.length) TXL=[blankLine()];
+  if(arr(TX.photos).length) await signPaths(arr(TX.photos).map(x=>x.path));
   // The other half of a transfer, so it can be shown and kept in step.
   if(t.transfer_id){
     const {data}=await sb.from('transactions').select('*')
@@ -8143,6 +8222,26 @@ function renderTxnEditor(){
         CURRENCIES.map(c=>`<option value="${c.code}"
           ${TX.orig_currency===c.code?'selected':''}>${esc(c.code)}</option>`).join('')}</select></div>
   </details>`}
+
+  <div class="card"><h3>Receipts</h3>
+    ${TX.id?`<div class="shots" id="txShots">${arr(TX.photos).map((ph,i)=>`
+        <span class="shotwrap">
+          ${SIGNED[ph.path]
+            ? `<img class="shot" src="${esc(SIGNED[ph.path])}" alt="Receipt"
+                 data-bigshot="${esc(ph.path)}">`
+            : `<span class="shot ph">…</span>`}
+          <button class="x" data-dropshot="${i}" aria-label="Remove this receipt">&times;</button>
+        </span>`).join('')}
+      </div>
+      <div class="shot-add">
+        <label class="act">Camera<input type="file" id="txShotCam" accept="image/*" capture="environment"></label>
+        <label class="act">Choose<input type="file" id="txShotPick" accept="image/*" multiple></label>
+      </div>
+      <div class="note">Photograph the till receipt or the invoice. Kept with the
+        transaction, so it is still here come tax time.</div>`
+     :`<div class="field"><dd style="color:var(--muted)">Save this first, then you
+        can put a receipt against it.</dd></div>`}
+  </div>
 
   <div class="card"><h3>Notes</h3>
     <div style="padding:10px 14px">
@@ -8379,6 +8478,49 @@ async function delTxn(){
   }
   $('moneyEd').classList.add('hidden'); lockBackground();
   await loadMoney(); renderMoney(); toast('Deleted');
+}
+
+/* ---------- Receipts against a transaction ----------
+   Filed under fin/<account id>/ so the database rules can ask the one
+   question that matters: is that account yours, or shared with you? */
+async function addReceipts(files){
+  if(!TX.id||!files||!files.length) return;
+  const many=files.length>1;
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    if(!/^image\//.test(f.type)){ toast('That is not a photo'); continue; }
+    if(many) toast('Adding '+(i+1)+' of '+files.length);
+    try{
+      const blob=await shrink(f,1600);
+      const path=`fin/${TX.account_id}/${crypto.randomUUID()}.jpg`;
+      const {error}=await sb.storage.from('photos')
+        .upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(error) throw error;
+      const now=[...arr(TX.photos),{path, at:new Date().toISOString()}];
+      const {error:e2}=await sb.from('transactions')
+        .update({photos:now}).eq('id',TX.id);
+      if(e2) throw e2;
+      TX.photos=now;
+    }catch(e){
+      console.error(e);
+      toast(/locked/i.test(e.message||'')?e.message:'Could not add that photo');
+      return;
+    }
+  }
+  await signPaths(arr(TX.photos).map(p=>p.path));
+  renderTxnEditor();
+  toast(many?files.length+' receipts added':'Receipt added');
+}
+
+async function dropReceipt(i){
+  const ph=arr(TX.photos)[i]; if(!ph) return;
+  if(!confirm('Remove this receipt?')) return;
+  const now=arr(TX.photos).filter((_,n)=>n!==i);
+  const {error}=await sb.from('transactions').update({photos:now}).eq('id',TX.id);
+  if(error){ toast('Could not remove it'); console.error(error); return; }
+  TX.photos=now;
+  await sb.storage.from('photos').remove([ph.path]);
+  renderTxnEditor(); toast('Removed');
 }
 
 /* ============================================================
@@ -9104,7 +9246,7 @@ function importPreview(keepTicks){
     it was for.</p>`;
 }
 
-async function doImport(){
+async function doMoneyImport(){
   const rows=(IMPORT.ready||[]).filter(x=>x.take);
   if(!rows.length){ toast('Nothing ticked to bring in'); return; }
   const now=new Date().toISOString();
@@ -9139,9 +9281,123 @@ async function doImport(){
     await sb.from('import_maps').insert({account_id:IMPORT.acc, name:IMPORT.name,
       map:IMPORT.map, created_by:ME.id});
   }
+  await keepBankFile(rows);
   $('moneyImp').classList.add('hidden'); lockBackground();
   await loadMoney(); renderMoney();
   toast(data.length+' brought in');
+}
+
+/* ---------- Keeping the statement files ---------- */
+/* The CSV exactly as it came off the bank, kept beside the account it was
+   imported into. The figures live in the transactions; this is the paperwork
+   behind them, and a bank that offers eighteen months of downloads is no help
+   at all when a return is being looked at four years later. */
+let BANKFILES=[];
+async function loadBankFiles(){
+  const {data,error}=await sb.from('bank_files').select('*')
+    .order('created_at',{ascending:false});
+  BANKFILES = error?[]:(data||[]);
+}
+
+function sizeWords(n){
+  if(!n) return '';
+  return n<1024 ? n+' bytes'
+       : n<1024*1024 ? Math.round(n/1024)+' kB'
+       : (n/1048576).toFixed(1)+' MB';
+}
+
+// Shared by the import and by keeping a file by hand afterwards.
+async function storeBankFile(accId,f,extra){
+  const safe=(f.name||'statement.csv').replace(/[^\w.\-]+/g,'-').slice(-60);
+  const path=`fin/${accId}/statements/${crypto.randomUUID()}-${safe}`;
+  const {error}=await sb.storage.from('photos')
+    .upload(path,f,{contentType:f.type||'text/csv',upsert:false});
+  if(error) throw error;
+  const {error:e2}=await sb.from('bank_files').insert({
+    account_id:accId, name:f.name||safe, path, bytes:f.size||null,
+    created_by:ME.id, ...(extra||{})});
+  if(e2) throw e2;
+  await loadBankFiles();
+}
+
+async function keepBankFile(rows){
+  const f=IMPORT.file; if(!f) return;
+  const dates=(IMPORT.ready||[]).map(x=>x.date).filter(Boolean).sort();
+  try{
+    await storeBankFile(IMPORT.acc,f,{
+      covers_from:dates[0]||null, covers_to:dates[dates.length-1]||null,
+      rows_seen:(IMPORT.ready||[]).length, rows_taken:rows.length});
+  }catch(e){
+    // The transactions are in, which is the half that matters. Say which part
+    // failed rather than leaving him wondering whether the import worked.
+    console.error(e);
+    toast('Figures are in, but the file itself could not be kept');
+  }
+}
+
+function filesRow(a){
+  const n=BANKFILES.filter(f=>f.account_id===a.id).length;
+  return `<span class="shr">${n
+      ? n+' statement file'+(n===1?'':'s')+' kept'
+      : 'No statement files kept'}
+    <button data-afiles="${a.id}" style="text-decoration:underline;font-weight:600;
+      color:var(--hull)">Statement files</button></span>`;
+}
+
+function bankFileBox(accId){
+  const a=accOf(accId); if(!a) return;
+  const box=document.createElement('div');
+  box.className='daypick';
+  const shut=()=>{ box.remove(); openSettings('Finances'); };
+  const draw=async()=>{
+    const mine=BANKFILES.filter(f=>f.account_id===accId);
+    await signPaths(mine.map(f=>f.path));
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Statement files for ${esc(a.name)}</p>
+      <p class="coords" style="margin:0 0 12px">Every file you import is kept
+        here automatically. You can also keep one you have downloaded but not
+        imported yet &mdash; useful for the ones you only need for the records.</p>
+      ${mine.length?mine.map(f=>`<div class="frow">
+        <span class="fn">
+          <b>${esc(f.name)}</b>
+          <span>${
+            f.covers_from
+              ? esc(shortDate(f.covers_from))+' to '+esc(shortDate(f.covers_to||f.covers_from))
+              : 'kept '+esc(shortDate((f.created_at||'').slice(0,10)))
+          }${f.rows_taken!=null
+              ? ' · '+f.rows_taken+' of '+f.rows_seen+' brought in' : ''
+          }${f.bytes ? ' · '+sizeWords(f.bytes) : ''}</span></span>
+        <a class="get" href="${esc(SIGNED[f.path]||'#')}"
+           download="${esc(f.name)}" target="_blank" rel="noopener">Get it</a>
+        <button class="x" data-fdrop="${f.id}" aria-label="Remove">&times;</button>
+        </div>`).join('')
+        :'<p class="empty">Nothing kept for this account yet.</p>'}
+      <div class="setadd">
+        <label class="btn primary" style="cursor:pointer">Keep a file
+          <input type="file" id="bfPick" accept=".csv,.txt,text/csv,text/plain"
+            style="display:none"></label>
+      </div>
+      <button class="btn" id="bfDone" style="margin-top:12px">Done</button></div>`;
+    box.querySelector('#bfDone').onclick=shut;
+    box.querySelector('#bfPick').onchange=async ev=>{
+      const f=ev.target.files&&ev.target.files[0]; if(!f) return;
+      toast('Keeping it…');
+      try{ await storeBankFile(accId,f,{note:'kept by hand'}); toast('Kept'); }
+      catch(e){ console.error(e); toast('Could not keep that file'); }
+      await draw();
+    };
+    box.querySelectorAll('[data-fdrop]').forEach(b=>b.onclick=async()=>{
+      const f=BANKFILES.find(x=>x.id===Number(b.dataset.fdrop)); if(!f) return;
+      if(!confirm('Remove "'+f.name+'"? The transactions it brought in stay.')) return;
+      await sb.storage.from('photos').remove([f.path]);
+      const {error}=await sb.from('bank_files').delete().eq('id',f.id);
+      if(error){ toast('Could not remove that'); console.error(error); return; }
+      await loadBankFiles(); toast('Removed'); await draw();
+    });
+  };
+  draw();
+  box.onclick=ev=>{ if(ev.target===box) shut(); };
+  document.body.appendChild(box);
 }
 
 /* ---------- Wiring ---------- */
@@ -9222,6 +9478,10 @@ $('moneyEdBody').addEventListener('click',async ev=>{
     return;
   }
   if(ev.target.id==='txDel'){ delTxn(); return; }
+  const ds=ev.target.closest('[data-dropshot]');
+  if(ds){ dropReceipt(+ds.dataset.dropshot); return; }
+  const bs=ev.target.closest('[data-bigshot]');
+  if(bs){ lightbox(SIGNED[bs.dataset.bigshot]); return; }
 
   if(ev.target.id==='txPair'){
     const mate=await pickTransferMate(TX);
@@ -9252,6 +9512,10 @@ $('moneyEdBody').addEventListener('focusin',ev=>{
 
 // The total keeps up with you as you type, so it can be trusted. No redraw:
 // that would take the cursor out of the box mid-number.
+$('moneyEdBody').addEventListener('change',ev=>{
+  if(ev.target.id==='txShotCam'||ev.target.id==='txShotPick')
+    addReceipts([...(ev.target.files||[])]);
+});
 $('moneyEdBody').addEventListener('input',ev=>{
   if(ev.target.matches('[data-la],[data-lq],#trOut,#trIn')){ flushTxn(); paintTotals(); }
 });
@@ -9320,9 +9584,10 @@ $('impBody').addEventListener('change',ev=>{
     renderImport(); return;
   }
   if(ev.target.id==='impFile'&&ev.target.files&&ev.target.files[0]){
+    IMPORT.file=ev.target.files[0];
     const fr=new FileReader();
     fr.onload=()=>{ takeCSV(fr.result); };
-    fr.readAsText(ev.target.files[0]);
+    fr.readAsText(IMPORT.file);
   }
 });
 $('impBody').addEventListener('click',ev=>{
@@ -9344,7 +9609,7 @@ $('impBody').addEventListener('click',ev=>{
     if(x){ x.take=!x.take; importPreview(true); }
     return;
   }
-  if(ev.target.id==='impGo'){ doImport(); return; }
+  if(ev.target.id==='impGo'){ doMoneyImport(); return; }
 });
 
 function takeCSV(text){
@@ -9387,7 +9652,11 @@ function finAccountRows(){
     The opening balance is what was in the account on the opening date. Every
     balance the app shows is that plus everything recorded since, so it is worth
     getting right. A credit card normally sits below zero.</dd></div>
-  ${ACCOUNTS.map(a=>`<div class="setrow fieldrow" data-arow="${a.id}">
+  ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow" data-arow="${a.id}">
+    <span style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto">
+      <button class="mv" data-amv="${a.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+      <button class="mv" data-amv="${a.id}:down" ${i===ACCOUNTS.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
+    </span>
     <input data-afield="${a.id}:name" value="${esc(a.name)}" style="flex:1 1 150px">
     <select data-afield="${a.id}:kind" style="flex:0 1 130px">${ACC_KINDS.map(k=>
       `<option value="${k}" ${a.kind===k?'selected':''}>${k}</option>`).join('')}</select>
@@ -9399,11 +9668,79 @@ function finAccountRows(){
       style="flex:0 0 150px">
     <label style="flex:0 0 auto;color:var(--muted);font-size:15px">
       <input type="checkbox" data-afield="${a.id}:active" ${a.active?'checked':''}> in use</label>
-    <button class="x" data-adrop="${a.id}" aria-label="Remove">&times;</button></div>`).join('')}
+    <button class="x" data-adrop="${a.id}" aria-label="Remove">&times;</button>
+    ${shareRow(a)}${filesRow(a)}</div>`).join('')}
   <div class="setadd">
     <input data-anew="name" placeholder="New account">
     <button class="btn primary" data-aadd="1">Add account</button>
   </div>`;
+}
+
+/* Who else can see one account. Only its owner decides; everybody else is
+   told who can see it and left at that. */
+function shareRow(a){
+  const mine = a.created_by===ME.id;
+  const on = SHARED_ACCS.filter(s=>s.account_id===a.id);
+  const who = u => (u&&(u.display_name||u.email))||'somebody';
+  const them = [MY_PROFILE].concat(USERS).filter(Boolean);
+
+  if(!mine){
+    const owner=them.find(u=>u.id===a.created_by);
+    return `<span class="shr">${esc(who(owner))} shares this with you${
+      on.some(s=>s.viewer_id===ME.id&&!s.can_edit)?', to look at':''}
+      <button class="x" data-aleave="${a.id}" style="color:var(--muted);font-size:15px;
+        text-decoration:underline">Leave it</button></span>`;
+  }
+  return `<span class="shr">${on.length
+      ? 'Shared with '+esc(on.map(s=>who(them.find(u=>u.id===s.viewer_id))).join(', '))
+      : 'Yours alone'}
+    <button data-ashare="${a.id}" style="text-decoration:underline;font-weight:600;
+      color:var(--hull)">Who can see it</button></span>`;
+}
+
+// A little panel listing everybody, with nothing, look, or look and change.
+function shareBox(accId){
+  const a=accOf(accId); if(!a) return;
+  const them=USERS.slice();
+  const box=document.createElement('div');
+  box.className='daypick';
+  const draw=()=>{
+    const on=SHARED_ACCS.filter(s=>s.account_id===accId);
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Who can see ${esc(a.name)}</p>
+      <p class="coords" style="margin:0 0 12px">It is yours. Nobody sees it unless
+        you say so here, and you can take it back at any time.</p>
+      ${them.length?them.map(u=>{
+        const s=on.find(x=>x.viewer_id===u.id);
+        const lvl = !s ? 'no' : (s.can_edit?'edit':'look');
+        return `<div class="setrow" style="flex-direction:column;align-items:stretch;gap:6px">
+          <b>${esc(u.display_name||u.email)}</b>
+          <div class="pickrow" style="gap:6px">
+            ${[['no','Not at all'],['look','Look only'],['edit','Look and change']]
+              .map(([v,t])=>`<button data-lvl="${u.id}:${v}"
+                aria-pressed="${lvl===v}" class="chip">${t}</button>`).join('')}
+          </div></div>`;}).join('')
+        :'<p class="empty">Nobody else has an account yet.</p>'}
+      <button class="btn" id="shDone" style="margin-top:12px">Done</button></div>`;
+    box.querySelector('#shDone').onclick=()=>{ box.remove(); openSettings('Finances'); };
+    box.querySelectorAll('[data-lvl]').forEach(b=>b.onclick=async()=>{
+      const [uid,lvl]=b.dataset.lvl.split(':');
+      let err=null;
+      if(lvl==='no'){
+        const r=await sb.from('account_shares').delete()
+          .eq('account_id',accId).eq('viewer_id',uid); err=r.error;
+      } else {
+        const r=await sb.from('account_shares')
+          .upsert({account_id:accId, viewer_id:uid, can_edit:lvl==='edit'},
+                  {onConflict:'account_id,viewer_id'}); err=r.error;
+      }
+      if(err){ toast('Could not change that'); console.error(err); return; }
+      await loadShares2(); draw();
+    });
+  };
+  draw();
+  box.onclick=ev=>{ if(ev.target===box){ box.remove(); openSettings('Finances'); } };
+  document.body.appendChild(box);
 }
 
 function finCatRows(){
@@ -9484,26 +9821,6 @@ function finCurRows(){
   </div>`;
 }
 
-function finPeopleRows(){
-  if(!MONEY_ON) return `<div class="field"><dd style="color:var(--muted)">${
-    MONEY_WHY==='notset' ? 'Run the step 35 file in Supabase first.'
-      : 'Only the people already in the books can change who is in them.'}</dd></div>`;
-  const all=[MY_PROFILE].concat(USERS).filter(Boolean);
-  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
-    Everyone ticked here sees all of the finances — every account, every
-    transaction. Everyone else using the app sees none of it, and cannot tell it
-    is there. Unticking someone shuts them out immediately.</dd></div>
-  ${all.map(u=>`<div class="setrow">
-    <label style="flex:1;display:flex;align-items:center;gap:10px">
-      <input type="checkbox" data-finwho="${u.id}" ${FINPEOPLE.includes(u.id)?'checked':''}
-        ${u.id===ME.id&&FINPEOPLE.length<2?'disabled':''}>
-      ${esc(u.display_name||u.email||'Somebody')}${u.id===ME.id?' (you)':''}</label>
-  </div>`).join('')}
-  <div class="field"><dd style="color:var(--muted);font-size:14px">
-    You cannot take yourself out while you are the only one in, or nobody could
-    get back in without the Supabase dashboard.</dd></div>`;
-}
-
 function wireFinance(){
   const body=$('setBody'); if(!body) return;
   const after=async(msg)=>{ await loadMoney(); openSettings('Finances'); if(msg) toast(msg); };
@@ -9566,6 +9883,34 @@ function wireFinance(){
     if(error) return fail(error,'Could not remove that');
     await after('Removed');
   });
+  // Moving an account up or down. The whole list is renumbered rather than
+  // two values swapped, because swapping fails the moment several share one.
+  body.querySelectorAll('[data-amv]').forEach(b=>b.onclick=async()=>{
+    const [id,dir]=b.dataset.amv.split(':');
+    const rows=ACCOUNTS.slice();
+    const i=rows.findIndex(r=>r.id===Number(id));
+    const j=dir==='up'?i-1:i+1;
+    if(i<0||j<0||j>=rows.length) return;
+    rows.splice(j,0,rows.splice(i,1)[0]);
+    const res=await Promise.all(rows.map((r,n)=>
+      sb.from('accounts').update({sort:(n+1)*10}).eq('id',r.id)));
+    if(res.some(r=>r.error)){ fail(res,'Could not reorder those'); return; }
+    await after();
+  });
+  body.querySelectorAll('[data-ashare]').forEach(b=>b.onclick=()=>
+    shareBox(Number(b.dataset.ashare)));
+  body.querySelectorAll('[data-afiles]').forEach(b=>b.onclick=()=>
+    bankFileBox(Number(b.dataset.afiles)));
+  body.querySelectorAll('[data-aleave]').forEach(b=>b.onclick=async()=>{
+    const a=accOf(Number(b.dataset.aleave));
+    if(!confirm('Stop seeing "'+(a?a.name:'this account')+'"? Only its owner '
+      +'can give it back to you.')) return;
+    const {error}=await sb.from('account_shares').delete()
+      .eq('account_id',Number(b.dataset.aleave)).eq('viewer_id',ME.id);
+    if(error) return fail(error,'Could not leave that');
+    await after('Left it');
+  });
+
   body.querySelectorAll('[data-plink]').forEach(b=>b.onclick=async()=>{
     const id=Number(b.dataset.plink);
     const cur=(PAYEES.find(x=>x.id===id)||{}).contact_id;

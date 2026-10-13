@@ -7742,6 +7742,22 @@ function reconState(accId){
 }
 function fcatName(id){ const c=FCATS.find(x=>x.id===id); return c?c.name:''; }
 
+/* Categories in the order he wants them. Give one a code and the code decides
+   where it sits; the rest keep the order they were set up in and follow on
+   behind. So a numbering scheme can be grown a few at a time instead of having
+   to be finished before it does anything. Codes are compared the way a person
+   reads them, so 20 comes before 100 and case does not matter. */
+function catsInOrder(rows){
+  const has=c=>!!(c.code&&String(c.code).trim());
+  return rows.slice().sort((a,b)=>{
+    if(has(a)!==has(b)) return has(a)?-1:1;
+    if(has(a)) return String(a.code).trim()
+      .localeCompare(String(b.code).trim(), undefined, {numeric:true, sensitivity:'base'})
+      || String(a.name).localeCompare(String(b.name));
+    return (a.sort||0)-(b.sort||0) || String(a.name).localeCompare(String(b.name));
+  });
+}
+
 /* ---------- Loading ---------- */
 async function loadMoney(){
   const [a,c,p,cu,b,m,st,sh]=await Promise.all([
@@ -7763,7 +7779,7 @@ async function loadMoney(){
     console.error(a.error);
     return;
   }
-  ACCOUNTS=a.data||[]; FCATS=c.data||[]; PAYEES=p.data||[];
+  ACCOUNTS=a.data||[]; FCATS=catsInOrder(c.data||[]); PAYEES=p.data||[];
   CURRENCIES=cu.data||[]; BALANCES=b.data||[]; FINPEOPLE=(m.data||[]).map(x=>x.user_id);
   STATEMENTS=st&&!st.error?(st.data||[]):[];
   SHARED_ACCS=sh&&!sh.error?(sh.data||[]):[];
@@ -9746,7 +9762,10 @@ function shareBox(accId){
 function finCatRows(){
   if(!MONEY_ON) return '';
   return `<div class="field"><dd style="color:var(--muted);font-size:15px">
-    The code is your own shorthand and can be left empty. Marking one
+    The code is your own shorthand and can be left empty. Anything with a code
+    sorts by it and comes first, so numbering them — 100s for the boat, 200s
+    for living, and so on — puts the list in your own order. The ones you
+    leave blank stay as they are, underneath. Marking one
     <strong>business</strong> means anything put against it counts as business
     by default — you can still change it on the transaction itself.</dd></div>
   ${FCATS.map(c=>`<div class="setrow fieldrow">

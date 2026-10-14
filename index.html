@@ -637,6 +637,11 @@ i.key{vertical-align:middle}
   pointer-events:none;padding:0 16px}
 .toast{background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;
   font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3);max-width:100%;text-align:center}
+/* When the data does not arrive. An empty list and an empty book look exactly
+   alike, which is a horrible thing to be shown. */
+#loadBar{background:var(--hull-dark)}
+#loadBar #loadBarX{text-decoration:none;font-size:20px;line-height:1}
+
 /* Today — what the day has in it */
 .briefdate{margin:14px 2px 2px;text-align:center;font-size:19px;font-weight:700;
   color:var(--hull)}
@@ -998,6 +1003,11 @@ i.key{vertical-align:middle}
      which meant the home screen and every sheet sat on top of it and you never
      saw it. A warning you cannot see is no warning. -->
 <div id="shareBar" class="sharebar hidden"></div>
+<div id="loadBar" class="sharebar hidden" role="status">
+  <span id="loadBarText" style="flex:1;min-width:0"></span>
+  <button id="loadBarGo">Try again</button>
+  <button id="loadBarX" aria-label="Hide this">&times;</button>
+</div>
 
 <div id="tray">
   <button id="trayWish">Wishlist</button>
@@ -1178,6 +1188,32 @@ function socialUrl(label,value){
 }
 
 /* ---------- load ---------- */
+/* Nothing of yours is kept on the phone: it all lives on the server, and the
+   app is only a window onto it. So when a load fails, or comes back empty
+   where there was something a moment ago, the honest thing is to say so.
+   Drawing an empty list instead is indistinguishable from "everything has
+   gone", and nobody should have to wonder which it is. */
+let LOAD_TROUBLE=false;
+function knownCount(key){
+  try{ return Number(localStorage.getItem('seen-'+key)||0)||0; }catch(e){ return 0; }
+}
+function noteCount(key,n){
+  try{ localStorage.setItem('seen-'+key,String(n)); }catch(e){}
+}
+function sayTrouble(words){
+  LOAD_TROUBLE=true;
+  const bar=$('loadBar'); if(!bar) return;
+  $('loadBarText').textContent=words;
+  bar.classList.remove('hidden');
+  document.body.classList.add('sharing');     // so nothing hides underneath it
+}
+function clearTrouble(){
+  LOAD_TROUBLE=false;
+  const bar=$('loadBar'); if(!bar) return;
+  bar.classList.add('hidden');
+  if($('shareBar').classList.contains('hidden')) document.body.classList.remove('sharing');
+}
+
 async function loadAll(){
   const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp,of]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
@@ -1194,11 +1230,25 @@ async function loadAll(){
     sb.from('shopping').select('*'),
     sb.from('contact_offers').select('*').is('decided_at',null)
   ]);
-  for(const r of [g,s,k,c,l,u,sh]) if(r.error){toast('Could not load data');console.error(r.error);return;}
+  for(const r of [g,s,k,c,l,u,sh]) if(r.error){
+    console.error(r.error);
+    sayTrouble('Could not reach your things just now. Nothing is lost \u2014 it '
+      +'is all on the server, not on this phone.');
+    return;
+  }
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
   MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
   if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
+  // Came back empty where there was plenty a moment ago? That is the signal
+  // worth shouting about: a fetch that half worked, not a book that emptied.
+  if(!CONTACTS.length && knownCount('contacts')>0){
+    sayTrouble('Your contacts did not come back this time. Nothing has been '
+      +'deleted \u2014 try again, or sign out and back in.');
+  } else {
+    noteCount('contacts', CONTACTS.length);
+    clearTrouble();
+  }
   PETS=pt.data||[]; FAVS=(fv.data||[]).map(x=>x.contact_id);
   if(!sp.error) SHOP=sp.data||[];
   OFFERS = of.error ? [] : (of.data||[]);
@@ -3117,7 +3167,9 @@ async function openSettings(goTo){
         in the menu whenever you want it as well.</dd></div>
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="briefOn" ${BRIEF_ON?'checked':''}>
-        Show it once a day</label></div>`,
+        Show it once a day</label></div>
+      <div class="setadd"><button class="btn" id="briefAgain"
+        style="border:1.5px solid var(--rule)">Show it again now</button></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
@@ -3234,6 +3286,8 @@ async function openSettings(goTo){
   const bo=$('briefOn');
   if(bo) bo.onchange=async()=>{ BRIEF_ON=bo.checked; await saveTiles();
     if(BRIEF_ON) markBriefSeen(); };
+  const ba=$('briefAgain');
+  if(ba) ba.onclick=()=>{ $('settings').classList.add('hidden'); openBrief(); };
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
     b.onclick=()=>doHandover(b.dataset.handover));
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
@@ -7988,6 +8042,14 @@ $('diaryAdd').onclick=()=>openItem(null);
 $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
 $('briefClose').onclick=shutBrief;
+$('loadBarGo').onclick=async()=>{
+  const b=$('loadBarGo'); b.disabled=true; b.textContent='Trying\u2026';
+  await loadAll();
+  b.disabled=false; b.textContent='Try again';
+  if(!LOAD_TROUBLE){ render(); renderHome(); toast('All there'); }
+};
+// If it really is an empty book, saying so once is enough.
+$('loadBarX').onclick=()=>{ noteCount('contacts',0); clearTrouble(); };
 $('menuBtn').onclick=()=>openMenu('home');
 $('menuBack').onclick=shutMenu;
 $('pwSave').onclick=async()=>{
@@ -10598,10 +10660,10 @@ function maybeBrief(){
   if(!BRIEF_ON) return;
   if(briefSeen()===briefDay()) return;
   if(sheetsOpen()) return;          // never on top of something being done
-  // Nor on top of the home screen's own notices — the sharing change, or the
-  // offer to put the Jotter on the phone. Somebody setting the app up for the
-  // first time has enough to read without this as well; it will keep.
-  if($('noticeX')||$('jotYes')||$('jotX')) return;
+  // The very first run on a phone has enough to take in without this as well,
+  // so it waits until tomorrow. Only the first: a notice sitting on the home
+  // screen is not a reason to hold it back for ever.
+  if(!briefSeen() && !knownCount('contacts')){ markBriefSeen(); return; }
   openBrief();
 }
 function watchForNewDay(){

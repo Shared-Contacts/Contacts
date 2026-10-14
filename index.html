@@ -637,6 +637,20 @@ i.key{vertical-align:middle}
   pointer-events:none;padding:0 16px}
 .toast{background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;
   font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3);max-width:100%;text-align:center}
+/* Today — what the day has in it */
+.briefdate{margin:14px 2px 2px;text-align:center;font-size:19px;font-weight:700;
+  color:var(--hull)}
+.brow{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;width:100%;
+  text-align:left;border-bottom:1px solid #F0EEE7}
+.card .brow:last-child{border-bottom:none}
+.brow .bwhen{flex:0 0 84px;color:var(--muted);font-size:14px;padding-top:2px}
+.brow .bwhen.now{color:var(--hull);font-weight:700}
+.brow .bwhen.past{color:var(--red)}
+.brow .bwhat{flex:1;min-width:0}
+.brow .bwhat b{display:block;font-weight:600}
+.brow .bwhat span{display:block;color:var(--muted);font-size:14px}
+.brow .bcake{flex:0 0 auto;font-size:18px;line-height:1.4}
+
 /* Accounts gathered under the bank they belong to */
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
   text-transform:none;letter-spacing:0;font-size:16px}
@@ -990,6 +1004,13 @@ i.key{vertical-align:middle}
   <button id="trayHelp">Help</button>
 </div>
 
+<div id="brief" class="sheet hidden">
+  <div class="sheetbar"><button id="briefClose">Close</button>
+    <span class="title" id="briefTitle">Today</span>
+    <span class="bartools"><button class="bt" data-barhelp="brief" aria-label="About this screen" title="About this screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="briefBody"></div>
+</div>
+
 <div id="help" class="sheet hidden">
   <div class="sheetbar"><button id="helpBack">Back</button>
     <span class="title">How to use this</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1064,7 +1085,7 @@ const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr = v => Array.isArray(v) ? v : [];
 
-const SHEET_IDS=['detail','editor','settings','menu','help','diary','itemEd','log',
+const SHEET_IDS=['detail','editor','settings','menu','help','brief','diary','itemEd','log',
   'logEd','where','wish','shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs'];
 function sheetsOpen(){
@@ -3089,7 +3110,14 @@ async function openSettings(goTo){
         What sits behind them. All of these are light on purpose &mdash; the
         tiles are deep colours with pale lettering, and they need something
         quiet behind them to stay readable outdoors.</dd></div>
-      <div class="setadd"><div class="swatches" id="bgPick"></div></div>`,
+      <div class="setadd"><div class="swatches" id="bgPick"></div></div>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        <strong>Today</strong> is the screen that greets you once a day with
+        the birthdays coming up, what is in the diary and the ASAP list. It is
+        in the menu whenever you want it as well.</dd></div>
+      <div class="checks" style="padding:0 14px 14px"><label>
+        <input type="checkbox" id="briefOn" ${BRIEF_ON?'checked':''}>
+        Show it once a day</label></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
@@ -3203,6 +3231,9 @@ async function openSettings(goTo){
   wireCats();
   wireFinance();
   paintBgPick();
+  const bo=$('briefOn');
+  if(bo) bo.onchange=async()=>{ BRIEF_ON=bo.checked; await saveTiles();
+    if(BRIEF_ON) markBriefSeen(); };
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
     b.onclick=()=>doHandover(b.dataset.handover));
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
@@ -3243,7 +3274,7 @@ async function openSettings(goTo){
 
 
 // Which screen is in front, so Help and the settings button know where you are.
-const SCREEN_ORDER=[['chat','chats'],['chats','chats'],
+const SCREEN_ORDER=[['brief','home'],['chat','chats'],['chats','chats'],
   ['moneyImp','money'],['pairs','money'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
@@ -3256,7 +3287,8 @@ function currentScreen(){
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
-  money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs'};
+  money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs',
+  brief:'h-brief'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances'};
@@ -3267,6 +3299,20 @@ function openHelp(where){
   <div class="helpsec">
   <p class="lead">Everything here is stored online, so you and Sandra see the same
   contacts on any phone, tablet or laptop. You need a signal to use it.</p>
+
+  <h4 id="h-brief">Today</h4>
+  <p>What the day has in it, shown once a day when you open the app &mdash; or
+  the moment a new day arrives if the app is already open. The day turns over
+  at <strong>four in the morning</strong>, not midnight, so a late night still
+  counts as the day before.</p>
+  <p>Three things: <strong>birthdays</strong> from yesterday to a week ahead,
+  with the age they are turning; <strong>appointments and to-dos</strong> for
+  the week, with anything overdue in red at the top; and whatever is on the
+  <strong>ASAP</strong> list under Calendar &rsaquo; Regular jobs. Tap any of
+  them to go straight there.</p>
+  <p>It never appears on top of something you are in the middle of, and it is
+  in the menu whenever you want another look. Turn it off under
+  <strong>Settings &rsaquo; Home screen</strong>.</p>
 
   <h4 id="h-home">The opening screen</h4>
   <p>Every part of the app has a tile. Tap one to go there.</p>
@@ -6625,6 +6671,7 @@ function loadTiles(){
   const list=Array.isArray(saved)?saved:(saved&&Array.isArray(saved.tiles)?saved.tiles:null);
   TILES_HIDDEN=(saved&&Array.isArray(saved.hidden))?saved.hidden.slice():[];
   HOME_BG=(saved&&saved.bg&&HOME_BGS.some(x=>x.id===saved.bg))?saved.bg:'paper';
+  BRIEF_ON = !(saved&&saved.brief===false);
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -6640,7 +6687,7 @@ function loadTiles(){
   });
 }
 async function saveTiles(){
-  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG};
+  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
   MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
@@ -7940,6 +7987,7 @@ $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lock
 $('diaryAdd').onclick=()=>openItem(null);
 $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
+$('briefClose').onclick=shutBrief;
 $('menuBtn').onclick=()=>openMenu('home');
 $('menuBack').onclick=shutMenu;
 $('pwSave').onclick=async()=>{
@@ -10406,6 +10454,164 @@ function wireFinance(){
 }
 
 
+/* ============================================================
+   Today — what the day has in it
+   ------------------------------------------------------------
+   Shown once a day, when the app is opened or when a new day arrives
+   while it is still open. The day turns over at four in the morning
+   rather than at midnight: anything you are still up doing at one
+   o'clock belongs to the day before, and nobody wants tomorrow's list
+   appearing while they are finishing today's.
+   ============================================================ */
+const BRIEF_HOUR=4;
+let BRIEF_ON=true;
+let BRIEF_TIMER=null;
+
+function briefDay(when){
+  const d=new Date(when||Date.now());
+  d.setHours(d.getHours()-BRIEF_HOUR);
+  return isoDay(d);
+}
+function briefSeen(){ try{ return localStorage.getItem('briefday')||''; }catch(e){ return ''; } }
+function markBriefSeen(){
+  try{ localStorage.setItem('briefday', briefDay()); }catch(e){}
+}
+
+/* How far off somebody's birthday is: -1 for yesterday, 0 for today, up to
+   7 for a week away. Three years are tried so that a birthday on the first
+   of January is still found from the thirtieth of December. */
+function bdayOffset(c, from){
+  if(!c.birth_date||c.death_date) return null;
+  const b=new Date(c.birth_date);
+  if(isNaN(b)) return null;
+  const n=new Date(from||Date.now());
+  const today=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  for(let y=-1;y<=1;y++){
+    const x=new Date(today.getFullYear()+y, b.getMonth(), b.getDate());
+    const d=Math.round((x-today)/86400000);
+    if(d>=-1&&d<=7) return d;
+  }
+  return null;
+}
+function turningAge(c, offset){
+  const b=new Date(c.birth_date);
+  const n=new Date(); n.setDate(n.getDate()+offset);
+  return n.getFullYear()-b.getFullYear();
+}
+function whenWord(n){
+  return n===-1?'Yesterday':n===0?'Today':n===1?'Tomorrow'
+    : new Date(Date.now()+n*86400000).toLocaleDateString('en-GB',{weekday:'long'});
+}
+
+function briefBirthdays(){
+  return CONTACTS.map(c=>({c, d:bdayOffset(c)}))
+    .filter(x=>x.d!==null && !isGone(x.c))
+    .sort((a,b)=>a.d-b.d);
+}
+function briefItems(){
+  const now=new Date();
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+8);
+  const from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-1);
+  return ITEMS.filter(it=>{
+    if(it.done_at) return false;
+    const w=whenOf(it); if(!w) return false;
+    const d=new Date(w);
+    return d<end && (d>=from || isLate(it));      // overdue still wants saying
+  }).sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
+}
+function briefAsap(){
+  return ROUTINES.filter(r=>!r.done &&
+    String(r.heading||'').trim().toLowerCase()==='asap')
+    .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+}
+
+/* A photograph at the top, from the Bluesky posting, is still to come. The
+   slot is here so it can drop in without the rest moving about. */
+function briefPhoto(){ return ''; }
+
+function renderBrief(){
+  const days=briefBirthdays(), items=briefItems(), asap=briefAsap();
+  // The bar says Today and the date goes underneath: a long weekday and a
+  // long month together are more than a phone's top bar will hold.
+  const today=new Date();
+  const dateWords=today.toLocaleDateString('en-GB',
+    {weekday:'long',day:'numeric',month:'long'});
+
+  const bdayRows=days.map(({c,d})=>{
+    const age=turningAge(c,d);
+    const years = isFinite(age)&&age>0&&age<130
+      ? (d<0 ? 'Turned '+age : d===0 ? 'Turns '+age+' today' : 'Turns '+age) : '';
+    return `<button class="brow" data-briefc="${c.id}">
+      <span class="bwhen ${d<0?'past':d===0?'now':''}">${esc(whenWord(d))}</span>
+      <span class="bwhat"><b>${esc(fullName(c))}</b>
+        ${years?`<span>${esc(years)}</span>`:''}</span>
+      <span class="bcake" aria-hidden="true">\u{1F382}</span></button>`;
+  }).join('');
+
+  const itemRows=items.map(it=>`<button class="brow" data-briefi="${it.id}">
+      <span class="bwhen ${isLate(it)?'past':''}">${esc(whenText(it))}</span>
+      <span class="bwhat"><b>${esc(it.title)}</b>
+        <span>${it.kind==='appointment'?'Appointment':'To do'}${
+          isLate(it)?' &middot; overdue':''}</span></span></button>`).join('');
+
+  // No date column on these: they are the jobs with no date, which is what
+  // puts them on the ASAP list in the first place.
+  const asapRows=asap.map(r=>`<div class="brow">
+      <span class="bwhat"><b>${esc(r.title)}</b></span></div>`).join('');
+
+  const none='<div class="field"><dd style="color:var(--muted)">Nothing.</dd></div>';
+  $('briefBody').innerHTML=`
+    ${briefPhoto()}
+    <p class="briefdate">${esc(dateWords)}</p>
+    <p class="dsec">Birthdays &mdash; yesterday and the week ahead</p>
+    <div class="card">${bdayRows||none}</div>
+
+    <p class="dsec">Appointments and to-dos</p>
+    <div class="card">${itemRows||none}</div>
+
+    <p class="dsec">ASAP</p>
+    <div class="card">${asapRows
+      ||'<div class="field"><dd style="color:var(--muted)">Nothing on the ASAP '
+       +'list. Add one under Calendar &rsaquo; Regular jobs.</dd></div>'}</div>
+
+    <p class="coords" style="text-align:center;margin:14px 2px 20px">
+      Shown once a day. Turn it off under Settings &rsaquo; Home screen, or
+      open it again whenever you like from the menu.</p>`;
+
+  $('briefBody').querySelectorAll('[data-briefc]').forEach(b=>b.onclick=()=>{
+    shutBrief(); openDetail(Number(b.dataset.briefc)); });
+  $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>{
+    shutBrief(); openItem(ITEMS.find(x=>x.id===Number(b.dataset.briefi))); });
+}
+
+function openBrief(){
+  renderBrief();
+  showSheet('brief'); $('briefBody').scrollTop=0; lockBackground();
+  markBriefSeen();
+}
+function shutBrief(){ $('brief').classList.add('hidden'); lockBackground(); }
+
+// Shown when the app opens, and again if a new day arrives while it is left
+// open. Checked every few minutes rather than on a stroke of four, because a
+// phone asleep in a pocket keeps no appointments.
+function maybeBrief(){
+  if(!BRIEF_ON) return;
+  if(briefSeen()===briefDay()) return;
+  if(sheetsOpen()) return;          // never on top of something being done
+  // Nor on top of the home screen's own notices — the sharing change, or the
+  // offer to put the Jotter on the phone. Somebody setting the app up for the
+  // first time has enough to read without this as well; it will keep.
+  if($('noticeX')||$('jotYes')||$('jotX')) return;
+  openBrief();
+}
+function watchForNewDay(){
+  if(BRIEF_TIMER) clearInterval(BRIEF_TIMER);
+  BRIEF_TIMER=setInterval(maybeBrief, 5*60*1000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') maybeBrief();
+  });
+}
+
 /* ---------- The menu ----------
    One menu, dressed for wherever you opened it from. What you can do in this
    part of the app comes first, then that part's own settings and its own help,
@@ -10465,6 +10671,8 @@ function areaItems(area){
     it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
   if(area==='chats') return [
     it('Start a message',         ()=>{ shutMenu(); newChat(); })];
+  if(area==='home') return [
+    it('Today',                   ()=>{ shutMenu(); openBrief(); })];
   return [];
 }
 
@@ -10627,6 +10835,8 @@ async function start(){
   await loadAll();
   $('app').classList.remove('hidden');
   showHome();            // the front door, with the contacts list waiting behind it
+  maybeBrief();          // what the day has in it, once a day
+  watchForNewDay();
   loadDevices();
   loadShares();
 }

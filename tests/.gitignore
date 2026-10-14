@@ -1,0 +1,9 @@
+# Built from index.html by build.py — never committed, so they can never
+# drift from the app they are supposed to be testing.
+boot.html
+jotboot.html
+app.js
+jotapp.js
+
+# Screenshots the suites take as they go.
+*.png

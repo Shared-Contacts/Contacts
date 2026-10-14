@@ -642,6 +642,17 @@ i.key{vertical-align:middle}
 #loadBar{background:var(--hull-dark)}
 #loadBar #loadBarX{text-decoration:none;font-size:20px;line-height:1}
 
+/* The backup card: when it was last done, and the steps */
+.bkwhen{font-weight:700}
+.bkwhen.ok{color:#1D4A3A}
+.bkwhen.late{color:var(--red)}
+
+/* The steps on the backup card */
+.bksteps{margin:0;padding:0 14px 6px 34px;color:var(--ink);font-size:15px}
+.bksteps li{margin:0 0 7px}
+.bksteps code{background:var(--band,#F3F1EA);padding:1px 5px;border-radius:5px;
+  font-size:14px;word-break:break-all}
+
 /* Today — what the day has in it */
 .briefdate{margin:14px 2px 2px;text-align:center;font-size:19px;font-weight:700;
   color:var(--hull)}
@@ -6726,6 +6737,7 @@ function loadTiles(){
   TILES_HIDDEN=(saved&&Array.isArray(saved.hidden))?saved.hidden.slice():[];
   HOME_BG=(saved&&saved.bg&&HOME_BGS.some(x=>x.id===saved.bg))?saved.bg:'paper';
   BRIEF_ON = !(saved&&saved.brief===false);
+  BACKUP_DONE = (saved&&typeof saved.backup==='string')?saved.backup:'';
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -6741,7 +6753,8 @@ function loadTiles(){
   });
 }
 async function saveTiles(){
-  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON};
+  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON,
+              backup:BACKUP_DONE};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
   MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
@@ -7580,7 +7593,8 @@ async function myInbox(){
   const {data}=await sb.from('groups')
     .insert({name:'Shared with me',owner_id:ME.id,sort_order:900}).select().single();
   if(data){
-    await sb.from('group_members').insert({group_id:data.id,user_id:ME.id,role:'editor'});
+    // group_members is gone from the database; a group belongs to whoever
+    // owns it now, and owner_id above is what says so.
     GROUPS.push(data);
   }
   return data||null;
@@ -7777,6 +7791,163 @@ function parseVcards(text){
   }).filter(c=>c.first_name||c.last_name||c.company);
 }
 
+
+/* ============================================================
+   The monthly backup
+   ------------------------------------------------------------
+   The free Supabase plan keeps no automatic backups, so the only copy of
+   years of contacts, log days and transactions is whatever was last pulled
+   out by hand. These two queries do that: one row per table, the whole
+   table as JSON in a cell, exported as a CSV. Two files rather than one
+   because the daily log on its own is bigger than all the rest together.
+
+   Only Barry sees this card: the other three cannot sign in to Supabase,
+   so it would be instructions they could not follow.
+   ============================================================ */
+function isBarry(){
+  const name=((MY_PROFILE&&MY_PROFILE.display_name)||'').trim().toLowerCase();
+  const mail=((ME&&ME.email)||'').trim().toLowerCase();
+  return name.startsWith('barry') || mail.startsWith('barry');
+}
+
+const PROJECT_REF=(SUPABASE_URL.match(/\/\/([a-z0-9]+)\./)||[])[1]||'';
+const SQL_EDITOR='https://supabase.com/dashboard/project/'+PROJECT_REF+'/sql/new';
+
+const BACKUP_SQL_1=`-- QUERY 1 - EVERYTHING EXCEPT THE DAILY LOG
+-- ============================================================
+
+-- People
+select 'contacts' as table_name, count(*) as row_count, coalesce(jsonb_agg(t), '[]') as data from contacts t
+union all select 'groups',               count(*), coalesce(jsonb_agg(t), '[]') from groups t
+union all select 'contact_groups',       count(*), coalesce(jsonb_agg(t), '[]') from contact_groups t
+union all select 'statuses',             count(*), coalesce(jsonb_agg(t), '[]') from statuses t
+union all select 'link_kinds',           count(*), coalesce(jsonb_agg(t), '[]') from link_kinds t
+union all select 'relationships',        count(*), coalesce(jsonb_agg(t), '[]') from relationships t
+union all select 'pet_types',            count(*), coalesce(jsonb_agg(t), '[]') from pet_types t
+union all select 'contact_favourites',   count(*), coalesce(jsonb_agg(t), '[]') from contact_favourites t
+union all select 'contact_shares',       count(*), coalesce(jsonb_agg(t), '[]') from contact_shares t
+union all select 'contact_offers',       count(*), coalesce(jsonb_agg(t), '[]') from contact_offers t
+union all select 'profiles',             count(*), coalesce(jsonb_agg(t), '[]') from profiles t
+-- Daily log setup
+union all select 'log_options',          count(*), coalesce(jsonb_agg(t), '[]') from log_options t
+union all select 'log_cats',             count(*), coalesce(jsonb_agg(t), '[]') from log_cats t
+union all select 'log_fields',           count(*), coalesce(jsonb_agg(t), '[]') from log_fields t
+-- Calendar
+union all select 'items',                count(*), coalesce(jsonb_agg(t), '[]') from items t
+union all select 'item_shares',          count(*), coalesce(jsonb_agg(t), '[]') from item_shares t
+union all select 'routines',             count(*), coalesce(jsonb_agg(t), '[]') from routines t
+-- Lists
+union all select 'shopping_lists',       count(*), coalesce(jsonb_agg(t), '[]') from shopping_lists t
+union all select 'shopping',             count(*), coalesce(jsonb_agg(t), '[]') from shopping t
+union all select 'shopping_list_shares', count(*), coalesce(jsonb_agg(t), '[]') from shopping_list_shares t
+union all select 'wishes',               count(*), coalesce(jsonb_agg(t), '[]') from wishes t
+-- Messages
+union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
+union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
+union all select 'messages',             count(*), coalesce(jsonb_agg(t), '[]') from messages t
+-- Cashbook
+union all select 'accounts',             count(*), coalesce(jsonb_agg(t), '[]') from accounts t
+union all select 'account_shares',       count(*), coalesce(jsonb_agg(t), '[]') from account_shares t
+union all select 'transactions',         count(*), coalesce(jsonb_agg(t), '[]') from transactions t
+union all select 'transaction_items',    count(*), coalesce(jsonb_agg(t), '[]') from transaction_items t
+union all select 'categories',           count(*), coalesce(jsonb_agg(t), '[]') from categories t
+union all select 'payees',               count(*), coalesce(jsonb_agg(t), '[]') from payees t
+union all select 'currencies',           count(*), coalesce(jsonb_agg(t), '[]') from currencies t
+union all select 'statements',           count(*), coalesce(jsonb_agg(t), '[]') from statements t
+union all select 'import_maps',          count(*), coalesce(jsonb_agg(t), '[]') from import_maps t
+union all select 'bank_files',           count(*), coalesce(jsonb_agg(t), '[]') from bank_files t
+union all select 'finance_members',      count(*), coalesce(jsonb_agg(t), '[]') from finance_members t
+union all select 'finance_migrations',   count(*), coalesce(jsonb_agg(t), '[]') from finance_migrations t
+-- List of photographs and receipts (names and sizes only)
+union all select 'photos (names only)',  count(*),
+  coalesce(jsonb_agg(jsonb_build_object('name', o.name, 'created_at', o.created_at, 'bytes', o.metadata->>'size')), '[]')
+  from storage.objects o where o.bucket_id = 'photos';`;
+
+const BACKUP_SQL_2=`-- QUERY 2 - THE DAILY LOG
+-- ============================================================
+
+select 'log_days' as table_name, count(*) as row_count, coalesce(jsonb_agg(t order by t.on_date), '[]') as data from log_days t;`;
+
+// Older Androids, and anything running inside a web view, may not have the
+// clipboard API. The way that has always worked sits behind it.
+async function copyText(s){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(s); return true;
+    }
+  }catch(e){}
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=s; ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,s.length);
+    const ok=document.execCommand('copy');
+    ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+
+/* When it was last done, and whether another is due. Thirty-five days
+   rather than a month, so one taken on the 3rd and the next on the 2nd is
+   not nagged about. */
+function backupWords(){
+  if(!BACKUP_DONE) return {words:'Never backed up', cls:'late'};
+  const days=Math.round((new Date(isoDay(new Date())+'T00:00:00')
+                        -new Date(BACKUP_DONE+'T00:00:00'))/86400000);
+  if(days<=0) return {words:'Backed up today', cls:'ok'};
+  return { words:'Last backed up '+fullDate(BACKUP_DONE)+' — '
+             +days+' day'+(days===1?'':'s')+' ago',
+           cls: days>35?'late':'ok' };
+}
+
+function backupCard(){
+  if(!isBarry()) return '';
+  const b=backupWords();
+  const stamp=isoDay(new Date()).slice(0,7);
+  return `<div class="card"><h3>Full backup (Barry only)</h3>
+    <div class="field"><dd><strong class="bkwhen ${b.cls}">${esc(b.words)}</strong></dd></div>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Supabase keeps no automatic backups on the free plan, so this is the
+      only copy there is. Two files: everything, and the daily log.</dd></div>
+    <ol class="bksteps">
+      <li>Tap <strong>Copy query 1</strong>, then <strong>Open Supabase</strong>.</li>
+      <li>New query &rsaquo; paste &rsaquo; Run &rsaquo; Export &rsaquo; Download CSV.</li>
+      <li>Save it as <code>1-everything-${stamp}.csv</code>, then do the same
+        with query 2 and save that one as <code>2-daily-log-${stamp}.csv</code>.</li>
+      <li>Copy both files off the laptop, into Google Drive.</li>
+    </ol>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Check the row counts as they come up. If <strong>contacts</strong> or
+      <strong>transactions</strong> shows 0, something is wrong &mdash; stop
+      rather than keeping that file.</dd></div>
+    <div class="setadd">
+      <button class="btn" id="bkCopy1" style="border:1.5px solid var(--rule)">
+        Copy query 1 &mdash; everything except the daily log</button>
+      <button class="btn" id="bkCopy2" style="border:1.5px solid var(--rule)">
+        Copy query 2 &mdash; the daily log</button>
+      <button class="btn primary" id="bkOpen">Open Supabase &rsaquo;</button>
+      <button class="btn" id="bkDone" style="border:1.5px solid var(--rule)">
+        Both files saved &mdash; record today</button>
+    </div></div>`;
+}
+
+function wireBackupCard(){
+  const c1=$('bkCopy1');
+  if(!c1) return;
+  const copy=async(sql,which)=>{
+    toast(await copyText(sql) ? 'Query '+which+' copied'
+                              : 'Could not copy — open Supabase and type it');
+  };
+  c1.onclick=()=>copy(BACKUP_SQL_1,1);
+  $('bkCopy2').onclick=()=>copy(BACKUP_SQL_2,2);
+  $('bkOpen').onclick=()=>window.open(SQL_EDITOR,'_blank','noopener');
+  $('bkDone').onclick=async()=>{
+    BACKUP_DONE=isoDay(new Date());
+    await saveTiles();
+    openIO();
+    toast('Noted — the next one is due in about a month');
+  };
+}
+
 function openIO(){
   $('ioBody').innerHTML=`
     <div class="card"><h3>Save a copy</h3>
@@ -7785,6 +7956,8 @@ function openIO(){
       <div class="setadd">
         <button class="btn primary" id="ioExport">Download my contacts</button>
       </div></div>
+
+    ${backupCard()}
 
     <div class="card"><h3>Bring contacts in</h3>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
@@ -7803,6 +7976,7 @@ function openIO(){
       <div id="ioReport"></div>
     </div>`;
 
+  wireBackupCard();
   $('ioExport').onclick=exportContacts;
   $('ioTemplate').onclick=exportTemplate;
   IMPORT_KIND='csv';
@@ -10527,6 +10701,7 @@ function wireFinance(){
    ============================================================ */
 const BRIEF_HOUR=4;
 let BRIEF_ON=true;
+let BACKUP_DONE='';          // the day the last full backup was taken
 let BRIEF_TIMER=null;
 
 function briefDay(when){

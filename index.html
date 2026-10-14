@@ -641,7 +641,8 @@ i.key{vertical-align:middle}
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
   text-transform:none;letter-spacing:0;font-size:16px}
 .accgrp .gtot{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;
-  color:var(--ink);white-space:nowrap}
+  color:var(--ink);white-space:nowrap;display:flex;flex-direction:column;
+  align-items:flex-end;gap:1px;font-size:16px}
 .accgrp .acct:last-of-type{border-bottom:none}
 
 /* A statement file kept against an account */
@@ -679,8 +680,9 @@ i.key{vertical-align:middle}
 .acct .an b{display:block;font-size:16px}
 .acct .an span{display:block;color:var(--muted);font-size:14px}
 .acct .ab{font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;
-  white-space:nowrap;text-align:right}
-.acct .ab.neg{color:var(--red)}
+  white-space:nowrap;text-align:right;display:flex;flex-direction:column;
+  align-items:flex-end;gap:1px}
+.acct .ab.neg,.acct .ab span.neg,.accgrp .gtot span.neg{color:var(--red)}
 
 .txn{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;width:100%;
   text-align:left;border-bottom:1px solid #F0EEE7}
@@ -3315,9 +3317,15 @@ function openHelp(where){
   Revolut, Cash, Premium Bonds &mdash; and the ones sharing a group fold
   together on this screen with a total of their own. Whether you leave a group
   open or folded away is remembered.</p>
+  <p>Finances opens where you left it: the account you last looked at, with its
+  group open and the others folded away. <strong>Reconcile, import and the
+  rest</strong> is folded away too &mdash; those jobs are all in the menu as
+  well, and the balances are what the screen is for.</p>
   <p>Tap an account to see just that one; tap <strong>Everything</strong> to see
-  the lot. Accounts in different currencies are totalled separately, because
-  adding pounds to dollars would be a lie.</p>
+  the lot. Accounts in different currencies are totalled separately, one figure
+  under another, because adding pounds to dollars would be a lie. Where two
+  currencies share a symbol &mdash; the dollar belongs to several countries
+  &mdash; the code is shown instead, so you can tell which is which.</p>
   <p>Anything still waiting for a category carries a <strong>brass edge</strong>
   down its left-hand side and a small amber label &mdash; <em>no category yet</em>,
   or <em>part done</em> where some of the lines have one and some have not. The
@@ -7965,7 +7973,28 @@ function paintTray(){
    ============================================================ */
 let ACCOUNTS=[], FCATS=[], PAYEES=[], CURRENCIES=[], BALANCES=[], FINPEOPLE=[];
 let TXNS=[], TXLINES=[], MONEY_ON=false, MONEY_WHY='';
+/* Finances opens where you left it. One account is the one you live in —
+   the current account everything goes through — and making it the first thing
+   on the screen beats choosing it every single time. */
 let MONEY_ACC='all', MONEY_FROM='', MONEY_SHOW=80;
+try{
+  const kept=localStorage.getItem('moneyacc');
+  if(kept) MONEY_ACC = kept==='all' ? 'all' : Number(kept);
+}catch(e){}
+function rememberAccount(){
+  try{ localStorage.setItem('moneyacc',String(MONEY_ACC)); }catch(e){}
+}
+
+/* The transactions underneath belong to one account, so that account's group
+   stays open and the others fold away rather than pushing the list off the
+   bottom of the screen. */
+function foldToAccount(){
+  if(MONEY_ACC==='all') return;
+  const mine=accOf(MONEY_ACC);
+  const want=(mine&&(mine.group_name||'').trim())||'Other';
+  accountGroups(ACCOUNTS).forEach(g=>{ ACC_OPEN[g.name]=(g.name===want); });
+  try{ localStorage.setItem('accopen',JSON.stringify(ACC_OPEN)); }catch(e){}
+}
 // Transactions still waiting for a category, so you can see at a glance what
 // is left and pick up where you stopped.
 let TODO_IDS=new Set(), TODO_CAPPED=false, MONEY_TODO=false;
@@ -7991,6 +8020,33 @@ function curSym(code){
 }
 function accOf(id){ return ACCOUNTS.find(a=>a.id===id)||null; }
 function accCur(id){ const a=accOf(id); return a?a.currency:'GBP'; }
+
+/* Two currencies can share a symbol — the dollar belongs to several
+   countries — and $53.77 above $0.00 with no way to tell which is which is
+   worse than useless on a page of figures. Where a symbol is shared, the code
+   is shown instead. */
+function moneyTag(n,code){
+  const sym=curSym(code);
+  const shared=sym && CURRENCIES.filter(c=>(c.symbol||'')===sym).length>1;
+  if(!shared) return money(n,code);
+  const v=Math.round(Number(n||0)*100)/100;
+  const a=Math.abs(v).toLocaleString('en-GB',
+    {minimumFractionDigits:2,maximumFractionDigits:2});
+  return (v<0?'\u2212':'')+esc(code)+'\u00a0'+a;
+}
+
+/* One figure per line. Four accounts in four currencies then read as four
+   figures rather than one long line wrapping wherever it likes. The order is
+   the one the currencies are in under Settings, so it stays put as balances
+   move about rather than reshuffling itself every time money lands. */
+function stackTotals(map){
+  const at=c=>{ const i=CURRENCIES.findIndex(x=>x.code===c);
+                return i<0?999:i; };
+  const rows=Object.entries(map)
+    .sort((a,b)=>at(a[0])-at(b[0])||a[0].localeCompare(b[0]));
+  if(!rows.length) return '\u2014';
+  return rows.map(([c,v])=>`<span class="${v<0?'neg':''}">${moneyTag(v,c)}</span>`).join('');
+}
 
 // Two decimal places, grouped, with the sign in front of the symbol so a
 // column of them lines up.
@@ -8022,6 +8078,11 @@ let STATEMENTS=[], SHARED_ACCS=[];
    itself rather than hide. */
 let ACC_OPEN={};
 try{ ACC_OPEN=JSON.parse(localStorage.getItem('accopen')||'{}'); }catch(e){}
+
+// The same for the list of jobs. Folded away to begin with: they are all in
+// the menu as well, and the balances are what the screen is for.
+let MONEY_JOBS=false;
+try{ MONEY_JOBS=localStorage.getItem('moneyjobs')==='1'; }catch(e){}
 function rememberAccOpen(name,open){
   ACC_OPEN[name]=open;
   try{ localStorage.setItem('accopen',JSON.stringify(ACC_OPEN)); }catch(e){}
@@ -8094,6 +8155,12 @@ async function loadMoney(){
     return;
   }
   ACCOUNTS=a.data||[]; FCATS=catsInOrder(c.data||[]); PAYEES=p.data||[];
+  // The account you were last in may have been removed, or stopped being
+  // shared with you. Fall back to everything rather than to an empty screen.
+  if(MONEY_ACC!=='all' && !ACCOUNTS.some(x=>x.id===MONEY_ACC)){
+    MONEY_ACC='all'; rememberAccount();
+  }
+  foldToAccount();
   CURRENCIES=cu.data||[]; BALANCES=b.data||[]; FINPEOPLE=(m.data||[]).map(x=>x.user_id);
   STATEMENTS=st&&!st.error?(st.data||[]):[];
   SHARED_ACCS=sh&&!sh.error?(sh.data||[]):[];
@@ -8185,7 +8252,7 @@ function renderMoney(){
       <span class="an"><b>${esc(a.name)}</b>
         <span>${esc(a.kind)}${a.currency!=='GBP'?' &middot; '+esc(a.currency):''}${
           r?` &middot; <i class="recon ${r.cls}">${esc(r.words)}</i>`:''}</span></span>
-      <span class="ab ${bad?'neg':''}">${money(bal,a.currency)}</span></button>`;
+      <span class="ab ${bad?'neg':''}">${moneyTag(bal,a.currency)}</span></button>`;
   };
 
   // Totals per currency, since adding pounds to dollars would be a lie.
@@ -8216,16 +8283,6 @@ function renderMoney(){
     </button>`;
   }).join('');
 
-  /* One total at the top rather than a row of them. Pounds cannot be added to
-     dollars, so the headline is the currency most of the accounts are in and
-     the rest are totalled in their own groups further down, where they belong
-     anyway. */
-  const curCount={};
-  live.forEach(a=>{ curCount[a.currency]=(curCount[a.currency]||0)+1; });
-  const mainCur=Object.entries(curCount).sort((x,y)=>y[1]-x[1]).map(x=>x[0])[0]||'';
-  const mainTot=byCur[mainCur]||0;
-  const others=live.filter(a=>a.currency!==mainCur);
-
   // Until somebody says which bank an account belongs to, there is nothing to
   // group by and the plain list is the better answer.
   const anyGroup = live.some(a=>(a.group_name||'').trim());
@@ -8238,10 +8295,8 @@ function renderMoney(){
       <h3>Accounts</h3>
       <button class="acct ${MONEY_ACC==='all'?'on':''}" data-acc="all">
         <span class="an"><b>Everything</b><span>${live.length} account${
-          live.length===1?'':'s'}${mainCur&&others.length
-            ? ' &middot; '+others.length+' in another currency' : ''}</span></span>
-        <span class="ab ${mainTot<0?'neg':''}">${
-          mainCur?money(mainTot,mainCur):'\u2014'}</span></button>
+          live.length===1?'':'s'}</span></span>
+        <span class="ab">${stackTotals(byCur)}</span></button>
       ${anyGroup?'':live.map(accCard).join('')}
       ${live.length?'':`<div class="field"><dd style="color:var(--muted)">
         No accounts yet. Add your first under Settings &rsaquo; Finances, or with
@@ -8253,17 +8308,17 @@ function renderMoney(){
       const open = ACC_OPEN[g.name]!==false;
       return `<details class="card logsec accgrp" data-accgrp="${esc(g.name)}"
         ${open?'open':''}><summary>${esc(g.name)}<span class="gtot">${
-        Object.entries(tot).map(([c,v])=>money(v,c)).join(' &nbsp; ')
-        }</span></summary>${g.accs.map(accCard).join('')}</details>`;
+        stackTotals(tot)}</span></summary>${g.accs.map(accCard).join('')}</details>`;
     }).join('')}
 
-    <div class="card">
+    <details class="card logsec" id="moneyJobs" ${MONEY_JOBS?'open':''}>
+      <summary>Reconcile, import and the rest</summary>
       <button class="menuitem" id="goRecon">Reconcile a statement &rsaquo;</button>
       <button class="menuitem" id="goImport">Import from a bank file &rsaquo;</button>
       <button class="menuitem" id="goMoneyPick">Choose several to delete &rsaquo;</button>
       <button class="menuitem" id="goPairs">Find transfers between my accounts &rsaquo;</button>
       <button class="menuitem" id="goAccts">Accounts, categories and payees &rsaquo;</button>
-    </div>`}
+    </details>`}
 
     <p class="dsec">${MONEY_TODO?'Still to sort out'
       :MONEY_ACC==='all'?'Recent transactions'
@@ -9779,7 +9834,11 @@ $('impBack').onclick=()=>{ $('moneyImp').classList.add('hidden'); lockBackground
 // way it was left. 'toggle' does not bubble, hence the capture.
 $('moneyBody').addEventListener('toggle',ev=>{
   const d=ev.target.closest&&ev.target.closest('[data-accgrp]');
-  if(d) rememberAccOpen(d.dataset.accgrp, d.open);
+  if(d){ rememberAccOpen(d.dataset.accgrp, d.open); return; }
+  if(ev.target.id==='moneyJobs'){
+    MONEY_JOBS=ev.target.open;
+    try{ localStorage.setItem('moneyjobs',MONEY_JOBS?'1':'0'); }catch(e){}
+  }
 }, true);
 
 $('moneyBody').addEventListener('click',async ev=>{
@@ -9788,15 +9847,7 @@ $('moneyBody').addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-acc]');
   if(a){
     MONEY_ACC=a.dataset.acc==='all'?'all':Number(a.dataset.acc);
-    // The transactions below belong to one account, so that account's group
-    // stays open and the others fold away rather than pushing the list off
-    // the bottom of the screen.
-    if(MONEY_ACC!=='all'){
-      const mine=accOf(MONEY_ACC);
-      const want=(mine&&(mine.group_name||'').trim())||'Other';
-      accountGroups(ACCOUNTS).forEach(g=>{ ACC_OPEN[g.name]=(g.name===want); });
-      try{ localStorage.setItem('accopen',JSON.stringify(ACC_OPEN)); }catch(e){}
-    }
+    rememberAccount(); foldToAccount();
     await loadTxns(); renderMoney(); paintMoneyPickBar(); return;
   }
   const t=ev.target.closest('[data-tx]');

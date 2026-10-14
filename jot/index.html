@@ -80,6 +80,8 @@ label.f input:focus,label.f textarea:focus{outline:2px solid var(--hull);outline
 .hit{display:flex;gap:10px;align-items:center;padding:11px 14px;width:100%;
   text-align:left;border-bottom:1px solid #F0EEE7}
 .hit:last-child{border-bottom:none}
+.hit .drop{flex:0 0 auto;color:var(--red);font-size:22px;line-height:1;
+  padding:6px 10px;border-radius:8px;background:none;border:none;cursor:pointer}
 .hit .av{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto;
   border:1.5px solid var(--rule);background:#EDEFEA;display:flex;
   align-items:center;justify-content:center;font-weight:700;color:var(--hull)}
@@ -331,22 +333,24 @@ async function save(){
     toast('A name or a boat name, at least'); $('fFirst').focus(); return;
   }
   $('save').disabled=true; $('save').textContent='Saving…';
-  const ok=await sendOne(f, SHOT);
+  const r=await sendOne(f, SHOT);
   $('save').disabled=false; $('save').textContent='Save';
 
-  if(ok==='queued'){
+  if(r.queued){
     toast('No signal — kept on the phone, and it will go next time');
-  } else if(ok){
+  } else if(r.sent){
     toast('Saved');
   } else {
     toast('Could not save that'); return;
   }
-  noteRecent(f, ok==='queued');
+  noteRecent(f, r);
   clearForm(); paintStatus(); paintRecent();
 }
 
-// Returns true if it went, 'queued' if it is waiting, false if it was refused
-// for a reason that trying again will not mend.
+// Says what happened: {sent:<the new contact's id>}, {queued:<the id of the
+// one kept on the phone>}, or {failed:true} when trying again will not mend
+// it. The id matters because this phone's own list offers to take an entry
+// away again, and it has to know which one.
 async function sendOne(f, shot){
   const row={ first_name:f.first_name, last_name:f.last_name,
     boat_name:f.boat_name, met_where:f.met_where, met_date:f.met_date,
@@ -363,9 +367,9 @@ async function sendOne(f, shot){
     console.error(e);
     // Anything that smells like the network is worth keeping for later.
     if(!navigator.onLine || /fetch|network|timeout|failed/i.test(e.message||'')){
-      await queue(f, shot); return 'queued';
+      return {queued: await queue(f, shot)};
     }
-    return false;
+    return {failed:true};
   }
 
   if(shot){
@@ -380,12 +384,13 @@ async function sendOne(f, shot){
       toast('Saved, but the photo would not go up');
     }
   }
-  return true;
+  return {sent:made.id};
 }
 
 async function queue(f, shot){
   const q=recall(QKEY,[]);
   const item={...f, at:Date.now(), id:uuid()};
+  const qid=item.id;
   if(shot){
     try{ item.shot=await blobToData(shot); }
     catch(e){ console.warn('photo not kept',e); }
@@ -397,6 +402,7 @@ async function queue(f, shot){
     if(store(QKEY,q)) toast('Kept, but there was no room for the photo');
     else toast('Could not keep that on the phone');
   }
+  return qid;
 }
 
 async function flushQueue(loud){
@@ -409,7 +415,8 @@ async function flushQueue(loud){
   for(const item of q){
     const shot=item.shot?dataToBlob(item.shot):null;
     const r=await sendOne(item, shot);
-    if(r===true) sent++; else left.push(item);
+    if(r.sent){ sent++; promoteRecent(item.id, r.sent); }
+    else left.push(item);
   }
   store(QKEY,left);
   paintStatus();
@@ -418,27 +425,65 @@ async function flushQueue(loud){
 }
 
 /* ---------- What this phone has added ---------- */
-function noteRecent(f, waiting){
-  const r=recall(RKEY,[]);
-  r.unshift({ name:[f.first_name,f.last_name].filter(Boolean).join(' ')
+function noteRecent(f, r){
+  const list=recall(RKEY,[]);
+  list.unshift({ name:[f.first_name,f.last_name].filter(Boolean).join(' ')
                 || f.boat_name || 'Somebody',
-              boat:f.boat_name||'', at:Date.now(), waiting:!!waiting });
-  store(RKEY, r.slice(0,8));
+              boat:f.boat_name||'', at:Date.now(),
+              waiting:!!r.queued, cid:r.sent||null, qid:r.queued||null });
+  store(RKEY, list.slice(0,8));
+}
+
+// One that was waiting has gone up: it has a contact of its own now.
+function promoteRecent(qid, cid){
+  const list=recall(RKEY,[]);
+  let touched=false;
+  list.forEach(x=>{ if(x.qid===qid){ x.qid=null; x.cid=cid; x.waiting=false;
+                                     touched=true; } });
+  if(touched){ store(RKEY,list); paintRecent(); }
+}
+
+/* Jotting somebody down at a lock is quick, and so is deciding afterwards
+   that you did not need them. This takes the entry away for good: out of the
+   book if it got there, off the phone if it is still waiting. */
+async function dropJot(n){
+  const list=recall(RKEY,[]);
+  const x=list[n]; if(!x) return;
+  if(!confirm('Remove '+(x.name||'this entry')+'?\n\n'
+      +(x.cid ? 'They are taken out of the contacts book as well.'
+              : 'This one never went up, so it simply goes.'))) return;
+
+  if(x.cid){
+    if(!ME){ toast('Sign in through the main app first'); return; }
+    const {error}=await sb.from('contacts').delete().eq('id',x.cid);
+    if(error){ console.error(error); toast('Could not remove them'); return; }
+  }
+  if(x.qid) store(QKEY, recall(QKEY,[]).filter(q=>q.id!==x.qid));
+
+  list.splice(n,1); store(RKEY,list);
+  paintRecent(); paintStatus();
+  toast('Removed');
 }
 function paintRecent(){
   const r=recall(RKEY,[]);
   if(!r.length){ $('recent').innerHTML=''; return; }
   $('recent').innerHTML=`<div class="card" style="margin-top:18px">
     <h2>Put in from this phone</h2>
-    ${r.map(x=>`<div class="hit">
+    ${r.map((x,i)=>`<div class="hit">
       <span class="av">${esc((x.name||'?').charAt(0).toUpperCase())}</span>
       <span class="who"><b>${esc(x.name)}</b>
         <span>${esc(x.boat||'')}${x.boat?' &middot; ':''}${
           esc(new Date(x.at).toLocaleDateString('en-GB',
             {day:'numeric',month:'short'}))}${
           x.waiting?' &middot; waiting to send':''}</span></span>
+      <button class="drop" data-drop="${i}"
+        aria-label="Remove ${esc(x.name)}" title="Remove">&times;</button>
     </div>`).join('')}
+    <p class="note" style="margin:10px 14px 2px">Changed your mind about one?
+      Tap &times; and it goes, out of the contacts book as well.</p>
   </div>`;
+  $('recent').querySelectorAll('[data-drop]').forEach(b=>
+    b.onclick=()=>dropJot(Number(b.dataset.drop)));
 }
 
 /* ---------- Looking somebody up ---------- */

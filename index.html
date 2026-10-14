@@ -633,6 +633,13 @@ i.key{vertical-align:middle}
   pointer-events:none;padding:0 16px}
 .toast{background:var(--hull-dark);color:#F2EFE4;padding:12px 20px;border-radius:999px;
   font-size:16px;box-shadow:0 4px 14px rgba(16,35,28,.3);max-width:100%;text-align:center}
+/* Accounts gathered under the bank they belong to */
+.accgrp>summary{display:flex;align-items:baseline;gap:10px;
+  text-transform:none;letter-spacing:0;font-size:16px}
+.accgrp .gtot{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;
+  color:var(--ink);white-space:nowrap}
+.accgrp .acct:last-of-type{border-bottom:none}
+
 /* A statement file kept against an account */
 .frow{display:flex;align-items:center;gap:10px;padding:10px 0;
   border-bottom:1px solid #F0EEE7}
@@ -773,7 +780,7 @@ i.key{vertical-align:middle}
   <header class="plate">
     <button class="bt" data-home="contacts" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="homeBtn" data-menu="contacts" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Contacts</span>
-    <span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></header>
+    <span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></header>
   <div class="searchwrap">
     <div class="srow">
       <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
@@ -809,7 +816,7 @@ i.key{vertical-align:middle}
 
 <div id="diary" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="diary" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="diaryMenu" data-menu="diary" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <span class="title">Diary</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Diary</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="diaryBody"></div>
   <button class="fab sheetfab" id="diaryAdd" aria-label="Add an appointment or to-do">+</button>
 </div>
@@ -822,26 +829,26 @@ i.key{vertical-align:middle}
 
 <div id="io" class="sheet hidden">
   <div class="sheetbar"><button id="ioBack">Back</button>
-    <span class="title">Import and export</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Import and export</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="ioBody"></div>
 </div>
 
 <div id="wish" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="wish" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="wishMenu" data-menu="wish" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <span class="title">Wishlist</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Wishlist</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="wishBody"></div>
 </div>
 
 <div id="shop" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="shop" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="shopBody"></div>
   <button class="fab sheetfab" id="shopAdd" aria-label="Add a shopping list">+</button>
 </div>
 
 <div id="where" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="where" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="whereMenu" data-menu="where" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <span class="title">Where we are</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Where we are</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="whereBody"></div>
 </div>
 
@@ -850,7 +857,7 @@ i.key{vertical-align:middle}
     <button id="logPrev" aria-label="Earlier day">&#9664;</button>
     <button class="title logdate" id="logPick"></button>
     <button id="logNext" aria-label="Later day">&#9654;</button>
-    <button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
+    <button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
     <button id="logEditTop">Edit</button></div>
   <div class="sheetbody" id="logBody"></div>
 </div>
@@ -863,10 +870,10 @@ i.key{vertical-align:middle}
 
 <div id="menu" class="sheet hidden">
   <div class="sheetbar"><button id="menuBack">Close</button>
-    <span class="title" id="menuTitle">Menu</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title" id="menuTitle">Menu</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody">
     <div id="menuBody"></div>
-    <details class="card logsec"><summary>Colours</summary>
+    <details class="card logsec"><summary>Colour Scheme</summary>
       <div class="setadd"><div class="swatches" id="themePick"></div></div>
     </details>
 
@@ -896,7 +903,7 @@ i.key{vertical-align:middle}
     <button id="menuBtn" aria-label="Menu" title="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <button id="homeRefresh" aria-label="Refresh from the server" title="Refresh from the server">
+    <button id="homeRefresh" aria-label="Refresh Data and Images" title="Refresh Data and Images">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/>
         <path d="M20.5 3.5V9H15"/></svg></button>
@@ -908,7 +915,7 @@ i.key{vertical-align:middle}
   <div class="sheetbar"><button class="bt" data-home="chats" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="chatsMenu" data-menu="chats" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Messages</span>
     <span class="bartools">
-      <button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
+      <button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button>
       <button id="chatNew" class="bt wordbt">New</button></span></div>
   <div class="sheetbody" id="chatsBody"></div>
 </div>
@@ -933,7 +940,7 @@ i.key{vertical-align:middle}
 
 <div id="money" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="money" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="moneyMenu" data-menu="money" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <span class="title">Finances</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Fetch everything again" title="Fetch everything again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Finances</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="moneyBody"></div>
   <button class="fab sheetfab" id="moneyAdd" aria-label="Add a transaction">+</button>
 </div>
@@ -976,13 +983,13 @@ i.key{vertical-align:middle}
 
 <div id="help" class="sheet hidden">
   <div class="sheetbar"><button id="helpBack">Back</button>
-    <span class="title">How to use this</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">How to use this</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="helpBody"></div>
 </div>
 
 <div id="settings" class="sheet hidden">
   <div class="sheetbar"><button id="setBack">Back</button>
-    <span class="title">Settings</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+    <span class="title">Settings</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="setBody"></div>
 </div>
 
@@ -3068,7 +3075,12 @@ async function openSettings(goTo){
         Tap the four-squares button beside the logo to shuffle them about, rename
         one, change its colour, or add a tile for a screen you use a lot.</dd></div>
       <div class="setadd"><button class="btn" id="goArrange"
-        style="border:1.5px solid var(--rule)">Take me there</button></div>`,
+        style="border:1.5px solid var(--rule)">Take me there</button></div>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        What sits behind them. All of these are light on purpose &mdash; the
+        tiles are deep colours with pale lettering, and they need something
+        quiet behind them to stay readable outdoors.</dd></div>
+      <div class="setadd"><div class="swatches" id="bgPick"></div></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
@@ -3181,6 +3193,7 @@ async function openSettings(goTo){
     MY_PROFILE&&MY_PROFILE.my_contact_id);
   wireCats();
   wireFinance();
+  paintBgPick();
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
     b.onclick=()=>doHandover(b.dataset.handover));
   $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
@@ -3260,9 +3273,15 @@ function openHelp(where){
   transaction, a day &mdash; keep <strong>Cancel</strong> and
   <strong>Save</strong>, so you can always back out of a change without
   keeping it.</p>
-  <p>The circular arrow at the right of every bar fetches everything again: the
-  figures <em>and</em> the photographs. It is worth a tap if something looks
+  <p><strong>Refresh Data and Images</strong> &mdash; the circular arrow at the
+  right of every bar &mdash; fetches both: the figures <em>and</em> the
+  photographs. It is worth a tap if something looks
   stale or a picture will not load.</p>
+  <p>What sits behind them is yours to choose under <strong>Settings &rsaquo;
+  Home screen</strong>: a plain wash, water, rope, canvas. They are all light
+  on purpose &mdash; the tiles are deep colours with pale lettering, and
+  anything strong behind them stops the writing reading at arm's length in the
+  sun.</p>
   <p>The four-squares button beside the logo lets you rearrange them.
   <strong>&lsaquo;</strong> and <strong>&rsaquo;</strong> shuffle a tile along, the
   <strong>pencil</strong> renames it and changes its colour, and <strong>&times;</strong>
@@ -3285,6 +3304,10 @@ function openHelp(where){
   that is what really happens when money moves between banks. If the two accounts
   are in different currencies you put in what actually arrived rather than working
   out a rate.</p>
+  <p>Give each account a <strong>group</strong> under Settings &mdash; Barclays,
+  Revolut, Cash, Premium Bonds &mdash; and the ones sharing a group fold
+  together on this screen with a total of their own. Whether you leave a group
+  open or folded away is remembered.</p>
   <p>Tap an account to see just that one; tap <strong>Everything</strong> to see
   the lot. Accounts in different currencies are totalled separately, because
   adding pounds to dollars would be a lie.</p>
@@ -3303,7 +3326,7 @@ function openHelp(where){
   <em>look and change</em>, and you can take it back whenever you like. The
   lists of currencies, categories and payees stay common to everyone, because a
   shared account would otherwise show rows of blanks.</p>
-  <p>Each account shows when it was last agreed with the bank, in
+  <p>Each account shows when it was last reconciled with the bank, in
   <strong>green</strong> if that was within about five weeks and
   <strong>amber</strong> once it has been left longer than that.</p>
   <p>You can photograph a till receipt or an invoice against any transaction, so
@@ -3650,9 +3673,12 @@ function openHelp(where){
   <h4 id="h-log">Daily Log</h4>
   <p>Tap the date in the bar for a calendar, or the arrows either side to
   step a day at a time. The date stays put while you scroll.</p>
-  <p>The calendar has a <strong>date box</strong> at the top: tap it and your
-  phone's own date wheel opens, which beats stepping back a month at a time to
-  reach something years ago. <strong>Today</strong> brings you home again.</p>
+  <p><strong>Swipe</strong> the page left or right to move a day either way.
+  The arrows do the same for anyone who would rather tap.</p>
+  <p>The calendar has a box at the top where you can simply <strong>type the
+  date</strong> &mdash; 4/7/19, 4 Jul 19, 4 July 2019, all understood, day
+  first &mdash; which beats stepping back a month at a time to reach something
+  years ago. <strong>Today</strong> brings you home again.</p>
   <p>Most sections start folded up; tap a heading to open one, and it stays that
   way next time. Settings &rsaquo; Daily Log &rsaquo; <em>Sections to show</em>
   turns any of them off and changes the order.</p>
@@ -4023,7 +4049,7 @@ function renderDiary(){
 /* ---------- the standing list of regular jobs ---------- */
 function diaryRoutine(){
   const headings=[...new Set(ROUTINES.map(r=>r.heading||''))];
-  let html=`<details class="card logsec"><summary>Add a regular job</summary>
+  let html=`<details class="card logsec" open><summary>Add a regular job</summary>
     <div class="setadd">
       <input id="rtTitle" placeholder="What needs doing">
       <input id="rtHead" list="dlHead" placeholder="Heading (optional), e.g. Boat">
@@ -5321,7 +5347,9 @@ function drawDayPick(){
   box.className='daypick';
   box.innerHTML=`<div class="inner">
     <div class="godate">
-      <input type="date" id="pickGo" value="${esc(LOG_DATE)}" aria-label="Go to a date">
+      <input id="pickGo" placeholder="Type a date, e.g. 4/7/19"
+        aria-label="Type a date to go to" autocomplete="off">
+      <button class="btn" id="pickGoBtn">Go</button>
       <button class="btn" id="pickToday">Today</button>
     </div>
     <div class="mnav">
@@ -5343,13 +5371,82 @@ function drawDayPick(){
     LOG_DATE=b.dataset.pickday; box.remove(); killMaps(); renderLog(); });
   $('pickClose').onclick=()=>box.remove();
 
-  // Typing or tapping a date beats stepping back through the months. The box
-  // opens the phone's own date wheel, which knows how to get to 1998.
+  // Typed, in whatever way comes naturally, rather than stepping back through
+  // the months one at a time or opening a second calendar on top of this one.
   const go=box.querySelector('#pickGo');
   const jump=iso=>{ if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||'')) return;
     LOG_DATE=iso; box.remove(); killMaps(); renderLog(); };
-  go.onchange=()=>jump(go.value);
+  const tryGo=()=>{
+    const iso=readTypedDate(go.value);
+    if(!iso){ toast('Try 4/7/19, or 4 Jul 2019'); go.select(); return; }
+    jump(iso);
+  };
+  box.querySelector('#pickGoBtn').onclick=tryGo;
+  go.onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); tryGo(); } };
   box.querySelector('#pickToday').onclick=()=>jump(isoDay(new Date()));
+}
+
+/* A date as somebody would write it. Day first, because this is a British
+   boat: 4/7/19 is the fourth of July. Two digits for the year mean this
+   century unless that would be in the future. */
+const MONTH_NAMES=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function readTypedDate(s){
+  s=String(s||'').trim().toLowerCase();
+  if(!s) return null;
+  const thisYear=new Date().getFullYear();
+  const fullYear=n=> n>=100 ? n : (2000+n<=thisYear+1 ? 2000+n : 1900+n);
+  const mk=(y,m,d)=>{
+    if(!(m>=1&&m<=12&&d>=1)) return null;
+    const dt=new Date(y,m-1,d);
+    if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d) return null;
+    return isoDay(dt);
+  };
+  let m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)))
+    return mk(+m[1],+m[2],+m[3]);
+  if((m=s.match(/^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2}|\d{4})$/)))
+    return mk(fullYear(+m[3]),+m[2],+m[1]);
+  if((m=s.match(/^(\d{1,2})[\/\-. ](\d{1,2})$/)))
+    return mk(thisYear,+m[2],+m[1]);
+  if((m=s.match(/^(\d{1,2})\s*([a-z]{3,})\.?(?:\s*(\d{2}|\d{4}))?$/))){
+    const mo=MONTH_NAMES.indexOf(m[2].slice(0,3));
+    if(mo>=0) return mk(m[3]?fullYear(+m[3]):thisYear, mo+1, +m[1]);
+  }
+  if((m=s.match(/^([a-z]{3,})\.?\s*(\d{1,2})(?:\s*,?\s*(\d{2}|\d{4}))?$/))){
+    const mo=MONTH_NAMES.indexOf(m[1].slice(0,3));
+    if(mo>=0) return mk(m[3]?fullYear(+m[3]):thisYear, mo+1, +m[2]);
+  }
+  if(/^(today)$/.test(s)) return isoDay(new Date());
+  if(/^(yesterday)$/.test(s)){
+    const d=new Date(); d.setDate(d.getDate()-1); return isoDay(d); }
+  return null;
+}
+
+/* Swiping from day to day. The arrows stay where they are — this is for a
+   thumb, not instead of them. A swipe that starts on the map, in a box you
+   can type in, or on the photographs, belongs to that thing and is left
+   alone. */
+function swipeDays(el, back, fwd){
+  let x0=null, y0=null, done=false;
+  el.addEventListener('touchstart', ev=>{
+    x0=null;
+    if(ev.touches.length!==1) return;
+    const t=ev.target;
+    if(t.closest&&t.closest('.leaflet-container,input,textarea,select,.gallery,.hero'))
+      return;
+    x0=ev.touches[0].clientX; y0=ev.touches[0].clientY; done=false;
+  }, {passive:true});
+  el.addEventListener('touchmove', ev=>{
+    if(x0===null||done||ev.touches.length!==1) return;
+    const dx=ev.touches[0].clientX-x0, dy=ev.touches[0].clientY-y0;
+    // Up and down is scrolling, and scrolling must not flick the day over.
+    if(Math.abs(dy)>Math.abs(dx)){ x0=null; return; }
+    if(Math.abs(dx)<70) return;
+    done=true; x0=null;
+    (dx<0?fwd:back)();
+  }, {passive:true});
+  el.addEventListener('touchend', ()=>{ x0=null; }, {passive:true});
+  el.addEventListener('touchcancel', ()=>{ x0=null; }, {passive:true});
 }
 
 function stepDay(n){
@@ -6414,6 +6511,65 @@ function applySkins(){
   });
 }
 
+
+/* ---------- Something behind the tiles ----------
+   All of these are light. The tiles are deep colours with cream letters and
+   need something quiet to sit on; anything strong behind them and the writing
+   stops reading at arm's length on a towpath in the sun. The patterns are
+   drawn in the page rather than fetched, so they cost nothing to load and
+   work with no signal. */
+const HOME_BGS=[
+  {id:'paper', name:'Plain',  dot:'#FBFAF7', css:''},
+  {id:'wash',  name:'Warm wash', dot:'#F0EADB',
+   css:'background:linear-gradient(170deg,#FDFCFA 0%,#F0EADB 100%)'},
+  {id:'sky',   name:'Sky', dot:'#EAF0F4',
+   css:'background:linear-gradient(170deg,#F7FAFC 0%,#E4EDF3 100%)'},
+  {id:'moss',  name:'Moss', dot:'#E9EFE7',
+   css:'background:linear-gradient(170deg,#F8FAF7 0%,#E4EDE1 100%)'},
+  {id:'water', name:'Water', dot:'#DCE6E2',
+   css:"background-color:#F6F9F8;background-image:url(\"data:image/svg+xml,"
+      +"%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'%3E"
+      +"%3Cpath d='M0 20 Q20 9 40 20 T80 20' fill='none' stroke='%23CFDEDA' "
+      +"stroke-width='2'/%3E%3C/svg%3E\")"},
+  {id:'rope',  name:'Rope', dot:'#E8E2D4',
+   css:"background-color:#FAF8F3;background-image:url(\"data:image/svg+xml,"
+      +"%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E"
+      +"%3Cpath d='M-4 4 L4 -4 M0 16 L16 0 M12 20 L20 12' stroke='%23E0D8C2' "
+      +"stroke-width='3' fill='none'/%3E%3C/svg%3E\")"},
+  {id:'canvas',name:'Canvas', dot:'#EDEAE0',
+   css:"background-color:#FBFAF7;background-image:url(\"data:image/svg+xml,"
+      +"%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E"
+      +"%3Cpath d='M0 10 H20 M10 0 V20' stroke='%23E5DFD0' stroke-width='1' "
+      +"fill='none'/%3E%3C/svg%3E\")"},
+  {id:'dots',  name:'Dots', dot:'#E3E1D8',
+   css:"background-color:#FBFAF7;background-image:url(\"data:image/svg+xml,"
+      +"%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E"
+      +"%3Ccircle cx='4' cy='4' r='1.8' fill='%23DDD8C8'/%3E%3C/svg%3E\")"},
+  {id:'brass', name:'Brass', dot:'#EFE4C6',
+   css:'background:linear-gradient(165deg,#FDFBF4 0%,#F2E7CC 100%)'}
+];
+let HOME_BG='paper';
+function applyHomeBg(){
+  const bg=HOME_BGS.find(x=>x.id===HOME_BG)||HOME_BGS[0];
+  const el=$('home'); if(!el) return;
+  el.style.cssText='';           // clear whatever the last one set
+  if(bg.css) el.style.cssText=bg.css;
+}
+async function chooseHomeBg(id){
+  HOME_BG = HOME_BGS.some(x=>x.id===id) ? id : 'paper';
+  applyHomeBg();
+  await saveTiles();             // it travels with the rest of the home screen
+  paintBgPick();
+}
+function paintBgPick(){
+  const box=$('bgPick'); if(!box) return;
+  box.innerHTML=HOME_BGS.map(b=>
+    `<button class="swatch" data-bg="${b.id}" aria-pressed="${b.id===HOME_BG}">
+      <span style="background:${b.dot};border:1px solid var(--rule)"></span>${
+      esc(b.name)}</button>`).join('');
+  box.querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>chooseHomeBg(b.dataset.bg));
+}
+
 function defaultTiles(){
   return TILE_DEFAULTS.map(d=>({dest:d, label:TILE_DEST[d].label,
     colour:TILE_DEFAULT_COLOUR[d]||TILE_COLOURS[0]}));
@@ -6425,6 +6581,8 @@ function loadTiles(){
   // took off, so a new screen can appear without a tile you binned coming back.
   const list=Array.isArray(saved)?saved:(saved&&Array.isArray(saved.tiles)?saved.tiles:null);
   TILES_HIDDEN=(saved&&Array.isArray(saved.hidden))?saved.hidden.slice():[];
+  HOME_BG=(saved&&saved.bg&&HOME_BGS.some(x=>x.id===saved.bg))?saved.bg:'paper';
+  applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
     dest:t.dest,
@@ -6439,7 +6597,7 @@ function loadTiles(){
   });
 }
 async function saveTiles(){
-  const blob={tiles:TILES, hidden:TILES_HIDDEN};
+  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
   MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
@@ -7703,6 +7861,7 @@ $('logPrev').onclick=()=>stepDay(-1);
 $('logNext').onclick=()=>stepDay(1);
 $('logPick').onclick=openDayPick;
 $('logEditTop').onclick=()=>editLog(LOG_DATE);
+swipeDays($('logBody'), ()=>stepDay(-1), ()=>stepDay(1));
 $('chatNew').onclick=newChat;
 $('chatBack').onclick=()=>{
   $('chat').classList.add('hidden'); CUR_CHAT=null; lockBackground();
@@ -7821,20 +7980,44 @@ function payeeName(id){ const p=PAYEES.find(x=>x.id===id); return p?p.name:''; }
    perfectly healthy. Amber after that, because the longer it is left the
    harder it is to find where the two parted company. */
 let STATEMENTS=[], SHARED_ACCS=[];
+
+/* Which groups of accounts are folded open. Remembered on the phone, because
+   a cashbook gets opened a hundred times and nobody wants to open Barclays a
+   hundred times. Anything not mentioned is open — a new group should show
+   itself rather than hide. */
+let ACC_OPEN={};
+try{ ACC_OPEN=JSON.parse(localStorage.getItem('accopen')||'{}'); }catch(e){}
+function rememberAccOpen(name,open){
+  ACC_OPEN[name]=open;
+  try{ localStorage.setItem('accopen',JSON.stringify(ACC_OPEN)); }catch(e){}
+}
+
+// Accounts under the bank they belong to, in the order the accounts
+// themselves are in, so moving one up in Settings moves its group too.
+function accountGroups(list){
+  const out=[];
+  list.forEach(a=>{
+    const name=(a.group_name||'').trim()||'Other';
+    let g=out.find(x=>x.name===name);
+    if(!g) out.push(g={name, accs:[]});
+    g.accs.push(a);
+  });
+  return out;
+}
 async function loadShares2(){
   const {data,error}=await sb.from('account_shares').select('*');
   SHARED_ACCS = error?[]:(data||[]);
 }
 function reconState(accId){
   const mine=STATEMENTS.filter(s=>s.account_id===accId);
-  if(!mine.length) return {cls:'never', words:'never reconciled'};
+  if(!mine.length) return {cls:'never', words:'not reconciled yet'};
   const last=mine.map(s=>s.ends_on).sort().pop();
   // Whole days between two dates, not hours between two moments, so the
   // colour cannot change halfway through the afternoon.
   const midnight=new Date(); midnight.setHours(0,0,0,0);
   const days=Math.round((midnight-new Date(last+'T00:00:00'))/86400000);
   return { cls: days<=38?'ok':'late',
-           words: 'agreed to '+shortDate(last) };
+           words: 'reconciled to '+shortDate(last) };
 }
 function fcatName(id){ const c=FCATS.find(x=>x.id===id); return c?c.name:''; }
 
@@ -7998,6 +8181,10 @@ function renderMoney(){
     </button>`;
   }).join('');
 
+  // Until somebody says which bank an account belongs to, there is nothing to
+  // group by and the plain list is the better answer.
+  const anyGroup = live.some(a=>(a.group_name||'').trim());
+
   // Sorting out a batch is a job of its own, so that mode gets the whole
   // screen rather than making you scroll past the balances every time.
   $('moneyBody').innerHTML=`
@@ -8008,11 +8195,20 @@ function renderMoney(){
         <span class="an"><b>Everything</b><span>${live.length} account${live.length===1?'':'s'}</span></span>
         <span class="ab">${Object.entries(byCur)
           .map(([c,v])=>money(v,c)).join(' &nbsp; ')||'—'}</span></button>
-      ${live.map(accCard).join('')}
+      ${anyGroup?'':live.map(accCard).join('')}
       ${live.length?'':`<div class="field"><dd style="color:var(--muted)">
         No accounts yet. Add your first under Settings &rsaquo; Finances, or with
         the button below.</dd></div>`}
     </div>
+    ${!anyGroup?'':accountGroups(live).map(g=>{
+      const tot={};
+      g.accs.forEach(a=>{ tot[a.currency]=(tot[a.currency]||0)+balOf(a.id); });
+      const open = ACC_OPEN[g.name]!==false;
+      return `<details class="card logsec accgrp" data-accgrp="${esc(g.name)}"
+        ${open?'open':''}><summary>${esc(g.name)}<span class="gtot">${
+        Object.entries(tot).map(([c,v])=>money(v,c)).join(' &nbsp; ')
+        }</span></summary>${g.accs.map(accCard).join('')}</details>`;
+    }).join('')}
 
     <div class="card">
       <button class="menuitem" id="goRecon">Reconcile a statement &rsaquo;</button>
@@ -9532,7 +9728,16 @@ $('pairsBody').addEventListener('click',async ev=>{
 });
 $('impBack').onclick=()=>{ $('moneyImp').classList.add('hidden'); lockBackground(); };
 
+// A group folding open or shut is remembered, so the screen comes back the
+// way it was left. 'toggle' does not bubble, hence the capture.
+$('moneyBody').addEventListener('toggle',ev=>{
+  const d=ev.target.closest&&ev.target.closest('[data-accgrp]');
+  if(d) rememberAccOpen(d.dataset.accgrp, d.open);
+}, true);
+
 $('moneyBody').addEventListener('click',async ev=>{
+  // The summary of a group is for folding it, not for choosing an account.
+  if(ev.target.closest('summary')) return;
   const a=ev.target.closest('[data-acc]');
   if(a){ MONEY_ACC=a.dataset.acc==='all'?'all':Number(a.dataset.acc);
          await loadTxns(); renderMoney(); paintMoneyPickBar(); return; }
@@ -9763,12 +9968,22 @@ function finAccountRows(){
     The opening balance is what was in the account on the opening date. Every
     balance the app shows is that plus everything recorded since, so it is worth
     getting right. A credit card normally sits below zero.</dd></div>
+  <div class="field"><dd style="color:var(--muted);font-size:15px">
+    <strong>Group</strong> is the bank or the kind of money it is &mdash;
+    Barclays, Revolut, Premium Bonds, Cash. Accounts sharing one are folded
+    together on the Finances screen with a total of their own, and each group
+    remembers whether you left it open.</dd></div>
+  <datalist id="dlAccGroups">${[...new Set(ACCOUNTS.map(a=>(a.group_name||'').trim())
+    .filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
   ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow" data-arow="${a.id}">
     <span style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto">
       <button class="mv" data-amv="${a.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
       <button class="mv" data-amv="${a.id}:down" ${i===ACCOUNTS.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
     </span>
     <input data-afield="${a.id}:name" value="${esc(a.name)}" style="flex:1 1 150px">
+    <input data-afield="${a.id}:group_name" value="${esc(a.group_name||'')}"
+      list="dlAccGroups" placeholder="Group" style="flex:0 1 120px"
+      aria-label="Which bank it belongs to">
     <select data-afield="${a.id}:kind" style="flex:0 1 130px">${ACC_KINDS.map(k=>
       `<option value="${k}" ${a.kind===k?'selected':''}>${k}</option>`).join('')}</select>
     <select data-afield="${a.id}:currency" style="flex:0 0 90px">${CURRENCIES.map(c=>
@@ -10164,7 +10379,7 @@ function openMenu(area){
       ${a.set ? row('Settings for '+esc(a.title),'data-mset="1"')
               : row('Settings','data-mset="1"')}
       ${row(here?'How '+esc(a.title)+' works':'How to use this','data-mhelp="1"')}
-      <button class="menuitem" data-mref="1">Fetch everything again</button>
+      <button class="menuitem" data-mref="1">Refresh Data and Images</button>
     </div>
 
     <p class="dsec">Go somewhere else</p>

@@ -54,7 +54,7 @@ alter table items add column pushed_at timestamptz;
 --       url     := 'https://uloptfmzydaxymhecuub.supabase.co/functions/v1/send-reminders',
 --       headers := jsonb_build_object(
 --                    'Content-Type','application/json',
---                    'x-reminder-secret','CE7E4EFJgKzOj2rnQ8ygk2E2VFOr'),
+--                    'x-reminder-secret','YOUR-SECRET-HERE'),
 --       body    := '{}'::jsonb
 --     );
 --   $$

@@ -642,6 +642,12 @@ i.key{vertical-align:middle}
 #loadBar{background:var(--hull-dark)}
 #loadBar #loadBarX{text-decoration:none;font-size:20px;line-height:1}
 
+/* The welcome email, shown as it will arrive */
+.invmail{margin:0;padding:14px;background:var(--band,#F3F1EA);
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  font-family:inherit;font-size:15px;line-height:1.5;white-space:pre-wrap;
+  word-break:break-word;color:var(--ink)}
+
 /* The backup card: when it was last done, and the steps */
 .bkwhen{font-weight:700}
 .bkwhen.ok{color:#1D4A3A}
@@ -1025,6 +1031,12 @@ i.key{vertical-align:middle}
   <button id="trayHelp">Help</button>
 </div>
 
+<div id="invite" class="sheet hidden">
+  <div class="sheetbar"><button id="inviteClose">Close</button>
+    <span class="title">Welcome email</span></div>
+  <div class="sheetbody" id="inviteBody"></div>
+</div>
+
 <div id="brief" class="sheet hidden">
   <div class="sheetbar"><button id="briefClose">Close</button>
     <span class="title" id="briefTitle">Today</span>
@@ -1106,7 +1118,7 @@ const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr = v => Array.isArray(v) ? v : [];
 
-const SHEET_IDS=['detail','editor','settings','menu','help','brief','diary','itemEd','log',
+const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','log',
   'logEd','where','wish','shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs'];
 function sheetsOpen(){
@@ -3184,7 +3196,12 @@ async function openSettings(goTo){
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
-        never sit in a public web page.</dd></div>`
+        never sit in a public web page.</dd></div>${isOwner()?`
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Once the account exists, this writes the email that tells them how to
+        get in.</dd></div>
+      <div class="setadd"><button class="btn primary" id="goInvite">
+        Write the welcome email &rsaquo;</button></div>`:''}`
   };
 
   $('setBody').innerHTML=SET_GROUPS.map(g=>{
@@ -3294,6 +3311,8 @@ async function openSettings(goTo){
   wireCats();
   wireFinance();
   paintBgPick();
+  const gi=$('goInvite');
+  if(gi) gi.onclick=()=>{ $('settings').classList.add('hidden'); openInvite(); };
   const bo=$('briefOn');
   if(bo) bo.onchange=async()=>{ BRIEF_ON=bo.checked; await saveTiles();
     if(BRIEF_ON) markBriefSeen(); };
@@ -3339,7 +3358,7 @@ async function openSettings(goTo){
 
 
 // Which screen is in front, so Help and the settings button know where you are.
-const SCREEN_ORDER=[['brief','home'],['chat','chats'],['chats','chats'],
+const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['chats','chats'],
   ['moneyImp','money'],['pairs','money'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
@@ -3353,7 +3372,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs',
-  brief:'h-brief'};
+  brief:'h-brief', invite:'h-invite'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances'};
@@ -3699,6 +3718,20 @@ function openHelp(where){
   <p>While it is on, a red band sits across the top of the screen naming who can
   see it, with a <strong>Stop now</strong> button, so it can never be running
   without you knowing. Your position only updates while the app is open.</p>
+
+  <h4 id="h-invite">Setting somebody up</h4>
+  <p>Only Barry and Sandra see this one, because only they can create an
+  account in the first place. <strong>Settings &rsaquo; The app &rsaquo; People
+  who can sign in</strong>, or straight from the menu.</p>
+  <p>Make the account in Supabase under Authentication &rsaquo; Users with a
+  password you have made up, then put the same three things into the form
+  here &mdash; their name, their email and that password &mdash; and it writes
+  the message. <strong>Copy the message</strong> and paste it into your email;
+  <strong>Open it in email</strong> is quicker when it works, but some mail
+  apps cut a long message short, so check it arrived whole before sending.</p>
+  <p>A password sent by email sits in two inboxes for ever. Better: send the
+  message <strong>without the password</strong> and the password by text, with
+  the two buttons underneath for exactly that.</p>
 
   <h4 id="h-pw">Your password</h4>
   <p>Menu &rsaquo; <strong>Your password</strong> changes it to whatever you like.
@@ -7809,6 +7842,7 @@ function isBarry(){
   const mail=((ME&&ME.email)||'').trim().toLowerCase();
   return name.startsWith('barry') || mail.startsWith('barry');
 }
+// isOwner(), further down, is the same idea for the two of them together.
 
 const PROJECT_REF=(SUPABASE_URL.match(/\/\/([a-z0-9]+)\./)||[])[1]||'';
 const SQL_EDITOR='https://supabase.com/dashboard/project/'+PROJECT_REF+'/sql/new';
@@ -7946,6 +7980,176 @@ function wireBackupCard(){
     openIO();
     toast('Noted — the next one is due in about a month');
   };
+}
+
+/* ============================================================
+   The welcome email
+   ------------------------------------------------------------
+   A new person needs three things: the address, their email, and a
+   password to get in with the first time. Writing that out by hand each
+   time is how people end up sending the wrong address, or forgetting to
+   say the password must be changed.
+
+   Only Barry and Sandra see this: they are the two who can create an
+   account in Supabase in the first place, so for anyone else it would be
+   a form they could not finish. Nothing secret is on this screen - the
+   password is one he makes up here and types into Supabase himself - so
+   the check is for tidiness, not for safety.
+   ============================================================ */
+function isOwner(){
+  const name=((MY_PROFILE&&MY_PROFILE.display_name)||'').trim().toLowerCase();
+  const mail=((ME&&ME.email)||'').trim().toLowerCase();
+  return ['barry','sandra'].some(n=>name.startsWith(n)||mail.startsWith(n));
+}
+
+const USERS_PAGE='https://supabase.com/dashboard/project/'+PROJECT_REF+'/auth/users';
+
+/* A password somebody can read down the phone and type on a keyboard they
+   are not used to. Two plain words and a number beat ten random letters:
+   it is long enough to be decent, and it is going to be changed within the
+   minute anyway. No l, I, 0 or O anywhere near it. */
+const PW_WORDS=['anchor','badger','canal','cedar','copper','cygnet','damson',
+  'elder','fennel','gosling','harbour','heron','juniper','kestrel','lantern',
+  'linnet','mallard','meadow','otter','pewter','quay','rudder','sedge',
+  'swallow','tiller','towpath','walnut','willow','windlass','yarrow'];
+function pickOne(list){
+  const a=new Uint32Array(1);
+  (window.crypto||window.msCrypto).getRandomValues(a);
+  return list[a[0] % list.length];
+}
+function madeUpPassword(){
+  let a=pickOne(PW_WORDS), b=pickOne(PW_WORDS);
+  while(b===a) b=pickOne(PW_WORDS);
+  const n=new Uint32Array(1);
+  (window.crypto||window.msCrypto).getRandomValues(n);
+  return a+'-'+b+'-'+(23+(n[0]%77));      // two digits, never starting 0 or 1
+}
+
+let INVITE={name:'', email:'', pw:''};
+
+function inviteSubject(){ return 'Your sign-in for It’s MY life'; }
+
+function inviteBody(){
+  const who=(INVITE.name||'').trim().split(/\s+/)[0] || 'there';
+  const me=((MY_PROFILE&&MY_PROFILE.display_name)||'').trim().split(/\s+/)[0]
+           || 'Barry';
+  // No hard wrapping and no indents: every mail app wraps for the screen it
+  // is read on, and a line broken by hand at 72 characters comes out ragged
+  // on a phone. Only the address and the two details get lines of their own.
+  return `Hello ${who},
+
+You now have your own sign-in for It's MY life.
+
+1. Open this page. It has everything on it, including how to put the app on your phone so it sits with your other apps:
+
+${START_LINK}
+
+2. Sign in with:
+
+Email: ${INVITE.email||'(their email address)'}
+Password: ${INVITE.pw||'(a password you have made up)'}
+
+3. Change that password straight away. It was made up for you, so it is not private until you do. Tap the three lines at the top left of any screen, then Your password.
+
+Anything that looks wrong, just ask.
+
+${me}`;
+}
+
+// Some mail apps cut a long body short, so Copy is the one to trust; this is
+// for the times it simply works.
+function inviteMailto(){
+  return 'mailto:'+encodeURIComponent(INVITE.email)
+    +'?subject='+encodeURIComponent(inviteSubject())
+    +'&body='+encodeURIComponent(inviteBody());
+}
+
+function inviteCard(){
+  return `<div class="card"><h3>Who it is for</h3>
+    <div class="setrow fieldrow">
+      <input id="invName" placeholder="Their name" autocomplete="off"
+        value="${esc(INVITE.name)}" style="flex:1 1 150px">
+    </div>
+    <div class="setrow fieldrow">
+      <input id="invMail" type="email" placeholder="Their email address"
+        autocomplete="off" inputmode="email" value="${esc(INVITE.email)}"
+        style="flex:1 1 200px">
+    </div>
+    <div class="setrow fieldrow">
+      <input id="invPw" placeholder="Temporary password"
+        autocomplete="off" value="${esc(INVITE.pw)}" style="flex:1 1 150px">
+      <button class="btn" id="invNew" style="width:auto;flex:0 0 auto;
+        padding:11px 14px;border:1.5px solid var(--rule)">Another</button>
+    </div>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Set this same password on their account in Supabase &rsaquo;
+      Authentication &rsaquo; Users. They change it themselves once they are
+      in.</dd></div>
+    <div class="setadd">
+      <button class="btn" id="invUsers" style="border:1.5px solid var(--rule)">
+        Open Supabase &rsaquo; Users &rsaquo;</button>
+    </div></div>
+
+  <p class="dsec">The message</p>
+  <div class="card">
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      <strong>Subject:</strong> ${esc(inviteSubject())}</dd></div>
+    <pre class="invmail" id="invPreview">${esc(inviteBody())}</pre>
+    <div class="setadd">
+      <button class="btn primary" id="invCopy">Copy the message</button>
+      <button class="btn" id="invMailto" style="border:1.5px solid var(--rule)">
+        Open it in email &rsaquo;</button>
+    </div></div>
+
+  <p class="dsec">Better still</p>
+  <div class="card">
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      A password in an email sits in two inboxes for ever. Send the message
+      without it and the password by text or in person, and there is no copy
+      of the two together anywhere.</dd></div>
+    <div class="setadd">
+      <button class="btn" id="invCopyPw" style="border:1.5px solid var(--rule)">
+        Copy the password on its own</button>
+      <button class="btn" id="invCopyNoPw" style="border:1.5px solid var(--rule)">
+        Copy the message without the password</button>
+    </div></div>`;
+}
+
+function renderInvite(){
+  $('inviteBody').innerHTML=inviteCard();
+
+  const redraw=()=>{ $('invPreview').textContent=inviteBody(); };
+  const bind=(id,key)=>{ const el=$(id); el.oninput=()=>{ INVITE[key]=el.value; redraw(); }; };
+  bind('invName','name'); bind('invMail','email'); bind('invPw','pw');
+
+  $('invNew').onclick=()=>{ INVITE.pw=madeUpPassword(); $('invPw').value=INVITE.pw; redraw(); };
+  $('invUsers').onclick=()=>window.open(USERS_PAGE,'_blank','noopener');
+
+  const need=()=>{
+    if(!INVITE.email.trim()){ toast('Their email address first'); $('invMail').focus(); return false; }
+    return true;
+  };
+  $('invCopy').onclick=async()=>{
+    if(!need()) return;
+    toast(await copyText(inviteBody()) ? 'Message copied' : 'Could not copy it');
+  };
+  $('invCopyPw').onclick=async()=>{
+    if(!INVITE.pw.trim()){ toast('No password to copy'); return; }
+    toast(await copyText(INVITE.pw) ? 'Password copied on its own' : 'Could not copy it');
+  };
+  $('invCopyNoPw').onclick=async()=>{
+    if(!need()) return;
+    const words=inviteBody()
+      .replace(/^Password:.*$/m, 'Password: sent to you separately');
+    toast(await copyText(words) ? 'Copied, without the password' : 'Could not copy it');
+  };
+  $('invMailto').onclick=()=>{ if(need()) window.location.href=inviteMailto(); };
+}
+
+function openInvite(){
+  if(!INVITE.pw) INVITE.pw=madeUpPassword();
+  renderInvite();
+  showSheet('invite'); $('inviteBody').scrollTop=0; lockBackground();
 }
 
 function openIO(){
@@ -8216,6 +8420,7 @@ $('diaryAdd').onclick=()=>openItem(null);
 $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
 $('briefClose').onclick=shutBrief;
+$('inviteClose').onclick=()=>{ $('invite').classList.add('hidden'); lockBackground(); };
 $('loadBarGo').onclick=async()=>{
   const b=$('loadBarGo'); b.disabled=true; b.textContent='Trying\u2026';
   await loadAll();
@@ -10909,7 +11114,10 @@ function areaItems(area){
   if(area==='chats') return [
     it('Start a message',         ()=>{ shutMenu(); newChat(); })];
   if(area==='home') return [
-    it('Today',                   ()=>{ shutMenu(); openBrief(); })];
+    it('Today',                   ()=>{ shutMenu(); openBrief(); })]
+    .concat(isOwner()
+      ? [it('Welcome email for somebody new', ()=>{ shutMenu(); openInvite(); })]
+      : []);
   return [];
 }
 

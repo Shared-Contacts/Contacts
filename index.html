@@ -668,6 +668,15 @@ i.key{vertical-align:middle}
 /* Today — what the day has in it */
 .briefdate{margin:14px 2px 2px;text-align:center;font-size:19px;font-weight:700;
   color:var(--hull)}
+.bsky{display:block;margin:12px 0 4px;background:var(--panel);border:1px solid var(--rule);
+  border-radius:var(--radius);overflow:hidden;color:var(--ink);text-decoration:none}
+.bsky img{display:block;width:100%;max-height:34vh;object-fit:cover;background:#F0EEE7}
+.bsky .bskytext{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  overflow:hidden;padding:9px 12px 0;font-size:15px;overflow-wrap:anywhere}
+.bsky small{display:block;padding:4px 12px 9px;color:var(--muted);font-size:13px}
+.bskynote{margin:12px 2px 2px;color:var(--muted);font-size:14px;text-align:center}
+.bskynote .linkbtn{color:var(--hull);font-weight:600;text-decoration:underline;
+  padding:6px 4px;font-size:14px}
 .brow{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;width:100%;
   text-align:left;border-bottom:1px solid #F0EEE7}
 .card .brow:last-child{border-bottom:none}
@@ -3224,7 +3233,15 @@ async function openSettings(goTo){
         <input type="checkbox" id="briefOn" ${BRIEF_ON?'checked':''}>
         Show it once a day</label></div>
       <div class="setadd"><button class="btn" id="briefAgain"
-        style="border:1.5px solid var(--rule)">Show it again now</button></div>`,
+        style="border:1.5px solid var(--rule)">Show it again now</button></div>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        <strong>A Bluesky photo</strong> at the top of Today: the newest post
+        with a picture from the Bluesky name you put here. Leave it empty for
+        no photo. It is yours alone &mdash; everyone can choose their own.</dd></div>
+      <div class="setadd"><input id="bskyName" autocomplete="off" autocapitalize="none"
+        spellcheck="false" placeholder="e.g. someone.bsky.social" value="${esc(BSKY_HANDLE)}">
+        <button class="btn" id="bskySave"
+        style="border:1.5px solid var(--rule)">Save Bluesky name</button></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
@@ -3348,6 +3365,14 @@ async function openSettings(goTo){
   const bo=$('briefOn');
   if(bo) bo.onchange=async()=>{ BRIEF_ON=bo.checked; await saveTiles();
     if(BRIEF_ON) markBriefSeen(); };
+  const bs=$('bskySave');
+  if(bs) bs.onclick=async()=>{
+    const raw=$('bskyName').value, h=bskyClean(raw);
+    if(raw.trim() && !h){ toast('That does not look like a Bluesky name'); return; }
+    BSKY_HANDLE=h; $('bskyName').value=h; BSKY={};
+    await saveTiles();
+    toast(h?'Saved. Today will show @'+h:'No Bluesky photo on Today');
+  };
   const ba=$('briefAgain');
   if(ba) ba.onclick=()=>{ $('settings').classList.add('hidden'); openBrief(); };
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
@@ -3428,6 +3453,9 @@ function openHelp(where){
   the whole week; and whatever is on the
   <strong>ASAP</strong> list under Calendar &rsaquo; Regular jobs. Tap any of
   them to go straight there.</p>
+  <p>If you put a Bluesky name in <strong>Settings &rsaquo; Home screen</strong>,
+  the newest post from it with a picture sits at the top. Tap it to open the
+  post in Bluesky. If Bluesky cannot be reached it says so, with a Try again.</p>
   <p>It never appears on top of something you are in the middle of, and it is
   in the menu whenever you want another look. Turn it off under
   <strong>Settings &rsaquo; Home screen</strong>.</p>
@@ -6858,6 +6886,7 @@ function loadTiles(){
   TILES_HIDDEN=(saved&&Array.isArray(saved.hidden))?saved.hidden.slice():[];
   HOME_BG=(saved&&saved.bg&&HOME_BGS.some(x=>x.id===saved.bg))?saved.bg:'paper';
   BRIEF_ON = !(saved&&saved.brief===false);
+  BSKY_HANDLE = (saved&&typeof saved.bsky==='string')?saved.bsky:'';
   BACKUP_DONE = (saved&&typeof saved.backup==='string')?saved.backup:'';
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
@@ -6875,7 +6904,7 @@ function loadTiles(){
 }
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON,
-              backup:BACKUP_DONE};
+              backup:BACKUP_DONE, bsky:BSKY_HANDLE};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
   MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
@@ -11194,9 +11223,92 @@ function briefAsap(){
     .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
 }
 
-/* A photograph at the top, from the Bluesky posting, is still to come. The
-   slot is here so it can drop in without the rest moving about. */
-function briefPhoto(){ return ''; }
+/* A photograph at the top: the newest Bluesky post with a picture, from the
+   name each person chose under Settings > Home screen. Bluesky's public
+   service needs no key, so nothing secret sits in this page. The last good
+   one is kept on the phone, so a poor signal still shows a picture; a load
+   that fails says so instead of leaving a gap. */
+let BSKY_HANDLE='';
+let BSKY={};                   // {handle, state:'loading'|'ok'|'none'|'fail', post, at}
+const BSKY_API='https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed';
+function bskyClean(s){
+  let h=String(s||'').trim().toLowerCase()
+    .replace(/^https?:\/\/(www\.)?bsky\.app\/profile\//,'').replace(/^@/,'')
+    .replace(/[\/?#].*$/,'');
+  if(!h) return '';
+  return /^did:plc:[a-z0-9]+$/.test(h) || /^([a-z0-9-]+\.)+[a-z]{2,}$/.test(h) ? h : '';
+}
+function bskyKept(h){
+  try{ const k=JSON.parse(localStorage.getItem('bskyphoto')||'null');
+    return k&&k.handle===h&&k.post?k.post:null; }catch(e){ return null; }
+}
+// The first picture in a post, whichever way it was attached.
+function bskyPick(feed, h){
+  for(const it of (feed||[])){
+    const p=it&&it.post; if(!p||it.reason) continue;      // reposts are not theirs
+    const e=p.embed||{};
+    const imgs=(e.images||(e.media&&e.media.images)||[]);
+    const pic=imgs[0]?{src:imgs[0].thumb||imgs[0].fullsize, alt:imgs[0].alt||''}
+      : (e.thumbnail||(e.media&&e.media.thumbnail))
+        ?{src:e.thumbnail||e.media.thumbnail, alt:e.alt||(e.media&&e.media.alt)||''}:null;
+    if(!pic||!/^https:\/\//.test(String(pic.src||''))) continue;
+    const rkey=String(p.uri||'').split('/').pop();
+    const who=(p.author&&p.author.handle)||h;
+    return {src:pic.src, alt:pic.alt, text:(p.record&&p.record.text)||'',
+      when:(p.record&&p.record.createdAt)||p.indexedAt||'', who,
+      link:'https://bsky.app/profile/'+encodeURIComponent(who)+'/post/'+encodeURIComponent(rkey)};
+  }
+  return null;
+}
+async function loadBsky(){
+  const h=BSKY_HANDLE; if(!h) return;
+  BSKY={handle:h, state:'loading', post:BSKY.handle===h?BSKY.post:bskyKept(h), at:Date.now()};
+  paintBsky();
+  let got, ok=false;
+  try{
+    const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),12000);
+    const r=await fetch(BSKY_API+'?actor='+encodeURIComponent(h)
+      +'&filter=posts_with_media&limit=15', {signal:ctl.signal});
+    clearTimeout(t);
+    if(r.ok){ got=bskyPick((await r.json()).feed, h); ok=true; }
+  }catch(e){ console.warn('Bluesky photo', e); }
+  if(BSKY_HANDLE!==h) return;          // the name changed while we waited
+  if(ok&&got){
+    BSKY={handle:h, state:'ok', post:got, at:Date.now()};
+    try{ localStorage.setItem('bskyphoto', JSON.stringify({handle:h, post:got})); }catch(e){}
+  } else BSKY={...BSKY, state:ok?'none':'fail'};
+  paintBsky();
+}
+function briefPhoto(){
+  if(!BSKY_HANDLE) return '';
+  return '<div id="briefPhoto">'+bskyHtml()+'</div>';
+}
+function bskyHtml(){
+  const h=BSKY_HANDLE, b=BSKY.handle===h?BSKY:{}, p=b.post;
+  const note=t=>`<p class="bskynote">${t}</p>`;
+  const again=' <button class="linkbtn" data-bskyagain="1">Try again</button>';
+  const said = b.state==='fail' ? note((p?'Could not get a newer Bluesky photo just now.'
+                                      :'Your Bluesky photo did not load.')+again)
+    : b.state==='none' && !p ? note('No photo posts from @'+esc(h)+' on Bluesky yet.')
+    : b.state==='loading' && !p ? note('Fetching your Bluesky photo\u2026') : '';
+  if(!p) return said;
+  const day=p.when?new Date(p.when):null;
+  return `<a class="bsky" href="${esc(p.link)}" target="_blank" rel="noopener">
+      <img src="${esc(p.src)}" alt="${esc(p.alt||'Photo from Bluesky')}" data-bskyimg="1">
+      ${p.text?`<span class="bskytext">${esc(p.text)}</span>`:''}
+      <small>@${esc(p.who)}${day&&!isNaN(day)?' &middot; '+esc(day.toLocaleDateString('en-GB',
+        {day:'numeric',month:'short'})):''}</small></a>${said}`;
+}
+function paintBsky(){
+  const slot=$('briefPhoto'); if(!slot) return;
+  slot.innerHTML=bskyHtml();
+  const a=slot.querySelector('[data-bskyagain]'); if(a) a.onclick=loadBsky;
+  const im=slot.querySelector('[data-bskyimg]');
+  if(im) im.onerror=()=>{ const l=slot.querySelector('.bsky'); if(l) l.outerHTML=
+    '<p class="bskynote">The Bluesky picture did not load. '
+    +'<button class="linkbtn" data-bskyagain="1">Try again</button></p>';
+    const t=slot.querySelector('[data-bskyagain]'); if(t) t.onclick=loadBsky; };
+}
 
 function renderBrief(){
   const days=briefBirthdays(), items=briefItems(), asap=briefAsap();
@@ -11254,6 +11366,10 @@ function renderBrief(){
       Shown once a day. Turn it off under Settings &rsaquo; Home screen, or
       open it again whenever you like from the menu.</p>`;
 
+  paintBsky();
+  // A fresh look each time Today opens, but not on every redraw.
+  if(BSKY_HANDLE && (BSKY.handle!==BSKY_HANDLE || (BSKY.state!=='loading'
+      && Date.now()-(BSKY.at||0)>15*60*1000))) loadBsky();
   const wk=$('briefWeek');
   if(wk) wk.onclick=()=>{ BRIEF_WEEK=!BRIEF_WEEK; const y=$('briefBody').scrollTop;
     renderBrief(); $('briefBody').scrollTop=y; };
@@ -11272,6 +11388,7 @@ function renderBrief(){
 
 function openBrief(){
   BRIEF_WEEK=false;
+  if(BSKY.state==='fail') BSKY.at=0;     // a new look is worth another try
   renderBrief();
   showSheet('brief'); $('briefBody').scrollTop=0; lockBackground();
   markBriefSeen();

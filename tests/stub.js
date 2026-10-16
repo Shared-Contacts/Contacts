@@ -102,6 +102,8 @@ function apply(rows, where){
       case 'lt':  return v<val;
       case 'gt':  return v>val;
       case 'in':  return (val||[]).map(String).includes(String(v));
+      case 'ilike': return new RegExp('^'+String(val).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
+        .replace(/%/g,'.*')+'$','i').test(String(v??''));
       case '__or': return (val||[]).some(c=>{
         const cv=r[c.col];
         if(c.op==='ilike'){
@@ -134,7 +136,7 @@ function builder(table){
     where.push(['__or',null,parts]);
     return api;
   };
-  ['eq','is','gt','lt','lte','gte','neq','in'].forEach(m=>
+  ['eq','is','gt','lt','lte','gte','neq','in','ilike'].forEach(m=>
     api[m]=(col,val)=>{ where.push([m,col,val]); return api; });
   api.single=()=>done().then(r=>({data:r.data[0]||null,error:null}));
 

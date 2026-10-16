@@ -768,6 +768,31 @@ i.key{vertical-align:middle}
   justify-content:center;font-size:14px;color:transparent}
 .txn .tick.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
 .txn.rec.on{background:#F4F2EB}
+/* A receipt photo is kept against this one. Blue, so it is not mistaken for
+   the green reconciled tick or the brass still-to-do edge. */
+.txn .pdot{display:inline-block;width:9px;height:9px;border-radius:50%;
+  background:#2F6FA8;margin-right:7px;vertical-align:2px}
+/* Searching the transactions */
+.msearch{padding:12px 14px}
+.msearch .mqrow{display:flex;gap:8px}
+.msearch input[type=search]{flex:1;min-width:0;padding:12px 14px;font-size:17px;
+  border:2px solid var(--rule);border-radius:var(--radius);background:var(--panel)}
+.msearch input[type=search]:focus{border-color:var(--hull);outline:none}
+.msearch .mqrow .btn{flex:0 0 auto;width:auto;padding:12px 16px;font-size:16px}
+.msearch .kindpick{margin:10px 0 0}
+.msearch .kindpick button{padding:10px 6px;font-size:15px;line-height:1.25}
+.msearch .mqrec{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:16px}
+.msearch .mqrec input{width:22px;height:22px;accent-color:var(--hull)}
+.mqfound{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:-2px 2px 10px;color:var(--muted);font-size:15px}
+.mqfound button{flex:0 0 auto;padding:7px 14px;border-radius:999px;
+  border:1.5px solid var(--rule);background:var(--panel);font-weight:600;color:var(--ink)}
+.rcall{display:flex;align-items:center;gap:10px;padding:12px 14px;width:100%;
+  text-align:left;font-weight:600;border-bottom:1px solid #F0EEE7}
+.rcall .tick{flex:0 0 auto;width:24px;height:24px;border-radius:50%;
+  border:2px solid var(--rule);background:#fff;display:flex;align-items:center;
+  justify-content:center;font-size:14px;color:transparent}
+.rcall .tick.on{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
 
 /* The item lines on a transaction */
 .lhead,.lrow{display:grid;grid-template-columns:1fr 1fr 48px 82px 26px;gap:6px;
@@ -3475,7 +3500,14 @@ function openHelp(where){
   <strong>green</strong> if that was within about five weeks and
   <strong>amber</strong> once it has been left longer than that.</p>
   <p>You can photograph a till receipt or an invoice against any transaction, so
-  it is still to hand come tax time.</p>
+  it is still to hand come tax time. A <strong>blue dot</strong> by the name
+  means a photo is kept against it.</p>
+  <p>The <strong>search box</strong> above the list looks through the
+  description, the payee, the category, the reference, your notes and the
+  amount (no need for the minus). With one account open you can choose
+  <strong>Search this account</strong> or <strong>Search all</strong>, and
+  <strong>Leave out reconciled</strong> hides anything already agreed with the
+  bank. <strong>Clear</strong> takes you back to the ordinary list.</p>
 
   <h4 id="h-moneypick">Getting rid of several at once</h4>
   <p><strong>Choose several to delete</strong> puts a tick box on every row.
@@ -3523,7 +3555,8 @@ function openHelp(where){
   <p>Start a statement by putting in its <strong>end date</strong> and its
   <strong>closing balance</strong>, copied straight off the paper or the screen
   &mdash; including the minus if it is a credit card. Then tick off everything
-  that appears on it. The panel at the top counts down to zero: when it says
+  that appears on it &mdash; or press <strong>Select all</strong> and untick
+  what is not there. The panel at the top counts down to zero: when it says
   <strong>Balanced</strong>, your books and the bank agree.</p>
   <p><strong>Finish and lock</strong> seals it. Nothing reconciled against a
   locked statement can be altered afterwards, which is the point &mdash; it stops
@@ -8489,6 +8522,12 @@ function foldToAccount(){
 let TODO_IDS=new Set(), TODO_CAPPED=false, MONEY_TODO=false;
 // Choosing several at once, to get rid of them together.
 let MONEY_PICKING=false, MONEY_PICKED=new Set();
+// Searching. The words, whether to look in every account or just the one on
+// screen, and whether to leave out what is already agreed with the bank.
+let MONEY_Q='', MONEY_QALL=false, MONEY_QNOREC=false;
+// Set when the list could not be fetched, so a failure never passes for an
+// empty cashbook.
+let TXNS_FAILED=false;
 let TX=null, TXL=[];                    // the transaction being edited
 let RECON={acc:null, st:null, rows:[], tick:{}};
 let IMPORT={acc:null, rows:[], head:[], map:null, name:''};
@@ -8664,19 +8703,65 @@ async function loadMoney(){
 // Only what is on screen. A cashbook grows for years; a phone should not have
 // to drag all of it down every time.
 async function loadTxns(){
+  TXNS_FAILED=false;
   let q=sb.from('transactions').select('*').order('tdate',{ascending:false})
           .order('id',{ascending:false}).limit(MONEY_SHOW);
-  if(MONEY_ACC!=='all') q=q.eq('account_id',MONEY_ACC);
-  if(MONEY_FROM) q=q.gte('tdate',MONEY_FROM);
-  if(MONEY_TODO) q=q.in('id',[...TODO_IDS].slice(0,400));
+  if(MONEY_Q){
+    // A search looks back over everything, not just the recent stretch.
+    const hits=await moneySearchIds(MONEY_Q);
+    if(!hits){ TXNS_FAILED=true; TXNS=[]; TXLINES=[]; return; }
+    q=q.in('id',hits.length?hits:[-1]);
+    if(!MONEY_QALL&&MONEY_ACC!=='all') q=q.eq('account_id',MONEY_ACC);
+    if(MONEY_QNOREC) q=q.eq('reconciled',false);
+  } else {
+    if(MONEY_ACC!=='all') q=q.eq('account_id',MONEY_ACC);
+    if(MONEY_FROM) q=q.gte('tdate',MONEY_FROM);
+    if(MONEY_TODO) q=q.in('id',[...TODO_IDS].slice(0,400));
+  }
   const {data,error}=await q;
-  if(error){ console.error(error); TXNS=[]; TXLINES=[]; return; }
+  if(error){ console.error(error); TXNS_FAILED=true; TXNS=[]; TXLINES=[]; return; }
   TXNS=data||[];
   const ids=TXNS.map(t=>t.id);
   if(!ids.length){ TXLINES=[]; return; }
-  const {data:li}=await sb.from('transaction_items').select('*')
+  const {data:li,error:le}=await sb.from('transaction_items').select('*')
     .in('transaction_id',ids).order('sort').order('id');
+  if(le){ console.error(le); TXNS_FAILED=true; TXNS=[]; TXLINES=[]; return; }
   TXLINES=li||[];
+}
+
+/* Which transactions match what was typed in the search box. Looks at what
+   the bank called it, your own description on any line, the payee, the
+   category, the reference, your notes and — if it is a number — the amount, either way
+   round, since you never type the minus. Returns a list of ids, or null if
+   the database could not be reached. */
+async function moneySearchIds(words){
+  const w=String(words||'').trim().toLowerCase();
+  if(!w) return [];
+  const like='%'+w.replace(/[\\%_]/g,'\\$&')+'%';
+  const payees=PAYEES.filter(p=>(p.name||'').toLowerCase().includes(w)).map(p=>p.id);
+  const cats=FCATS.filter(c=>(fcatName(c.id)||'').toLowerCase().includes(w)).map(c=>c.id);
+  const asNum=/^[-£$€]?\s*[\d,]*\.?\d+$/.test(w)?num(w):null;
+  const CAP=1000;
+  const jobs=[
+    sb.from('transaction_items').select('transaction_id').ilike('description',like)
+      .order('id',{ascending:false}).limit(CAP),
+    sb.from('transactions').select('id').ilike('reference',like)
+      .order('id',{ascending:false}).limit(CAP),
+    sb.from('transactions').select('id').ilike('notes',like)
+      .order('id',{ascending:false}).limit(CAP)
+  ];
+  if(cats.length) jobs.push(sb.from('transaction_items').select('transaction_id')
+    .in('category_id',cats).order('id',{ascending:false}).limit(CAP));
+  if(payees.length) jobs.push(sb.from('transactions').select('id')
+    .in('payee_id',payees).order('id',{ascending:false}).limit(CAP));
+  if(asNum!==null&&asNum!==0) jobs.push(sb.from('transactions').select('id')
+    .in('total',[asNum,-asNum]).order('id',{ascending:false}).limit(CAP));
+  const res=await Promise.all(jobs);
+  const bad=res.find(r=>r.error);
+  if(bad){ console.error(bad.error); return null; }
+  const ids=new Set();
+  res.forEach(r=>(r.data||[]).forEach(x=>ids.add(x.transaction_id??x.id)));
+  return [...ids].sort((a,b)=>b-a).slice(0,CAP);
 }
 
 // Which transactions still have a line with no category against it. Worked out
@@ -8711,6 +8796,12 @@ async function openMoney(){
 }
 
 /* ---------- The main screen ---------- */
+// The blue dot that says a receipt photo is kept against a transaction.
+function photoDot(t){
+  return arr(t&&t.photos).length
+    ? '<i class="pdot" title="Has a receipt photo" aria-label="Has a receipt photo"></i>' : '';
+}
+
 function renderMoney(){
   if(!MONEY_ON){
     $('moneyBody').innerHTML=`<div class="card"><div class="field"><dd>${
@@ -8763,7 +8854,7 @@ function renderMoney(){
       data-tx="${t.id}">
       ${MONEY_PICKING?`<span class="tick ${on?'on':''}">${on?'&#10003;':''}</span>`:''}
       <span class="td">${esc(shortDate(t.tdate))}</span>
-      <span class="tn"><b>${esc(what)}</b>
+      <span class="tn"><b>${photoDot(t)}${esc(what)}</b>
         <span>${esc(a?a.name:'')}${cats.length?' &middot; '+esc(cats.join(', ')):''}${
           t.business?' &middot; business':''}${
           todo?'<i class="todo">'+(cats.length?'part done':'no category yet')+'</i>':''}</span></span>
@@ -8809,18 +8900,42 @@ function renderMoney(){
       <button class="menuitem" id="goAccts">Accounts, categories and payees &rsaquo;</button>
     </details>`}
 
-    <p class="dsec">${MONEY_TODO?'Still to sort out'
+    ${MONEY_TODO?'':`
+    <div class="card msearch">
+      <div class="mqrow">
+        <input id="mq" type="search" enterkeyhint="search" autocomplete="off"
+          placeholder="Search transactions" value="${esc(MONEY_Q)}"
+          aria-label="Search transactions">
+        <button class="btn primary" id="mqGo">Search</button></div>
+      ${MONEY_ACC==='all'?'':`<div class="kindpick">
+        <button data-qall="0" aria-pressed="${!MONEY_QALL}">Search this account</button>
+        <button data-qall="1" aria-pressed="${MONEY_QALL}">Search all</button></div>`}
+      <label class="mqrec"><input type="checkbox" id="mqNoRec" ${MONEY_QNOREC?'checked':''}>
+        Leave out reconciled</label>
+    </div>`}
+
+    <p class="dsec">${MONEY_Q?'Search results'
+      :MONEY_TODO?'Still to sort out'
       :MONEY_ACC==='all'?'Recent transactions'
       :esc((accOf(MONEY_ACC)||{}).name||'')}</p>
-    ${TODO_IDS.size?`<div class="kindpick">
+    ${MONEY_Q?`<div class="mqfound"><span>${TXNS_FAILED?'':`${TXNS.length}${
+        TXNS.length>=MONEY_SHOW?'+':''} found for &ldquo;${esc(MONEY_Q)}&rdquo;${
+        MONEY_ACC!=='all'&&!MONEY_QALL?' in '+esc((accOf(MONEY_ACC)||{}).name||''):''}`}</span>
+        <button id="mqClear">Clear</button></div>`
+    :TODO_IDS.size?`<div class="kindpick">
       <button class="chip" data-todo="0" aria-pressed="${!MONEY_TODO}">Everything</button>
       <button class="chip" data-todo="1" aria-pressed="${MONEY_TODO}">Needs a category
         &middot; ${TODO_IDS.size}${TODO_CAPPED?'+':''}</button></div>`
      :`<p class="coords" style="margin:-2px 2px 10px">&#10003; every transaction has
         a category against it.</p>`}
     <div class="card">
-      ${rows||`<div class="field"><dd style="color:var(--muted)">${
-        MONEY_TODO?'Nothing left to sort out here.':'Nothing recorded yet.'}</dd></div>`}
+      ${rows||`<div class="field"><dd style="color:${TXNS_FAILED?'var(--red)':'var(--muted)'}">${
+        TXNS_FAILED?(MONEY_Q
+          ?'Could not search just now. Check your signal and press Search again.'
+          :'Could not load your transactions. Your records are safe &mdash; tap the '
+            +'refresh button at the top to try again.')
+        :MONEY_Q?'Nothing matches that.'
+        :MONEY_TODO?'Nothing left to sort out here.':'Nothing recorded yet.'}</dd></div>`}
     </div>
     ${TXNS.length>=MONEY_SHOW?`<button class="btn" id="moreTxns"
       style="border:1.5px solid var(--rule);margin-bottom:20px">Show more</button>`:''}`;
@@ -9748,7 +9863,9 @@ async function reconLoad(){
   let q=sb.from('transactions').select('*').eq('account_id',RECON.acc)
         .order('tdate').order('id');
   if(cur) q=q.lte('tdate',cur.ends_on);
-  const {data}=await q;
+  const {data,error}=await q;
+  RECON.failed=!!error;
+  if(error) console.error(error);
   RECON.rows=(data||[]).filter(t=>!t.reconciled||String(t.statement_id)===String(RECON.st));
   RECON.tick={};
   RECON.rows.forEach(t=>{ if(t.reconciled&&String(t.statement_id)===String(RECON.st))
@@ -9772,11 +9889,12 @@ function renderRecon(){
   const got=RECON.opening+ticked;
   const target=st?Number(st.closing_balance):null;
   const diff=target===null?null:Math.round((target-got)*100)/100;
+  const allOn=RECON.rows.length>0&&RECON.rows.every(t=>RECON.tick[t.id]);
 
   const row=t=>`<button class="txn rec ${RECON.tick[t.id]?'on':''}" data-rt="${t.id}">
     <span class="tick ${RECON.tick[t.id]?'on':''}">${RECON.tick[t.id]?'&#10003;':''}</span>
     <span class="td">${esc(shortDate(t.tdate))}</span>
-    <span class="tn"><b>${esc(payeeName(t.payee_id)||t.reference||kindOf(t.kind).label)}</b></span>
+    <span class="tn"><b>${photoDot(t)}${esc(payeeName(t.payee_id)||t.reference||kindOf(t.kind).label)}</b></span>
     <span class="ta ${Number(t.total)<0?'neg':''}">${money(t.total,cur)}</span></button>`;
 
   $('reconBody').innerHTML=`
@@ -9812,8 +9930,13 @@ function renderRecon(){
       <dd>${diff===0?'&#10003; nothing left over':money(diff,cur)}</dd></div>
   </div>
 
-  <div class="card">${RECON.rows.map(row).join('')
-    ||'<div class="field"><dd style="color:var(--muted)">Nothing waiting to be reconciled.</dd></div>'}</div>
+  <div class="card">${RECON.rows.length&&!st.locked?`<button class="rcall" id="rcAll">
+      <span class="tick ${allOn?'on':''}">${allOn?'&#10003;':''}</span>Select all</button>`:''}${
+    RECON.rows.map(row).join('')
+    ||(RECON.failed
+      ?'<div class="field"><dd style="color:var(--red)">Could not load the transactions. '
+        +'Nothing has changed &mdash; close this and open it again to retry.</dd></div>'
+      :'<div class="field"><dd style="color:var(--muted)">Nothing waiting to be reconciled.</dd></div>')}</div>
 
   ${st.locked
     ? `<button class="btn" id="rcUnlock" style="border:1.5px solid var(--rule)">Unlock this statement</button>`
@@ -10330,9 +10453,31 @@ $('moneyBody').addEventListener('toggle',ev=>{
   }
 }, true);
 
+// Run the search with whatever is in the box now. An empty box goes back to
+// the ordinary list.
+async function runMoneySearch(){
+  const box=$('mq');
+  MONEY_Q=box?box.value.trim():MONEY_Q;
+  if(box) box.blur();      // put the keyboard away so the results can be seen
+  MONEY_SHOW=80; if(MONEY_Q) MONEY_TODO=false;
+  $('moneyBody').querySelectorAll('.txn').forEach(x=>x.style.opacity='.5');
+  await loadTxns(); renderMoney(); paintMoneyPickBar();
+}
+
+$('moneyBody').addEventListener('keydown',ev=>{
+  if(ev.target.id==='mq'&&ev.key==='Enter'){ ev.preventDefault(); runMoneySearch(); }
+});
+$('moneyBody').addEventListener('change',ev=>{
+  if(ev.target.id==='mqNoRec'){ MONEY_QNOREC=ev.target.checked; runMoneySearch(); }
+});
+
 $('moneyBody').addEventListener('click',async ev=>{
   // The summary of a group is for folding it, not for choosing an account.
   if(ev.target.closest('summary')) return;
+  if(ev.target.id==='mqGo'){ runMoneySearch(); return; }
+  if(ev.target.id==='mqClear'){ const b=$('mq'); if(b) b.value=''; runMoneySearch(); return; }
+  const qa=ev.target.closest('[data-qall]');
+  if(qa){ MONEY_QALL=qa.dataset.qall==='1'; runMoneySearch(); return; }
   const a=ev.target.closest('[data-acc]');
   if(a){
     MONEY_ACC=a.dataset.acc==='all'?'all':Number(a.dataset.acc);
@@ -10453,6 +10598,12 @@ $('reconBody').addEventListener('click',async ev=>{
   const r=ev.target.closest('[data-rt]');
   if(r){ const id=Number(r.dataset.rt);
          RECON.tick[id]=!RECON.tick[id]; renderRecon(); return; }
+  // Tick the lot, then untick what is not on the statement. Pressed again
+  // with everything ticked, it clears them all.
+  if(ev.target.closest('#rcAll')){
+    const all=RECON.rows.every(t=>RECON.tick[t.id]);
+    RECON.rows.forEach(t=>{ RECON.tick[t.id]=!all; });
+    renderRecon(); return; }
   if(ev.target.id==='rcMake'){
     const d=$('rcDate').value, b=$('rcBal').value;
     if(!d||b===''){ toast('Both the date and the closing balance, please'); return; }

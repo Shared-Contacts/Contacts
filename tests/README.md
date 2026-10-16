@@ -58,6 +58,7 @@ rewrite the bits they need and call `loadAll()` or `loadMoney()` again.
 | Suite | What it covers |
 | --- | --- |
 | `money` | the cashbook screen, balances, filtering, settings, help |
+| `finsearch` | searching transactions, Select all when reconciling, the receipt photo dot, a failed load never shown as empty |
 | `split` | splitting an imported transaction across several lines |
 | `todo` | flagging transactions that still need a category |
 | `dupe` | spotting a transaction already in the books |

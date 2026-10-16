@@ -589,6 +589,12 @@ input[name="postcode"]{text-transform:uppercase}
 .mcell.today{border-color:var(--hull);border-width:2px}
 .mcell.picked{background:var(--hull)}
 .mcell.picked .n{color:#F2EFE4}
+.mcell.away .n{color:#1D2A24}
+.mcell.picked.away .n{color:#F2EFE4}
+.mlabel{flex:1;text-align:center;min-width:0}
+.mnav button.mtoday{padding:6px 10px;font-size:14px;font-weight:700;border:1.5px solid var(--hull)}
+.awaykey{text-align:center;margin-top:-4px}
+.awaykey span{white-space:nowrap;margin:0 4px}
 .dots{display:flex;gap:3px;height:7px}
 .dots i,i.key{display:inline-block;width:7px;height:7px;border-radius:50%}
 i.key{vertical-align:middle}
@@ -668,6 +674,7 @@ i.key{vertical-align:middle}
 .brow .bwhen{flex:0 0 84px;color:var(--muted);font-size:14px;padding-top:2px}
 .brow .bwhen.now{color:var(--hull);font-weight:700}
 .brow .bwhen.past{color:var(--red)}
+.brow .bwhen small{display:block;font-size:13px;color:var(--muted);font-weight:400}
 .brow .bwhat{flex:1;min-width:0}
 .brow .bwhat b{display:block;font-weight:600}
 .brow .bwhat span{display:block;color:var(--muted);font-size:14px}
@@ -3414,9 +3421,11 @@ function openHelp(where){
   the moment a new day arrives if the app is already open. The day turns over
   at <strong>four in the morning</strong>, not midnight, so a late night still
   counts as the day before.</p>
-  <p>Three things: <strong>birthdays</strong> from yesterday to a week ahead,
-  with the age they are turning; <strong>appointments and to-dos</strong> for
-  the week, with anything overdue in red at the top; and whatever is on the
+  <p>It opens with a greeting and the day, date and time. Then three things:
+  <strong>birthdays</strong> from yesterday to a week ahead, with the date under
+  the day and the age they are turning; today's <strong>appointments and
+  to-dos</strong>, with anything overdue in red at the top and a button to show
+  the whole week; and whatever is on the
   <strong>ASAP</strong> list under Calendar &rsaquo; Regular jobs. Tap any of
   them to go straight there.</p>
   <p>It never appears on top of something you are in the middle of, and it is
@@ -3963,8 +3972,12 @@ function openHelp(where){
   overdue, today, tomorrow and so on. <strong>Week</strong> shows the current
   week day by day. <strong>Month</strong> shows a calendar with a dot on each day
   &mdash; blue for an appointment, brass for a to-do, red if it is overdue.
-  Tap a day to see what is on. An appointment with an end date shows on every
-  day it covers, so a fortnight away blocks out the whole fortnight.</p>
+  Tap a day to see what is on, then + to add something on that day.
+  <strong>Today</strong> at the top jumps back to this month with today picked.
+  An appointment with an end date shows on every day it covers, so a fortnight
+  away blocks out the whole fortnight. Set <em>Away from home</em> on it
+  (holiday, work, hospital, visiting or other) and those days are shaded in
+  that reason's colour, with a key underneath.</p>
   <p><strong>Who else to remind</strong> puts the same entry in someone else's
   diary. They can tick it off or change it, so an appointment you are both going
   to only needs entering once.</p>
@@ -4053,6 +4066,14 @@ const REMIND_CHOICES=[
   ['720','12 hours before'],['1440','1 day before'],['2880','2 days before'],
   ['10080','1 week before']
 ];
+// Time away from home, and why. Each reason shades the days on the month
+// calendar in its own colour, light enough that the date stays readable.
+const AWAY_WHY=[['holiday','Holiday','#F4D35E'],['work','Work','#8FB8DE'],
+  ['hospital','Hospital','#E8A0A0'],['visiting','Visiting','#A8D5A2'],
+  ['other','Other','#C9B6E4']];
+const awayColour = w => (AWAY_WHY.find(x=>x[0]===w)||[])[2]||null;
+const dayKeyOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
 const REPEATS=[['none','Does not repeat'],['daily','Every day'],['weekly','Every week'],
   ['fortnightly','Every fortnight'],['monthly','Every month'],['yearly','Every year']];
 
@@ -4236,6 +4257,11 @@ function renderDiary(){
     d.setMonth(d.getMonth()+Number(b.dataset.mshift));
     DIARY_MONTH=d.toISOString().slice(0,7);
     DIARY_DAY=null; renderDiary(); });
+  const mt=$('mToday');
+  if(mt) mt.onclick=()=>{
+    const t=new Date();
+    DIARY_MONTH=dayKeyOf(t).slice(0,7);
+    DIARY_DAY=dayKeyOf(t); renderDiary(); };
 
 }
 
@@ -4460,6 +4486,7 @@ function diaryMonth(){
   const today=new Date(); today.setHours(0,0,0,0);
 
   let cells='';
+  const usedAway=new Set();
   for(let i=0;i<lead;i++) cells+='<span class="mcell blank"></span>';
   for(let n=1;n<=days;n++){
     const d=new Date(yy,mm-1,n);
@@ -4467,8 +4494,14 @@ function diaryMonth(){
     const key=`${yy}-${String(mm).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
     const appt=on.some(x=>x.kind==='appointment'), todo=on.some(x=>x.kind==='todo');
     const late=on.some(isLate);
-    cells+=`<button class="mcell${d.getTime()===today.getTime()?' today':''}${DIARY_DAY===key?' picked':''}"
-        data-day="${key}">
+    const away=[...new Set(on.map(x=>x.kind==='appointment'&&awayColour(x.away)).filter(Boolean))];
+    away.forEach(c=>usedAway.add(c));
+    // One reason fills the day; two people away for different reasons share it in stripes.
+    const shade=!away.length?'':away.length===1?`background:${away[0]}`
+      :`background:linear-gradient(135deg,${away.map((c,i)=>
+          `${c} ${i*100/away.length}%,${c} ${(i+1)*100/away.length}%`).join(',')})`;
+    cells+=`<button class="mcell${d.getTime()===today.getTime()?' today':''}${DIARY_DAY===key?' picked':''}${away.length?' away':''}"
+        data-day="${key}"${shade&&DIARY_DAY!==key?` style="${shade}"`:''}>
         <span class="n">${n}</span>
         <span class="dots">${appt?'<i class="a"></i>':''}${todo?`<i class="${late?'l':'t'}"></i>`:''}</span>
       </button>`;
@@ -4479,13 +4512,16 @@ function diaryMonth(){
 
   let html=`<div class="mnav">
       <button data-mshift="-1" aria-label="Previous month">&#9664;</button>
-      <span>${esc(label)}</span>
+      <span class="mlabel">${esc(label)}</span>
+      <button class="mtoday" id="mToday">Today</button>
       <button data-mshift="1" aria-label="Next month">&#9654;</button>
     </div>
     <div class="mgrid">${names}${cells}</div>
     <p class="coords" style="text-align:center">
       <i class="key a"></i> appointment &nbsp; <i class="key t"></i> to-do &nbsp;
-      <i class="key l"></i> overdue</p>`;
+      <i class="key l"></i> overdue</p>
+    ${usedAway.size?`<p class="coords awaykey">Away: ${AWAY_WHY.filter(x=>usedAway.has(x[2]))
+      .map(x=>`<span><i class="key" style="background:${x[2]}"></i> ${esc(x[1])}</span>`).join(' ')}</p>`:''}`;
 
   if(DIARY_DAY){
     const [y,m,dd]=DIARY_DAY.split('-').map(Number);
@@ -4730,7 +4766,7 @@ function showWeekday(form, names){
   });
 }
 
-function openItem(it, presetContact){
+function openItem(it, presetContact, presetDay){
   EDIT_ITEM = it || null;
   ITEM_KIND = it ? it.kind : 'todo';
   const meProfile = (typeof MY_PROFILE!=='undefined' && MY_PROFILE) ? MY_PROFILE : null;
@@ -4756,6 +4792,12 @@ function openItem(it, presetContact){
       <label>Starts<input type="datetime-local" name="starts_at"></label>
       <label>Ends<input type="datetime-local" name="ends_at"></label>
       <div class="checks"><label><input type="checkbox" name="all_day"> All day</label></div>
+      <label>Away from home<select name="away">
+        <option value="">No &mdash; an ordinary appointment</option>
+        ${AWAY_WHY.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+      </select></label>
+      <p class="coords">Away shades every day from the start to the end on the
+      month calendar. Use "About which contact" for who is away.</p>
     </fieldset>
     <fieldset id="fsTodo"><legend>When it needs doing</legend>
       <label>Due by<input type="datetime-local" name="due_at"></label>
@@ -4794,12 +4836,18 @@ function openItem(it, presetContact){
     f.elements['due_at'].value=localValue(it.due_at);
     f.elements['due_from'].value=localValue(it.due_from);
     f.elements['all_day'].checked=!!it.all_day;
+    f.elements['away'].value=it.away||'';
     f.elements['remind_mins'].value=it.remind_mins==null?'':String(it.remind_mins);
     f.elements['repeat_every'].value=it.repeat_every||'none';
     $('itDelete').onclick=()=>deleteItem(it);
   }else{
     const soon=new Date(Date.now()+60*60*1000);
     soon.setMinutes(0,0,0);
+    // Started from a day picked on the month calendar: that day, same time.
+    if(presetDay && /^\d{4}-\d{2}-\d{2}$/.test(presetDay)){
+      const [y,m,dd]=presetDay.split('-').map(Number);
+      soon.setFullYear(y,m-1,dd);
+    }
     f.elements['due_at'].value=localValue(soon);
     f.elements['starts_at'].value=localValue(soon);
     f.elements['remind_mins'].value='60';
@@ -4857,6 +4905,10 @@ async function saveItem(){
     all_day:f.elements['all_day'].checked,
     starts_at:null, ends_at:null, due_at:null, due_from:null
   };
+  // Only sent when it means something, so ordinary saves still work on a
+  // database that has not had step 38 yet.
+  const away=ITEM_KIND==='appointment'?f.elements['away'].value:'';
+  if(away || (EDIT_ITEM && EDIT_ITEM.away)) d.away=away||null;
   if(ITEM_KIND==='appointment'){
     d.starts_at=isoValue(f.elements['starts_at'].value);
     d.ends_at  =isoValue(f.elements['ends_at'].value);
@@ -4889,7 +4941,10 @@ async function saveItem(){
     d.created_by=ME.id;
     err=(await sb.from('items').insert(d)).error;
   }
-  if(err){ $('itSave').disabled=false; toast('Could not save'); console.error(err); return; }
+  if(err){ $('itSave').disabled=false;
+    toast('away' in d && /away/i.test(err.message||'')
+      ? 'Could not save: the away colours need step 38 run in Supabase first'
+      : 'Could not save'); console.error(err); return; }
 
   // who else should see it
   let itemId=EDIT_ITEM?EDIT_ITEM.id:null;
@@ -8449,7 +8504,7 @@ async function newShopList(){
   await loadShopping(); renderShop(); toast('List added');
 }
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
-$('diaryAdd').onclick=()=>openItem(null);
+$('diaryAdd').onclick=()=>openItem(null,null,DIARY_VIEW==='month'?DIARY_DAY:null);
 $('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
 $('briefClose').onclick=shutBrief;
@@ -11096,6 +11151,27 @@ function whenWord(n){
     : new Date(Date.now()+n*86400000).toLocaleDateString('en-GB',{weekday:'long'});
 }
 
+// "Good afternoon, it's Friday 16th of October, 11:50 AM"
+function nthDay(n){
+  const t=n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');
+  return n+t;
+}
+function briefHello(when){
+  const d=when||new Date(), h=d.getHours();
+  const part=h<12?'morning':h<18?'afternoon':'evening';
+  const wd=d.toLocaleDateString('en-GB',{weekday:'long'});
+  const mo=d.toLocaleDateString('en-GB',{month:'long'});
+  const hr=h%12||12, mi=String(d.getMinutes()).padStart(2,'0');
+  return `Good ${part}, it's ${wd} ${nthDay(d.getDate())} of ${mo}, ${hr}:${mi} ${h<12?'AM':'PM'}`;
+}
+// The date under the day on a birthday row: "17th Oct".
+function bdayDate(n){
+  const d=new Date(); d.setDate(d.getDate()+n);
+  return nthDay(d.getDate())+' '+d.toLocaleDateString('en-GB',{month:'short'});
+}
+let BRIEF_WEEK=false;          // the whole week shown, not just today
+let BRIEF_CLOCK=null;
+
 function briefBirthdays(){
   return CONTACTS.map(c=>({c, d:bdayOffset(c)}))
     .filter(x=>x.d!==null && !isGone(x.c))
@@ -11127,21 +11203,25 @@ function renderBrief(){
   // The bar says Today and the date goes underneath: a long weekday and a
   // long month together are more than a phone's top bar will hold.
   const today=new Date();
-  const dateWords=today.toLocaleDateString('en-GB',
-    {weekday:'long',day:'numeric',month:'long'});
+  const todayKey=dayKeyOf(today);
 
   const bdayRows=days.map(({c,d})=>{
     const age=turningAge(c,d);
     const years = isFinite(age)&&age>0&&age<130
       ? (d<0 ? 'Turned '+age : d===0 ? 'Turns '+age+' today' : 'Turns '+age) : '';
     return `<button class="brow" data-briefc="${c.id}">
-      <span class="bwhen ${d<0?'past':d===0?'now':''}">${esc(whenWord(d))}</span>
+      <span class="bwhen ${d<0?'past':d===0?'now':''}">${esc(whenWord(d))}
+        <small>${esc(bdayDate(d))}</small></span>
       <span class="bwhat"><b>${esc(fullName(c))}</b>
         ${years?`<span>${esc(years)}</span>`:''}</span>
       <span class="bcake" aria-hidden="true">\u{1F382}</span></button>`;
   }).join('');
 
-  const itemRows=items.map(it=>`<button class="brow" data-briefi="${it.id}">
+  // Today, and anything overdue, always shows; the rest of the week waits for a tap.
+  const isToday=it=>dayKeyOf(new Date(whenOf(it)))===todayKey;
+  const later=items.filter(it=>!isToday(it)&&!isLate(it));
+  const shown=BRIEF_WEEK?items:items.filter(it=>isToday(it)||isLate(it));
+  const itemRows=shown.map(it=>`<button class="brow" data-briefi="${it.id}">
       <span class="bwhen ${isLate(it)?'past':''}">${esc(whenText(it))}</span>
       <span class="bwhat"><b>${esc(it.title)}</b>
         <span>${it.kind==='appointment'?'Appointment':'To do'}${
@@ -11155,12 +11235,15 @@ function renderBrief(){
   const none='<div class="field"><dd style="color:var(--muted)">Nothing.</dd></div>';
   $('briefBody').innerHTML=`
     ${briefPhoto()}
-    <p class="briefdate">${esc(dateWords)}</p>
-    <p class="dsec">Birthdays &mdash; yesterday and the week ahead</p>
+    <p class="briefdate" id="briefHello">${esc(briefHello(today))}</p>
+    <p class="dsec">Your Birthday Reminders for this Week</p>
     <div class="card">${bdayRows||none}</div>
 
-    <p class="dsec">Appointments and to-dos</p>
-    <div class="card">${itemRows||none}</div>
+    <p class="dsec">${BRIEF_WEEK?'Appointments and to-dos this week':'Today\u2019s appointments and to-dos'}</p>
+    <div class="card">${itemRows||(BRIEF_WEEK?none
+      :'<div class="field"><dd style="color:var(--muted)">Nothing today.</dd></div>')}</div>
+    ${later.length||BRIEF_WEEK?`<button class="btn" id="briefWeek" style="margin-top:8px">${BRIEF_WEEK
+      ?'Just show today':`Show the whole week (${later.length} more)`}</button>`:''}
 
     <p class="dsec">ASAP</p>
     <div class="card">${asapRows
@@ -11171,6 +11254,16 @@ function renderBrief(){
       Shown once a day. Turn it off under Settings &rsaquo; Home screen, or
       open it again whenever you like from the menu.</p>`;
 
+  const wk=$('briefWeek');
+  if(wk) wk.onclick=()=>{ BRIEF_WEEK=!BRIEF_WEEK; const y=$('briefBody').scrollTop;
+    renderBrief(); $('briefBody').scrollTop=y; };
+  // Keep the clock in the greeting right while the screen is open.
+  if(BRIEF_CLOCK) clearInterval(BRIEF_CLOCK);
+  BRIEF_CLOCK=setInterval(()=>{
+    const h=$('briefHello');
+    if(!h||$('brief').classList.contains('hidden')){ clearInterval(BRIEF_CLOCK); BRIEF_CLOCK=null; return; }
+    h.textContent=briefHello();
+  },20000);
   $('briefBody').querySelectorAll('[data-briefc]').forEach(b=>b.onclick=()=>{
     shutBrief(); openDetail(Number(b.dataset.briefc)); });
   $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>{
@@ -11178,6 +11271,7 @@ function renderBrief(){
 }
 
 function openBrief(){
+  BRIEF_WEEK=false;
   renderBrief();
   showSheet('brief'); $('briefBody').scrollTop=0; lockBackground();
   markBriefSeen();

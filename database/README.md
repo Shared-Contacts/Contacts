@@ -5,6 +5,7 @@ They hold instructions only: no keys, and no one's contacts, log entries or mone
 
 - `contacts-schema.sql`, `contacts-security.sql`: the first tables and their rules.
 - `contacts-step3.sql` to `contacts-step37.sql`: each change since, in order. Already run.
+- `contacts-step38.sql`: away-from-home colours on the calendar. To run.
 - `cc-01-schema.sql`, `cc-03-tighten-lookups.sql`: Calendar Club tables.
 - The others are one-off tidy-ups and checks.
 - `send-reminders.ts`: the edge function that sends reminders. Its keys live in

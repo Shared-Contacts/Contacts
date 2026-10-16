@@ -131,14 +131,16 @@ const ok = (what, cond, extra='') => {
   ok('it opens', await page.isVisible('#brief'));
   const body = await page.textContent('#briefBody');
   ok('the three headings are there',
-     /Birthdays/.test(body) && /Appointments/.test(body) && /ASAP/.test(body));
+     /Your Birthday Reminders for this Week/.test(body) && /appointments/.test(body)
+     && /ASAP/.test(body), body.slice(0,300));
   ok('a birthday says whose and when', /Yesterday Jones/.test(body));
   ok('and the age they are turning', /Turns \d+|Turned \d+/.test(body), body.slice(0,300));
   ok('an overdue job is marked', /overdue/.test(body));
   ok('the bar says simply Today',
      (await page.textContent('#briefTitle')).trim() === 'Today');
-  ok('and the date is underneath, in full',
-     /\w+day \d+ \w+/.test(await page.textContent('.briefdate')),
+  ok('and a greeting with the day, date and time is underneath',
+     /^Good (morning|afternoon|evening), it's \w+day \d+(st|nd|rd|th) of \w+, \d{1,2}:\d\d (AM|PM)$/
+       .test(await page.textContent('.briefdate')),
      await page.textContent('.briefdate'));
   ok('it says it only comes once a day', /once a day/.test(body));
 

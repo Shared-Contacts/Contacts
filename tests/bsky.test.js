@@ -87,10 +87,10 @@ const FEED = {
       alt:im.alt, text:a.querySelector('.bskytext').textContent,
       html:a.querySelector('.bskytext').innerHTML, who:a.querySelector('small').textContent,
       loaded: im.complete && im.naturalWidth > 0,
-      top: document.querySelector('#briefPhoto') === $('briefBody').firstElementChild };
+      top: $('briefHello').nextElementSibling === document.querySelector('#briefPhoto') };
   });
   ok('the photo is there', !!shown);
-  ok('it sits at the top', shown && shown.top);
+  ok('it sits just under the greeting', shown && shown.top);
   ok('their own post, not the one they reposted',
      shown && shown.src === 'https://cdn.bsky.app/img/mine.jpg', shown && shown.src);
   ok('and the picture loads', shown && shown.loaded);
@@ -116,6 +116,21 @@ const FEED = {
   });
   ok('nothing runs off the side at 360', fit.right <= fit.width && fit.wide, JSON.stringify(fit));
   ok('the picture leaves room for the birthdays', fit.imgH <= fit.h * 0.35, JSON.stringify(fit));
+
+  console.log('\nA tall photo is shown whole');
+  const tall = await page.evaluate(async () => {
+    const im = document.querySelector('#briefPhoto .bsky img');
+    const c = document.createElement('canvas'); c.width = 300; c.height = 600;
+    im.src = c.toDataURL();
+    await new Promise(r => setTimeout(r, 300));
+    const r = im.getBoundingClientRect();
+    return { fit: getComputedStyle(im).objectFit, w:r.width, h:r.height, h35: innerHeight * 0.35,
+      full: r.width >= document.querySelector('#briefPhoto .bsky').clientWidth - 1 };
+  });
+  ok('it is shrunk to fit rather than cropped', tall.fit === 'contain', tall.fit);
+  ok('to the same height limit as a wide one', tall.h <= tall.h35, JSON.stringify(tall));
+  ok('and the box still spans the card', tall.full, JSON.stringify(tall));
+  await open(); await settle();
 
   console.log('\nRedrawing does not ask again');
   asked = [];

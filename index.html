@@ -670,7 +670,7 @@ i.key{vertical-align:middle}
   color:var(--hull)}
 .bsky{display:block;margin:12px 0 4px;background:var(--panel);border:1px solid var(--rule);
   border-radius:var(--radius);overflow:hidden;color:var(--ink);text-decoration:none}
-.bsky img{display:block;width:100%;max-height:34vh;object-fit:cover;background:#F0EEE7}
+.bsky img{display:block;width:100%;max-height:34vh;object-fit:contain;background:#F0EEE7}
 .bsky .bskytext{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
   overflow:hidden;padding:9px 12px 0;font-size:15px;overflow-wrap:anywhere}
 .bsky small{display:block;padding:4px 12px 9px;color:var(--muted);font-size:13px}
@@ -11346,8 +11346,8 @@ function renderBrief(){
 
   const none='<div class="field"><dd style="color:var(--muted)">Nothing.</dd></div>';
   $('briefBody').innerHTML=`
-    ${briefPhoto()}
     <p class="briefdate" id="briefHello">${esc(briefHello(today))}</p>
+    ${briefPhoto()}
     <p class="dsec">Your Birthday Reminders for this Week</p>
     <div class="card">${bdayRows||none}</div>
 

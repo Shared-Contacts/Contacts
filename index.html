@@ -536,6 +536,22 @@ input[name="postcode"]{text-transform:uppercase}
 .wcard.w-doing {background:#EAF4F8; border-color:#BFDCE6}
 .wcard.w-done  {background:#E4EDE7; border-color:#BCD2C2}
 .wcard.w-no    {background:#F4F4F5; opacity:.75}
+
+/* Jigsaws: the pictures two to a row, then the puzzle itself filling the screen */
+.jiggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 16px}
+.jigcard{display:flex;flex-direction:column;text-align:left;background:var(--panel);
+  border:1px solid var(--rule);border-radius:12px;overflow:hidden;padding:0;color:var(--ink)}
+.jigcard img{width:100%;aspect-ratio:1;object-fit:cover;background:#E9E6DC;display:block}
+.jigcard .jt{font-weight:700;font-size:15px;line-height:1.25;padding:8px 10px 2px}
+.jigcard .jd{font-size:13px;color:var(--muted);line-height:1.35;padding:0 10px;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.jigcard .jp{margin:8px 10px 10px;align-self:flex-start;background:var(--hull);color:var(--paper);
+  font-weight:700;font-size:13px;letter-spacing:.06em;padding:5px 12px;border-radius:7px}
+.jigintro p{margin:0 0 10px;line-height:1.45}
+.jigframe{display:block;width:100%;height:calc(var(--vh,100dvh) - 150px);min-height:340px;
+  border:0;background:#fff}
+.jigabout{padding:14px 2px 24px;line-height:1.45}
+.jigabout ul{padding-left:20px;margin:6px 0 12px}
 .item{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;
   border-bottom:1px solid #F0EEE7;width:100%;text-align:left}
 .card .item:last-child{border-bottom:none}
@@ -925,6 +941,18 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="wishBody"></div>
 </div>
 
+<div id="jig" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="jig" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="jigMenu" data-menu="jig" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Jigsaws</span></div>
+  <div class="sheetbody" id="jigBody"></div>
+</div>
+
+<div id="jigPlay" class="sheet hidden">
+  <div class="sheetbar"><button id="jigBack">Back</button>
+    <span class="title" id="jigTitle">Jigsaw</span></div>
+  <div class="sheetbody" id="jigPlayBody" style="padding:0"></div>
+</div>
+
 <div id="shop" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="shop" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1161,7 +1189,7 @@ const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','log',
   'logEd','where','wish','shop','io','offers','chats','chat',
-  'money','moneyEd','recon','moneyImp','pairs'];
+  'money','moneyEd','recon','moneyImp','pairs','jig','jigPlay'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -3419,7 +3447,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['moneyImp','money'],['pairs','money'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
-  ['wish','wish'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['wish','wish'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   for(const [id,scr] of SCREEN_ORDER)
     if($(id) && !$(id).classList.contains('hidden')) return scr;
@@ -3429,7 +3457,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs',
-  brief:'h-brief', invite:'h-invite'};
+  brief:'h-brief', invite:'h-invite', jig:'h-jig'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances'};
@@ -3743,6 +3771,14 @@ function openHelp(where){
   anyone can move any of them. Calendar Club keeps its own list, in that app.</p>
   <p>The pencil beside one of your own ideas lets you reword it or change the
   explanation.</p>
+
+  <h4 id="h-jig">Jigsaws</h4>
+  <p><strong>Jigsaws</strong> are Barry's photographs made into puzzles, the same
+  ones as on barryandsandra.com. Tap a picture to open its puzzle, choose the
+  number of pieces, the background colour and whether the pieces are turned, and
+  start. <strong>Back</strong> takes you to the pictures again. Leave one half
+  done and it carries on where you left it next time, on the same phone. The
+  puzzles come from jigsawexplorer.com, so they need the internet.</p>
 
   <h4 id="h-deceased">Those who have died</h4>
   <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
@@ -6740,6 +6776,145 @@ function renderShop(){
 
 
 /* ============================================================
+   Jigsaws — Barry's photographs as puzzles, the same ones as the
+   Jigsaw Puzzles page on barryandsandra.com. The puzzles are played in
+   jigsawexplorer.com's player; all this keeps is the picture, the words and
+   the player's link for each one, copied from the website's own pages.
+   Sample first, then the rest in A to Z order, as on the website.
+   ============================================================ */
+const JIGSAWS=[
+  {"t": "Foxton Lock Cottage", "img": "2020/06/P1250665A.jpg", "d": "A picture-perfect white-painted lock keeper’s cottage sits beside the bottom lock of Foxton Locks on the Grand Union Canal in Leicestershire. Cascading crimson roses and colourful climbing plants smother the cottage walls and golden-framed windows in glorious summer bloom, while lock gate balance beams and cobbled lockside stonework frame the foreground — a truly idyllic and quintessentially English waterway cottage scene.", "s": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDEyNTA2NjVBLmpwZw~~&cred=Rm94dG9uIExvY2sgRmxpZ2h0IGJvdHRvbSBjb3R0YWdl&nop=160"},
+  {"t": "Aspley moorings on the Huddersfield Canal", "img": "2020/09/P1590212.jpg", "d": "Narrowboats lie moored in glassy stillness at Aspley Basin on the Huddersfield Canal, their hulls perfectly mirrored in the calm water below. The Aspley pub and a charming stone warehouse with a weathervane dominate the canalside scene, while misty Yorkshire hills fade softly into the background — a tranquil urban waterway haven in the heart of Huddersfield.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE1OTAyMTIuanBn&cred=QXNwbGV5IG1vb3JpbmdzIG9uIHRoZSBIdWRkZXJzZmllbGQgQ2FuYWwgLSDCqSBCYXJyeSBUZXV0ZW5iZXJn&nop=160&color=white"},
+  {"t": "Bingley Five Rise on the Leeds and Liverpool Canal", "img": "2020/09/P1070988A.jpg", "d": "A traditionally painted narrowboat inches into the mighty Bingley Five Rise Locks on the Leeds and Liverpool Canal, water cascading dramatically through the ancient stone gates above. Onlookers and dog walkers gather on the grassy banks to watch, as crew members work the lock. This spectacular staircase lock, rising eighteen metres, is a breathtaking feat of Georgian engineering genius.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEwNzA5ODhBLmpwZw~~&cred=QmluZ2xleSBGaXZlIFJpc2Ugc3RhaXJjYXNlIExvY2tzIG9uIHRoZSBMZWVkcyBhbmQgTGl2ZXJwb29sIENhbmFsIC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&nop=160&color=white"},
+  {"t": "Boating on the Avon River at Bath", "img": "2020/09/P1320662.jpg", "d": "A green and red narrowboat cruises the River Avon through the magnificent heart of Georgian Bath. Pulteney Bridge with its elegant arches spans the river beyond, while grand honey-coloured stone buildings and a church spire rise majestically above tree-lined banks. Flower-bedecked trip boats line the far bank — a glorious fusion of waterway life and World Heritage architecture.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEzMjA2NjIuanBn&cred=Qm9hdGluZyBvbiB0aGUgQXZvbiBSaXZlciBhdCBCYXRoIC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&nop=160&color=green"},
+  {"t": "Bradley Mill beside the Leeds and Liverpool Canal", "img": "2020/09/P1090160.jpg", "d": "A green and red narrowboat cruises gently past Bradley Mill on the Leeds and Liverpool Canal, two boaters relaxing on the stern. The handsome stone mill building and its tall chimney stand proudly against a backdrop of rolling Yorkshire hills, patchworked with dry-stone walls and lush green fields — a timeless blend of industrial heritage and pastoral countryside.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEwOTAxNjAuanBn&cred=QnJhZGxleSBNaWxsIGJlc2lkZSB0aGUgTGVlZHMgYW5kIExpdmVycG9vbCBDYW5hbCAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=gray"},
+  {"t": "Bristol Marina on the floating Harbour at Bristol", "img": "2020/09/P1330333A.jpg", "d": "Bristol Marina on the Floating Harbour is a vibrant waterside scene packed with sailing boats, narrowboats, and motor cruisers moored alongside one another. Behind the marina, the famous Cliftonwood and Hotwells terraces rise up the hillside — a colourful patchwork of pastel-painted Georgian and Victorian houses nestled among lush green trees beneath a bright summer sky.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEzMzAzMzNBLmpwZw~~&cred=QnJpc3RvbCBNYXJpbmEgb24gdGhlIGZsb2F0aW5nIEhhcmJvdXIgYXQgQnJpc3RvbCAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=plum"},
+  {"t": "Castlefield Basin on the Bridgewater Canal in Manchester", "img": "2020/09/P1580161A.jpg", "d": "Castlefield Basin on Manchester’s Bridgewater Canal glows with urban waterway charm. Colourful narrowboats lie moored along a cobbled towpath, their reflections shimmering in the still water below. Towering converted Victorian red-brick warehouses with sweeping arched facades rise impressively on both banks, while weeping willows and golden-leafed trees add a softening natural touch to this magnificent industrial heritage landscape.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE1ODAxNjFBLmpwZw~~&cred=Q2FzdGxlZmllbGQgQmFzaW4gb24gdGhlIEJyaWRnZXdhdGVyIENhbmFsIGluIE1hbmNoZXN0ZXIgLSDCqSBCYXJyeSBUZXV0ZW5iZXJn&nop=160&color=white"},
+  {"t": "Castlepoint Lighthouse on the Wairarapa Coast", "img": "2021/03/P1640497.jpg", "d": "Castlepoint Lighthouse stands sentinel on a narrow rocky reef jutting into the churning sea on the Wairarapa coast. Beyond, the sweeping sandy lagoon beach curves gracefully toward the iconic Castle Rock, a towering limestone pinnacle dominating the skyline. The small settlement nestles cosily between headlands beneath a brooding, cloud-laden sky — a dramatically beautiful and remote New Zealand coastline.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE2NDA0OTcuanBn&cred=Q2FzdGxlcG9pbnQgTGlnaHRob3VzZSBvbiB0aGUgV2FpcmFyYXBhIENvYXN0LCBOWg~~&nop=160&color=white"},
+  {"t": "Colourful Narrowboats at Gas Street Basin", "img": "2020/06/P1600543A.jpg", "d": "An explosion of colour fills the frame as narrowboat sterns crowd together at Gas Street Basin, Birmingham. Vivid panels of scarlet, cobalt blue, sunshine yellow and forest green jostle side by side, their tiller bars, ropes and fenders overlapping in cheerful confusion — a gloriously chaotic and vibrant celebration of narrowboat culture at the heart of Britain’s canal network.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDE2MDA1NDNBLmpwZw~~&cred=Q29sb3VyZnVsIG5hcnJvd2JvYXRzIGF0IEdhcyBTdHJlZXQgQmFzaW4gaW4gQmlybWluZ2FoYW0~&nop=160"},
+  {"t": "Fradley Junction on the Trent and Mersey Canal", "img": "2020/09/P1220950A.jpg", "d": "Fradley Junction buzzes with summer activity as narrowboats navigate and moor along both banks of the Trent and Mersey Canal. Boaters tend their craft on decks and towpaths beneath a canopy of lush mature trees. A charming red-brick canalside building anchors the left bank, while the waterway stretches invitingly into the distance — a beloved inland cruising hub.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEyMjA5NTBBLmpwZw~~&cred=RnJhZGxleSBKdW5jdGlvbiBvbiB0aGUgVHJlbnQgYW5kIE1lcnNleSBDYW5hbCAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=coral"},
+  {"t": "Gas Street Basin and The Hyatt Hotel", "img": "2020/08/P1210347-Panorama-Toned.jpg", "d": "A colourful line-up of traditionally painted narrowboats packs Gas Street Basin in a blaze of red, yellow, green and blue, creating a stunning foreground contrast against Birmingham’s towering modern Hyatt Hotel rising sleekly overhead. An old Victorian brick chimney stack stands defiantly between old and new — a powerful image of the city’s dramatic industrial past meeting its contemporary skyline.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDgvUDEyMTAzNDctUGFub3JhbWEtVG9uZWQuanBn&cred=R2FzIFN0cmVldCBCYXNpbiBhbmQgdGhlIEh5YXR0IEhvdGVsIGluIEJpcm1pbmdoYW0gLSDCqSBCYXJyeSBUZXV0ZW5iZXJn&credu=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvR2FzX1N0cmVldF9CYXNpbg~~&nop=100&color=white"},
+  {"t": "Gas Street Basin in central Birmingham", "img": "2020/09/P1660015A.jpg", "d": "Gas Street Basin pulses with life at the very heart of Birmingham’s canal network. Narrowboats manoeuvre and moor alongside bustling canalside walkways, while pedestrians stroll beneath a decorative iron footbridge. Handsome Victorian red-brick warehouses and gabled buildings rise on every side, their warm stonework reflected in the rippling water — a vibrant centrepiece of Britain’s most extensive urban canal system.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE2NjAwMTVBLmpwZw~~&cred=R2FzIFN0cmVldCBCYXNpbiBpbiBjZW50cmFsIEJpcm1pbmdoYW0gLSDCqSBCYXJyeSBUZXV0ZW5iZXJn&nop=160&color=plum"},
+  {"t": "Gnosall moorings on the Shropshire Union Canal", "img": "2020/09/P1010997.jpg", "d": "A flotilla of colourful narrowboats lies moored along the towpath at Gnosall on the Shropshire Union Canal. Traditional painted detailing adorns their bows, while a handsome Victorian red-brick building rises behind, framed by mature trees bursting with fresh spring foliage. The calm water mirrors the vivid greens and deep blues of this quintessentially peaceful English waterway scene.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEwMTA5OTcuanBn&cred=R25vc2FsbCBtb29yaW5ncyBvbiB0aGUgU2hyb3BzaGlyZSBVbmlvbiBDYW5hbCAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=green"},
+  {"t": "Harbour basin and marina in Gisborne, NZ", "img": "2021/03/P1440301AP1.jpg", "d": "Gisborne’s vibrant harbour basin sparkles with striking emerald-green water beneath a dramatic cloudy sky. A mixed fleet of fishing boats, sailboats, and motor cruisers fills the marina, with the charming wooden vessel MV Takitimu prominent in the foreground. Palm trees, the city skyline, and distant hills complete this lively portrait of the world’s first city to greet each new day.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE0NDAzMDFBUDEuanBn&cred=SGFyYm91ciBCYXNpbiBhbmQgbWFyaW5hIGluIEdpc2Jvcm5lLCBOWg~~&nop=160&color=white"},
+  {"t": "Hatton Lock Flight near Warwick", "img": "2020/07/P1040521-Edit.jpg", "d": "Narrowboats queue and work their way through the spectacular Hatton Lock Flight on the Grand Union Canal near Warwick, its twenty-one broad locks climbing impressively into the distance through lush green Warwickshire countryside. Known affectionately as the Stairway to Heaven, boaters and lock keepers busily work the gleaming white balance beams on a glorious summer’s day.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDcvUDEwNDA1MjEtRWRpdC5qcGc~&cred=VGhlIEhhdHRvbiBMb2NrIEZsaWdodCBvbiB0aGUgR3JhbmQgVW5pb24gQ2FuYWwgbmVhciBXYXJ3aWNr&color=white"},
+  {"t": "Historic narrowboat moored at Stoke Bruerne", "img": "2020/09/P1410212A.jpg", "d": "A beautifully preserved historic working narrowboat belonging to J.E. Cook of Stoke Bruerne lies moored against a warm stone wharf wall on the Grand Union Canal. Registered at Rickmansworth No. 144, her boldly painted stern displays traditional canal folk art alongside gleaming brass fittings and a handsome chimney — a proud living relic of England’s working waterway heritage.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE0MTAyMTJBLmpwZw~~&cred=SGlzdG9yaWMgbmFycm93Ym9hdCBtb29yZWQgYXQgU3Rva2UgQnJ1ZXJuZSBvbiB0aGUgR3JhbmQgVW5pb24gQ2FuYWwgLSDCqSBCYXJyeSBUZXV0ZW5iZXJn&nop=160"},
+  {"t": "Historic working boats", "img": "2020/06/P1550085B.jpg", "d": "Two historic working narrowboat sterns aline in a glorious close-up of traditional canal livery. The Anderton Canal Carrying Co. boat blazes in bold blue, red and gold lettering alongside its richly painted neighbour Gifford, her scarlet and green panels adorned with golden scrollwork — a magnificent celebration of the proud commercial carrying heritage of England’s inland waterways.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDE1NTAwODVCLmpwZw~~&cred=SGlzdG9yaWMgd29ya2luZyBib2F0cw~~&color=white"},
+  {"t": "Historic working narrowboats at rest", "img": "2020/08/P1040876A.jpg", "d": "A candid close-up study of historic working narrowboats moored side by side, their boldly painted bows of deep teal green and rich crimson red almost touching. Coiled mooring ropes and a bright yellow water can fitting add authentic working detail, while reflections shimmer in the still water below — a colourful celebration of England’s treasured canal boat heritage.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDgvUDEwNDA4NzZBLmpwZw~~&cred=SGlzdG9yaWMgd29ya2luZyBuYXJyb3dib2F0cyBhdCByZXN0IC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&credu=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTmFycm93Ym9hdCNEZXZlbG9wbWVudF8lRTIlODAlOTRfdHJhZGl0aW9uYWxfd29ya2luZ19ib2F0cw~~&nop=100"},
+  {"t": "Lock 21 on the Stratford Canal", "img": "2020/08/P1040406A-Edit.jpg", "d": "A striking monochrome study of Lock 21 on the Stratford-upon-Avon Canal at Lapworth captures the raw drama of water thundering through ancient wooden lock gates. The distinctive split bridge — a charming feature unique to this canal — frames a peaceful rural vista beyond, its elegant ironwork reflected in the churning white water cascading powerfully below.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDgvUDEwNDA0MDZBLUVkaXQuanBn&cred=TG9jayAyMSBvbiB0aGUgU3RyYXRmb3JkIENhbmFsIGF0IExhcHdvcnRoIC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&credu=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvU3RyYXRmb3JkLXVwb24tQXZvbl9DYW5hbA~~&nop=100&color=green"},
+  {"t": "Locking up the Tardebigge Flight on the Birmingham and Worcester Canal", "img": "2020/09/P1690085A.jpg", "d": "A narrowboat works its way upward through the magnificent Tardebigge lock flight on the Birmingham and Worcester Canal — England’s longest lock flight with thirty locks. A lone crew member strides ahead to prepare the next gate on a glorious spring day, with fresh golden-green foliage and dappled sunshine creating an idyllic and quintessentially English waterway scene.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE2OTAwODVBLmpwZw~~&cred=TG9ja2luZyB1cCB0aGUgVGFyZGViaWdnZSBGbGlnaHQgb24gdGhlIEJpcm1pbmdoYW0gYW5kIFdvcmNlc3RlciBDYW5hbCAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=lavender"},
+  {"t": "Moorings at Banbury on the Oxford Canal", "img": "2020/09/P1270398A.jpg", "d": "Narrowboats lie moored in perfect stillness at Banbury’s attractive canal basin on the Oxford Canal, their colourful hulls mirrored flawlessly in the glassy water below. A flower-adorned green footbridge spans the canal ahead, while handsome converted red-brick mill buildings and modern canalside shops line the banks beneath a brilliant blue sky — a thriving and picturesque market town waterway setting.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEyNzAzOThBLmpwZw~~&cred=TW9vcmluZ3MgYXQgQmFuYnVyeSBvbiB0aGUgT3hmb3JkIENhbmFsIC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&nop=160&color=white"},
+  {"t": "Narrowboat Canal Art (Roses and Castles)", "img": "2020/08/P1320196A.jpg", "d": "A dazzling close-up of traditional narrowboat water cans adorned with the iconic Roses and Castles folk art — the quintessential decorative tradition of England’s canal boatpeople. Vivid crimson panels burst with hand-painted yellow and pink roses on deep forest green, the bold colours and intricate brushwork representing a uniquely British craft heritage lovingly preserved on today’s waterways.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDgvUDEzMjAxOTZBLmpwZw~~&cred=TmFycm93Ym9hdCBDYW5hbCBBcnQgKFJvc2VzIGFuZCBDYXN0bGVzKSAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&credu=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUm9zZXNfYW5kX0Nhc3RsZXM~&nop=100&color=lavender"},
+  {"t": "Narrowboat crossing the Pontcysyllte Aqueduct", "img": "2020/06/P1670835A.jpg", "d": "A narrowboat edges breathtakingly across the Pontcysyllte Aqueduct, Thomas Telford’s supreme masterpiece soaring 38 metres above the River Dee valley in North Wales. Crew members stand boldly on the open gunwale as the iron trough carries them across nineteen elegant stone piers — a UNESCO World Heritage crossing that never fails to quicken the pulse of even seasoned boaters.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDE2NzA4MzVBLmpwZw~~&cred=TmFycm93Ym9hdCBjcm9zc2luZyB0aGUgUG9udGN5c3lsbHRlIEFxdWVkdWN0&nop=160"},
+  {"t": "Narrowboat in the Snow", "img": "2020/06/P1740291B.jpg", "d": "A narrowboat sits locked in an ethereal winter wonderland at Hopwas on the Coventry Canal, snow falling silently and blanketing every surface in deep white. Bare frosted trees arch overhead like ghostly fingers, while a graceful stone bridge disappears into the blizzard beyond — a hauntingly beautiful and perfectly still scene of an English canal in the grip of winter.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDE3NDAyOTFCLmpwZw~~&cred=TmFycm93Ym9hdCBpbiB0aGUgU25vdyBhdCBIb3B3YXM~"},
+  {"t": "Narrowboats at Market Harborough", "img": "2020/09/P1250403A.jpg", "d": "Narrowboats lie snugly moored at Market Harborough basin on the Leicester Arm of the Grand Union Canal, their hulls reflected in still water studded with bright green lily pads. The narrowboat Bitter Creek sits prominently among her colourful neighbours, bow chains trailing into the water — a tranquil and picturesque terminus basin at the end of this delightful rural waterway.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEyNTA0MDNBLmpwZw~~&cred=TmFycm93Ym9hdHMgYXQgTWFya2V0IEhhcmJvcm91Z2ggb24gdGhlIExlaWNlc3RlciBBcm0gb2YgdGhlIEdyYW5kIFVuaW9uIENhbmFsIC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&nop=160&color=lavender"},
+  {"t": "New Zealand native Tui", "img": "2021/03/P1650239.jpg", "d": "A stunning Tui, one of New Zealand’s most beloved native birds, perches alertly among flax flower spikes in dappled green light. Its dark, iridescent plumage shimmers with hints of deep blue and green, while the distinctive white throat tuft gleams prominently. This charismatic honeyeater is a quintessential symbol of New Zealand’s unique and precious native wildlife.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMTEvUDE2NTAyMzkuanBn&cred=VGhlIE5ldyBaZWFsYW5kIG5hdGl2ZSBUdWk~&nop=160&color=white"},
+  {"t": "Newark Castle at Newark-on-Trent", "img": "2020/06/P1060106.jpg", "d": "Newark Castle’s magnificent Norman and medieval ruins rise dramatically from the banks of the River Trent, their warm honey-coloured stonework perfectly mirrored in the calm water below. Reed beds frame the foreground, while lush green trees soften the ancient walls beneath a brooding sky — a strikingly romantic riverside ruin steeped in English Civil War history and Nottinghamshire heritage.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDEwNjAxMDYuanBn&cred=TmV3YXJrIENhc3RsZSB0aGUgUml2ZXIgVHJlbnQgYXQgTmV3YXJrLW9uLVRyZW50"},
+  {"t": "Ouzell Loop Junction on the Birmingham Canal Navigation", "img": "2020/09/P1210632A.jpg", "d": "The Ouzell Loop Junction on Birmingham’s canal network cuts a sleek waterway through a striking canyon of modern red-brick and glass apartment blocks. A couple strolls the towpath beside a moored narrowboat, while an elegant iron footbridge arches gracefully overhead. This polished urban waterscape perfectly illustrates Birmingham’s remarkable transformation from grimy industrial heartland to stylish contemporary city living.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEyMTA2MzJBLmpwZw~~&cred=T3V6ZWxsIExvb3AgSnVuY3Rpb24gb24gdGhlIEJpcm1pbmdoYW0gQ2FuYWwgTmF2aWdhdGlvbiAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=white"},
+  {"t": "Pancake Rocks near Punakaiki on the South Island’s West Coast", "img": "2021/03/P1680535.jpg", "d": "Furious white water surges through a dramatic sea cave carved deep into the layered limestone at Pancake Rocks, Punakaiki. The ancient stratified rock walls rise steeply on both sides, capped with mosses and coastal vegetation. This raw, primeval chasm on New Zealand’s wild West Coast perfectly captures nature’s relentless sculptural power against the pounding Tasman Sea.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE2ODA1MzUuanBn&cred=UGFuY2FrZSBSb2NrcyBuZWFyIFB1bmFrYWlraSBvbiB0aGUgU291dGggSXNsYW5k4oCZcyBXZXN0IENvYXN0LCBOWg~~&nop=160&color=white"},
+  {"t": "Permanent moorings at High Offley", "img": "2020/06/P1180471A-1.jpg", "d": "A colourful line of permanently moored narrowboats stretches along the Shropshire Union Canal at High Offley, their reflections shimmering in the still water below. A boldly painted historic working boat bearing the Shropshire Union livery sits prominently in the foreground, while rolling green Staffordshire farmland and a distant church tower complete this quintessentially peaceful and picturesque rural English waterway scene.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDExODA0NzFBLTEuanBn&cred=UGVybWFuZW50IG1vb3JpbmdzIG9uIHRoZSBTaHJvcHNoaXJlIFVuaW9uIENhbmFsIGF0IEhpZ2ggT2ZmbGV5"},
+  {"t": "Permanently moored narrowboats at Gas Street Basin in Birmingham", "img": "2020/09/P1650981.jpg", "d": "Vividly painted narrowboats lie permanently moored bow-to-bow at Gas Street Basin, Birmingham, their bold traditional liveries of red, green, yellow and blue creating a spectacular riot of colour. Ornate painted castles and roses decorate their sides, while the name A.A. Phillips & Co. of Birmingham proudly adorns one hull — all set against the backdrop of the city’s handsome Victorian canalside buildings.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE2NTA5ODEuanBn&cred=UGVybWFuZW50bHkgbW9vcmVkIG5hcnJvd2JvYXRzIGF0IEdhcyBTdHJlZXQgQmFzaW4gaW4gQmlybWluZ2hhbSAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=gray"},
+  {"t": "Reflection of Mt Tasman and Mt Cook in Lake Matheson, NZ", "img": "2021/03/P1700178-1.jpg", "d": "Lake Matheson on New Zealand’s South Island West Coast delivers one of the world’s most breathtaking mirror reflections. The snow-capped peaks of Mt Tasman and Mt Cook soar majestically above, their gleaming summits and drifting clouds perfectly doubled in the lake’s still, dark waters. Dense native podocarp forest frames both shores in deep, lush green.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE3MDAxNzguanBn&cred=UmVmbGVjdGlvbiBvZiBNdCBUYXNtYW4gYW5kIE10IENvb2sgaW4gTGFrZSBNYXRoZXNvbiBOWg~~&nop=160&color=white"},
+  {"t": "Rowing Boat and Butty", "img": "2020/08/P1240411A-1.jpg", "d": "A weathered wooden rowing boat with peeling green and red paint lies alongside a traditional narrowboat butty named Hereford, its stern adorned with colourful painted canal folk art. The butty’s decorative water cans and tilted tiller create a charmingly authentic scene — two contrasting working waterway vessels resting together, steeped in the nostalgic character of England’s historic canal heritage.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDgvUDEyNDA0MTFBLTEuanBn&cred=Um93aW5nIEJvYXQgYW5kIEJ1dHR5IOKAkyDCqSBCYXJyeSBUZXV0ZW5iZXJn&nop=160&color=white"},
+  {"t": "Sheffield Canal Basin", "img": "2020/06/Sheffield-2B.jpg", "d": "Sheffield Canal Basin dazzles at twilight as warm golden and vivid purple lights from surrounding converted warehouses and modern apartment blocks blaze across the perfectly still water below. Narrowboats lie silhouetted along the quayside, bare winter trees etched dramatically against a deep electric blue sky — a stunning contemporary urban waterscape at the terminus of the Sheffield and Tinsley Canal.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvU2hlZmZpZWxkLTJCLmpwZw~~&cred=U2hlZmZpZWxkIENhbmFsIEJhc2lu&nop=160"},
+  {"t": "Steam narrowboat ‘President’ moored at the Black Country Museum", "img": "2020/09/P1610227.jpg", "d": "The historic steam narrowboat President, pride of the Black Country Living Museum, sits moored bow-on along a quiet, reed-fringed canal. Her dark hull is smartly finished with a bold red-edged triangular bow panel bearing the museum’s name. Alongside rests a weathered, rustic wooden boat — a striking contrast between preservation and gentle decay on still, reflective water.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE2MTAyMjcuanBn&cred=U3RlYW0gbmFycm93Ym9hdCDigJhQcmVzaWRlbnTigJkgbW9vcmVkIGF0IHRoZSBCbGFjayBDb3VudHJ5IE11c2V1bSAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=lavender"},
+  {"t": "Sunset over Monkey Island at Orepuki on the Southland Coastline", "img": "2021/03/P1710586.jpg", "d": "A breathtaking sunset blazes behind the dramatic silhouette of Monkey Island at Orepuki on the Southland coast. The sky erupts in fiery golds and deep indigo blues, reflecting gloriously across the wet tidal flats below. Two solitary shorebirds stand quietly in the shallows, tiny dark figures witnessing one of New Zealand’s most spectacularly remote and wild coastal sunsets.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE3MTA1ODYuanBn&cred=U3Vuc2V0IG92ZXIgTW9ua2V5IElzbGFuZCBhdCBPcmVwdWtpIG9uIHRoZSBTb3V0aGxhbmQgQ29hc3RsaW5lLCBOWg~~&nop=160&color=white"},
+  {"t": "Swans on the River Witham in Lincoln", "img": "2020/09/P1060302A.jpg", "d": "A magnificent flotilla of white swans glides serenely along the River Witham through the heart of Lincoln. A sweeping modern sculpture arches dramatically overhead, framing a handsome Victorian red-brick market hall and a cascading weeping willow beyond. This charming scene beautifully blends Lincoln’s rich architectural heritage with nature’s elegance in the city’s vibrant and bustling riverside quarter.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDEwNjAzMDJBLmpwZw~~&cred=U3dhbnMgb24gdGhlIFJpdmVyIFdpdGhhbSBpbiBMaW5jb2xuIC0gwqkgQmFycnkgVGV1dGVuYmVyZw~~&nop=160&color=white"},
+  {"t": "The Anderton Boat Lift", "img": "2020/08/P1570987A.jpg", "d": "The magnificent Anderton Boat Lift towers impressively above the River Weaver in Cheshire, its vast Victorian ironwork framework of girders, hydraulic rams and counterweights dominating the skyline. A blue narrowboat waits patiently in the lower basin, dwarfed by this extraordinary feat of 1875 engineering — rightly celebrated as the Cathedral of the Canals, connecting the River Weaver to the Trent and Mersey Canal above.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDgvUDE1NzA5ODdBLmpwZw~~&cred=VGhlIEFuZGVydG9uIEJvYXQgTGlmdCBmcm9tIHRoZSBSaXZlciBXZWF2ZXIgLSDCqSBCYXJyeSBUZXV0ZW5iZXJn&credu=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQW5kZXJ0b25fQm9hdF9MaWZ0&nop=80&color=green"},
+  {"t": "The Cardrona Hotel in Central Otago, NZ", "img": "2021/03/P1450156AA.jpg", "d": "The iconic Cardrona Hotel, one of New Zealand’s most photographed buildings, stands proudly in Central Otago beneath a vivid blue sky and snow-dusted mountains. Its cream timber facade with bold burgundy lettering is perfectly complemented by a vintage 1920s automobile parked outside — a charming relic advertising Gaelic Whisky, evoking the romance of the gold rush era.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE0NTAxNTZBQS5qcGc~&cred=VGhlIENhcmRyb25hIEhvdGVsIGluIENlbnRyYWwgT3RhZ28sIE5aIA~~&nop=160&color=white"},
+  {"t": "The Glory Hole in Lincoln", "img": "2020/06/P1060310A.jpg", "d": "A small trip boat glides beneath the Glory Hole, Lincoln’s magnificent medieval arch bridge spanning the River Witham. The remarkable timber-framed buildings perched directly atop the ancient stone bridge create a breathtaking tunnel of history, their jettied upper storeys leaning overhead. A church spire pierces the skyline beyond — one of England’s most uniquely atmospheric and photogenic urban waterway scenes.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDEwNjAzMTBBLmpwZw~~&cred=VGhlIEdsb3J5IEhvbGUgb3ZlciB0aGUgUml2ZXIgV2l0aGFtIGluIExpbmNvbG4~&nop=160&color=white"},
+  {"t": "The High Court building in Auckland, NZ", "img": "2021/03/P1630828.jpg", "d": "Auckland’s magnificent High Court building stands as a masterpiece of Victorian Gothic architecture, its rich red brick adorned with elaborate white stone detailing, pointed arches, and a striking castellated tower. A spectacular cascade of purple wisteria tumbles over the iron fence to the left, softening the grandeur with natural beauty beneath a brooding, overcast New Zealand sky.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE2MzA4MjguanBn&cred=VGhlIEhpZ2ggQ291cnQgYnVpbGRpbmcgaW4gQXVja2xhbmQsIE5a&nop=160&color=white"},
+  {"t": "The old Hovis Mill at Macclesfield", "img": "2020/07/P1130261A.jpg", "d": "The imposing bulk of the old Hovis Mill dominates the skyline at Macclesfield, its handsome multi-storey Victorian brick facade and distinctive terracotta chimney reflected magnificently in the still waters of the Macclesfield Canal below. Colourful narrowboats line the towpath in a vivid row — a superb juxtaposition of working waterway heritage against this grand monument to the flour milling industry.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDcvUDExMzAyNjFBLmpwZw~~&cred=VGhlIG9sZCBIb3ZpcyBNaWxsIGF0IE1hY2NsZXNmaWVsZCBNYWNjbGVzZmllbGQgQ2FuYWw~&color=green"},
+  {"t": "The Packet House at Worsley on the Bridgewater Canal", "img": "2020/06/P1110060A-1.jpg", "d": "The magnificent black and white timber-framed Packet House glows warmly at dusk beside the Bridgewater Canal at Worsley, its glittering reflection shimmering perfectly in the still ochre-tinted water below. Narrowboats lie moored in the foreground beneath a canopy of lush mature trees — an enchanting and atmospheric scene at the very birthplace of England’s canal revolution.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDYvUDExMTAwNjBBLTEuanBn&cred=VGhlIFBhY2tldCBIb3VzZSBhdCBXb3JzbGV5IG9uIHRoZSBCcmlkZ2V3YXRlciBDYW5hbA~~&nop=160&color=white"},
+  {"t": "The south entrance to the Harecastle Tunnel", "img": "2020/09/P1510551A.jpg", "d": "Furious white water surges through a dramatic sea cave carved deep into the layered limestone at Pancake Rocks, Punakaiki. The ancient stratified rock walls rise steeply on both sides, capped with mosses and coastal vegetation. This raw, primeval chasm on New Zealand’s wild West Coast perfectly captures nature’s relentless sculptural power against the pounding Tasman Sea.", "v": true, "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjAvMDkvUDE1MTA1NTFBLmpwZw~~&cred=VGhlIHNvdXRoIGVudHJhbmNlIHRvIHRoZSBIYXJlY2FzdGxlIFR1bm5lbCBvbiB0aGUgVHJlbnQgYW5kIE1lcnNleSBDYW5hbCAtIMKpIEJhcnJ5IFRldXRlbmJlcmc~&nop=160&color=white"},
+  {"t": "White Tailed deer on Stewart Island", "img": "2021/03/P1710176-1.jpg", "d": "A young White-tailed deer gazes curiously and alert from the heart of Stewart Island’s lush primeval forest. Surrounded by dense native ferns, mossy boulders, and ancient tree trunks, its warm tawny coat contrasts beautifully with the deep emerald undergrowth. Introduced yet utterly at home, this gentle creature embodies the enchanting wilderness of Rakiura, New Zealand’s southernmost island.", "q": "frm=1&url=aHR0cHM6Ly9iYXJyeWFuZHNhbmRyYS5jb20vd3AtY29udGVudC91cGxvYWRzLzIwMjEvMDMvUDE3MTAxNzYtMS5qcGc~&cred=V2hpdGUgVGFpbGVkIGRlZXIgb24gU3Rld2FydCBJc2xhbmQsIE5a&nop=160&color=white"}
+];
+const JIG_PLAYER='https://www.jigsawexplorer.com/online-jigsaw-puzzle-player.html?';
+const jigThumb=j=>'https://i0.wp.com/barryandsandra.com/wp-content/uploads/'+j.img+'?fit=400%2C400&ssl=1';
+
+function openJig(){
+  renderJig();
+  showSheet('jig'); $('jigBody').scrollTop=0; lockBackground();
+}
+
+function renderJig(){
+  const sample=JIGSAWS.findIndex(j=>j.s);
+  const card=(j,i)=>`<button type="button" class="jigcard" data-jig="${i}">
+      <img src="${esc(jigThumb(j))}" alt="${esc(j.t)}" loading="lazy">
+      <span class="jt">${esc(j.t)}</span>
+      <span class="jd">${esc(j.d)}</span>
+      <span class="jp">PLAY</span></button>`;
+  $('jigBody').innerHTML=`
+    <div class="card jigintro">
+      <p>Jigsaws are a big favourite around the world so by making them digital it
+      opens up whole new possibilities to test your powers of concentration and
+      observation.</p>
+      <p>Barry has created this fun set of jigsaws that will keep you entertained
+      for hours. They are completely <strong>FREE</strong> to use with no annoying
+      adverts. Enjoy!</p>
+      <p>No need to take over the table in the dining room or lounge, these jigsaws
+      are available at arm’s length on your laptop, tablet or smart phone.</p>
+      <p>Tap any of the pictures below to open its puzzle. Start solving from the
+      moment you’ve chosen the number of pieces, colour of background and whether
+      the pieces are randomly rotated.</p>
+      <p>Quit the puzzle half way through and you can return to where you were at a
+      later time using the same device. Puzzles can be played again at any later
+      date by resetting the defaults.</p>
+      ${sample>=0?`<p>Why not try the recommended
+        <button type="button" class="addmore" data-jig="${sample}"
+          style="padding:0;font-size:inherit;text-decoration:underline">sample puzzle</button>
+        to see if you like it before trying the rest?</p>`:''}
+    </div>
+    <p class="dsec">Barry’s Jigsaw Puzzles <span style="float:right;font-weight:400;
+      text-transform:none;letter-spacing:0">${JIGSAWS.length}</span></p>
+    <div class="jiggrid">${JIGSAWS.map(card).join('')}</div>`;
+  $('jigBody').querySelectorAll('[data-jig]').forEach(b=>
+    b.onclick=()=>playJig(+b.dataset.jig));
+}
+
+function playJig(i){
+  const j=JIGSAWS[i]; if(!j) return;
+  const src=JIG_PLAYER+j.q;
+  $('jigTitle').textContent=j.t;
+  $('jigPlayBody').innerHTML=`
+    <iframe class="jigframe" src="${esc(src)}" title="${esc(j.t)} jigsaw puzzle"
+      allow="fullscreen" allowfullscreen></iframe>
+    <div class="jigabout" style="padding-left:14px;padding-right:14px">
+      <p>${esc(j.d)}</p>
+      ${j.v?'<p>This is a vertical puzzle which is ideally suited to fit your smart phone or tablet format, though it works just as well on any device.</p>':''}
+      <p><strong>Instructions</strong><br>Before you start the puzzle you can change
+      the default settings to make it as easy or difficult as you like.</p>
+      <ul>
+        <li>Change the number of puzzle pieces (between six and 910 pieces).</li>
+        <li>Randomly twist the pieces to add an extra degree of difficulty.</li>
+        <li>Change the background colour to suit (12 options).</li>
+      </ul>
+      <p>Once you’ve started the puzzle there are more options:</p>
+      <ul>
+        <li>Capture and release pieces: tap the hand, then a piece to hide it. Show
+        hidden pieces by tapping the hand again.</li>
+        <li>Hide all pieces except the border ones.</li>
+        <li>Show the puzzle image in the background.</li>
+        <li>The timer starts once you start playing. Pause it by tapping the clock.</li>
+        <li>Play the puzzle in the window, or switch to full screen.</li>
+      </ul>
+      <p>If full screen will not work,
+        <a href="${esc(src.replace('frm=1&',''))}" target="_blank" rel="noopener">open
+        the puzzle in its own window</a>.</p>
+    </div>`;
+  showSheet('jigPlay'); $('jigPlayBody').scrollTop=0; lockBackground();
+}
+
+// Emptying the frame stops the puzzle running behind the list.
+function shutJigPlay(){
+  const b=$('jigPlayBody'); if(b) b.innerHTML='';
+  $('jigPlay').classList.add('hidden');
+}
+$('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
+
+
+
+/* ============================================================
    The home screen — a tile for every part of the app
    ============================================================ */
 const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect x="48.8" y="286" width="414.5" height="26" fill="#D7A82E"/><path d="M 336.7,286 L 394.7,286 L 394.7,422 L 365.7,388 L 336.7,422 Z" fill="#D7A82E"/><path d="M92.91666666666667 286.0V98.30303030303028H140.12878787878788L170.0681818181818 181.78787878787878Q172.9469696969697 190.13636363636363 175.39393939393938 198.62878787878788Q177.8409090909091 207.12121212121212 180.4318181818182 216.33333333333331H181.58333333333334Q184.17424242424244 207.12121212121212 186.47727272727275 198.62878787878788Q188.78030303030306 190.13636363636363 191.65909090909093 181.78787878787878L221.02272727272728 98.30303030303028H268.2348484848485V286.0H229.37121212121212V217.1969696969697Q229.37121212121212 207.9848484848485 230.37878787878788 195.46212121212122Q231.38636363636365 182.93939393939394 232.6818181818182 170.41666666666666Q233.97727272727275 157.89393939393938 235.1287878787879 148.68181818181816H233.97727272727275L218.71969696969697 198.1969696969697L192.2348484848485 269.8787878787879H167.47727272727275L141.28030303030303 198.1969696969697L126.59848484848484 148.68181818181816H125.4469696969697Q126.59848484848484 157.89393939393938 127.89393939393939 170.41666666666666Q129.18939393939394 182.93939393939394 130.0530303030303 195.46212121212122Q130.91666666666669 207.9848484848485 130.91666666666669 217.1969696969697V286.0Z M344.5227272727273 286.0V219.2121212121212L288.0984848484849 98.30303030303028H333.29545454545456L349.99242424242425 141.48484848484847Q353.7348484848485 152.13636363636363 357.47727272727275 162.0681818181818Q361.219696969697 172.0 365.25 182.93939393939394H366.4015151515152Q370.719696969697 172.0 374.6060606060606 162.0681818181818Q378.49242424242425 152.13636363636363 382.2348484848485 141.48484848484847L398.9318181818182 98.30303030303028H443.2651515151515L386.8409090909091 219.2121212121212V286.0Z" fill="currentColor"/></svg>`;
@@ -6760,6 +6935,7 @@ const TILE_DEST={
   chats:   {label:'Messages',    go:openChats},
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
   money:   {label:'Finances',   go:openMoney},
+  jig:     {label:'Jigsaws',    go:openJig},
   recipes: {label:'Recipes',    go:()=>toast('Recipes \u2014 coming soon')},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
@@ -6770,9 +6946,9 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
-  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52'};
+  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','settings'];
+  'money','recipes','alarm','jig','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -6791,7 +6967,7 @@ function shade(hex,amt){
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs'],
-  settings:['settings'], pick:['app']};
+  settings:['settings'], pick:['app'], jig:['jig','jigPlay']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -11430,6 +11606,7 @@ const AREAS={
   diary:   {title:'Calendar',     set:null,        help:'diary'},
   shop:    {title:'Shopping',     set:null,        help:'shop'},
   wish:    {title:'Wishlist',     set:null,        help:'wish'},
+  jig:     {title:'Jigsaws',      set:null,        help:'jig'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
   home:    {title:'Menu',         set:null,        help:'home'}
@@ -11447,12 +11624,13 @@ const AREA_SHUT={
   diary:()=>$('diary').classList.add('hidden'),
   shop: ()=>$('shop').classList.add('hidden'),
   wish: ()=>$('wish').classList.add('hidden'),
+  jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, jig:openJig, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching

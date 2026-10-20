@@ -840,6 +840,14 @@ i.key{vertical-align:middle}
 .repnet .reptot{border-top:none}
 .reptools{display:flex;gap:10px;margin:6px 0 20px}
 .reptrend{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+/* A second scroll bar above a wide report, held at the top of the screen while
+   the table is in view. Only where there is a mouse: phones just swipe. */
+.reptop{overflow-x:auto;overflow-y:hidden;position:sticky;top:0;z-index:3;background:var(--panel)}
+.reptop>div{height:1px}
+@media (hover:none){.reptop{display:none}}
+.taxpick{gap:8px;align-items:center}
+.taxpick select{padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.taxpick .btn{width:auto;flex:0 0 auto;padding:11px 22px}
 .reptab.trend{width:auto;min-width:100%;font-size:13px}
 .reptab.trend th,.reptab.trend td{padding:7px 8px}
 .reptab.trend tbody th{text-align:left;font-weight:400;min-width:120px;max-width:150px;
@@ -3225,7 +3233,7 @@ try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur'];
+  'accounts','fincats','finpayees','fincur','taxyear'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
@@ -3234,7 +3242,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   logcats:'Your own sections',logshare:'Share my log',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
-  fincur:'Currencies'};
+  fincur:'Currencies', taxyear:'Tax year'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
@@ -3242,7 +3250,7 @@ const SET_GROUPS=[
                               'mecontact','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol']},
-  {label:'Finances',   cards:['accounts','fincats','finpayees','fincur']},
+  {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
 ];
@@ -3372,6 +3380,7 @@ async function openSettings(goTo){
     fincats:    finCatRows(),
     finpayees:  finPayeeRows(),
     fincur:     finCurRows(),
+    taxyear:    taxYearRows(),
     logsections: logSectionRows(),
     logcats: catRows(),
     logshare: logShareRows(),
@@ -3540,6 +3549,14 @@ async function openSettings(goTo){
     MY_PROFILE&&MY_PROFILE.my_contact_id);
   wireCats();
   wireFinance();
+  $('setBody').querySelectorAll('[data-taxpre]').forEach(b=>b.onclick=()=>{
+    const p=TAX_PRESETS.find(x=>x[0]===b.dataset.taxpre);
+    if(p) setTaxStart(p[2],p[3]); });
+  const tsv=$('taxSave');
+  if(tsv) tsv.onclick=()=>{
+    const d=Number($('taxDay').value), m=Number($('taxMon').value);
+    if(!taxOk(m,d)){ toast('There is no such date'); return; }
+    setTaxStart(m,d); };
   paintBgPick();
   const gi=$('goInvite');
   if(gi) gi.onclick=()=>{ $('settings').classList.add('hidden'); openInvite(); };
@@ -3785,7 +3802,9 @@ function openHelp(where){
   <p><strong>Finances &rsaquo; Reports</strong> adds up your books for any dates
   you choose. Type a <strong>From</strong> and <strong>To</strong> date, or tap
   This month, Last month, This year, Last year, This tax year or Last tax year.
-  The tax year is the UK one, 6 April to 5 April. Under <em>All accounts</em>
+  The tax year is the UK one, 6 April to 5 April, unless you choose another
+  start under <strong>Settings &rsaquo; Finances &rsaquo; Tax year</strong>
+  (1 April for New Zealand, for example). Under <em>All accounts</em>
   you can untick any account to leave it out; only accounts you can see in
   Finances are there.</p>
   <p>There are six reports: <strong>All accounts</strong> (each account month by
@@ -7385,6 +7404,9 @@ function loadTiles(){
   BSKY_OWN = (saved&&typeof saved.bsky==='string')?saved.bsky:'';
   BSKY_OFF = !!(saved&&saved.bskyoff===true);
   bskyApply();
+  const tx=(saved&&typeof saved.tax==='string')?saved.tax.match(/^(\d\d)-(\d\d)$/):null;
+  TAX_START = tx&&taxOk(Number(tx[1])-1,Number(tx[2]))
+    ? {m:Number(tx[1])-1, d:Number(tx[2])} : {m:3, d:6};
   BACKUP_DONE = (saved&&typeof saved.backup==='string')?saved.backup:'';
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
@@ -7402,7 +7424,8 @@ function loadTiles(){
 }
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON,
-              backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF};
+              backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF,
+              tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
   MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
@@ -10386,18 +10409,66 @@ function repYearBack(iso){
   return isoDay(dt);
 }
 
-// The quick buttons. The UK tax year runs from 6 April to 5 April.
+// The tax year starts on a day each person chooses under Settings > Finances,
+// the UK's 6 April unless they pick another, and ends the day before.
+let TAX_START={m:3, d:6};
+const TAX_PRESETS=[['uk','UK \u00b7 6 April',3,6],['nz','New Zealand \u00b7 1 April',3,1],
+  ['au','Australia \u00b7 1 July',6,1],['cal','Calendar year \u00b7 1 January',0,1]];
+// 29 February is left out: it would start some years and not others.
+function taxOk(m,d){
+  return m>=0 && m<=11 && d>=1 && d<=(m===1?28:new Date(2001,m+1,0).getDate());
+}
+function taxRange(y){
+  return [isoDay(new Date(y,TAX_START.m,TAX_START.d)),
+          isoDay(new Date(y+1,TAX_START.m,TAX_START.d-1))];
+}
+function taxSaid(){
+  const f=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'long'});
+  return f(new Date(2001,TAX_START.m,TAX_START.d))+' to '
+       + f(new Date(2002,TAX_START.m,TAX_START.d-1));
+}
+function taxYearRows(){
+  const s=TAX_START;
+  const months=[...Array(12)].map((_,i)=>new Date(2001,i,1)
+    .toLocaleDateString('en-GB',{month:'long'}));
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+      The <em>This tax year</em> and <em>Last tax year</em> buttons in Finances
+      &rsaquo; Reports use this. Choose the day your tax year starts; it ends the
+      day before. Your choice is yours alone &mdash; everyone can set their own.</dd></div>
+    <div class="setadd">
+      <p class="coords" style="margin:0 0 4px">Your tax year runs
+        <strong id="taxSaid">${esc(taxSaid())}</strong></p>
+      <div class="pickrow">${TAX_PRESETS.map(([k,l,m,d])=>`<button type="button"
+        data-taxpre="${k}" aria-pressed="${s.m===m&&s.d===d}">${esc(l)}</button>`).join('')}</div>
+      <p class="coords" style="margin-top:14px">Or another start date</p>
+      <div class="pickrow taxpick">
+        <select id="taxDay" aria-label="Day">${[...Array(31)].map((_,i)=>
+          `<option value="${i+1}"${i+1===s.d?' selected':''}>${i+1}</option>`).join('')}</select>
+        <select id="taxMon" aria-label="Month">${months.map((n,i)=>
+          `<option value="${i}"${i===s.m?' selected':''}>${esc(n)}</option>`).join('')}</select>
+        <button class="btn" id="taxSave" style="border:1.5px solid var(--rule)">Save</button>
+      </div></div>`;
+}
+async function setTaxStart(m,d){
+  TAX_START={m,d};
+  await saveTiles();
+  openSettings();
+  toast('Saved. Your tax year runs '+taxSaid());
+}
+
+// The quick buttons.
 function repQuick(k){
   const t=new Date(), y=t.getFullYear(), m=t.getMonth();
   const day=(yy,mm,dd)=>isoDay(new Date(yy,mm,dd));
-  const taxStart = (t.getMonth()>3 || (t.getMonth()===3 && t.getDate()>=6)) ? y : y-1;
+  const s=TAX_START;
+  const taxStart = (m>s.m || (m===s.m && t.getDate()>=s.d)) ? y : y-1;
   switch(k){
     case 'tm':  return [day(y,m,1), day(y,m+1,0)];
     case 'lm':  return [day(y,m-1,1), day(y,m,0)];
     case 'ty':  return [day(y,0,1), day(y,11,31)];
     case 'ly':  return [day(y-1,0,1), day(y-1,11,31)];
-    case 'tt':  return [day(taxStart,3,6), day(taxStart+1,3,5)];
-    case 'lt':  return [day(taxStart-1,3,6), day(taxStart,3,5)];
+    case 'tt':  return taxRange(taxStart);
+    case 'lt':  return taxRange(taxStart-1);
   }
   return [REP.from, REP.to];
 }
@@ -10705,14 +10776,16 @@ function repTrend(lines){
     const ins=section('in','Income'), outs=section('out','Spending');
     csv.push(['Net','Income less spending',c,...months.map(k=>repCsvN(net[k]||0)),repCsvN(netT)]);
     return `<p class="dsec">${curs.length>1?esc(c)+' \u00b7 ':''}All figures in ${esc(c)}</p>
+      <div class="repwide"><div class="reptop" aria-hidden="true"><div></div></div>
       <div class="card reptrend"><table class="reptab trend">
       <thead><tr><th>Category</th>${months.map(k=>`<th class="n">${esc(repMonthShort(k))}</th>`).join('')}
         <th class="n tt">Total</th></tr></thead>
       <tbody>${ins}${outs}<tr class="tot net"><th>Income less spending</th>${cells(net,netT)}</tr></tbody>
-      </table></div>`;
+      </table></div></div>`;
   }).join('');
   return {html: (months.length>1 ? `<p class="repnote">Wider than the screen: slide the table
-      sideways to see every month. The category names stay where they are.</p>` : '') + html,
+      sideways to see every month. The category names stay where they are. On a
+      computer there is a scroll bar above the table as well as below it.</p>` : '') + html,
     csv, empty:!sp.length};
 }
 
@@ -10795,6 +10868,26 @@ function renderReports(){
   const ag=$('repAgain'); if(ag) ag.onclick=()=>{ REP.key=''; REP.prevKey=''; repLoad(); };
   const pr=$('repPrint'); if(pr) pr.onclick=printReport;
   const dl=$('repCsv'); if(dl) dl.onclick=downloadReport;
+  repWireTop();
+}
+
+// The bar above a wide report moves with the one below it, and the other way
+// round, so on a computer nobody has to go to the bottom to slide it sideways.
+function repWireTop(){
+  $('repBody').querySelectorAll('.repwide').forEach(w=>{
+    const top=w.querySelector('.reptop'), box=w.querySelector('.reptrend');
+    if(!top||!box) return;
+    const fit=()=>{
+      top.firstElementChild.style.width=box.scrollWidth+'px';
+      top.hidden = box.scrollWidth<=box.clientWidth+1;
+    };
+    fit();
+    const follow=(from,to)=>from.addEventListener('scroll',()=>{
+      if(Math.abs(to.scrollLeft-from.scrollLeft)>1) to.scrollLeft=from.scrollLeft;
+    },{passive:true});
+    follow(top,box); follow(box,top);
+    if(window.ResizeObserver) new ResizeObserver(fit).observe(box);
+  });
 }
 
 /* ---------- taking it out of the app ---------- */
@@ -10810,7 +10903,7 @@ function printReport(){
   let box=$('printArea');
   if(!box){ box=document.createElement('div'); box.id='printArea'; document.body.appendChild(box); }
   const body=$('repOut').cloneNode(true);
-  body.querySelectorAll('.reptools').forEach(x=>x.remove());
+  body.querySelectorAll('.reptools,.reptop').forEach(x=>x.remove());
   body.querySelectorAll('details').forEach(d=>{ d.open=false; });
   box.innerHTML=`<h1>${esc(h.title)}</h1>
     <p class="pwhen">${esc(h.when)}<br>${esc(h.accs)}</p>${body.innerHTML}

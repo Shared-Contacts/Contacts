@@ -128,6 +128,26 @@ const ok = (what, cond, extra='') => {
     return getComputedStyle(box).overflowX==='auto' && $('repBody').scrollWidth<=$('repBody').clientWidth; }));
   ok('with the category names held still on the left', await ev(() =>
     getComputedStyle(document.querySelector('.reptab.trend tbody tr:not(.sec) th')).position==='sticky'));
+  ok('two months fit, so there is no extra scroll bar above', await ev(() =>
+    document.querySelector('.reptop').hidden===true));
+  await ev(() => { REP.from='2025-01-01'; REP.to='2026-03-31'; return repLoad(); }); await settle();
+  const bars = await ev(() => {
+    const top = document.querySelector('.reptop'), box = document.querySelector('.reptrend');
+    return { shown: !top.hidden && top.getBoundingClientRect().bottom <= box.getBoundingClientRect().top + 1,
+             same: Math.abs(top.firstElementChild.offsetWidth - box.scrollWidth) <= 1,
+             sticky: getComputedStyle(top).position==='sticky' }; });
+  ok('fifteen months: a scroll bar above the table as well', bars.shown && bars.sticky, JSON.stringify(bars));
+  ok('as wide as the table itself', bars.same, JSON.stringify(bars));
+  await ev(() => { document.querySelector('.reptop').scrollLeft = 200; });
+  await page.waitForTimeout(150);
+  ok('sliding the top bar slides the table', await ev(() =>
+    Math.abs(document.querySelector('.reptrend').scrollLeft - 200) <= 1));
+  await ev(() => { document.querySelector('.reptrend').scrollLeft = 40; });
+  await page.waitForTimeout(150);
+  ok('and sliding the table moves the top bar with it', await ev(() =>
+    Math.abs(document.querySelector('.reptop').scrollLeft - 40) <= 1));
+  ok('the note mentions the bar above', /scroll bar above the table as well as below/.test(await text()));
+  await ev(() => { REP.from='2026-02-01'; REP.to='2026-03-31'; return repLoad(); }); await settle();
   const [dl2] = await Promise.all([ page.waitForEvent('download'), page.click('#repCsv') ]);
   const csv2 = require('fs').readFileSync(await dl2.path(), 'utf8');
   ok('the download has the months as columns', /Section,Category,Currency,Feb 26,Mar 26,Total/.test(csv2)
@@ -168,6 +188,67 @@ const ok = (what, cond, extra='') => {
   ok('This tax year runs 6 April to 5 April', tt[0]===start+'-04-06' && tt[1]===(start+1)+'-04-05', JSON.stringify(tt));
   ok('and its button shows as chosen', await ev(() =>
     document.querySelector('[data-repquick="tt"]').getAttribute('aria-pressed')==='true'));
+
+  console.log('\nTax year');
+  const nz = await ev(() => { TAX_START={m:3,d:1}; return [repQuick('tt'), repQuick('lt')]; });
+  const nzS = (now.getMonth() >= 3) ? y : y-1;
+  ok('New Zealand: 1 April to 31 March', nz[0][0]===nzS+'-04-01' && nz[0][1]===(nzS+1)+'-03-31', JSON.stringify(nz));
+  ok('and last tax year the year before', nz[1][0]===(nzS-1)+'-04-01' && nz[1][1]===nzS+'-03-31', JSON.stringify(nz));
+  const cal = await ev(() => { TAX_START={m:0,d:1}; return repQuick('tt'); });
+  ok('a calendar year ends on 31 December', cal[0]===y+'-01-01' && cal[1]===y+'-12-31', JSON.stringify(cal));
+  const au = await ev(() => { TAX_START={m:6,d:1}; return [repQuick('tt'), taxSaid()]; });
+  const auS = (now.getMonth() >= 6) ? y : y-1;
+  ok('Australia: 1 July to 30 June', au[0][0]===auS+'-07-01' && au[0][1]===(auS+1)+'-06-30' && au[1]==='1 July to 30 June', JSON.stringify(au));
+  ok('no 29 or 30 February, and no 31 April', await ev(() =>
+    !taxOk(1,29) && !taxOk(1,30) && !taxOk(3,31) && taxOk(1,28) && taxOk(11,31)));
+  // The card in Settings, and what it keeps.
+  const card = await ev(async () => {
+    TAX_START={m:3,d:6};
+    $('reports').classList.add('hidden');
+    await openSettings('Finances');
+    const d = document.querySelector('[data-setcard="taxyear"]'); d.open = true;
+    const said = $('taxSaid').textContent;
+    const ukOn = document.querySelector('[data-taxpre="uk"]').getAttribute('aria-pressed');
+    window.__writes.length = 0;
+    document.querySelector('[data-taxpre="nz"]').click();
+    await new Promise(r => setTimeout(r, 500));
+    const w = window.__writes.filter(x => x.table==='profiles').pop();
+    return { inFin: setGroupOf('taxyear').label, said, ukOn, saved: w && w.patch.home_tiles,
+             now: $('taxSaid') && $('taxSaid').textContent,
+             nzOn: document.querySelector('[data-taxpre="nz"]').getAttribute('aria-pressed') };
+  });
+  ok('Settings > Finances has a Tax year card', card.inFin==='Finances', JSON.stringify(card));
+  ok('which starts on the UK one, 6 April to 5 April', card.said==='6 April to 5 April' && card.ukOn==='true', JSON.stringify(card));
+  ok('tapping New Zealand keeps it with your own settings', card.saved && card.saved.tax==='04-01'
+     && Array.isArray(card.saved.tiles), JSON.stringify(card.saved));
+  ok('and the card then says 1 April to 31 March', card.now==='1 April to 31 March' && card.nzOn==='true', JSON.stringify(card));
+  const own = await ev(async () => {
+    $('taxDay').value='15'; $('taxMon').value='9';
+    window.__writes.length = 0;
+    $('taxSave').click();
+    await new Promise(r => setTimeout(r, 500));
+    const w = window.__writes.filter(x => x.table==='profiles').pop();
+    const saved = w && w.patch.home_tiles.tax;
+    $('taxDay').value='30'; $('taxMon').value='1';
+    window.__writes.length = 0;
+    $('taxSave').click();
+    await new Promise(r => setTimeout(r, 300));
+    return { saved, said: $('taxSaid').textContent, refused: !window.__writes.some(x => x.table==='profiles') };
+  });
+  ok('any other date can be chosen: 15 October', own.saved==='10-15' && own.said==='15 October to 14 October', JSON.stringify(own));
+  ok('30 February is turned away, not saved', own.refused, JSON.stringify(own));
+  const back = await ev(() => {
+    MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[], tax:'04-01' }; loadTiles();
+    const a = TAX_START.m===3 && TAX_START.d===1;
+    MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[] }; loadTiles();
+    const b = TAX_START.m===3 && TAX_START.d===6;
+    MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[], tax:'02-30' }; loadTiles();
+    const c = TAX_START.m===3 && TAX_START.d===6;
+    return [a,b,c]; });
+  ok('a saved choice comes back next time', back[0]);
+  ok('nobody who has not chosen gets anything but the UK dates', back[1] && back[2], JSON.stringify(back));
+  await ev(async () => { TAX_START={m:3,d:6}; $('settings').classList.add('hidden'); await openReports(); });
+  await settle();
   await ev(() => { $('repFrom').value='2026-03-01'; $('repTo').value='2026-02-01'; $('repTo').dispatchEvent(new Event('change')); });
   await settle();
   ok('From after To is explained', /From date is after the To date/.test(await text()));

@@ -839,6 +839,20 @@ i.key{vertical-align:middle}
 .reptot .w{flex:1}
 .repnet .reptot{border-top:none}
 .reptools{display:flex;gap:10px;margin:6px 0 20px}
+.reptrend{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.reptab.trend{width:auto;min-width:100%;font-size:13px}
+.reptab.trend th,.reptab.trend td{padding:7px 8px}
+.reptab.trend tbody th{text-align:left;font-weight:400;min-width:120px;max-width:150px;
+  text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink)}
+.reptab.trend th:first-child{position:sticky;left:0;z-index:1;background:var(--panel);
+  box-shadow:1px 0 0 var(--rule)}
+.reptab.trend tr.sec th,.reptab.trend tr.sec td{font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);font-weight:700;background:#FAF8F2;padding-top:10px}
+.reptab.trend tr.tot th,.reptab.trend tr.tot td{font-weight:700;background:#FAF8F2}
+.reptab.trend tr.tot th:first-child{background:#FAF8F2}
+.reptab.trend tr.net th,.reptab.trend tr.net td{border-top:2px solid var(--ink)}
+.reptab.trend .tt{border-left:1px solid var(--rule);font-weight:700}
+.reptab.trend .z{color:var(--muted)}
 .reptools .btn{flex:1;border:1.5px solid var(--rule)}
 #printArea{display:none}
 @media print{
@@ -851,6 +865,10 @@ i.key{vertical-align:middle}
   #printArea .repcat>summary{padding:6px 8px}
   #printArea .reptab td,#printArea .reptab th{padding:4px 8px}
   #printArea .neg{color:#000}
+  #printArea .reptrend{overflow:visible}
+  #printArea .reptab.trend{font-size:9px;width:100%}
+  #printArea .reptab.trend th,#printArea .reptab.trend td{padding:2px 4px}
+  #printArea .reptab.trend th:first-child{position:static;box-shadow:none}
 }
 .txn .rec{color:var(--hull);font-style:normal;margin-left:5px}
 /* How recently an account was agreed with the bank. Green is fine, amber has
@@ -3770,11 +3788,15 @@ function openHelp(where){
   The tax year is the UK one, 6 April to 5 April. Under <em>All accounts</em>
   you can untick any account to leave it out; only accounts you can see in
   Finances are there.</p>
-  <p>There are five reports: <strong>All accounts</strong> (each account month by
+  <p>There are six reports: <strong>All accounts</strong> (each account month by
   month, with totals for each currency), <strong>By category</strong> (tap a
   category to see the items behind it), <strong>Month by month</strong>,
-  <strong>Business</strong> (only the lines ticked as business, with the profit)
-  and <strong>Year on year</strong> (against the same dates a year before).</p>
+  <strong>Business</strong> (only the lines ticked as business, with the profit),
+  <strong>Year on year</strong> (against the same dates a year before) and the
+  <strong>Trended statement</strong>: every category down the side, a column for
+  each month and totals along the bottom and down the right. It is wider than a
+  phone, so slide it sideways; the category names stay put. It prints on a
+  landscape page.</p>
   <p>Money moved between your own accounts is not income or spending, so it is
   left out everywhere except <em>All accounts</em>, where it shows as
   <em>moved</em>. A refund counts back against its own category, and each line
@@ -10338,7 +10360,8 @@ const REP_KINDS=[
   {k:'cats',     label:'By category'},
   {k:'months',   label:'Month by month'},
   {k:'business', label:'Business'},
-  {k:'yoy',      label:'Year on year'}
+  {k:'yoy',      label:'Year on year'},
+  {k:'trend',    label:'Trended statement'}
 ];
 let REP={kind:'accounts', from:'', to:'', accs:null, data:null, prev:null,
          key:'', prevKey:'', busy:false, failed:false};
@@ -10636,6 +10659,60 @@ function repYoy(lines, prevLines){
     + table('in','Income')+table('out','Spending'), csv, empty:!rows.length};
 }
 
+// 6. The trended statement: categories down the side, a column for each
+// month, totals along the bottom and down the right. Wider than a phone, so
+// it scrolls sideways, with the category names held still on the left.
+// Laid out in the order the categories are in under Settings, as a
+// statement should be, rather than by size.
+const repMonthShort = m => repDay(m+'-01').toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+const repFig = v => { const r=repR2(v);
+  if(!r) return '<span class="z">\u2013</span>';
+  const a=Math.abs(r).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return `<span class="${r<0?'neg':''}">${r<0?'\u2212':''}${a}</span>`; };
+function repTrend(lines){
+  const months=repMonths(REP.from,REP.to), sp=repSpend(lines);
+  const curs=[...new Set(sp.map(l=>l.cur))].sort(repCurOrder);
+  const csv=[['Section','Category','Currency',...months.map(repMonthShort),'Total']];
+  const order=c=>{ if(c==null) return 1e9; const i=FCATS.findIndex(x=>x.id===c); return i<0?1e8:i; };
+  const html=curs.map(c=>{
+    const cats={};
+    sp.filter(l=>l.cur===c).forEach(l=>{
+      const k=l.cat==null?'none':l.cat;
+      const r=cats[k]=cats[k]||{cat:l.cat, m:{}, total:0};
+      repAdd(r.m,l.date.slice(0,7),l.value); r.total+=l.value;
+    });
+    const rows=Object.values(cats).map(r=>({...r, side:repSide(r.cat,r.total)}))
+      .sort((a,b)=>order(a.cat)-order(b.cat));
+    const net={}; let netT=0;
+    const cells=(m,t,cls)=>months.map(k=>`<td class="n${cls||''}">${repFig(m[k]||0)}</td>`).join('')
+      + `<td class="n tt${cls||''}">${repFig(t)}</td>`;
+    const section=(side,title)=>{
+      const list=rows.filter(r=>r.side===side); if(!list.length) return '';
+      const tot={}; let all=0;
+      const body=list.map(r=>{
+        months.forEach(k=>{ repAdd(tot,k,r.m[k]||0); repAdd(net,k,r.m[k]||0); });
+        all+=r.total; netT+=r.total;
+        csv.push([title,repCatName(r.cat),c,...months.map(k=>repCsvN(r.m[k]||0)),repCsvN(r.total)]);
+        return `<tr><th>${esc(repCatName(r.cat))}</th>${cells(r.m,r.total)}</tr>`;
+      }).join('');
+      csv.push([title,'Total '+title.toLowerCase(),c,...months.map(k=>repCsvN(tot[k]||0)),repCsvN(all)]);
+      return `<tr class="sec"><th>${esc(title)}</th><td colspan="${months.length+1}"></td></tr>${body}
+        <tr class="tot"><th>Total ${esc(title.toLowerCase())}</th>${cells(tot,all)}</tr>`;
+    };
+    const ins=section('in','Income'), outs=section('out','Spending');
+    csv.push(['Net','Income less spending',c,...months.map(k=>repCsvN(net[k]||0)),repCsvN(netT)]);
+    return `<p class="dsec">${curs.length>1?esc(c)+' \u00b7 ':''}All figures in ${esc(c)}</p>
+      <div class="card reptrend"><table class="reptab trend">
+      <thead><tr><th>Category</th>${months.map(k=>`<th class="n">${esc(repMonthShort(k))}</th>`).join('')}
+        <th class="n tt">Total</th></tr></thead>
+      <tbody>${ins}${outs}<tr class="tot net"><th>Income less spending</th>${cells(net,netT)}</tr></tbody>
+      </table></div>`;
+  }).join('');
+  return {html: (months.length>1 ? `<p class="repnote">Wider than the screen: slide the table
+      sideways to see every month. The category names stay where they are.</p>` : '') + html,
+    csv, empty:!sp.length};
+}
+
 function repBuild(){
   const lines=REP.data.lines;
   switch(REP.kind){
@@ -10644,6 +10721,7 @@ function repBuild(){
     case 'months':   { const r=repMonthly(lines); return {...r, empty:!repSpend(lines).length}; }
     case 'business': return repBusiness(lines);
     case 'yoy':      return repYoy(lines, REP.prev?REP.prev.lines:[]);
+    case 'trend':    return repTrend(lines);
   }
   return {html:'',csv:[],empty:true};
 }
@@ -10736,7 +10814,14 @@ function printReport(){
     <p class="pfoot">From It’s MY life, ${esc(new Date().toLocaleDateString('en-GB',
       {day:'numeric',month:'long',year:'numeric'}))}</p>`;
   document.body.classList.add('printing');
-  const done=()=>{ document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
+  let page=null;
+  if(REP.kind==='trend'){
+    page=document.createElement('style'); page.id='printPage';
+    page.textContent='@page{size:A4 landscape;margin:10mm}';
+    document.head.appendChild(page);
+  }
+  const done=()=>{ document.body.classList.remove('printing'); if(page) page.remove();
+    window.removeEventListener('afterprint',done); };
   window.addEventListener('afterprint',done);
   try{ window.print(); }catch(e){ console.error(e); toast('Printing is not available here'); done(); }
 }

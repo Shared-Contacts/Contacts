@@ -167,8 +167,12 @@ const FEED = {
   console.log('\nThe picture itself will not load');
   mode = 'nopic';
   await page.evaluate(() => localStorage.removeItem('bskyphoto'));
+  // A picture this page has never loaded. The one used so far is already in
+  // the browser's memory, so it would show without being asked for again and
+  // the failure would never happen. That is what kept these two checks red.
+  const NOPIC = JSON.parse(JSON.stringify(FEED).replace(/mine(-big)?\.jpg/g, 'gone$1.jpg'));
   await page.route('https://public.api.bsky.app/**', r => r.fulfill({ status:200,
-    contentType:'application/json', body:JSON.stringify(FEED) }));
+    contentType:'application/json', body:JSON.stringify(NOPIC) }));
   await open(); await page.waitForTimeout(900);
   const broke = await page.evaluate(() => ({
     pic: !!document.querySelector('#briefPhoto .bsky'),

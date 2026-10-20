@@ -126,7 +126,7 @@ function builder(table){
   const done=()=>Promise.resolve({
     data: apply((window.__rows[table]||[]).slice(), where)
             .map(r=>JSON.parse(JSON.stringify(r))), error:null });
-  ['select','order','limit','filter','not'].forEach(m=>api[m]=()=>api);
+  ['select','order','limit','filter','not','range'].forEach(m=>api[m]=()=>api);
   // or('a.ilike.%x%,b.ilike.%x%') — match any of the listed conditions.
   api.or=expr=>{
     const parts=String(expr).split(',').map(s=>{

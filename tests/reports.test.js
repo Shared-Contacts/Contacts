@@ -49,9 +49,9 @@ const ok = (what, cond, extra='') => {
   await ev(() => { REP.from='2026-02-01'; REP.to='2026-02-28'; return openReports(); }); await settle();
   ok('it opens', await ev(() => !$('reports').classList.contains('hidden')));
   ok('Help knows where it is', await ev(() => currentScreen()==='reports' && HELP_AT.reports==='h-reports'));
-  ok('all five reports are offered', await ev(() =>
+  ok('all six reports are offered', await ev(() =>
     [...document.querySelectorAll('[data-repkind]')].map(b => b.textContent).join('|')
-      === 'All accounts|By category|Month by month|Business|Year on year'));
+      === 'All accounts|By category|Month by month|Business|Year on year|Trended statement'));
   ok('all three accounts are ticked to start with', await ev(() =>
     document.querySelectorAll('[data-repacc]:checked').length===3));
 
@@ -108,6 +108,34 @@ const ok = (what, cond, extra='') => {
   ok('Groceries now −£42.50, a year before −£30.00, change −£12.50', /Groceries\s*−£42\.50\s*−£30\.00\s*−£12\.50/.test(t), t);
   ok('Diesel, new this year', /Diesel\s*−£212\.40\s*£0\.00\s*−£212\.40/.test(t));
   ok('it says which dates it compares', /1 Feb 2026 to 28 Feb 2026, against 1 Feb 2025 to 28 Feb 2025/.test(t));
+
+  // ---------------------------------------------------------------
+  console.log('\nTrended statement');
+  await ev(() => { REP.from='2026-02-01'; REP.to='2026-03-31'; });
+  await page.click('[data-repkind="trend"]'); await settle();
+  const grid = await ev(() => [...document.querySelectorAll('.reptab.trend tr')]
+    .map(tr => [...tr.children].map(c => c.textContent.trim()).join(' | ')));
+  ok('a column for each month, and a total', grid[0]==='Category | Feb 26 | Mar 26 | Total', grid[0]);
+  ok('Photography sales: 88.12 in Feb, nothing in Mar', grid.includes('PH Photography sales | 88.12 | \u2013 | 88.12'), JSON.stringify(grid));
+  const dI = grid.indexOf('Diesel | \u2212212.40 | \u2013 | \u2212212.40'), gI = grid.indexOf('Groceries | \u221242.50 | 10.00 | \u221232.50');
+  ok('Diesel then Groceries, in the order set in Settings', dI > 0 && gI > dI, JSON.stringify(grid));
+  ok('total spending for each month', grid.includes('Total spending | \u2212254.90 | 10.00 | \u2212244.90'));
+  ok('income less spending along the bottom', grid[grid.length-1]==='Income less spending | \u2212166.78 | 10.00 | \u2212156.78', grid[grid.length-1]);
+  ok('it scrolls sideways inside its box, not the whole page', await ev(() => {
+    const box = document.querySelector('.reptrend');
+    return getComputedStyle(box).overflowX==='auto' && $('repBody').scrollWidth<=$('repBody').clientWidth; }));
+  ok('with the category names held still on the left', await ev(() =>
+    getComputedStyle(document.querySelector('.reptab.trend tbody tr:not(.sec) th')).position==='sticky'));
+  const [dl2] = await Promise.all([ page.waitForEvent('download'), page.click('#repCsv') ]);
+  const csv2 = require('fs').readFileSync(await dl2.path(), 'utf8');
+  ok('the download has the months as columns', /Section,Category,Currency,Feb 26,Mar 26,Total/.test(csv2)
+     && /Spending,Groceries,GBP,-42\.50,10\.00,-32\.50/.test(csv2) && /Net,Income less spending,GBP,-166\.78,10\.00,-156\.78/.test(csv2), csv2);
+  await ev(() => { window.__land = null; window.print = () => {
+    const st = document.getElementById('printPage'); window.__land = !!st && /landscape/.test(st.textContent); }; });
+  await page.click('#repPrint');
+  ok('it prints on a landscape page', await ev(() => window.__land===true));
+  await ev(() => window.dispatchEvent(new Event('afterprint')));
+  ok('and the page goes back to normal afterwards', await ev(() => !document.getElementById('printPage')));
 
   // ---------------------------------------------------------------
   console.log('\nChoosing accounts');

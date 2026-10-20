@@ -10488,10 +10488,13 @@ async function repLoad(){
 /* ---------- adding up ---------- */
 const repAdd=(o,k,v)=>{ o[k]=(o[k]||0)+v; return o; };
 const repR2=v=>Math.round(v*100)/100;
+// The category's code goes in front only on the By category report; every
+// other report reads more easily with the plain name.
 function repCatName(id){
   if(id==null) return 'No category';
   const c=FCATS.find(x=>x.id===id);
-  return c ? (c.code&&String(c.code).trim() ? c.code+' '+c.name : c.name) : 'A removed category';
+  if(!c) return 'A removed category';
+  return REP.kind==='cats' && c.code && String(c.code).trim() ? c.code+' '+c.name : c.name;
 }
 // Which side a category sits on: what it is set up as, or failing that
 // which way its money went.

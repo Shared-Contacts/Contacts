@@ -70,7 +70,7 @@ const ok = (what, cond, extra='') => {
   console.log('\nBy category');
   await page.click('[data-repkind="cats"]'); await settle();
   t = await text();
-  ok('income: Photography sales £88.12', /Income\s*PH Photography sales\s*1 item\s*£88\.12/.test(t), t.slice(0,300));
+  ok('By category keeps the code: PH Photography sales £88.12', /Income\s*PH Photography sales\s*1 item\s*£88\.12/.test(t), t.slice(0,300));
   ok('spending: Diesel −£212.40 first, as the biggest', /Spending\s*Diesel\s*1 item\s*−£212\.40.*Groceries\s*1 item\s*−£42\.50/.test(t), t);
   ok('transfers are not spending', !/500\.00|1,050/.test(t));
   ok('income less spending −£166.78', /Income less spending\s*−£166\.78/.test(t));
@@ -96,9 +96,10 @@ const ok = (what, cond, extra='') => {
   console.log('\nBusiness');
   await page.click('[data-repkind="business"]'); await settle();
   t = await text();
-  ok('only the business lines: sales £88.12, Diesel costs −£212.40', /PH Photography sales\s*1 item\s*£88\.12/.test(t)
+  ok('only the business lines: sales £88.12, Diesel costs −£212.40', /Photography sales\s*1 item\s*£88\.12/.test(t)
      && /Costs\s*Diesel\s*1 item\s*−£212\.40/.test(t) && !/Groceries/.test(t), t);
   ok('profit −£124.28', /Profit\s*−£124\.28/.test(t));
+  ok('with no category codes in front of the names', !/PH Photography/.test(t));
 
   // ---------------------------------------------------------------
   console.log('\nYear on year');
@@ -107,6 +108,7 @@ const ok = (what, cond, extra='') => {
   t = await text();
   ok('Groceries now −£42.50, a year before −£30.00, change −£12.50', /Groceries\s*−£42\.50\s*−£30\.00\s*−£12\.50/.test(t), t);
   ok('Diesel, new this year', /Diesel\s*−£212\.40\s*£0\.00\s*−£212\.40/.test(t));
+  ok('Year on year shows names without codes', /Photography sales/.test(t) && !/PH Photography/.test(t));
   ok('it says which dates it compares', /1 Feb 2026 to 28 Feb 2026, against 1 Feb 2025 to 28 Feb 2025/.test(t));
 
   // ---------------------------------------------------------------
@@ -116,7 +118,7 @@ const ok = (what, cond, extra='') => {
   const grid = await ev(() => [...document.querySelectorAll('.reptab.trend tr')]
     .map(tr => [...tr.children].map(c => c.textContent.trim()).join(' | ')));
   ok('a column for each month, and a total', grid[0]==='Category | Feb 26 | Mar 26 | Total', grid[0]);
-  ok('Photography sales: 88.12 in Feb, nothing in Mar', grid.includes('PH Photography sales | 88.12 | \u2013 | 88.12'), JSON.stringify(grid));
+  ok('Photography sales: 88.12 in Feb, nothing in Mar', grid.includes('Photography sales | 88.12 | \u2013 | 88.12'), JSON.stringify(grid));
   const dI = grid.indexOf('Diesel | \u2212212.40 | \u2013 | \u2212212.40'), gI = grid.indexOf('Groceries | \u221242.50 | 10.00 | \u221232.50');
   ok('Diesel then Groceries, in the order set in Settings', dI > 0 && gI > dI, JSON.stringify(grid));
   ok('total spending for each month', grid.includes('Total spending | \u2212254.90 | 10.00 | \u2212244.90'));

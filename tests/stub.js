@@ -153,8 +153,10 @@ function builder(table){
     return { select:sel, single:()=>Promise.resolve({data:out[0],error:null}),
              then:(f,r)=>Promise.resolve({data:null,error:null}).then(f,r) };
   };
-  api.update=patch=>{ window.__writes.push({op:'update',table,patch}); return api; };
-  api.delete=()=>{ window.__writes.push({op:'delete',table}); return api; };
+  // The filters that follow are kept with the write (the same list, filled in
+  // as the page adds them), so a test can see WHOSE row was changed.
+  api.update=patch=>{ window.__writes.push({op:'update',table,patch,where}); return api; };
+  api.delete=()=>{ window.__writes.push({op:'delete',table,where}); return api; };
   api.upsert=rows=>{ window.__writes.push({op:'upsert',table,rows}); return done(); };
   api.then=(f,r)=>done().then(f,r);
   return api;

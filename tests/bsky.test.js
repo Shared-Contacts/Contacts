@@ -66,8 +66,8 @@ const FEED = {
   ok('and empty stays empty', names[5] === '');
 
   // ---------------------------------------------------------------
-  console.log('\nNobody has chosen one');
-  await page.evaluate(() => { BSKY_HANDLE = ''; });
+  console.log('\nSwitched off');
+  await page.evaluate(() => { BSKY_OWN = ''; BSKY_OFF = true; bskyApply(); });
   asked = [];
   await open(); await settle();
   ok('no photo and no gap', (await page.$$('#briefPhoto')).length === 0);
@@ -77,7 +77,7 @@ const FEED = {
 
   // ---------------------------------------------------------------
   console.log('\nA name chosen, Bluesky answers');
-  await page.evaluate(() => { localStorage.removeItem('bskyphoto'); BSKY_HANDLE = 'boat.bsky.social'; });
+  await page.evaluate(() => { localStorage.removeItem('bskyphoto'); BSKY_OFF = false; BSKY_OWN = 'boat.bsky.social'; bskyApply(); });
   mode = 'ok'; asked = [];
   await open(); await settle();
   const shown = await page.evaluate(() => {
@@ -215,15 +215,37 @@ const FEED = {
   ok('nonsense is refused and nothing is saved',
      s.h === 'someone.bsky.social' && !s.blob, JSON.stringify(s));
   s = await save('');
-  ok('emptying the box turns the photo off', s.h === '' && s.blob && s.blob.bsky === '');
+  ok('emptying the box goes back to Barry’s photo', s.h === 'barryandsandra.bsky.social'
+     && s.blob && s.blob.bsky === '' && s.blob.bskyoff === false, JSON.stringify(s));
+  const flip = async on => page.evaluate(async on => {
+    window.__writes.length = 0;
+    const b = $('bskyOn'); b.checked = on; b.dispatchEvent(new Event('change'));
+    await new Promise(r => setTimeout(r, 400));
+    const w = window.__writes.filter(x => x.table === 'profiles').pop();
+    return { h: BSKY_HANDLE, blob: w && w.patch.home_tiles };
+  }, on);
+  s = await flip(false);
+  ok('the switch turns the photo off, and says so in the saved settings',
+     s.h === '' && s.blob && s.blob.bskyoff === true, JSON.stringify(s));
+  s = await flip(true);
+  ok('and on again', s.h === 'barryandsandra.bsky.social' && s.blob && s.blob.bskyoff === false,
+     JSON.stringify(s));
 
   console.log('\nIt comes back next time');
   ok('a saved name is read back', await page.evaluate(() => {
     MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[], bsky:'boat.bsky.social' };
     loadTiles(); return BSKY_HANDLE === 'boat.bsky.social';
   }));
-  ok('and somebody who never set one has none', await page.evaluate(() => {
+  ok('somebody who never set one sees Barry’s', await page.evaluate(() => {
     MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[] };
+    loadTiles(); return BSKY_HANDLE === 'barryandsandra.bsky.social';
+  }));
+  ok('and so does somebody whose saved name is empty', await page.evaluate(() => {
+    MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[], bsky:'' };
+    loadTiles(); return BSKY_HANDLE === 'barryandsandra.bsky.social';
+  }));
+  ok('somebody who switched it off has none', await page.evaluate(() => {
+    MY_PROFILE.home_tiles = { tiles:[{dest:'contacts'}], hidden:[], bsky:'', bskyoff:true };
     loadTiles(); return BSKY_HANDLE === '';
   }));
 

@@ -801,6 +801,57 @@ i.key{vertical-align:middle}
 .txn .ta{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap;
   text-align:right;padding-top:1px}
 .txn .ta.neg{color:var(--red)}
+/* Reports */
+.repctl{padding:12px 14px 6px}
+.repctl .pickrow{margin:0 0 10px}
+.repctl .pickrow button{padding:7px 12px;font-size:14px}
+.repdates{margin:0 0 6px}
+.repdates label{font-size:14px;color:var(--muted)}
+.repdates input{width:100%}
+.repaccs{margin:0 0 8px}
+.repaccs>summary{cursor:pointer;padding:6px 0;color:var(--hull);font-weight:700}
+.reptitle{margin:6px 2px 10px;font-size:20px}
+.repmsg{margin:14px 4px;line-height:1.45}
+.repnote{margin:0 4px 12px;font-size:14px;color:var(--muted);line-height:1.4}
+.reptab{width:100%;border-collapse:collapse;font-size:14px}
+.reptab th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule)}
+.reptab td{padding:8px 10px;border-bottom:1px solid #F0EEE7;vertical-align:top}
+.reptab .n{text-align:right;white-space:nowrap}
+.reptab td small{display:block;color:var(--muted);font-size:12px}
+.reptab tr.tot td{border-top:2px solid var(--rule);font-weight:700;background:#FAF8F2}
+.reptab tr.quiet td{color:var(--muted)}
+.reptab .neg,.repcat .neg,.reptot .neg,.replist .neg{color:var(--red)}
+.repcat>summary{display:flex;gap:10px;align-items:baseline;padding:11px 14px;cursor:pointer;
+  border-bottom:1px solid #F0EEE7;list-style:none}
+.repcat>summary::-webkit-details-marker{display:none}
+.repcat .w{flex:1}
+.repcat .w small{display:block;color:var(--muted);font-size:12px}
+.repcat .n,.reptot .n{white-space:nowrap;font-weight:700}
+.replist{padding:4px 14px 10px;background:#FAF8F2}
+.replist .rl{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #F0EEE7;font-size:14px}
+.replist .d{flex:0 0 92px;color:var(--muted)}
+.replist .w{flex:1;min-width:0;overflow-wrap:anywhere}
+.replist .w em{color:var(--muted);font-style:normal}
+.replist .w small{display:block;color:var(--muted);font-size:12px}
+.replist .n{white-space:nowrap}
+.reptot{display:flex;gap:10px;padding:11px 14px;font-weight:700;background:#FAF8F2;border-top:2px solid var(--rule)}
+.reptot .w{flex:1}
+.repnet .reptot{border-top:none}
+.reptools{display:flex;gap:10px;margin:6px 0 20px}
+.reptools .btn{flex:1;border:1.5px solid var(--rule)}
+#printArea{display:none}
+@media print{
+  body.printing>*:not(#printArea){display:none!important}
+  body.printing #printArea{display:block;color:#000;font-size:12px}
+  #printArea h1{font-size:20px;margin:0 0 4px}
+  #printArea .pwhen{margin:0 0 14px;color:#444}
+  #printArea .pfoot{margin-top:18px;color:#666;font-size:11px}
+  #printArea .card{border:1px solid #ccc;box-shadow:none;break-inside:avoid;margin-bottom:12px}
+  #printArea .repcat>summary{padding:6px 8px}
+  #printArea .reptab td,#printArea .reptab th{padding:4px 8px}
+  #printArea .neg{color:#000}
+}
 .txn .rec{color:var(--hull);font-style:normal;margin-left:5px}
 /* How recently an account was agreed with the bank. Green is fine, amber has
    been left long enough that finding a difference will be harder. */
@@ -1110,6 +1161,12 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="pairsBody"></div>
 </div>
 
+<div id="reports" class="sheet hidden">
+  <div class="sheetbar"><button id="repBack">Back</button>
+    <span class="title">Reports</span><span class="bartools"><button class="bt" data-barhelp="reports" aria-label="How the reports work" title="How the reports work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
+  <div class="sheetbody" id="repBody"></div>
+</div>
+
 <div id="recon" class="sheet hidden">
   <div class="sheetbar"><button id="reconBack">Back</button>
     <span class="title">Reconcile</span><span class="bartools"><button class="bt" data-barhelp="recon" aria-label="How reconciling works" title="How reconciling works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
@@ -1226,7 +1283,7 @@ const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','log',
   'logEd','where','wish','shop','io','offers','chats','chat',
-  'money','moneyEd','recon','moneyImp','pairs','jig','jigPlay'];
+  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -3557,7 +3614,7 @@ async function openSettings(goTo){
 
 // Which screen is in front, so Help and the settings button know where you are.
 const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['chats','chats'],
-  ['moneyImp','money'],['pairs','money'],['recon','money'],['moneyEd','money'],['money','money'],
+  ['moneyImp','money'],['pairs','money'],['reports','reports'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
@@ -3569,7 +3626,7 @@ function currentScreen(){
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
   where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
-  money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs',
+  money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
@@ -3705,6 +3762,28 @@ function openHelp(where){
   statement</strong> refuses to go, and you are told how many were refused
   rather than being left to wonder; unlock that statement first if you really
   meant it.</p>
+
+  <h4 id="h-reports">Reports</h4>
+  <p><strong>Finances &rsaquo; Reports</strong> adds up your books for any dates
+  you choose. Type a <strong>From</strong> and <strong>To</strong> date, or tap
+  This month, Last month, This year, Last year, This tax year or Last tax year.
+  The tax year is the UK one, 6 April to 5 April. Under <em>All accounts</em>
+  you can untick any account to leave it out; only accounts you can see in
+  Finances are there.</p>
+  <p>There are five reports: <strong>All accounts</strong> (each account month by
+  month, with totals for each currency), <strong>By category</strong> (tap a
+  category to see the items behind it), <strong>Month by month</strong>,
+  <strong>Business</strong> (only the lines ticked as business, with the profit)
+  and <strong>Year on year</strong> (against the same dates a year before).</p>
+  <p>Money moved between your own accounts is not income or spending, so it is
+  left out everywhere except <em>All accounts</em>, where it shows as
+  <em>moved</em>. A refund counts back against its own category, and each line
+  of a split receipt counts under its own category. Each currency is added up
+  on its own, as no exchange rates are kept.</p>
+  <p><strong>Print</strong> gives a clean page with just the report; on a phone
+  the print screen can save it as a PDF. <strong>Download</strong> saves a file
+  that Excel or Google Sheets opens, with plain numbers and a column for the
+  currency.</p>
 
   <h4 id="h-pairs">Transfers that came in as two loose halves</h4>
   <p>Money moved between two of your own accounts appears on <em>both</em>
@@ -7185,7 +7264,7 @@ function shade(hex,amt){
 // took off the home screen hands its screen back to the colour scheme.
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
-  chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs'],
+  chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -10242,6 +10321,436 @@ function pickPayee(){
    for — so those are left to be paired by hand from the transaction itself. */
 let PAIRS=[];
 
+/* ============================================================
+   Finances > Reports
+   Five ways of looking at the books over dates you choose, for the
+   accounts you choose. Nothing here is stored: each report is worked out
+   from the transactions themselves when you open it, so it can never
+   disagree with them.
+   - Transfers between your own accounts are not income or spending, so
+     only the All accounts report shows them, as money moved.
+   - A refund counts back against its own category.
+   - Each line of a split receipt counts under its own category.
+   - Each currency is totalled on its own: no exchange rates are kept.
+   ============================================================ */
+const REP_KINDS=[
+  {k:'accounts', label:'All accounts'},
+  {k:'cats',     label:'By category'},
+  {k:'months',   label:'Month by month'},
+  {k:'business', label:'Business'},
+  {k:'yoy',      label:'Year on year'}
+];
+let REP={kind:'accounts', from:'', to:'', accs:null, data:null, prev:null,
+         key:'', prevKey:'', busy:false, failed:false};
+
+const repDay = iso => { const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); };
+const repShort = iso => repDay(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const repMonthName = key => repDay(key+'-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+function repMonths(from,to){
+  const out=[]; let [y,m]=from.split('-').map(Number);
+  const [ty,tm]=to.split('-').map(Number);
+  while(y<ty||(y===ty&&m<=tm)){
+    out.push(`${y}-${String(m).padStart(2,'0')}`);
+    m++; if(m>12){ m=1; y++; }
+  }
+  return out;
+}
+// The same dates a year earlier, for Year on year. 29 February becomes the 28th.
+function repYearBack(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  const dt=new Date(y-1,m-1,d);
+  if(dt.getMonth()!==m-1) dt.setDate(0);
+  return isoDay(dt);
+}
+
+// The quick buttons. The UK tax year runs from 6 April to 5 April.
+function repQuick(k){
+  const t=new Date(), y=t.getFullYear(), m=t.getMonth();
+  const day=(yy,mm,dd)=>isoDay(new Date(yy,mm,dd));
+  const taxStart = (t.getMonth()>3 || (t.getMonth()===3 && t.getDate()>=6)) ? y : y-1;
+  switch(k){
+    case 'tm':  return [day(y,m,1), day(y,m+1,0)];
+    case 'lm':  return [day(y,m-1,1), day(y,m,0)];
+    case 'ty':  return [day(y,0,1), day(y,11,31)];
+    case 'ly':  return [day(y-1,0,1), day(y-1,11,31)];
+    case 'tt':  return [day(taxStart,3,6), day(taxStart+1,3,5)];
+    case 'lt':  return [day(taxStart-1,3,6), day(taxStart,3,5)];
+  }
+  return [REP.from, REP.to];
+}
+const REP_QUICK=[['tm','This month'],['lm','Last month'],['ty','This year'],
+  ['ly','Last year'],['tt','This tax year'],['lt','Last tax year']];
+
+function repAccIds(){
+  const all=ACCOUNTS.map(a=>a.id);
+  return REP.accs ? all.filter(id=>REP.accs.has(id)) : all;
+}
+
+async function openReports(){
+  if(!REP.from){ const [f,t]=repQuick('ty'); REP.from=f; REP.to=t; }
+  showSheet('reports'); lockBackground();
+  renderReports(); $('repBody').scrollTop=0;
+  await repLoad();
+}
+
+/* Everything in the chosen dates and accounts, a thousand at a time,
+   with the lines that belong to them. */
+async function repFetch(from,to,ids){
+  const txns=[];
+  for(let i=0;;i+=1000){
+    const {data,error}=await sb.from('transactions').select('*')
+      .gte('tdate',from).lte('tdate',to).in('account_id',ids)
+      .order('tdate').order('id').range(i,i+999);
+    if(error) throw error;
+    txns.push(...(data||[]));
+    if(!data||data.length<1000) break;
+  }
+  const items=[], tids=txns.map(t=>t.id);
+  for(let i=0;i<tids.length;i+=150){
+    const slice=tids.slice(i,i+150);
+    for(let j=0;;j+=1000){
+      const {data,error}=await sb.from('transaction_items').select('*')
+        .in('transaction_id',slice).order('id').range(j,j+999);
+      if(error) throw error;
+      items.push(...(data||[]));
+      if(!data||data.length<1000) break;
+    }
+  }
+  return repLines(txns,items);
+}
+
+// One row per line of a receipt, carrying what the reports need to know.
+function repLines(txns,items){
+  const byT={};
+  items.forEach(it=>{ (byT[it.transaction_id]=byT[it.transaction_id]||[]).push(it); });
+  const lines=[];
+  txns.forEach(t=>{
+    const cur=accCur(t.account_id);
+    const its=byT[t.id]||[];
+    const base={txn:t, cur, acc:t.account_id, date:t.tdate, kind:t.kind,
+      payee:payeeName(t.payee_id)};
+    if(!its.length){
+      // A transaction with no lines still counts, under No category.
+      lines.push({...base, cat:null, desc:t.notes||t.reference||'',
+        value:Number(t.total||0), business:!!t.business});
+      return;
+    }
+    its.forEach(it=>lines.push({...base, cat:it.category_id??null,
+      desc:it.description||'',
+      value:Number(it.line_total!=null ? it.line_total : (Number(it.qty||1)*Number(it.amount||0))),
+      business:!!it.business}));
+  });
+  return {txns, lines};
+}
+
+async function repLoad(){
+  const ids=repAccIds();
+  if(!REP.from||!REP.to||REP.from>REP.to||!ids.length){ renderReports(); return; }
+  const key=REP.from+'|'+REP.to+'|'+ids.join(',');
+  const prevKey='Y'+key;
+  const needPrev=REP.kind==='yoy';
+  if(key===REP.key && (!needPrev || prevKey===REP.prevKey) && !REP.failed){ renderReports(); return; }
+  REP.busy=true; REP.failed=false; renderReports();
+  try{
+    if(key!==REP.key || REP.failed){ REP.data=await repFetch(REP.from,REP.to,ids); REP.key=key; }
+    if(needPrev && prevKey!==REP.prevKey){
+      REP.prev=await repFetch(repYearBack(REP.from),repYearBack(REP.to),ids);
+      REP.prevKey=prevKey;
+    }
+  }catch(e){ console.error('reports',e); REP.failed=true; REP.key=''; REP.prevKey=''; }
+  REP.busy=false;
+  renderReports();
+}
+
+/* ---------- adding up ---------- */
+const repAdd=(o,k,v)=>{ o[k]=(o[k]||0)+v; return o; };
+const repR2=v=>Math.round(v*100)/100;
+function repCatName(id){
+  if(id==null) return 'No category';
+  const c=FCATS.find(x=>x.id===id);
+  return c ? (c.code&&String(c.code).trim() ? c.code+' '+c.name : c.name) : 'A removed category';
+}
+// Which side a category sits on: what it is set up as, or failing that
+// which way its money went.
+function repSide(catId, net){
+  const c=FCATS.find(x=>x.id===catId);
+  if(c&&c.kind==='income') return 'in';
+  if(c&&c.kind==='expense') return 'out';
+  return net>=0?'in':'out';
+}
+function repCurOrder(a,b){
+  const at=c=>{ const i=CURRENCIES.findIndex(x=>x.code===c); return i<0?999:i; };
+  return at(a)-at(b)||String(a).localeCompare(String(b));
+}
+// Totals by category, each currency apart.
+function repByCat(lines){
+  const rows={};
+  lines.forEach(l=>{
+    const k=(l.cat==null?'none':l.cat)+'|'+l.cur;
+    const r=rows[k]=rows[k]||{cat:l.cat, cur:l.cur, total:0, lines:[]};
+    r.total+=l.value; r.lines.push(l);
+  });
+  return Object.values(rows).map(r=>({...r, total:repR2(r.total), side:repSide(r.cat,r.total)}));
+}
+const repSpend = lines => lines.filter(l=>l.kind!=='transfer');
+
+/* ---------- drawing ---------- */
+const repM=(v,cur)=>`<span class="${v<0?'neg':''}">${moneyTag(v,cur)}</span>`;
+const repCsvN=v=>repR2(v).toFixed(2);
+function repTxnList(lines){
+  return `<div class="replist">${lines.slice().sort((a,b)=>a.date.localeCompare(b.date))
+    .map(l=>`<div class="rl"><span class="d">${esc(repShort(l.date))}</span>
+      <span class="w">${esc(l.payee||l.desc||'—')}${l.payee&&l.desc?` <em>${esc(l.desc)}</em>`:''}
+        <small>${esc((accOf(l.acc)||{}).name||'')}</small></span>
+      <span class="n">${repM(l.value,l.cur)}</span></div>`).join('')}</div>`;
+}
+function repCatBlocks(rows, title){
+  if(!rows.length) return '';
+  const byCur={};
+  rows.forEach(r=>repAdd(byCur,r.cur,r.total));
+  return `<p class="dsec">${esc(title)}</p><div class="card">`
+    + rows.sort((a,b)=>repCurOrder(a.cur,b.cur)||Math.abs(b.total)-Math.abs(a.total))
+      .map(r=>`<details class="repcat"><summary><span class="w">${esc(repCatName(r.cat))}
+          <small>${r.lines.length} item${r.lines.length===1?'':'s'}</small></span>
+          <span class="n">${repM(r.total,r.cur)}</span></summary>${repTxnList(r.lines)}</details>`).join('')
+    + Object.keys(byCur).sort(repCurOrder).map(c=>`<div class="reptot"><span class="w">Total ${esc(title.toLowerCase())}${
+        Object.keys(byCur).length>1?' ('+esc(c)+')':''}</span><span class="n">${repM(repR2(byCur[c]),c)}</span></div>`).join('')
+    + `</div>`;
+}
+function repBottomLine(rows, label){
+  const net={};
+  rows.forEach(r=>repAdd(net,r.cur,r.total));
+  const curs=Object.keys(net).sort(repCurOrder);
+  if(!curs.length) return '';
+  return `<div class="card repnet">${curs.map(c=>`<div class="reptot"><span class="w">${esc(label)}${
+    curs.length>1?' ('+esc(c)+')':''}</span><span class="n">${repM(repR2(net[c]),c)}</span></div>`).join('')}</div>`;
+}
+
+// 1. Every account, month by month, with what moved between them.
+function repAccounts(lines){
+  const ids=repAccIds(), months=repMonths(REP.from,REP.to);
+  const csv=[['Month','Account','Currency','Money in','Money out','Moved between accounts','Change']];
+  const cell=(t)=>({in:0,out:0,moved:0,...t});
+  const grid={};                         // month|acc -> sums
+  REP.data.txns.forEach(t=>{
+    const k=t.tdate.slice(0,7)+'|'+t.account_id, g=grid[k]=grid[k]||cell();
+    const v=Number(t.total||0);
+    if(t.kind==='transfer') g.moved+=v; else if(v>=0) g.in+=v; else g.out+=v;
+  });
+  const block=(label, keyOf)=>{
+    const curT={};
+    const rows=ids.map(id=>{
+      const a=accOf(id); if(!a) return '';
+      const g=keyOf(id); const ch=g.in+g.out+g.moved;
+      const ct=curT[a.currency]=curT[a.currency]||cell(); ct.in+=g.in; ct.out+=g.out; ct.moved+=g.moved;
+      if(label!=='Whole period') csv.push([label,a.name,a.currency,repCsvN(g.in),repCsvN(g.out),repCsvN(g.moved),repCsvN(ch)]);
+      if(!g.in&&!g.out&&!g.moved) return `<tr class="quiet"><td>${esc(a.name)}</td><td colspan="3" class="n">nothing</td></tr>`;
+      return `<tr><td>${esc(a.name)}${g.moved?`<small>${repM(repR2(g.moved),a.currency)} moved</small>`:''}</td>
+        <td class="n">${repM(repR2(g.in),a.currency)}</td><td class="n">${repM(repR2(g.out),a.currency)}</td>
+        <td class="n"><b>${repM(repR2(ch),a.currency)}</b></td></tr>`;
+    }).join('');
+    const tots=Object.keys(curT).sort(repCurOrder).map(c=>{ const t=curT[c], ch=t.in+t.out+t.moved;
+      if(label==='Whole period') csv.push(['Whole period','All chosen accounts',c,repCsvN(t.in),repCsvN(t.out),repCsvN(t.moved),repCsvN(ch)]);
+      return `<tr class="tot"><td>Total ${esc(c)}</td><td class="n">${repM(repR2(t.in),c)}</td>
+        <td class="n">${repM(repR2(t.out),c)}</td><td class="n"><b>${repM(repR2(ch),c)}</b></td></tr>`; }).join('');
+    return `<p class="dsec">${esc(label)}</p><div class="card"><table class="reptab">
+      <thead><tr><th>Account</th><th class="n">In</th><th class="n">Out</th><th class="n">Change</th></tr></thead>
+      <tbody>${rows}${tots}</tbody></table></div>`;
+  };
+  const sum=id=>months.reduce((g,m)=>{ const x=grid[m+'|'+id]; if(x){ g.in+=x.in; g.out+=x.out; g.moved+=x.moved; } return g; },cell());
+  const html=block('Whole period', sum)
+    + months.slice().reverse().map(m=>block(repMonthName(m), id=>grid[m+'|'+id]||cell())).join('');
+  return {html: `<p class="repnote">Money moved between your own accounts is shown under
+      each account as <em>moved</em>, and is part of its change, but it is not counted as money in or out.</p>`+html, csv};
+}
+
+// 2. By category, income then spending, each with the items behind it.
+function repCats(lines, title){
+  const rows=repByCat(repSpend(lines));
+  const ins=rows.filter(r=>r.side==='in'), outs=rows.filter(r=>r.side==='out');
+  const csv=[['Section','Category','Currency','Items','Total']];
+  ins.concat(outs).forEach(r=>csv.push([r.side==='in'?'Income':'Spending',repCatName(r.cat),r.cur,r.lines.length,repCsvN(r.total)]));
+  return {html: repCatBlocks(ins,'Income')+repCatBlocks(outs,title||'Spending')
+      +repBottomLine(rows,'Income less spending'), csv, rows};
+}
+
+// 3. One line a month.
+function repMonthly(lines){
+  const months=repMonths(REP.from,REP.to), g={};
+  repSpend(lines).forEach(l=>{
+    const k=l.date.slice(0,7)+'|'+l.cur, r=g[k]=g[k]||{in:0,out:0};
+    if(l.value>=0) r.in+=l.value; else r.out+=l.value;
+  });
+  const curs=[...new Set(repSpend(lines).map(l=>l.cur))].sort(repCurOrder);
+  const csv=[['Month','Currency','Money in','Money out','Difference']];
+  if(!curs.length) return {html:'',csv};
+  const html=curs.map(c=>{
+    let ti=0,to=0;
+    const rows=months.map(m=>{ const r=g[m+'|'+c]||{in:0,out:0}; ti+=r.in; to+=r.out;
+      csv.push([repMonthName(m),c,repCsvN(r.in),repCsvN(r.out),repCsvN(r.in+r.out)]);
+      return `<tr${!r.in&&!r.out?' class="quiet"':''}><td>${esc(repDay(m+'-01').toLocaleDateString('en-GB',{month:'short',year:'numeric'}))}</td>
+        <td class="n">${repM(repR2(r.in),c)}</td><td class="n">${repM(repR2(r.out),c)}</td>
+        <td class="n"><b>${repM(repR2(r.in+r.out),c)}</b></td></tr>`; }).join('');
+    csv.push(['Whole period',c,repCsvN(ti),repCsvN(to),repCsvN(ti+to)]);
+    return `${curs.length>1?`<p class="dsec">${esc(c)}</p>`:''}<div class="card"><table class="reptab">
+      <thead><tr><th>Month</th><th class="n">In</th><th class="n">Out</th><th class="n">Difference</th></tr></thead>
+      <tbody>${rows}<tr class="tot"><td>Total</td><td class="n">${repM(repR2(ti),c)}</td>
+      <td class="n">${repM(repR2(to),c)}</td><td class="n"><b>${repM(repR2(ti+to),c)}</b></td></tr></tbody></table></div>`;
+  }).join('');
+  return {html, csv};
+}
+
+// 4. The business lines only: the photography.
+function repBusiness(lines){
+  const r=repCats(lines.filter(l=>l.business),'Costs');
+  return {html:`<p class="repnote">Only the lines ticked as <strong>business</strong>.
+      For your tax return, tap <em>This tax year</em> or <em>Last tax year</em> above.</p>`
+      + (r.rows.length ? r.html.replace('Income less spending','Profit') : ''),
+    csv:r.csv.map((row,i)=>i&&row[0]==='Spending'?['Costs',...row.slice(1)]:row), empty:!r.rows.length};
+}
+
+// 5. This period against the same dates a year before.
+function repYoy(lines, prevLines){
+  const now=repByCat(repSpend(lines)), then=repByCat(repSpend(prevLines));
+  const keys=[...new Set(now.concat(then).map(r=>(r.cat==null?'none':r.cat)+'|'+r.cur))];
+  const pick=(list,k)=>list.find(r=>((r.cat==null?'none':r.cat)+'|'+r.cur)===k);
+  const rows=keys.map(k=>{ const a=pick(now,k), b=pick(then,k), x=a||b;
+    return {cat:x.cat, cur:x.cur, now:a?a.total:0, then:b?b.total:0,
+            side:repSide(x.cat,(a?a.total:0)||(b?b.total:0))}; });
+  const csv=[['Section','Category','Currency',
+    'This period ('+REP.from+' to '+REP.to+')','A year earlier ('+repYearBack(REP.from)+' to '+repYearBack(REP.to)+')','Change']];
+  const table=(side,title)=>{
+    const list=rows.filter(r=>r.side===side)
+      .sort((a,b)=>repCurOrder(a.cur,b.cur)||Math.abs(b.now)-Math.abs(a.now)||Math.abs(b.then)-Math.abs(a.then));
+    if(!list.length) return '';
+    list.forEach(r=>csv.push([title,repCatName(r.cat),r.cur,repCsvN(r.now),repCsvN(r.then),repCsvN(r.now-r.then)]));
+    return `<p class="dsec">${esc(title)}</p><div class="card"><table class="reptab yoy">
+      <thead><tr><th>Category</th><th class="n">Now</th><th class="n">Year before</th><th class="n">Change</th></tr></thead>
+      <tbody>${list.map(r=>`<tr><td>${esc(repCatName(r.cat))}</td><td class="n">${repM(r.now,r.cur)}</td>
+        <td class="n">${repM(r.then,r.cur)}</td><td class="n"><b>${repM(repR2(r.now-r.then),r.cur)}</b></td></tr>`).join('')}</tbody>
+      </table></div>`;
+  };
+  return {html:`<p class="repnote">${esc(repShort(REP.from))} to ${esc(repShort(REP.to))}, against
+      ${esc(repShort(repYearBack(REP.from)))} to ${esc(repShort(repYearBack(REP.to)))}.
+      For spending, a change below zero means more was spent.</p>`
+    + table('in','Income')+table('out','Spending'), csv, empty:!rows.length};
+}
+
+function repBuild(){
+  const lines=REP.data.lines;
+  switch(REP.kind){
+    case 'accounts': return {...repAccounts(lines), empty:!REP.data.txns.length};
+    case 'cats':     { const r=repCats(lines); return {...r, empty:!r.rows.length}; }
+    case 'months':   { const r=repMonthly(lines); return {...r, empty:!repSpend(lines).length}; }
+    case 'business': return repBusiness(lines);
+    case 'yoy':      return repYoy(lines, REP.prev?REP.prev.lines:[]);
+  }
+  return {html:'',csv:[],empty:true};
+}
+
+function repAccLabel(){
+  const n=repAccIds().length, all=ACCOUNTS.length;
+  return n===all ? 'All accounts ('+all+')' : n+' of '+all+' accounts';
+}
+
+function renderReports(){
+  const kind=REP_KINDS.find(x=>x.k===REP.kind)||REP_KINDS[0];
+  const ids=repAccIds();
+  let out='';
+  if(!ACCOUNTS.length) out=`<div class="card"><div class="field"><dd>There are no accounts
+      to report on yet. Add one under Finances first.</dd></div></div>`;
+  else if(!REP.from||!REP.to) out=`<p class="repmsg">Choose the dates to report on.</p>`;
+  else if(REP.from>REP.to) out=`<p class="repmsg">The <strong>From</strong> date is after the
+      <strong>To</strong> date. Swap them round to see the report.</p>`;
+  else if(!ids.length) out=`<p class="repmsg">No accounts are ticked. Tick at least one above.</p>`;
+  else if(REP.busy) out=`<p class="repmsg">Adding it all up…</p>`;
+  else if(REP.failed) out=`<div class="card"><div class="field"><dd>The figures could not be
+      fetched just now. Nothing is lost &mdash; it is all on the server.</dd></div>
+      <div class="setadd"><button class="btn" id="repAgain" style="border:1.5px solid var(--rule)">Try again</button></div></div>`;
+  else if(REP.data){
+    const r=repBuild();
+    REP.csv=r.csv;
+    out = r.empty
+      ? `<p class="repmsg">Nothing recorded ${REP.kind==='business'?'as business ':''}between
+         <strong>${esc(repShort(REP.from))}</strong> and <strong>${esc(repShort(REP.to))}</strong>
+         in ${esc(repAccLabel().toLowerCase())}.</p>`
+      : r.html + `<div class="reptools"><button class="btn" id="repPrint">Print</button>
+          <button class="btn" id="repCsv">Download</button></div>`;
+  }
+
+  const accs=ACCOUNTS.map(a=>`<label><input type="checkbox" data-repacc="${a.id}"
+      ${ids.includes(a.id)?'checked':''}> ${esc(a.name)} <span class="scope">${esc(a.currency)}${a.active===false?' · closed':''}</span></label>`).join('');
+  $('repBody').innerHTML=`
+    <div class="card repctl">
+      <div class="pickrow repkinds">${REP_KINDS.map(x=>`<button type="button" data-repkind="${x.k}"
+        aria-pressed="${x.k===REP.kind}">${esc(x.label)}</button>`).join('')}</div>
+      <div class="two repdates">
+        <label>From<input type="date" id="repFrom" value="${esc(REP.from)}"></label>
+        <label>To<input type="date" id="repTo" value="${esc(REP.to)}"></label></div>
+      <div class="pickrow repquick">${REP_QUICK.map(([k,l])=>{ const [f,t]=repQuick(k);
+        return `<button type="button" data-repquick="${k}" aria-pressed="${f===REP.from&&t===REP.to}">${esc(l)}</button>`; }).join('')}</div>
+      <details class="repaccs"${REP.accsOpen?' open':''}><summary>${esc(repAccLabel())}</summary>
+        <div class="checks">${accs}</div>
+        <div class="pickrow"><button type="button" id="repAll">Tick all</button>
+          <button type="button" id="repNone">Untick all</button></div></details>
+    </div>
+    <h2 class="reptitle">${esc(kind.label)}</h2>
+    <div id="repOut">${out}</div>`;
+
+  $('repBody').querySelectorAll('[data-repkind]').forEach(b=>b.onclick=()=>{
+    REP.kind=b.dataset.repkind; repLoad(); });
+  $('repBody').querySelectorAll('[data-repquick]').forEach(b=>b.onclick=()=>{
+    const [f,t]=repQuick(b.dataset.repquick); REP.from=f; REP.to=t; repLoad(); });
+  const setDate=()=>{ REP.from=$('repFrom').value; REP.to=$('repTo').value; repLoad(); };
+  $('repFrom').onchange=setDate; $('repTo').onchange=setDate;
+  const det=$('repBody').querySelector('.repaccs');
+  det.ontoggle=()=>{ REP.accsOpen=det.open; };
+  $('repBody').querySelectorAll('[data-repacc]').forEach(b=>b.onchange=()=>{
+    const set=new Set(repAccIds()); const id=Number(b.dataset.repacc);
+    if(b.checked) set.add(id); else set.delete(id);
+    REP.accs = set.size===ACCOUNTS.length ? null : set; repLoad(); });
+  $('repAll').onclick=()=>{ REP.accs=null; repLoad(); };
+  $('repNone').onclick=()=>{ REP.accs=new Set(); repLoad(); };
+  const ag=$('repAgain'); if(ag) ag.onclick=()=>{ REP.key=''; REP.prevKey=''; repLoad(); };
+  const pr=$('repPrint'); if(pr) pr.onclick=printReport;
+  const dl=$('repCsv'); if(dl) dl.onclick=downloadReport;
+}
+
+/* ---------- taking it out of the app ---------- */
+function repHeading(){
+  const kind=REP_KINDS.find(x=>x.k===REP.kind)||REP_KINDS[0];
+  return {title:kind.label, when:repShort(REP.from)+' to '+repShort(REP.to),
+    accs:repAccIds().map(id=>(accOf(id)||{}).name).filter(Boolean).join(', ')};
+}
+// A clean page: the report alone, with what it covers written at the top.
+// On a phone the print screen can also save it as a PDF.
+function printReport(){
+  const h=repHeading();
+  let box=$('printArea');
+  if(!box){ box=document.createElement('div'); box.id='printArea'; document.body.appendChild(box); }
+  const body=$('repOut').cloneNode(true);
+  body.querySelectorAll('.reptools').forEach(x=>x.remove());
+  body.querySelectorAll('details').forEach(d=>{ d.open=false; });
+  box.innerHTML=`<h1>${esc(h.title)}</h1>
+    <p class="pwhen">${esc(h.when)}<br>${esc(h.accs)}</p>${body.innerHTML}
+    <p class="pfoot">From It’s MY life, ${esc(new Date().toLocaleDateString('en-GB',
+      {day:'numeric',month:'long',year:'numeric'}))}</p>`;
+  document.body.classList.add('printing');
+  const done=()=>{ document.body.classList.remove('printing'); window.removeEventListener('afterprint',done); };
+  window.addEventListener('afterprint',done);
+  try{ window.print(); }catch(e){ console.error(e); toast('Printing is not available here'); done(); }
+}
+// A file a spreadsheet opens: plain numbers, a column for the currency.
+function downloadReport(){
+  const h=repHeading();
+  const lines=[[h.title],[h.when],['Accounts: '+h.accs],[]].concat(REP.csv||[])
+    .map(r=>r.map(csvCell).join(','));
+  const name='report-'+REP.kind+'-'+REP.from+'-to-'+REP.to+'.csv';
+  download(name, '﻿'+lines.join('\r\n'));
+  toast('Saved '+name);
+}
+
+
 async function openPairs(){
   showSheet('pairs'); lockBackground();
   $('pairsBody').innerHTML='<p class="empty">Looking through your accounts…</p>';
@@ -10910,6 +11419,7 @@ $('moneyEdSave').onclick=saveTxn;
 $('moneyAdd').onclick=newTxn;
 $('reconBack').onclick=()=>{ $('recon').classList.add('hidden'); lockBackground(); };
 $('pairsBack').onclick=()=>{ $('pairs').classList.add('hidden'); lockBackground(); };
+$('repBack').onclick=()=>{ $('reports').classList.add('hidden'); lockBackground(); };
 $('pairsBody').addEventListener('click',async ev=>{
   const j=ev.target.closest('[data-join]');
   if(!j) return;
@@ -11849,7 +12359,7 @@ const AREA_SHUT={
   log:  ()=>{ killMaps(); $('log').classList.add('hidden'); },
   where:()=>{ killMaps(); stopWatchingOthers(); $('where').classList.add('hidden'); },
   money:()=>{ MONEY_PICKING=false; MONEY_PICKED.clear();
-              $('money').classList.add('hidden');
+              $('money').classList.add('hidden'); $('reports').classList.add('hidden');
               if(typeof paintMoneyPickBar==='function') paintMoneyPickBar(); },
   diary:()=>$('diary').classList.add('hidden'),
   shop: ()=>$('shop').classList.add('hidden'),
@@ -11875,6 +12385,7 @@ function areaItems(area){
   if(area==='money') return [
     it('Reconcile a statement',   ()=>{ shutMenu(); openRecon(); }),
     it('Import from a bank file', ()=>{ shutMenu(); openImport(); }),
+    it('Reports',                 ()=>{ shutMenu(); openReports(); }),
     it('Find transfers between my accounts', ()=>{ shutMenu(); openPairs(); }),
     it('Choose several to delete',()=>{ shutMenu(); startMoneyPicking(); })];
   if(area==='diary') return [

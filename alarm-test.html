@@ -28,6 +28,8 @@ button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:14px;wid
 button.plain{background:#fff;color:var(--ink);border:1.5px solid var(--rule)}
 .two{display:flex;gap:8px}
 .two button{margin-top:8px}
+input[type=time]{font:inherit;font-size:22px;font-weight:700;padding:8px 10px;margin-top:8px;flex:1 1 50%;
+  min-width:0;border:1.5px solid var(--rule);border-radius:10px;background:#fff;color:var(--ink)}
 .res{margin:10px 0 0;padding:10px 12px;border-radius:8px;background:#F3F1EA;font-size:16px}
 .res:empty{display:none}
 .good{background:#E1F0E6}
@@ -79,6 +81,14 @@ small{color:var(--muted)}
     </div>
     <p><small>Try 2 minutes first. The longer ones show whether the phone's
        battery saving stops it after a while.</small></p>
+    <h2 style="margin-top:14px">Overnight</h2>
+    <div class="two">
+      <input type="time" id="at" value="07:00" aria-label="Ring at">
+      <button data-at>Ring at this time</button>
+    </div>
+    <p><small>Choose tomorrow morning's time and tap <strong>Ring at this time</strong>.
+       Put the phone on charge, switch the screen off and leave it overnight.
+       Don't swipe Chrome away.</small></p>
   </div>
   <div id="run">
     <p>Running. It should ring at <strong id="due"></strong>.</p>
@@ -112,7 +122,8 @@ const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2,'0');
 const hm  = d => pad(d.getHours())+':'+pad(d.getMinutes());
 const hms = d => hm(d)+':'+pad(d.getSeconds());
-const ago = ms => ms < 90000 ? Math.round(ms/1000)+' seconds' : Math.round(ms/60000)+' minutes';
+const ago = ms => ms < 90000 ? Math.round(ms/1000)+' seconds'
+  : ms < 90*60000 ? Math.round(ms/60000)+' minutes' : span(ms);
 
 // Everything is kept on this phone only, so a result survives the page being
 // closed by the phone. Every read and write is guarded: storage can be refused.
@@ -229,7 +240,24 @@ const BEEPS = wavURL(2, t => (t<1 && t%0.25<0.13)
 let T2=null, keep=null, ring=null, tick=null;
 const params = new URLSearchParams(location.search);
 
-async function start2(mins){
+// How long, in hours and minutes, for the longer waits.
+function span(ms){
+  const m = Math.round(ms/60000), h = Math.floor(m/60);
+  return h ? h+' h '+(m%60)+' min' : m+' min';
+}
+// The next time the clock shows hh:mm: today if it is still to come, otherwise tomorrow.
+function nextAt(v){
+  const [h,m] = v.split(':').map(Number), d = new Date();
+  d.setHours(h, m, 0, 0);
+  if(d.getTime() <= Date.now()+30000) d.setDate(d.getDate()+1);
+  return d;
+}
+function dueText(ms){
+  const d = new Date(ms);
+  return d.toDateString()===new Date().toDateString() ? hms(d) : hm(d)+' tomorrow';
+}
+
+async function start2(secs, label){
   stopSounds();
   keep = new Audio(QUIET); keep.loop = true;
   ring = new Audio(BEEPS); ring.loop = true; ring.muted = true;
@@ -239,9 +267,8 @@ async function start2(mins){
     note('2', 'would not start the sound: '+e.message);
     stopSounds(); return;
   }
-  const secs = params.get('secs') ? Number(params.get('secs')) : mins*60;
   const now = Date.now();
-  T2 = {mins, start:now, due:now+secs*1000, last:now, maxGap:0, rangAt:null, rangHidden:null};
+  T2 = {label, start:now, due:now+secs*1000, last:now, saved:0, maxGap:0, rangAt:null, rangHidden:null};
   store.set('t2', T2);
   try{
     if('mediaSession' in navigator){
@@ -251,7 +278,7 @@ async function start2(mins){
       try{ navigator.mediaSession.setActionHandler('stop', () => stop2()); }catch(e){}
     }
   }catch(e){}
-  $('due').textContent = hms(new Date(T2.due));
+  $('due').textContent = dueText(T2.due);
   $('pickwait').style.display = 'none'; $('run').classList.add('on');
   result('r2', '');
   tick = setInterval(beat, 1000); beat();
@@ -263,10 +290,13 @@ function beat(){
   if(gap > T2.maxGap) T2.maxGap = gap;
   T2.last = now;
   if(!T2.rangAt && now >= T2.due){ T2.rangAt = now; T2.rangHidden = document.hidden; startRinging(); }
-  if(T2.rangAt && now - T2.rangAt > 5*60000) stop2();
-  if(T2) store.set('t2', T2);
-  const left = Math.max(0, T2.due-now);
-  $('count').textContent = T2.rangAt ? 'Ringing' : 'in '+Math.floor(left/60000)+':'+pad(Math.floor(left/1000)%60);
+  if(T2.rangAt && now - T2.rangAt > 10*60000) stop2();
+  if(!T2) return;
+  // Noted every 15 seconds, so a page the phone closes still says when it was last alive.
+  if(now - T2.saved >= 15000 || T2.rangAt){ T2.saved = now; store.set('t2', T2); }
+  const left = Math.max(0, T2.due-now), s = Math.floor(left/1000);
+  $('count').textContent = T2.rangAt ? 'Ringing'
+    : 'in '+(s>=3600 ? Math.floor(s/3600)+':'+pad(Math.floor(s/60)%60) : Math.floor(s/60))+':'+pad(s%60);
 }
 
 function startRinging(){
@@ -306,7 +336,7 @@ function stop2(){
 }
 
 function report2(t){
-  const wait = t.mins+' min wait';
+  const wait = t.label;
   if(!t.rangAt){
     result('r2', 'Cancelled before it was due.');
     return;
@@ -325,7 +355,17 @@ function report2(t){
   }
 }
 
-document.querySelectorAll('[data-mins]').forEach(b => b.onclick = () => start2(Number(b.dataset.mins)));
+document.querySelectorAll('[data-mins]').forEach(b => b.onclick = () => {
+  const m = Number(b.dataset.mins);
+  start2(params.get('secs') ? Number(params.get('secs')) : m*60, m+' min wait');
+});
+document.querySelector('[data-at]').onclick = () => {
+  const v = $('at').value;
+  if(!/^\d\d:\d\d$/.test(v)){ result('r2', 'Choose a time first.', 'bad'); return; }
+  const d = nextAt(v), wait = d.getTime()-Date.now();
+  start2(params.get('secs') ? Number(params.get('secs')) : wait/1000,
+         'set for '+v+', a '+span(wait)+' wait');
+};
 $('cancel').onclick = () => stop2();
 $('stop').onclick = () => stop2();
 
@@ -348,7 +388,7 @@ document.addEventListener('visibilitychange', () => {
   result('r2', 'The phone closed the page while the test was running. Its last sign of life was at '
     + hms(last)+', '+ago(t.last-t.start)+' after the start'
     + (t.rangAt ? ', while it was ringing.' : '. The alarm was due at '+hms(new Date(t.due))+'.'), 'bad');
-  note('2', 'FAILED ('+t.mins+' min wait): the phone closed the page; last sign of life '
+  note('2', 'FAILED ('+t.label+'): the phone closed the page; last sign of life '
     + ago(t.last-t.start)+' after the start'+(t.rangAt?', while ringing':''));
 })();
 

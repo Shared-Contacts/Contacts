@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Alarm test</title>
+<!-- A throwaway test page for the My Life app's Alarm tile (ML16).
+     It changes nothing in the app and saves nothing anywhere but this phone.
+     Test 1: can a web page open the phone's own Clock app with an alarm filled in?
+     Test 2: can a web page keep ringing when it is not on screen? -->
+<style>
+:root{--ink:#10231C;--hull:#1D4A3A;--red:#B3322A;--paper:#FBFAF7;--panel:#FFF;--rule:#E3E1D8;--muted:#5C6B64}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:17px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+header{background:var(--hull);color:#F2EFE4;padding:16px}
+header h1{margin:0;font-size:22px}
+header p{margin:2px 0 0;font-size:15px;opacity:.85}
+main{max-width:560px;margin:0 auto;padding:4px 16px 40px}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;margin:14px 0}
+h2{font-size:19px;margin:0 0 6px}
+p{margin:6px 0}
+ol{padding-left:22px;margin:6px 0}
+li{margin:3px 0}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:14px;width:100%;
+  margin:8px 0 0;background:var(--hull);color:#F2EFE4;cursor:pointer}
+button.plain{background:#fff;color:var(--ink);border:1.5px solid var(--rule)}
+.two{display:flex;gap:8px}
+.two button{margin-top:8px}
+.res{margin:10px 0 0;padding:10px 12px;border-radius:8px;background:#F3F1EA;font-size:16px}
+.res:empty{display:none}
+.good{background:#E1F0E6}
+.bad{background:#F6E2DF}
+#run{display:none}
+#run.on{display:block}
+#count{font-size:28px;font-weight:700;margin:4px 0}
+pre{white-space:pre-wrap;font-family:inherit;font-size:15px;line-height:1.5;background:#F3F1EA;border-radius:8px;padding:10px 12px;margin:8px 0 0;min-height:3em}
+small{color:var(--muted)}
+#ringing{position:fixed;inset:0;background:var(--red);color:#fff;display:none;flex-direction:column;
+  align-items:center;justify-content:center;padding:24px;text-align:center;z-index:9}
+#ringing.on{display:flex}
+#ringing h2{font-size:34px}
+#ringing button{background:#fff;color:var(--red);font-size:26px;padding:24px;max-width:360px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Alarm test</h1>
+  <p>For the My Life app. Nothing here changes the app.</p>
+</header>
+<main>
+
+<div class="card">
+  <h2>Test 1: your phone's Clock app</h2>
+  <p>Can a web page open the Clock app with an alarm filled in? If it can,
+     the My Life app could set real alarms without a separate app.</p>
+  <button id="t1set">Set a test alarm in the Clock app</button>
+  <div class="res" id="r1set"></div>
+  <button class="plain" id="t1open">Just open the Clock app's alarms</button>
+  <div class="res" id="r1open"></div>
+</div>
+
+<div class="card">
+  <h2>Test 2: ringing with the screen off</h2>
+  <p>Can this page keep ringing when it isn't on screen?</p>
+  <ol>
+    <li>Turn the volume up with the side button while this page is showing
+        (it uses the media volume, the one for music and videos).</li>
+    <li>Tap one of the buttons below.</li>
+    <li>Press the power button to switch the screen off, and put the phone down.</li>
+    <li>When it rings, wake the phone and tap <strong>Stop</strong>.</li>
+  </ol>
+  <div id="pickwait">
+    <button data-mins="2">Start: ring in 2 minutes</button>
+    <div class="two">
+      <button class="plain" data-mins="10">Ring in 10 minutes</button>
+      <button class="plain" data-mins="30">Ring in 30 minutes</button>
+    </div>
+    <p><small>Try 2 minutes first. The longer ones show whether the phone's
+       battery saving stops it after a while.</small></p>
+  </div>
+  <div id="run">
+    <p>Running. It should ring at <strong id="due"></strong>.</p>
+    <p id="count"></p>
+    <p>Now switch the screen off with the power button.</p>
+    <button class="plain" id="cancel">Cancel the test</button>
+  </div>
+  <div class="res" id="r2"></div>
+</div>
+
+<div class="card">
+  <h2>Results to tell your brain</h2>
+  <p>Read these out or copy them into the Code tab.</p>
+  <pre id="sum"></pre>
+  <div class="two">
+    <button id="copy">Copy</button>
+    <button class="plain" id="clear">Clear</button>
+  </div>
+</div>
+
+</main>
+
+<div id="ringing">
+  <h2>Ringing</h2>
+  <p>This is the alarm test.</p>
+  <button id="stop">Stop</button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,'0');
+const hm  = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const hms = d => hm(d)+':'+pad(d.getSeconds());
+const ago = ms => ms < 90000 ? Math.round(ms/1000)+' seconds' : Math.round(ms/60000)+' minutes';
+
+// Everything is kept on this phone only, so a result survives the page being
+// closed by the phone. Every read and write is guarded: storage can be refused.
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem('alarmtest-'+k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem('alarmtest-'+k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem('alarmtest-'+k); }catch(e){} }
+};
+
+/* ---------- the results box ---------- */
+const NAMES = {'1-set':'Test 1, set an alarm', '1-open':'Test 1, open alarms', '2':'Test 2'};
+function note(key, text){
+  const n = store.get('notes') || {};
+  n[key] = (key==='2' && n[key] ? n[key]+'\n  ' : '') + text;
+  store.set('notes', n); paintSum();
+}
+function phone(){
+  const ua = navigator.userAgent;
+  return [(ua.match(/Android [\d.]+/)||[''])[0], (ua.match(/Chrome\/\d+/)||[''])[0]]
+    .filter(Boolean).join(', ') || 'unknown phone';
+}
+function paintSum(){
+  const n = store.get('notes') || {};
+  const lines = Object.keys(NAMES).filter(k => n[k]).map(k => NAMES[k]+': '+n[k]);
+  $('sum').textContent = lines.length
+    ? 'Alarm test, '+new Date().toLocaleDateString('en-GB')+' ('+phone()+')\n'+lines.join('\n')
+    : 'Nothing tried yet.';
+}
+function result(id, text, cls){ const r=$(id); r.textContent=text; r.className='res'+(cls?' '+cls:''); }
+$('copy').onclick = async () => {
+  try{ await navigator.clipboard.writeText($('sum').textContent); $('copy').textContent='Copied'; }
+  catch(e){ $('copy').textContent='Could not copy'; }
+  setTimeout(()=>{ $('copy').textContent='Copy'; }, 2000);
+};
+$('clear').onclick = () => { store.del('notes'); store.del('t2');
+  ['r1set','r1open','r2'].forEach(id=>result(id,'')); paintSum(); };
+
+/* ---------- Test 1: ask Chrome to open the Clock app ---------- */
+// Chrome only opens apps that say web pages may open them. If the Clock app
+// does not, Chrome either does nothing or sends us back here with ?r=...
+function clockIntent(set){
+  const back = location.origin+location.pathname+'?r='+(set?'set':'open');
+  const fb = ';S.browser_fallback_url='+encodeURIComponent(back);
+  if(!set) return 'intent:#Intent;action=android.intent.action.SHOW_ALARMS'+fb+';end';
+  const t = new Date(Date.now()+3*60000);
+  return 'intent:#Intent;action=android.intent.action.SET_ALARM'
+    + ';i.android.intent.extra.alarm.HOUR='+t.getHours()
+    + ';i.android.intent.extra.alarm.MINUTES='+t.getMinutes()
+    + ';S.android.intent.extra.alarm.MESSAGE='+encodeURIComponent('My Life test')
+    + ';B.android.intent.extra.alarm.SKIP_UI=false'+fb+';end';
+}
+let T1 = null;
+function tryClock(which){
+  const at = Date.now(), id = which==='set'?'r1set':'r1open';
+  T1 = {which, at, left:false};
+  result(id, 'Trying…');
+  location.href = clockIntent(which==='set');
+  setTimeout(()=>{
+    if(T1 && T1.at===at && !T1.left){
+      result(id, 'Nothing opened. Chrome did not let the page open the Clock app.', 'bad');
+      note('1-'+which, 'nothing opened');
+      T1 = null;
+    }
+  }, 3000);
+}
+function askWhat(which){
+  const id = which==='set'?'r1set':'r1open', r = $(id);
+  r.className = 'res';
+  r.innerHTML = (which==='set'
+      ? 'Something opened. Was it the Clock app, with an alarm about 3 minutes ahead called “My Life test”?'
+      : 'Something opened. Was it the Clock app?')
+    + '<div class="two"><button data-yes>Yes</button><button class="plain" data-no>No</button></div>';
+  r.querySelector('[data-yes]').onclick = () => {
+    result(id, which==='set'
+      ? 'It works: the page can set an alarm in the Clock app. Delete the test alarm in the Clock app afterwards.'
+      : 'It works: the page can open the Clock app.', 'good');
+    note('1-'+which, which==='set' ? 'WORKED, the Clock app opened with the alarm filled in' : 'WORKED, the Clock app opened');
+  };
+  r.querySelector('[data-no]').onclick = () => {
+    result(id, 'Something else opened, not the Clock app.', 'bad');
+    note('1-'+which, 'something opened, but not the Clock app');
+  };
+}
+$('t1set').onclick  = () => tryClock('set');
+$('t1open').onclick = () => tryClock('open');
+(function(){
+  const r = new URLSearchParams(location.search).get('r');
+  if(r==='set' || r==='open'){
+    result(r==='set'?'r1set':'r1open', 'Chrome refused: it says no app may be opened this way from a web page.', 'bad');
+    note('1-'+r, 'Chrome refused (sent back to the fallback page)');
+    history.replaceState(null, '', location.pathname);
+  }
+})();
+
+/* ---------- Test 2: keep ringing while out of sight ---------- */
+// A sound file made on the spot: 16-bit mono at 8,000 samples a second.
+function wavURL(seconds, sample){
+  const rate=8000, n=Math.round(seconds*rate), buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4,36+n*2,true); w(8,'WAVE'); w(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,rate,true); v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  w(36,'data'); v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++) v.setInt16(44+i*2, Math.round(Math.max(-1,Math.min(1,sample(i/rate)))*32767), true);
+  return URL.createObjectURL(new Blob([buf], {type:'audio/wav'}));
+}
+// A hiss far too quiet to hear, so the phone counts the page as playing sound
+// and keeps it running, as it would for music.
+const QUIET = wavURL(1, () => (Math.random()*2-1)*0.001);
+// Four quick beeps, then a second's pause, over and over.
+const BEEPS = wavURL(2, t => (t<1 && t%0.25<0.13)
+  ? 0.7*Math.sin(2*Math.PI*988*t) + 0.25*Math.sin(2*Math.PI*1976*t) : 0);
+
+let T2=null, keep=null, ring=null, tick=null;
+const params = new URLSearchParams(location.search);
+
+async function start2(mins){
+  stopSounds();
+  keep = new Audio(QUIET); keep.loop = true;
+  ring = new Audio(BEEPS); ring.loop = true; ring.muted = true;
+  try{ await keep.play(); await ring.play(); }
+  catch(e){
+    result('r2', 'The phone would not start the sound ('+e.message+').', 'bad');
+    note('2', 'would not start the sound: '+e.message);
+    stopSounds(); return;
+  }
+  const secs = params.get('secs') ? Number(params.get('secs')) : mins*60;
+  const now = Date.now();
+  T2 = {mins, start:now, due:now+secs*1000, last:now, maxGap:0, rangAt:null, rangHidden:null};
+  store.set('t2', T2);
+  try{
+    if('mediaSession' in navigator){
+      navigator.mediaSession.metadata = new MediaMetadata({title:'Alarm test',
+        artist:'Rings at '+hm(new Date(T2.due))});
+      navigator.mediaSession.setActionHandler('pause', () => stop2());
+      try{ navigator.mediaSession.setActionHandler('stop', () => stop2()); }catch(e){}
+    }
+  }catch(e){}
+  $('due').textContent = hms(new Date(T2.due));
+  $('pickwait').style.display = 'none'; $('run').classList.add('on');
+  result('r2', '');
+  tick = setInterval(beat, 1000); beat();
+}
+
+function beat(){
+  if(!T2) return;
+  const now = Date.now(), gap = now - T2.last;
+  if(gap > T2.maxGap) T2.maxGap = gap;
+  T2.last = now;
+  if(!T2.rangAt && now >= T2.due){ T2.rangAt = now; T2.rangHidden = document.hidden; startRinging(); }
+  if(T2.rangAt && now - T2.rangAt > 5*60000) stop2();
+  if(T2) store.set('t2', T2);
+  const left = Math.max(0, T2.due-now);
+  $('count').textContent = T2.rangAt ? 'Ringing' : 'in '+Math.floor(left/60000)+':'+pad(Math.floor(left/1000)%60);
+}
+
+function startRinging(){
+  try{ ring.currentTime = 0; }catch(e){}
+  ring.muted = false; ring.volume = 1;
+  if(ring.paused) ring.play().catch(()=>{});
+  try{ navigator.vibrate && navigator.vibrate([700,300,700,300,700,300,700]); }catch(e){}
+  $('ringing').classList.add('on');
+  notify();
+}
+
+async function notify(){
+  try{
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    const opts = {body:'Tap to come back and stop it', tag:'alarmtest', requireInteraction:true,
+                  renotify:true, icon:'icon-192-v2.png', data:{url:location.pathname}};
+    if(reg) await reg.showNotification('Alarm test is ringing', opts);
+    else new Notification('Alarm test is ringing', opts);
+  }catch(e){}
+}
+
+function stopSounds(){
+  if(tick){ clearInterval(tick); tick=null; }
+  [keep, ring].forEach(a => { if(a){ try{ a.pause(); a.removeAttribute('src'); a.load(); }catch(e){} } });
+  keep = ring = null;
+  $('ringing').classList.remove('on');
+  try{ navigator.vibrate && navigator.vibrate(0); }catch(e){}
+  (async()=>{ try{ const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if(reg) (await reg.getNotifications({tag:'alarmtest'})).forEach(n=>n.close()); }catch(e){} })();
+}
+
+function stop2(){
+  stopSounds();
+  $('pickwait').style.display = ''; $('run').classList.remove('on');
+  if(T2){ report2(T2); store.del('t2'); T2 = null; }
+}
+
+function report2(t){
+  const wait = t.mins+' min wait';
+  if(!t.rangAt){
+    result('r2', 'Cancelled before it was due.');
+    return;
+  }
+  const late = t.rangAt - t.due;
+  const paused = t.maxGap > 5000 ? 'the phone paused the page for up to '+ago(t.maxGap) : 'the page kept running the whole time';
+  if(t.rangHidden){
+    result('r2', 'It works: it rang while the page was out of sight, '+ago(late)+' after it was due, and '+paused+'.', 'good');
+    note('2', 'WORKED ('+wait+'): rang while out of sight, '+ago(late)+' late; '+paused);
+  }else if(late > 60000){
+    result('r2', 'It did not ring while you were away. It only rang when you came back, '+ago(late)+' late, because '+paused+'.', 'bad');
+    note('2', 'FAILED ('+wait+'): only rang on coming back, '+ago(late)+' late; '+paused);
+  }else{
+    result('r2', 'It rang on time, but the page was on screen, so this does not tell us about the screen being off. Try again and switch the screen off.');
+    note('2', 'rang on time but the page was on screen ('+wait+')');
+  }
+}
+
+document.querySelectorAll('[data-mins]').forEach(b => b.onclick = () => start2(Number(b.dataset.mins)));
+$('cancel').onclick = () => stop2();
+$('stop').onclick = () => stop2();
+
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){
+    if(T1 && Date.now()-T1.at < 3000) T1.left = true;
+  }else{
+    if(T1 && T1.left){ askWhat(T1.which); T1 = null; }
+    if(T2) beat();
+  }
+});
+
+// A test that was running when the page was last seen, but never finished:
+// the phone closed or reloaded the page while it was out of sight.
+(function(){
+  const t = store.get('t2');
+  if(!t) return;
+  store.del('t2');
+  const last = new Date(t.last);
+  result('r2', 'The phone closed the page while the test was running. Its last sign of life was at '
+    + hms(last)+', '+ago(t.last-t.start)+' after the start'
+    + (t.rangAt ? ', while it was ringing.' : '. The alarm was due at '+hms(new Date(t.due))+'.'), 'bad');
+  note('2', 'FAILED ('+t.mins+' min wait): the phone closed the page; last sign of life '
+    + ago(t.last-t.start)+' after the start'+(t.rangAt?', while ringing':''));
+})();
+
+paintSum();
+</script>
+</body>
+</html>

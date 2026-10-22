@@ -42,7 +42,7 @@ const ok = (what, cond, extra='') => {
       is_organisation:true,town:'Middlewich',contact_groups:[{group_id:2}]});
     window.__rows.log_days = [
       {id:1, created_by:'me', on_date:d(0), hours_start:1248, hours_end:1250, pob_tonight:2,
-       diary_notes:'Quiet day at the moorings', regular_chores:'Washed the roof', buys:{}},
+       diary_notes:'Quiet day at the moorings', regular_chores:'Washed the roof', wifi_quality:4, buys:{}},
       {id:2, created_by:'me', on_date:d(1), pob_tonight:2, buys:{}},
       {id:3, created_by:'me', on_date:d(2), pob_tonight:2, buys:{}},
       {id:4, created_by:'me', on_date:d(3), pob_tonight:3, buys:{}},
@@ -101,8 +101,21 @@ const ok = (what, cond, extra='') => {
     ['diesel','coal','pumpout','gas','service'].every(k => {
       const b = document.querySelector(`[data-bbox="${k}"]`); return b && !b.open; })));
   ok('the quick tick boxes are still in Boat and services', await ev(() =>
-    ['diesel','coal','lpg_gas'].every(k => $('logForm').elements[k])
-    && $('logForm').elements['diesel_pumpout_at'] && $('logForm').elements['coal_gas_at']));
+    ['diesel','coal','lpg_gas'].every(k => $('logForm').elements[k])));
+  const boatFs = "[...document.querySelectorAll('#logForm fieldset')].find(f => f.querySelector('legend').textContent==='Engine and services')";
+  const aboardFs = "[...document.querySelectorAll('#logForm fieldset')].find(f => f.querySelector('legend').textContent===\"Who's Aboard\")";
+  ok('the "diesel or pump out at" and "coal or gas at" boxes are gone', await ev(() =>
+    !$('logForm').elements['diesel_pumpout_at'] && !$('logForm').elements['coal_gas_at']));
+  ok('Pumpout tick box and the last pump out note are in Engine and services', await ev(f => {
+    const b = eval(f); const l = b.querySelector('[name="pump_out"]').closest('label');
+    return l.textContent.trim()==='Pumpout' && b.querySelector('#pumpNote')
+      && /Last pumped out .* 5 days ago\. Total People Days: 11\./.test(b.querySelector('#pumpNote').textContent); }, boatFs));
+  ok("and no longer in Who's Aboard", await ev(f => !eval(f).querySelector('[name="pump_out"],#pumpNote'), aboardFs));
+  ok("Signal quality is in Who's Aboard, under Overnight guests", await ev(([a,b]) => {
+    const ab = eval(a), bo = eval(b), sig = ab.querySelector('#sigPick');
+    return sig && !bo.querySelector('#sigPick')
+      && (ab.querySelector('#guestList').compareDocumentPosition(sig) & Node.DOCUMENT_POSITION_FOLLOWING); },
+    [aboardFs, boatFs]));
 
   console.log('\nDiesel');
   await ev(() => document.querySelector('[data-bbox="diesel"]').open = true);
@@ -168,7 +181,7 @@ const ok = (what, cond, extra='') => {
   await page.check('[data-b="pumpout.blue"]'); await settle();
   c = await calc('pumpout');
   ok('5 days since the last one', /5 days ago/.test(c), c);
-  ok('11 nights aboard since, about 2.2 a night', /11 nights aboard since, about 2\.2 a night/.test(c), c);
+  ok('Total People Days: 11', /Total People Days: 11\./.test(c) && !/nights/.test(c), c);
 
   console.log('\nGas');
   await ev(() => document.querySelector('[data-bbox="gas"]').open = true);
@@ -255,7 +268,9 @@ const ok = (what, cond, extra='') => {
      && /£54\.00/.test(s) && /£0\.54/.test(s), s);
   s = await sec('pumpout');
   ok('Pump out: £20.00, no Blue, 5 days, 11 nights', /£20\.00/.test(s) && /Blue includedNo/.test(s)
-     && /Days since5/.test(s) && /11 nights aboard/.test(s), s);
+     && /Days since5/.test(s) && /Total People Days11/.test(s), s);
+  s = await sec('aboard');
+  ok("Who's Aboard shows the signal", /Signal4 out of 5/.test(s), s);
   s = await sec('gas');
   ok('Gas: 13 kg, £3.00 a kg', /13 kg/.test(s) && /£3\.00/.test(s), s);
   s = await sec('service');
@@ -265,6 +280,14 @@ const ok = (what, cond, extra='') => {
     [...document.querySelectorAll('#logBody [data-sec]')].map(d => d.dataset.sec)
       .filter(k => ['diesel','coal','pumpout','gas','service','aboard'].includes(k)).join()
       === 'diesel,coal,pumpout,gas,service,aboard'));
+
+  // Yesterday: pumped out 4 days before, with 2, 3, 2 and 2 aboard since.
+  await ev(() => { LOG_DATE = window.__D(1); renderLog(); }); await settle();
+  s = await sec('boat');
+  ok('Boat and services shows the last pump out and Total People Days: 9, with no days after it',
+     /Last pumped out/.test(s) && /Total People Days\s*9\s*$/.test(s) && !/Signal/.test(s), s);
+  ok("and Who's Aboard no longer does", !/pumped|People Days/.test(await sec('aboard')));
+  await ev(() => { LOG_DATE = window.__TODAY; renderLog(); }); await settle();
 
   console.log('\nThe form opens what the day already has');
   await ev(() => editLog(window.__TODAY)); await settle();

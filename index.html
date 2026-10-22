@@ -418,6 +418,15 @@ details#dtFormer .multi{padding:0 12px 12px}
 .linkrow .del{color:var(--red);font-size:22px;padding:0 6px}
 .addlink{padding:12px 14px;display:grid;gap:8px}
 .addlink select,.addlink input{padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff;width:100%}
+details.buybox{border:1px solid var(--rule);border-radius:var(--radius);background:var(--panel);margin:0 0 16px}
+details.buybox>summary{padding:12px 14px;font-size:14px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);cursor:pointer}
+details.buybox .bbin{padding:0 14px 14px}
+.partrow{display:grid;grid-template-columns:1.4fr 1fr .8fr auto;gap:6px;align-items:center;margin-top:6px}
+.partrow input{min-width:0;padding:11px 8px;border:1.5px solid var(--rule);border-radius:8px;
+  background:#fff;font:inherit;color:inherit}
+.partrow input:focus{border-color:var(--hull);outline:none}
+.partrow .x{color:var(--red);font-size:22px;padding:0 4px}
 .results{border:1.5px solid var(--rule);border-radius:8px;max-height:180px;overflow-y:auto}
 .results button{display:block;width:100%;text-align:left;padding:10px 12px;border-bottom:1px solid #F0EEE7}
 .results button:last-child{border-bottom:none}
@@ -2914,7 +2923,7 @@ function logSectionRows(){
   return `
     <div class="field"><dd style="color:var(--muted);font-size:15px">
       Turn off anything you do not use, and put them in the order you fill them in.
-      Where and The day always show in full; the rest start folded away.</dd></div>
+      Where, The day and Notes always show in full; the rest start folded away.</dd></div>
     ${secs.map((p,i)=>{
       const def=secDef(p.id);
       return `<div class="setrow">
@@ -3231,14 +3240,16 @@ let SET_OPEN={};
 try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
-  'logcats','logshare','who_aboard','medication','bike_ride','alcohol','mecontact',
+  'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
+  'coal_type','gas_bottle','service_kind','mecontact',
   'shareall','hometiles','people',
   'accounts','fincats','finpayees','fincur','taxyear'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
-  alcohol:'Alcohol — choices',mecontact:'Which contact is you?',
+  alcohol:'Alcohol — choices',coal_type:'Coal — types',
+  gas_bottle:'Gas — bottle sizes',service_kind:'Boat servicing — what was serviced',mecontact:'Which contact is you?',
   logcats:'Your own sections',logshare:'Share my log',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
@@ -3249,7 +3260,7 @@ const SET_GROUPS=[
   {label:'Contacts',   cards:['groups','statuses','link_kinds','pet_types',
                               'mecontact','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
-                              'bike_ride','alcohol']},
+                              'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
@@ -3388,6 +3399,14 @@ async function openSettings(goTo){
     medication: optionRows('medication','medicine'),
     bike_ride:  optionRows('bike_ride','choice'),
     alcohol:    optionRows('alcohol','choice'),
+    coal_type:  optionRows('coal_type','type of coal'),
+    gas_bottle: `<div class="field"><dd style="color:var(--muted);font-size:15px">
+        Until you add your own, the only size offered is 13 kg. Put the
+        weight first, as in "13 kg", so the cost per kg can be worked out.</dd></div>`
+      + optionRows('gas_bottle','bottle size'),
+    service_kind: `<div class="field"><dd style="color:var(--muted);font-size:15px">
+        Until you add your own: ${SERVICE_KINDS.join(', ')}.</dd></div>`
+      + optionRows('service_kind','choice'),
     mecontact: `<div class="field"><dd style="color:var(--muted);font-size:15px">
         Fills in new diary entries, and names the two "if not aboard" slots
         in the log.</dd></div>
@@ -4219,6 +4238,37 @@ function openHelp(where){
   to you.</p>
   <p>To be reminded, put a repeating daily to-do in the Diary &mdash; "fill in the
   log", every day, at whatever time suits.</p>
+
+  <h4 id="h-buys">Diesel, coal, pump outs, gas and servicing</h4>
+  <p>Each has its own section, after Boat and services. When filling in a day
+  they start folded away: tap one to open it. On the log a section only shows on
+  days that have something in it. Filling one in ticks its box under Boat and
+  services for you. In a hurry, just tick the box and come back to fill in the
+  rest later.</p>
+  <p><strong>Purchased from</strong> searches your contacts. If they are not
+  there, tap <em>+ Add &hellip; as a new contact</em> and they go into your
+  contacts as a business, in your Professional/Business group.</p>
+  <p>Only what you type is kept. Everything else is worked out from the log
+  each time, so correcting one day corrects the rest:</p>
+  <ul>
+    <li><strong>Diesel</strong>: the total (type over it to match the receipt),
+    the litres for propulsion and domestic, and the litres and cost per engine
+    hour since the last diesel day. The engine hours come from Boat and
+    services, so fill those in too. The split starts from the last one you
+    used.</li>
+    <li><strong>Coal</strong>: total weight, total cost and cost per kg.</li>
+    <li><strong>Pump outs</strong>: the last pump out, the days since, and the
+    nights aboard since, from <em>On board tonight</em> under Who&rsquo;s
+    Aboard.</li>
+    <li><strong>Gas</strong>: cost per kg, and when you last bought gas.</li>
+    <li><strong>Boat servicing</strong>: one line per part, then labour and VAT,
+    added up to the total.</li>
+  </ul>
+  <p>Coal types, gas bottle sizes and the kinds of servicing are lists you can
+  change in Settings &rsaquo; Daily Log.</p>
+  <p>The diary notes have a section of their own, <strong>Notes</strong>, which
+  always shows in full like The day. If you share your log and hide The day,
+  Notes is hidden too.</p>
 
   <h4 id="h-cats">Sections of your own</h4>
   <p>The log starts with the headings we built — blood pressure, engine, aboard
@@ -5499,7 +5549,13 @@ function logShareIn(){
 }
 const logCanEdit   = () => logIsMine() || !!(logShareIn()||{}).can_edit;
 const logCanDelete = () => logIsMine() || !!(logShareIn()||{}).can_delete;
-const logHidden    = () => logIsMine() ? [] : arr((logShareIn()||{}).hidden);
+// The diary notes used to be part of The day, so a log that hides The day
+// keeps hiding them now they have a section of their own.
+const logHidden    = () => {
+  if(logIsMine()) return [];
+  const h=arr((logShareIn()||{}).hidden);
+  return h.includes('day')&&!h.includes('notes') ? [...h,'notes'] : h;
+};
 const logsSharedWithMe = () => LOG_SHARES.filter(x=>ME&&x.viewer_id===ME.id);
 const myLogShares      = () => LOG_SHARES.filter(x=>ME&&x.owner_id===ME.id);
 function logPersonName(id){
@@ -5563,6 +5619,8 @@ async function loadLog(){
   LOGFIELDS=fl.error?[]:(fl.data||[]);
   // If step 30 has not been run the column simply is not there.
   PHOTOS_READY = LOGDAYS.length ? ('photos' in LOGDAYS[0]) : true;
+  // Nor, until step 41, is the pocket for what you buy.
+  BUYS_READY = LOGDAYS.length ? ('buys' in LOGDAYS[0]) : true;
   await signLogPhotos();
 }
 
@@ -5574,6 +5632,397 @@ function allSections(){
     LOGCATS.map(c=>({id:catSecId(c), label:c.label, cat:c})));
 }
 const fieldsOf = catId => LOGFIELDS.filter(f=>f.cat_id===catId);
+
+/* ---------- what you buy for the boat ---------- */
+// Diesel, coal, pump outs, gas and servicing, kept with the day in one pocket
+// (buys, from step 41). Only what you type is stored. The sums are worked out
+// each time, so correcting one figure, or an old day's engine hours, corrects
+// everything that depends on it.
+let BUYS_READY=true;
+const BUY_KINDS=['diesel','coal','pumpout','gas','service'];
+// Filling one in ticks its box under Boat and services, so the quick ticks
+// and the pump out count keep working as they always have.
+const BUY_TICK={diesel:'diesel',coal:'coal',pumpout:'pump_out',gas:'lpg_gas'};
+// The things that make it a purchase. A carried-over split or bag size on
+// its own is not one.
+const BUY_REAL={diesel:['from','litres','ppl','total'], coal:['from','bags','per_bag'],
+  pumpout:['from','cost','blue'], gas:['from','cost'],
+  service:['from','desc','parts','labour','vat']};
+const SERVICE_KINDS=['Engine','Heating','Plumbing','Electrics','Other'];
+const buysOf = d => (d&&d.buys&&typeof d.buys==='object'&&!Array.isArray(d.buys))?d.buys:{};
+const numOr = v => (v===''||v==null||!isFinite(Number(v))) ? null : Number(v);
+const poundsOf = n => (n==null||!isFinite(n)) ? '' : '£'+n.toFixed(2);
+const buyHasContent = (kind,r) => !!r && BUY_REAL[kind].some(k=>
+  k==='parts' ? arr(r.parts).length>0 : r[k]!=null && r[k]!=='');
+const gasSizes = () => optsFor('gas_bottle').length ? optsFor('gas_bottle') : ['13 kg'];
+const serviceKinds = () => optsFor('service_kind').length ? optsFor('service_kind') : SERVICE_KINDS;
+
+// The most recent day before this one that passes the test.
+function lastBefore(iso, test){
+  return LOGDAYS.filter(d=>d.on_date<iso && test(d))
+    .sort((a,b)=>b.on_date.localeCompare(a.on_date))[0] || null;
+}
+const engineHours = d => !d ? null
+  : d.hours_end!=null ? Number(d.hours_end) : d.hours_start!=null ? Number(d.hours_start) : null;
+const daysAgo = (from,to) => { const n=dayGap(from,to); return n+' day'+(n===1?'':'s'); };
+
+// Everything worked out rather than typed, for one purchase. While the form is
+// open, hoursNow comes from the hours box on it rather than the saved day.
+function buyFigures(kind, iso, r, hoursNow){
+  r=r||{};
+  const o={};
+  if(kind==='diesel'){
+    const L=numOr(r.litres), ppl=numOr(r.ppl), pct=numOr(r.prop_pct);
+    o.total = numOr(r.total) ?? (L!=null&&ppl!=null ? L*ppl : null);
+    if(L!=null&&pct!=null){ o.propL=L*pct/100; o.domL=L-o.propL; }
+    // Days ticked for diesel before step 41 count too, so the first
+    // purchase recorded here already has something to measure from.
+    const prev=lastBefore(iso, d=>d.diesel || !!buysOf(d).diesel);
+    o.prevDate = prev ? prev.on_date : null;
+    o.prevHours = engineHours(prev);
+    o.hoursNow = hoursNow;
+    o.run = (hoursNow!=null && o.prevHours!=null) ? hoursNow-o.prevHours : null;
+    if(o.run>0){
+      if(L!=null) o.lph=L/o.run;
+      if(o.total!=null) o.cph=o.total/o.run;
+    }
+  }
+  if(kind==='coal'){
+    const kg=numOr(r.bag_kg), n=numOr(r.bags), each=numOr(r.per_bag);
+    o.totalKg = kg!=null&&n!=null ? kg*n : null;
+    o.total = n!=null&&each!=null ? n*each : null;
+    o.perKg = o.total!=null&&o.totalKg ? o.total/o.totalKg : null;
+  }
+  if(kind==='pumpout'){
+    const prev=lastBefore(iso, d=>d.pump_out);
+    if(prev){
+      o.prevDate=prev.on_date;
+      o.days=dayGap(prev.on_date, iso);
+      // From the night of the last pump out to last night: the tank this
+      // pump out emptied.
+      o.nights=LOGDAYS.filter(d=>d.on_date>=prev.on_date && d.on_date<iso)
+        .reduce((n,d)=>n+(Number(d.pob_tonight)||0),0);
+      o.avg = o.days ? o.nights/o.days : null;
+    }
+  }
+  if(kind==='gas'){
+    const kg=parseFloat(r.size), cost=numOr(r.cost);
+    o.perKg = cost!=null&&kg>0 ? cost/kg : null;
+    const prev=lastBefore(iso, d=>d.lpg_gas || !!buysOf(d).gas);
+    o.prevDate = prev ? prev.on_date : null;
+  }
+  if(kind==='service'){
+    const parts=arr(r.parts).map(p=>numOr(p.cost)).filter(x=>x!=null);
+    o.parts = parts.length ? parts.reduce((a,b)=>a+b,0) : null;
+    const bits=[o.parts, numOr(r.labour), numOr(r.vat)].filter(x=>x!=null);
+    o.total = bits.length ? bits.reduce((a,b)=>a+b,0) : null;
+  }
+  return o;
+}
+
+// What the Daily Log shows for one purchase. R is renderLog's row maker.
+function buyView(kind, e, R){
+  const r=buysOf(e)[kind];
+  if(!buyHasContent(kind,r)) return '';
+  const x=buyFigures(kind, e.on_date, r, engineHours(e));
+  const fx=(n,dp)=>n==null||!isFinite(n)?'':n.toFixed(dp);
+  const from=R('Purchased from', r.from);
+  if(kind==='diesel') return from
+    + R('Litres', r.litres)
+    + R('Price per litre', r.ppl!=null ? '£'+r.ppl : '')
+    + (r.prop_pct!=null ? R('Tax split', r.prop_pct+'% propulsion'
+        + (x.propL!=null?' ('+fx(x.propL,1)+' L)':'')+', '+(100-r.prop_pct)+'% domestic'
+        + (x.domL!=null?' ('+fx(x.domL,1)+' L)':'')) : '')
+    + R('Total paid', poundsOf(x.total))
+    + R('Engine hours now', x.hoursNow)
+    + R('Engine hours last time', x.prevHours!=null
+        ? x.prevHours+' — '+dayLabel(x.prevDate) : '')
+    + R('Hours run since', x.run!=null ? fx(x.run,1) : '')
+    + R('Litres per hour', fx(x.lph,2))
+    + R('Cost per hour', poundsOf(x.cph));
+  if(kind==='coal') return from
+    + R('Type', r.type)
+    + R('Bags', r.bags!=null ? r.bags+(r.bag_kg!=null?' × '+r.bag_kg+' kg':'') : '')
+    + R('Total weight', x.totalKg!=null ? x.totalKg+' kg' : '')
+    + R('Cost per bag', poundsOf(numOr(r.per_bag)))
+    + R('Total cost', poundsOf(x.total))
+    + R('Cost per kg', poundsOf(x.perKg));
+  if(kind==='pumpout') return from
+    + R('Cost', poundsOf(numOr(r.cost)))
+    + R('Blue included', r.blue ? 'Yes' : 'No')
+    + R('Previous pump out', x.prevDate ? dayLabel(x.prevDate) : 'Not recorded')
+    + R('Days since', x.prevDate ? x.days : '')
+    + R('People aboard over that time', x.prevDate ? x.nights+' nights aboard'
+        + (x.avg!=null ? ', about '+fx(x.avg,1)+' a night' : '') : '');
+  if(kind==='gas') return from
+    + R('Bottle', r.size)
+    + R('Cost', poundsOf(numOr(r.cost)))
+    + R('Cost per kg', poundsOf(x.perKg))
+    + R('Last bought', x.prevDate ? dayLabel(x.prevDate)+' — '
+        + daysAgo(x.prevDate, e.on_date)+' before' : 'Not recorded');
+  if(kind==='service') return from
+    + R('What', r.what) + R('Description', r.desc)
+    + arr(r.parts).map(p=>R('Part', [p.name, p.num?'part no. '+p.num:'',
+        p.cost!=null?poundsOf(numOr(p.cost)):''].filter(Boolean).join(' · '))).join('')
+    + R('Parts', arr(r.parts).length>1 ? poundsOf(x.parts) : '')
+    + R('Labour', poundsOf(numOr(r.labour)))
+    + R('VAT', poundsOf(numOr(r.vat)))
+    + R('Total', poundsOf(x.total));
+  return '';
+}
+
+// A new purchase starts from the last one of its kind where that helps:
+// the same tax split, the same bags, the same bottle.
+function buySeed(kind, iso){
+  const last=lastBefore(iso, d=>!!buysOf(d)[kind]);
+  const lr=last ? buysOf(last)[kind] : {};
+  if(kind==='diesel') return {prop_pct: lr.prop_pct ?? 60};
+  if(kind==='coal')   return {bag_kg: lr.bag_kg ?? 25, type: lr.type};
+  if(kind==='gas')    return {size: lr.size || gasSizes()[0]};
+  return {};
+}
+
+const BUY_LABEL={diesel:'Diesel',coal:'Coal',pumpout:'Pump out',gas:'Gas',service:'Boat servicing'};
+
+// One purchase on the edit form. Folded away unless the day already has one,
+// so five more sections do not make the form five sections longer to thumb past.
+function buyPane(kind, iso, e){
+  if(!BUYS_READY) return `<fieldset><legend>${BUY_LABEL[kind]}</legend>
+    <p class="coords">This part needs its database step first. In Supabase, open the
+    SQL Editor and run <strong>contacts-step41.sql</strong>, then come back here.</p></fieldset>`;
+  const saved=buysOf(e)[kind];
+  const has=buyHasContent(kind,saved);
+  const r=has ? saved : buySeed(kind, iso);
+  const v=x=>x==null?'':esc(String(x));
+  const N=(l,k,step)=>`<label>${l}<input data-b="${kind}.${k}" type="number"
+    inputmode="decimal" step="${step||'any'}" value="${v(r[k])}"></label>`;
+  const from=`<label>Purchased from
+      <input data-bfrom="${kind}" value="${v(r.from)}" data-cid="${v(r.from_id)}"
+        placeholder="Start typing a name from your contacts" autocomplete="off"></label>
+    <div class="results hidden" data-bhits="${kind}"></div>`;
+  const calc=`<p class="coords" data-bcalc="${kind}"></p>`;
+  let body='';
+  if(kind==='diesel') body = from
+    + `<div class="two">${N('Litres','litres')}${N('Price per litre £','ppl')}</div>
+       <div class="two">${N('Propulsion %','prop_pct','1')}
+         <label>Domestic %<input data-bdom type="number" inputmode="decimal" step="1"></label></div>
+       ${N('Total paid £','total')}` + calc;
+  if(kind==='coal'){
+    const types=[...new Set([...optsFor('coal_type'),
+      ...LOGDAYS.map(d=>(buysOf(d).coal||{}).type)].filter(Boolean))];
+    body = from
+      + `<label>Type of coal<input data-b="coal.type" list="dlCoal" value="${v(r.type)}"
+           autocomplete="off"></label>
+         <datalist id="dlCoal">${types.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
+         <div class="two">${N('Bag size kg','bag_kg')}${N('Number of bags','bags','1')}</div>
+         ${N('Cost per bag £','per_bag')}` + calc;
+  }
+  if(kind==='pumpout') body = from + N('Cost £','cost')
+    + `<div class="checks"><label><input type="checkbox" data-b="pumpout.blue"
+         ${r.blue?'checked':''}> Blue included</label></div>` + calc;
+  if(kind==='gas'){
+    const sizes=gasSizes();
+    if(r.size && !sizes.includes(r.size)) sizes.push(r.size);
+    body = from
+      + `<label>Bottle size<select data-b="gas.size">${sizes.map(s=>
+          `<option ${s===r.size?'selected':''}>${esc(s)}</option>`).join('')}</select></label>
+         ${N('Cost £','cost')}` + calc;
+  }
+  if(kind==='service'){
+    const kinds=serviceKinds();
+    if(r.what && !kinds.includes(r.what)) kinds.push(r.what);
+    const parts=arr(r.parts).length ? arr(r.parts) : [{}];
+    body = from
+      + `<label>What was serviced<select data-b="service.what">
+          <option value=""></option>${kinds.map(k=>
+          `<option ${k===r.what?'selected':''}>${esc(k)}</option>`).join('')}</select></label>
+         <label>Description<textarea data-b="service.desc" rows="3">${v(r.desc)}</textarea></label>
+         <p class="coords">Parts</p>
+         <div id="partList">${parts.map(partRow).join('')}</div>
+         <button type="button" class="addmore" id="partAdd">+ Add another part</button>
+         <div class="two">${N('Labour £','labour')}${N('VAT £','vat')}</div>` + calc;
+  }
+  return `<details class="buybox" data-bbox="${kind}" ${has?'open':''}>
+    <summary>${BUY_LABEL[kind]}</summary><div class="bbin">${body}</div></details>`;
+}
+function partRow(p){
+  p=p||{};
+  const v=x=>x==null?'':esc(String(x));
+  return `<div class="partrow" data-bpart>
+    <input data-pp="name" placeholder="Part" value="${v(p.name)}" aria-label="Part">
+    <input data-pp="num" placeholder="Part number" value="${v(p.num)}" aria-label="Part number">
+    <input data-pp="cost" type="number" inputmode="decimal" step="any" placeholder="£"
+      value="${v(p.cost)}" aria-label="Cost">
+    <button type="button" class="x" data-partx aria-label="Remove this part">&times;</button>
+  </div>`;
+}
+
+// What one pane on the form currently says.
+function readBuy(f, kind){
+  const r={};
+  f.querySelectorAll('[data-b]').forEach(el=>{
+    const [k0,k]=el.dataset.b.split('.');
+    if(k0!==kind) return;
+    if(el.type==='checkbox'){ if(el.checked) r[k]=true; return; }
+    const v=el.value.trim();
+    if(v==='') return;
+    r[k] = el.type==='number' ? Number(v) : v;
+  });
+  const fr=f.querySelector(`[data-bfrom="${kind}"]`);
+  if(fr && fr.value.trim()){
+    r.from=fr.value.trim();
+    const cid=fr.dataset.cid;
+    if(cid) r.from_id = /^\d+$/.test(cid) ? Number(cid) : cid;
+  }
+  if(kind==='service'){
+    const parts=[...f.querySelectorAll('[data-bpart]')].map(row=>{
+      const g=n=>row.querySelector(`[data-pp="${n}"]`).value.trim();
+      const p={};
+      if(g('name')) p.name=g('name');
+      if(g('num')) p.num=g('num');
+      if(g('cost')!=='') p.cost=Number(g('cost'));
+      return p;
+    }).filter(p=>Object.keys(p).length);
+    if(parts.length) r.parts=parts;
+  }
+  return r;
+}
+
+// A supplier who is not in your contacts yet goes in as a business, in your
+// Professional/Business group, so everyone in that group sees them too.
+async function addSupplier(name){
+  const g=GROUPS.find(x=>/professional|business/i.test(x.name||''));
+  if(!confirm('Add "'+name+'" to your contacts as a business'
+    +(g?', in '+g.name:'')+'?')) return null;
+  const {data:ins,error}=await sb.from('contacts')
+    .insert({created_by:ME.id, company:name, is_organisation:true}).select().single();
+  if(error||!ins){ toast('Could not add them to your contacts'); console.error(error); return null; }
+  if(g){
+    const {error:ge}=await sb.from('contact_groups')
+      .insert({contact_id:ins.id, group_id:g.id, user_id:ME.id});
+    if(ge) console.error(ge);
+  }
+  CONTACTS.push({...ins, contact_groups:g?[{group_id:g.id}]:[]});
+  TAGS[ins.id]=g?[g.id]:[];
+  toast(name+' added to your contacts');
+  return ins;
+}
+
+// Wires up every purchase pane on the form: the contact search, the sums
+// that work themselves out, and the parts list.
+function wireBuys(f, iso){
+  const hoursNow=()=>{
+    const h=f.elements['hours_end'];
+    if(h) return numOr(h.value.trim());
+    return engineHours(logEntry(iso));
+  };
+  const fx=(n,dp)=>n==null||!isFinite(n)?'':n.toFixed(dp);
+  const paint=kind=>{
+    const out=f.querySelector(`[data-bcalc="${kind}"]`); if(!out) return;
+    const x=buyFigures(kind, iso, readBuy(f,kind), hoursNow());
+    const bits=[];
+    if(kind==='diesel'){
+      if(x.propL!=null) bits.push(fx(x.propL,1)+' L propulsion, '+fx(x.domL,1)+' L domestic');
+      bits.push('Engine hours now: '+(x.hoursNow!=null?x.hoursNow:'not filled in yet (Boat and services)'));
+      bits.push(x.prevHours!=null ? 'Last diesel: '+x.prevHours+' hours, '+dayLabel(x.prevDate)
+        : 'No earlier diesel day with engine hours.');
+      if(x.run!=null) bits.push('Hours run since: '+fx(x.run,1));
+      if(x.lph!=null) bits.push('Litres per hour: '+fx(x.lph,2));
+      if(x.cph!=null) bits.push('Cost per hour: '+poundsOf(x.cph));
+    }
+    if(kind==='coal'){
+      if(x.totalKg!=null) bits.push('Total weight: '+x.totalKg+' kg');
+      if(x.total!=null) bits.push('Total cost: '+poundsOf(x.total));
+      if(x.perKg!=null) bits.push('Cost per kg: '+poundsOf(x.perKg));
+    }
+    if(kind==='pumpout'){
+      bits.push(x.prevDate ? 'Previous pump out: '+dayLabel(x.prevDate)+', '+x.days
+        +' day'+(x.days===1?'':'s')+' ago. '+x.nights+' nights aboard since'
+        +(x.avg!=null?', about '+fx(x.avg,1)+' a night':'')+'.'
+        : 'No earlier pump out recorded.');
+    }
+    if(kind==='gas'){
+      if(x.perKg!=null) bits.push('Cost per kg: '+poundsOf(x.perKg));
+      bits.push(x.prevDate ? 'Last bought: '+dayLabel(x.prevDate)+', '
+        +daysAgo(x.prevDate, iso)+' before.' : 'No earlier gas recorded.');
+    }
+    if(kind==='service'){
+      if(x.parts!=null) bits.push('Parts: '+poundsOf(x.parts));
+      bits.push('Total: '+(x.total!=null?poundsOf(x.total):'£0.00'));
+    }
+    out.innerHTML=bits.map(esc).join('<br>');
+  };
+
+  // Diesel: the domestic share is what is left, and the total works itself
+  // out until you type over it to match the receipt.
+  const pct=f.querySelector('[data-b="diesel.prop_pct"]'), dom=f.querySelector('[data-bdom]');
+  if(pct&&dom){
+    const fromPct=()=>{ const p=numOr(pct.value); dom.value=p==null?'':String(100-p); };
+    fromPct();
+    pct.addEventListener('input',fromPct);
+    dom.addEventListener('input',()=>{ const q=numOr(dom.value);
+      pct.value=q==null?'':String(100-q); paint('diesel'); });
+  }
+  const tot=f.querySelector('[data-b="diesel.total"]');
+  if(tot){
+    const L=f.querySelector('[data-b="diesel.litres"]'), P=f.querySelector('[data-b="diesel.ppl"]');
+    const worked=()=>{ const a=numOr(L.value), b=numOr(P.value);
+      return a!=null&&b!=null ? (a*b).toFixed(2) : ''; };
+    // Typed over already if what is stored is not what the sum gives.
+    tot.dataset.own = (tot.value!=='' && Number(tot.value).toFixed(2)!==worked()) ? '1' : '';
+    if(!tot.dataset.own) tot.value=worked();
+    const sync=()=>{ if(!tot.dataset.own) tot.value=worked(); paint('diesel'); };
+    L.addEventListener('input',sync); P.addEventListener('input',sync);
+    tot.addEventListener('input',()=>{ tot.dataset.own = tot.value.trim()==='' ? '' : '1';
+      if(!tot.dataset.own) tot.value=worked(); paint('diesel'); });
+  }
+  if(f.elements['hours_end']) f.elements['hours_end'].addEventListener('input',()=>paint('diesel'));
+  if(f.elements['pob_tonight']) f.elements['pob_tonight'].addEventListener('input',()=>paint('pumpout'));
+
+  // Parts: add a line, take one away.
+  const pl=f.querySelector('#partList');
+  if(pl){
+    const wireParts=()=>pl.querySelectorAll('[data-partx]').forEach(b=>b.onclick=()=>{
+      b.closest('[data-bpart]').remove();
+      if(!pl.querySelector('[data-bpart]')) pl.insertAdjacentHTML('beforeend',partRow());
+      wireParts(); paint('service');
+    });
+    wireParts();
+    f.querySelector('#partAdd').onclick=()=>{
+      pl.insertAdjacentHTML('beforeend',partRow()); wireParts();
+      const last=pl.lastElementChild.querySelector('input'); if(last) last.focus();
+    };
+  }
+
+  // Purchased from: your contacts, or a new one there and then.
+  f.querySelectorAll('[data-bfrom]').forEach(inp=>{
+    const kind=inp.dataset.bfrom;
+    const box=f.querySelector(`[data-bhits="${kind}"]`);
+    const pick=(c)=>{ inp.value=fullName(c); inp.dataset.cid=c.id; box.classList.add('hidden'); };
+    inp.addEventListener('input',()=>{
+      inp.dataset.cid='';
+      const q=inp.value.trim();
+      if(q.length<2){ box.classList.add('hidden'); return; }
+      const hits=CONTACTS.filter(c=>matches(c,q)).sort(byName).slice(0,8);
+      box.innerHTML=hits.map(c=>`<button type="button" data-bpick="${esc(String(c.id))}">${
+          esc(fullName(c))}${c.town?' <span class="coords">'+esc(c.town)+'</span>':''}</button>`).join('')
+        +`<button type="button" data-bnew style="color:var(--hull);font-weight:700">+ Add "${
+          esc(q)}" as a new contact</button>`;
+      box.classList.remove('hidden');
+      box.querySelectorAll('[data-bpick]').forEach(b=>b.onclick=()=>{
+        const c=CONTACTS.find(x=>String(x.id)===b.dataset.bpick); if(c) pick(c); });
+      box.querySelector('[data-bnew]').onclick=async()=>{
+        const c=await addSupplier(q); if(c) pick(c); };
+    });
+  });
+
+  BUY_KINDS.forEach(kind=>{
+    const pane=f.querySelector(`[data-bbox="${kind}"]`); if(!pane) return;
+    pane.addEventListener('input',()=>paint(kind));
+    pane.addEventListener('change',()=>paint(kind));
+    paint(kind);
+  });
+}
 
 const dayGap=(a,b)=>Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000);
 
@@ -5722,9 +6171,15 @@ const LOG_SECTIONS=[
   {id:'body',       label:'Body'},
   {id:'activity',   label:'Activity'},
   {id:'boat',       label:'Boat and services'},
+  {id:'diesel',     label:'Diesel'},
+  {id:'coal',       label:'Coal'},
+  {id:'pumpout',    label:'Pump outs'},
+  {id:'gas',        label:'Gas'},
+  {id:'service',    label:'Boat servicing'},
   {id:'aboard',     label:"Who's Aboard"},
   {id:'photos',     label:'Photos'},
-  {id:'day',        label:'The day',    fixed:true}
+  {id:'day',        label:'The day',    fixed:true},
+  {id:'notes',      label:'Notes',      fixed:true}
 ];
 
 function mySections(){
@@ -5736,7 +6191,14 @@ function mySections(){
     return all.map(s=>({id:s.id,on:true}));
   const known=all.map(s=>s.id);
   const out=saved.filter(x=>known.includes(x.id));
-  known.forEach(id=>{ if(!out.some(x=>x.id===id)) out.push({id,on:true}); });
+  // Anything new since you last arranged them goes in after whatever comes
+  // before it in the standard order, not at the very bottom.
+  known.forEach((id,i)=>{
+    if(out.some(x=>x.id===id)) return;
+    const before=known.slice(0,i).reverse().find(b=>out.some(x=>x.id===b));
+    const at=before ? out.findIndex(x=>x.id===before)+1 : 0;
+    out.splice(at,0,{id,on:true});
+  });
   return out;
 }
 const secDef = id => allSections().find(s=>s.id===id);
@@ -5878,10 +6340,12 @@ function renderLog(){
             ${shots.length>1?'<span class="coords">The first one is the big one at the top of Where. Tap &#9733; to change it.</span>':''}
            </div>`);
     })(),
-    day: (e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:'')
-      +R('Chores',e.regular_chores)+R('Drinks',e.drinks)+R('Alcohol',e.alcohol)
+    notes: e.diary_notes?`<div class="field"><dd>${esc(e.diary_notes).replace(/\n/g,'<br>')}</dd></div>`:'',
+    day: R('Chores',e.regular_chores)+R('Drinks',e.drinks)+R('Alcohol',e.alcohol)
       +R('Out at',e.pub_cafe)+R('Visited',e.attractions)
   };
+
+  BUY_KINDS.forEach(k=>{ content[k]=buyView(k,e,R); });
 
   const exShow=(e.extra&&typeof e.extra==='object')?e.extra:{};
   LOGCATS.forEach(c=>{
@@ -6216,8 +6680,11 @@ function editLog(iso){
       <input type="hidden" name="overnight_guests">
     </fieldset>`,
 
-    day:`<fieldset><legend>The day</legend>
+    notes:`<fieldset><legend>Notes</legend>
       <label>Diary notes<textarea name="diary_notes" rows="5"></textarea></label>
+    </fieldset>`,
+
+    day:`<fieldset><legend>The day</legend>
       ${T('Regular chores','regular_chores')}
       ${T('Drinks','drinks')}
       <label>Alcohol<select name="alcohol">
@@ -6228,6 +6695,8 @@ function editLog(iso){
       ${T('Attractions visited','attractions')}
     </fieldset>`
   };
+
+  BUY_KINDS.forEach(k=>{ panes[k]=buyPane(k,iso,e); });
 
   // Same order as Settings, and nothing you have switched off
   LOGCATS.forEach(c=>{
@@ -6280,6 +6749,8 @@ function editLog(iso){
             +(t.nights===1?'':'s')+' aboard since.')
       : 'No pump out recorded yet. Tick the box on the day you have one.';
   }
+
+  wireBuys(f, iso);
 
   const exNow=(e.extra&&typeof e.extra==='object')?e.extra:{};
   const exPrev=(prev.extra&&typeof prev.extra==='object')?prev.extra:{};
@@ -6475,6 +6946,17 @@ async function saveLog(iso){
     });
     d.extra=extra;
   }
+  // Purchases: start from what is stored, so a section you have switched
+  // off keeps what it holds. Filling one in ticks its box.
+  if(BUYS_READY && f.querySelector('[data-bbox]')){
+    const was=logEntry(iso), buys={...buysOf(was)};
+    f.querySelectorAll('[data-bbox]').forEach(box=>{
+      const k=box.dataset.bbox, r=readBuy(f,k);
+      if(buyHasContent(k,r)){ buys[k]=r; if(BUY_TICK[k]) d[BUY_TICK[k]]=true; }
+      else delete buys[k];
+    });
+    d.buys=buys;
+  }
   // Only when Where was on the form. Hidden from you means left as it is.
   if(LOGDRAFT.blat!=null && $('logEditMap')){ d.boat_lat=LOGDRAFT.blat; d.boat_lng=LOGDRAFT.blng; }
   if(document.getElementById('placeList')){
@@ -6488,7 +6970,12 @@ async function saveLog(iso){
   const {error}=await sb.from('log_days')
     .upsert(d,{onConflict:'created_by,on_date'});
   $('logEdSave').disabled=false;
-  if(error){ toast('Could not save the day'); console.error(error); return; }
+  if(error){
+    console.error(error);
+    toast(/buys/.test(error.message||'') ? 'Run contacts-step41.sql in Supabase first'
+      : 'Could not save the day');
+    return;
+  }
   killMaps(); $('logEd').classList.add('hidden'); lockBackground();
   await loadLog(); renderLog(); toast('Saved');
 }

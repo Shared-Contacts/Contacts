@@ -4258,7 +4258,7 @@ function openHelp(where){
     used.</li>
     <li><strong>Coal</strong>: total weight, total cost and cost per kg.</li>
     <li><strong>Pump outs</strong>: the last pump out, the days since, and the
-    nights aboard since, from <em>On board tonight</em> under Who&rsquo;s
+    Total People Days since, from <em>On board tonight</em> under Who&rsquo;s
     Aboard.</li>
     <li><strong>Gas</strong>: cost per kg, and when you last bought gas.</li>
     <li><strong>Boat servicing</strong>: one line per part, then labour and VAT,
@@ -5702,7 +5702,6 @@ function buyFigures(kind, iso, r, hoursNow){
       // pump out emptied.
       o.nights=LOGDAYS.filter(d=>d.on_date>=prev.on_date && d.on_date<iso)
         .reduce((n,d)=>n+(Number(d.pob_tonight)||0),0);
-      o.avg = o.days ? o.nights/o.days : null;
     }
   }
   if(kind==='gas'){
@@ -5752,8 +5751,7 @@ function buyView(kind, e, R){
     + R('Blue included', r.blue ? 'Yes' : 'No')
     + R('Previous pump out', x.prevDate ? dayLabel(x.prevDate) : 'Not recorded')
     + R('Days since', x.prevDate ? x.days : '')
-    + R('People aboard over that time', x.prevDate ? x.nights+' nights aboard'
-        + (x.avg!=null ? ', about '+fx(x.avg,1)+' a night' : '') : '');
+    + R('Total People Days', x.prevDate ? x.nights : '');
   if(kind==='gas') return from
     + R('Bottle', r.size)
     + R('Cost', poundsOf(numOr(r.cost)))
@@ -5937,8 +5935,7 @@ function wireBuys(f, iso){
     }
     if(kind==='pumpout'){
       bits.push(x.prevDate ? 'Previous pump out: '+dayLabel(x.prevDate)+', '+x.days
-        +' day'+(x.days===1?'':'s')+' ago. '+x.nights+' nights aboard since'
-        +(x.avg!=null?', about '+fx(x.avg,1)+' a night':'')+'.'
+        +' day'+(x.days===1?'':'s')+' ago. Total People Days: '+x.nights+'.'
         : 'No earlier pump out recorded.');
     }
     if(kind==='gas'){
@@ -6309,16 +6306,18 @@ function renderLog(){
       +R('Steps',e.steps)+R('Score out of 5',e.exercise_score),
     boat: R('Engine hours',e.hours_end)
       +R('Run today',run!=null&&run>0?run.toFixed(1)+' hrs':'')
-      +R('Took on',svc)+R('Diesel or pump out at',e.diesel_pumpout_at)
+      +R('Took on',svc)
+      // No longer on the form (Purchased from does the job), but older days
+      // that have them still show them.
+      +R('Diesel or pump out at',e.diesel_pumpout_at)
       +R('Coal or gas at',e.coal_gas_at)
-      +R('Signal',e.wifi_quality?e.wifi_quality+' out of 5':''),
-    aboard: R('Who',e.who_aboard)+R('On board tonight',e.pob_tonight)
-      +R('Guests',e.overnight_guests)
       +(()=>{ const t=pumpTally(LOG_DATE); return t
         ? R('Last pumped out', t.when)
-          + R('Nights aboard since', t.nights ? t.nights+' ('+t.days+' day'
-              +(t.days===1?'':'s')+')' : '')
+          + R('Total People Days', t.nights ? t.nights : '')
         : R('Last pumped out','Not recorded yet'); })(),
+    aboard: R('Who',e.who_aboard)+R('On board tonight',e.pob_tonight)
+      +R('Guests',e.overnight_guests)
+      +R('Signal',e.wifi_quality?e.wifi_quality+' out of 5':''),
     photos: (()=>{
       if(!PHOTOS_READY) return `<div class="field"><dd>
         This part needs its database step first. In Supabase, open the SQL Editor
@@ -6654,14 +6653,8 @@ function editLog(iso){
       <div class="two">${N('Hours at start','hours_start','0.1')}${N('Hours at end','hours_end','0.1')}</div>
       <div class="checks">${C('Diesel','diesel')}${C('Coal','coal')}
         ${C('Gas','lpg_gas')}${C('Water','water')}${C('Rubbish','rubbish')}
-        ${C('Checked oil and water','oil_water_checked')}</div>
-      ${T('Diesel or pump out at','diesel_pumpout_at')}
-      ${T('Coal or gas at','coal_gas_at')}
-      <label>Signal quality
-        <span class="pickrow" id="sigPick">${[1,2,3,4,5].map(n=>
-          `<button type="button" data-sig="${n}">${n}</button>`).join('')}
-          <button type="button" data-sig="">None</button></span></label>
-      <input type="hidden" name="wifi_quality">
+        ${C('Checked oil and water','oil_water_checked')}${C('Pumpout','pump_out')}</div>
+      <p class="coords" id="pumpNote"></p>
     </fieldset>`,
 
     aboard:`<fieldset><legend>Who's Aboard</legend>
@@ -6670,14 +6663,17 @@ function editLog(iso){
         ${optsFor('who_aboard').map(v=>`<option>${esc(v)}</option>`).join('')}
       </select></label>
       ${N('On board tonight','pob_tonight')}
-      <div class="checks">${C('Pumped out today','pump_out')}</div>
-      <p class="coords" id="pumpNote"></p>
       <label>Overnight guests
         <input id="guestSearch" placeholder="Start typing a name from your contacts"
                autocomplete="off"></label>
       <div class="results hidden" id="guestHits"></div>
       <div class="guestrow" id="guestList"></div>
       <input type="hidden" name="overnight_guests">
+      <label>Signal quality
+        <span class="pickrow" id="sigPick">${[1,2,3,4,5].map(n=>
+          `<button type="button" data-sig="${n}">${n}</button>`).join('')}
+          <button type="button" data-sig="">None</button></span></label>
+      <input type="hidden" name="wifi_quality">
     </fieldset>`,
 
     notes:`<fieldset><legend>Notes</legend>
@@ -6745,8 +6741,7 @@ function editLog(iso){
       ? (t.days===0
           ? 'Pumped out today. The count starts again from here.'
           : 'Last pumped out '+dayLabel(t.date)+' \u2014 '+t.days+' day'
-            +(t.days===1?'':'s')+' ago, '+t.nights+' night'
-            +(t.nights===1?'':'s')+' aboard since.')
+            +(t.days===1?'':'s')+' ago. Total People Days: '+t.nights+'.')
       : 'No pump out recorded yet. Tick the box on the day you have one.';
   }
 

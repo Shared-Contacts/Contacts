@@ -143,8 +143,8 @@ const ok  = (what, cond, extra='') => {
   const dots = await page.$$eval('#moneyBody .txn', els =>
     els.filter(e => e.querySelector('.pdot')).map(e => +e.dataset.tx));
   ok('only the one with a photo has a dot', JSON.stringify(dots) === '[5]', JSON.stringify(dots));
-  ok('the reconciled tick still counts as before',
-     (await page.$$('#moneyBody .txn .rec')).length === 1);
+  ok('the reconciled one is still hidden from the ordinary list',
+     (await page.$$('#moneyBody .txn .recdot')).length === 0);
 
   console.log('\nSelect all when reconciling');
   await page.evaluate(() => openRecon(1));

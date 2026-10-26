@@ -138,8 +138,8 @@ const ok = (what, cond, extra='') => {
   ok('an overdue job is marked', /overdue/.test(body));
   ok('the bar says simply Today',
      (await page.textContent('#briefTitle')).trim() === 'Today');
-  ok('and a greeting with the day, date and time is underneath',
-     /^Good (morning|afternoon|evening), it's \w+day \d+(st|nd|rd|th) of \w+, \d{1,2}:\d\d (AM|PM)$/
+  ok('and a greeting with the time, then the day and date, is underneath',
+     /^Good (morning|afternoon|evening) it's now \d{1,2}:\d\d (AM|PM)\n\w+day \d+(st|nd|rd|th) \w+ \d{4}$/
        .test(await page.textContent('.briefdate')),
      await page.textContent('.briefdate'));
   ok('it says it only comes once a day', /once a day/.test(body));

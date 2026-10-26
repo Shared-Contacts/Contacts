@@ -156,7 +156,7 @@ const ok = (what, cond, extra='') => {
   console.log('\nA receipt against a transaction');
   await page.evaluate(() => { $('settings').classList.add('hidden'); openMoney(); });
   await page.waitForTimeout(400);
-  await page.evaluate(() => editTxn(1));
+  await page.evaluate(async () => { MONEY_REC=true; await loadTxns(); return editTxn(1); });
   await page.waitForTimeout(500);
   const ed = await page.textContent('#moneyEdBody');
   ok('there is somewhere for receipts', /Receipts/.test(ed));

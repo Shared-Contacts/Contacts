@@ -31,10 +31,18 @@ const ok  = (what, cond, extra='') => {
   ok('a dollar balance is told apart from the other dollar',
      /NZD\u00a01,550\.00/.test(body), body.slice(0,200));
   ok('a negative shows with a minus', /−£212\.40/.test(body), 'Amex balance');
-  ok('transactions are listed', /Tesco/.test(body) && /Alamy/.test(body));
-  ok('a category shows under the payee', /Groceries/.test(body));
-  ok('business is flagged', /business/.test(body));
-  ok('the reconciled tick appears', (await page.$$('#moneyBody .txn .rec')).length === 1);
+  // Reconciled ones wait behind Show more transactions (asked for 26 Oct 2026).
+  ok('the reconciled Tesco is hidden at first',
+     !/Tesco/.test(body) && /Alamy/.test(body), body.slice(-400));
+  ok('Show more transactions is offered', await page.isVisible('#moreTxns'));
+  await page.click('#moreTxns'); await page.waitForTimeout(400);
+  const all = await page.textContent('#moneyBody');
+  ok('transactions are listed', /Tesco/.test(all) && /Alamy/.test(all));
+  ok('a category shows under the payee', /Groceries/.test(all));
+  ok('business is flagged', /business/.test(all));
+  ok('the reconciled dot appears', (await page.$$('#moneyBody .txn .recdot')).length === 1);
+  ok('and only on the reconciled one', await page.$$eval('#moneyBody .txn',
+     els => els.filter(e => e.querySelector('.recdot')).map(e => +e.dataset.tx).join()) === '1');
 
   // The top line carries one figure now, in whichever currency most of the
   // accounts are kept in. The others are totalled where they belong, never
@@ -52,6 +60,9 @@ const ok  = (what, cond, extra='') => {
   await page.click('#moneyBody [data-acc="1"]');
   await page.waitForTimeout(300);
   ok('the account heading changes', /Barclays/.test(await page.textContent('#moneyBody .dsec')));
+  ok('a new account starts with the reconciled ones hidden again',
+     (await page.$$('#moneyBody [data-tx="1"]')).length === 0);
+  await page.click('#moreTxns'); await page.waitForTimeout(300);
 
   console.log('\nOpening an existing transaction');
   await page.click('#moneyBody [data-tx="1"]');

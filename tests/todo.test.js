@@ -42,6 +42,8 @@ const ok = (what, cond, extra='') => {
        amount:-20,line_total:-20,sort:1});
   });
   await p.evaluate(() => openMoney());
+  // Reconciled ones are hidden until Show more transactions; these checks use one.
+  await p.waitForTimeout(500); await p.evaluate(() => (async()=>{ MONEY_REC=true; await loadTxns(); renderMoney(); })());
   await p.waitForTimeout(600);
 
   console.log('\nThe marker');

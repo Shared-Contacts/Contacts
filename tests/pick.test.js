@@ -27,6 +27,8 @@ const ok=(w,c,e='')=>{ if(c){pass++;console.log('  ✓ '+w);}else{fail++;console
     }
   });
   await p.evaluate(()=>openMoney()); await p.waitForTimeout(600);
+  // Reconciled ones are hidden until Show more transactions; these checks use one.
+  await p.evaluate(()=>(async()=>{ MONEY_REC=true; await loadTxns(); renderMoney(); })()); await p.waitForTimeout(300);
 
   console.log('\nGoing into choosing mode');
   await p.evaluate(() => { const d = document.querySelector('#moneyJobs'); if (d) d.open = true; });
@@ -84,12 +86,12 @@ const ok=(w,c,e='')=>{ if(c){pass++;console.log('  ✓ '+w);}else{fail++;console
   await p.click('#moneyBody [data-acc="all"]'); await p.waitForTimeout(500);
   await p.evaluate(() => { const d = document.querySelector('#moneyJobs'); if (d) d.open = true; });
   await p.waitForTimeout(150);  await p.click('#goMoneyPick'); await p.waitForTimeout(400);
-  await p.click('#moneyBody [data-tx="1"]'); await p.waitForTimeout(250);
+  await p.click('#moneyBody [data-tx="5"]'); await p.waitForTimeout(250);
   await p.click('#mpStop'); await p.waitForTimeout(350);
   ok('the bar goes', !(await p.isVisible('#moneyPickBar')));
   ok('nothing stays chosen', (await p.evaluate(()=>MONEY_PICKED.size))===0);
   ok('tapping a row opens it again', await (async()=>{
-     await p.click('#moneyBody [data-tx="1"]'); await p.waitForTimeout(400);
+     await p.click('#moneyBody [data-tx="5"]'); await p.waitForTimeout(400);
      return p.isVisible('#moneyEd');
   })());
 
@@ -104,6 +106,7 @@ const ok=(w,c,e='')=>{ if(c){pass++;console.log('  ✓ '+w);}else{fail++;console
   ok('and choosing mode is off', await p.evaluate(()=>MONEY_PICKING===false));
 
   await p.evaluate(()=>{openMoney();}); await p.waitForTimeout(600);
+  await p.evaluate(()=>(async()=>{ MONEY_REC=true; await loadTxns(); renderMoney(); })()); await p.waitForTimeout(300);
   await p.evaluate(() => { const d = document.querySelector('#moneyJobs'); if (d) d.open = true; });
   await p.waitForTimeout(150);  await p.click('#goMoneyPick'); await p.waitForTimeout(300);
   await p.click('#moneyBody [data-tx="1"]'); await p.waitForTimeout(250);

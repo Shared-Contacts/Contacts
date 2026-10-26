@@ -66,7 +66,7 @@ const ok = (what, cond, extra='') => {
     await loadMoney();
     return FCATS[0].name === 'Mooring' && FCATS[1].name === 'Groceries';
   }));
-  await page.evaluate(() => editTxn(1));
+  await page.evaluate(() => (async()=>{ MONEY_REC=true; await loadTxns(); return editTxn(1); })());
   await page.waitForTimeout(500);
   const opts = await page.evaluate(() =>
     [...document.querySelectorAll('[data-lc] option')].map(o => o.textContent.trim()));

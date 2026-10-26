@@ -27,11 +27,12 @@ const ok = (what, cond, extra='') => {
     small:   briefHello(new Date(2026,9,1,0,7)),
     nths: [1,2,3,4,11,12,13,21,22,23,31].map(nthDay).join(' ')
   }));
+  // Two lines: the time on top, the date underneath (asked for 26 Oct 2026).
   ok('Thursday morning reads as asked',
-     hello.morning === "Good morning, it's Thursday 15th of October, 8:30 AM", hello.morning);
-  ok('midday is the afternoon', hello.noon === "Good afternoon, it's Thursday 15th of October, 12:00 PM", hello.noon);
-  ok('six o\'clock is the evening', /^Good evening.*6:05 PM$/.test(hello.evening), hello.evening);
-  ok('just after midnight is 12:07 AM', /1st of October, 12:07 AM$/.test(hello.small), hello.small);
+     hello.morning === "Good morning it's now 8:30 AM\nThursday 15th October 2026", hello.morning);
+  ok('midday is the afternoon', hello.noon === "Good afternoon it's now 12:00 PM\nThursday 15th October 2026", hello.noon);
+  ok('six o\'clock is the evening', /^Good evening it's now 6:05 PM\n/.test(hello.evening), hello.evening);
+  ok('just after midnight is 12:07 AM', /12:07 AM\nThursday 1st October 2026$/.test(hello.small), hello.small);
   ok('the day numbers end properly',
      hello.nths === '1st 2nd 3rd 4th 11th 12th 13th 21st 22nd 23rd 31st', hello.nths);
 

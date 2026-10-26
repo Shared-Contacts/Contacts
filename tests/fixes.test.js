@@ -25,6 +25,8 @@ const ok = (what, cond, extra='') => {
   console.log('\n1. Typing over an amount');
   await p.evaluate(() => openMoney());
   await p.waitForTimeout(500);
+  // Reconciled ones are hidden until Show more transactions; these checks use one.
+  await p.evaluate(() => (async()=>{ MONEY_REC=true; await loadTxns(); renderMoney(); })()); await p.waitForTimeout(300);
   await p.click('#moneyBody [data-tx="1"]');          // Tesco, 42.50
   await p.waitForTimeout(400);
   await p.click('[data-la="0"]');

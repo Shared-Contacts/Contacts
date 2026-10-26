@@ -1019,6 +1019,95 @@ i.key{vertical-align:middle}
 .recsum .field dd{flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums}
 .recsum.ok{border-color:#1D4A3A;box-shadow:0 0 0 1px #1D4A3A inset}
 .recsum.ok .field:last-child dd{color:#1D4A3A}
+/* Recipes */
+.rcptop{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
+.rcptwo{display:flex;gap:8px}
+.rcptwo .btn{flex:1;border:1.5px solid var(--rule);font-size:16px;padding:12px 8px;color:var(--hull)}
+.rcprow{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 14px;
+  border-bottom:1px solid #F0EEE7;color:inherit}
+.card .rcprow:last-child{border-bottom:none}
+.rcprow img,.rcpnopic{flex:0 0 64px;width:64px;height:64px;border-radius:8px;object-fit:cover;background:#F0EEE7}
+.rcpnopic{display:flex;align-items:center;justify-content:center;font-size:28px}
+.rcpwhat{flex:1;min-width:0}
+.rcpwhat b{display:block;font-weight:600;color:var(--hull);overflow-wrap:anywhere}
+.rcpwhat span{display:block;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.rcpwhat .rcpwho{font-style:italic}
+.rcpidea{display:flex;align-items:center}
+.rcpidea .rcprow{flex:1;min-width:0;border-bottom:none}
+.rcpspin{flex:0 0 auto;font-size:26px;color:var(--hull);padding:8px 16px}
+.rcpcover{display:block;width:100%;max-height:42vh;object-fit:cover;border-radius:var(--radius);background:#F0EEE7}
+.rcpthumbs{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+.rcpthumbs img{flex:0 0 72px;width:72px;height:72px;object-fit:cover;border-radius:8px;background:#F0EEE7}
+.rcpthumb{position:relative;flex:0 0 auto}
+.rcpthumb small{position:absolute;left:4px;bottom:4px;background:rgba(16,35,28,.75);color:#F2EFE4;
+  font-size:11px;padding:1px 5px;border-radius:4px}
+.rcpthumb button{position:absolute;top:-4px;right:-4px;width:26px;height:26px;border-radius:50%;
+  background:var(--red);color:#fff;font-size:17px;line-height:1}
+.rcptitle{font-size:24px;line-height:1.25;margin:14px 0 4px;color:var(--ink);overflow-wrap:anywhere}
+.rcpmeta{color:var(--muted);font-size:15px;margin:0 0 10px;overflow-wrap:anywhere}
+.rcpmeta a{color:var(--hull);font-weight:600;text-decoration:none}
+.btn.rcpvid{margin-top:8px;border:1.5px solid var(--rule);color:var(--hull);text-decoration:none}
+.rcpserve{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
+  border-bottom:1px solid #F0EEE7}
+.rcpserve span{text-align:center}
+.rcpserve small{color:var(--muted)}
+.rcpserve button{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--rule);
+  font-size:24px;color:var(--hull)}
+label.rcping{display:flex;gap:12px;align-items:flex-start;margin:0;padding:11px 14px;
+  border-bottom:1px solid #F0EEE7;color:var(--ink);font-size:17px}
+label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;flex:0 0 auto;padding:0;
+  accent-color:var(--hull)}
+#rcpBody .linkbtn,#rcpView .linkbtn,#ideasBody .linkbtn,#cookBody .linkbtn{color:var(--hull);
+  font-weight:600;text-decoration:underline;font-size:inherit;padding:0}
+.card .rcping:last-child{border-bottom:none}
+.rcphead{margin:0;padding:12px 14px 4px;font-weight:700;color:var(--hull)}
+.rcpsteps{margin:0;padding:6px 14px 10px 42px}
+.rcpsteps li{padding:7px 0;line-height:1.45}
+.rcpnote{white-space:pre-wrap}
+.rcptry{border-color:var(--brass,#D7A82E)}
+.rcpnums{display:flex;gap:8px}
+.rcpnums label{flex:1;min-width:0}
+#reBody label small{font-size:13px}
+.rcppicbtns{display:flex;gap:8px}
+.rcppicbtns label.btn{flex:1;margin:4px 0 0;border:1.5px solid var(--rule);color:var(--hull);
+  font-size:16px;padding:12px 8px}
+.rcppicbtns input{display:none}
+#reBody .ulrow{display:flex;gap:8px;margin-top:4px}
+#reBody .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff;font-size:16px}
+#reBody .ulrow button{flex:0 0 auto;border:1.5px solid var(--rule);border-radius:8px;padding:0 14px;color:var(--hull)}
+#reBody .ulhead{margin:14px 0 0;font-size:15px;color:var(--muted)}
+#reBody .ulhead span{font-size:13px}
+.idgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.idcard{display:flex;flex-direction:column;text-align:left;background:var(--panel);
+  border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;color:inherit}
+.idcard img{width:100%;aspect-ratio:1;object-fit:cover;background:#F0EEE7}
+.idcard span{padding:8px 10px;font-weight:600;color:var(--hull);overflow-wrap:anywhere}
+.idings{margin:6px 0 10px;padding-left:20px;font-size:15px}
+.lnked .rcpcover{max-height:28vh}
+.cookcount{font-size:15px;min-width:56px;text-align:right}
+#cookBody{display:flex;flex-direction:column;padding-bottom:0}
+.cookpage{flex:1 0 auto;padding:6px 2px 10px}
+.cooklabel{margin:6px 0 0;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cooktext{font-size:27px;line-height:1.4;margin:10px 0 18px;color:var(--ink);overflow-wrap:anywhere}
+.cooklist{font-size:22px;line-height:1.45;margin:10px 0 18px;padding-left:24px}
+.cooklist li{padding:3px 0}
+.cooklist .cookhead{list-style:none;margin-left:-24px;font-weight:700;color:var(--hull)}
+.btn.cooktime{border:1.5px solid var(--hull);color:var(--hull);margin-top:6px}
+.cookbar{position:sticky;bottom:0;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px;
+  padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));background:var(--paper)}
+.cookbar button{padding:18px 4px;border-radius:12px;border:1.5px solid var(--rule);font-size:18px;
+  font-weight:700;color:var(--hull);background:var(--panel)}
+.cookbar button:disabled{opacity:.35}
+.cookbar .next{background:var(--hull);color:#F2EFE4;border-color:var(--hull)}
+.cookbar #cookSay[aria-pressed="true"]{border-color:var(--hull);background:#E8EFEA}
+.ctimer{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:6px 0;border-radius:10px;
+  background:var(--panel);border:1.5px solid var(--rule)}
+.ctimer span{flex:1;min-width:0;font-size:15px;color:var(--muted)}
+.ctimer b{font-size:24px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ctimer button{border:1.5px solid var(--rule);border-radius:8px;padding:8px 12px;color:var(--hull)}
+.ctimer.ring{background:#FBE9E7;border-color:var(--red)}
+.ctimer.ring b{color:var(--red)}
 </style>
 </head>
 <body>
@@ -1100,6 +1189,36 @@ i.key{vertical-align:middle}
   <div class="sheetbar"><button class="bt" data-home="links" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="linksMenu" data-menu="links" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">URL Links</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="linksBody"></div>
+</div>
+
+<div id="recipes" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="recipes" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="recipesMenu" data-menu="recipes" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Recipes</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="rcpBody"></div>
+</div>
+
+<div id="recipe" class="sheet hidden">
+  <div class="sheetbar"><button id="rvBack">Back</button>
+    <span class="title" id="rvTitle">Recipe</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="rcpView"></div>
+</div>
+
+<div id="recipeEd" class="sheet hidden">
+  <div class="sheetbar"><button id="reCancel">Cancel</button>
+    <span class="title" id="reTitleBar">New recipe</span><button id="reSave">Save</button></div>
+  <div class="sheetbody" id="reBody"></div>
+</div>
+
+<div id="ideas" class="sheet hidden">
+  <div class="sheetbar"><button id="ideasBack">Back</button>
+    <span class="title">Ideas</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="ideasBody"></div>
+</div>
+
+<div id="cook" class="sheet hidden">
+  <div class="sheetbar"><button id="cookShut">Close</button>
+    <span class="title" id="cookTitle">Cook mode</span><span class="cookcount" id="cookCount"></span></div>
+  <div class="sheetbody" id="cookBody"></div>
 </div>
 
 <div id="jig" class="sheet hidden">
@@ -1355,7 +1474,8 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','log',
-  'logEd','where','wish','links','shop','io','offers','chats','chat',
+  'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook',
+  'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
@@ -1950,6 +2070,8 @@ async function refreshAll(){
   await refreshPhotos(true);
   if(!$('home').classList.contains('hidden')) renderHome();
   if(!$('links').classList.contains('hidden')){ await loadLinks(); renderLinks(); }
+  if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
+    if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
   toast('Up to date');
 }
 
@@ -3282,7 +3404,8 @@ const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
   'coal_type','gas_bottle','service_kind','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects'];
+  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects',
+  'rcpcats','rcpcupboard','rcphidden'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
@@ -3293,7 +3416,8 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
   fincur:'Currencies', taxyear:'Tax year',
-  linklevels:'Levels', linksubjects:'Subjects'};
+  linklevels:'Levels', linksubjects:'Subjects',
+  rcpcats:'Categories', rcpcupboard:'Usually in the cupboard', rcphidden:'Recipes you chose not to see'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
@@ -3303,6 +3427,7 @@ const SET_GROUPS=[
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
   {label:'URL Links',  cards:['linklevels','linksubjects']},
+  {label:'Recipes',    cards:['rcpcats','rcpcupboard','rcphidden']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
 ];
@@ -3399,6 +3524,7 @@ async function openSettings(goTo){
   if(!LOGOPTS.length) await loadLog();
   if(!CURRENCIES.length && MONEY_WHY!=='notset') await loadMoney();
   if(!HANDOVER) await loadHandover();
+  if(!RCP_LOADED) await loadRecipes();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
       ${list.map((r,i)=>`<div class="setrow">
@@ -3435,6 +3561,9 @@ async function openSettings(goTo){
     taxyear:    taxYearRows(),
     linklevels:   linkLevelRows(),
     linksubjects: linkSubjectRows(),
+    rcpcats:      rcpCatRows(),
+    rcpcupboard:  rcpCupRows(),
+    rcphidden:    rcpHidRows(),
     logsections: logSectionRows(),
     logcats: catRows(),
     logshare: logShareRows(),
@@ -3490,6 +3619,12 @@ async function openSettings(goTo){
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="bskyOn" ${BSKY_OFF?'':'checked'}>
         Show a Bluesky photo on Today</label></div>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        <strong>Tonight&rsquo;s idea</strong>: a recipe from the family cookbook at the
+        bottom of Today, one you have not cooked lately.</dd></div>
+      <div class="checks" style="padding:0 14px 14px"><label>
+        <input type="checkbox" id="rcpTodayOn" ${RCP_PREFS.today?'checked':''}>
+        Suggest a recipe on Today</label></div>
       <div class="setadd"><input id="bskyName" autocomplete="off" autocapitalize="none"
         spellcheck="false" placeholder="${esc(BSKY_DEFAULT)} (Barry’s)" value="${esc(BSKY_OWN)}">
         <button class="btn" id="bskySave"
@@ -3616,6 +3751,7 @@ async function openSettings(goTo){
   wireCats();
   wireFinance();
   wireLinkSettings();
+  wireRecipeSettings();
   $('setBody').querySelectorAll('[data-taxpre]').forEach(b=>b.onclick=()=>{
     const p=TAX_PRESETS.find(x=>x[0]===b.dataset.taxpre);
     if(p) setTaxStart(p[2],p[3]); });
@@ -3719,7 +3855,8 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['moneyImp','money'],['pairs','money'],['reports','reports'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
-  ['wish','wish'],['links','links'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['recipe','recipes'],
+  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   for(const [id,scr] of SCREEN_ORDER)
     if($(id) && !$(id).classList.contains('hidden')) return scr;
@@ -3729,10 +3866,10 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
-  brief:'h-brief', invite:'h-invite', jig:'h-jig'};
+  brief:'h-brief', invite:'h-invite', jig:'h-jig', recipes:'h-recipes'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
-  money:'Finances', links:'URL Links'};
+  money:'Finances', links:'URL Links', recipes:'Recipes'};
 
 function openHelp(where){
   const anchor = HELP_AT[where===undefined?currentScreen():where] || '';
@@ -4100,6 +4237,40 @@ function openHelp(where){
   your own level, or stop seeing it.</p>
   <p>Your levels and subjects are under <strong>Settings &rsaquo; URL
   Links</strong>, to rename, reorder, add or remove.</p>
+
+  <h4 id="h-recipes">Recipes</h4>
+  <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
+  everybody&rsquo;s recipes, with the name of whoever added them. Only whoever added a
+  recipe can change it; anyone else can <strong>Make a copy of my own</strong> to change
+  as they like. If there is one you never want to see, <strong>Don&rsquo;t show me this
+  one</strong> takes it out of your list only; Settings &rsaquo; Recipes brings it
+  back.</p>
+  <p><strong>Add a recipe</strong> to write in one of your own: a title, as many
+  categories as suit it, how many it serves, the times, photos from the
+  <strong>Camera</strong> or ones you <strong>Choose</strong>, a video link, the
+  ingredients, and the Preparing and Cooking steps. Put one ingredient or one step on
+  each line &mdash; pasting a whole list in one go works. A line ending in a colon,
+  such as <em>For the sauce:</em>, is a heading. <strong>Just me</strong> keeps a recipe
+  out of the family cookbook.</p>
+  <p><strong>Find new recipes</strong> searches Google or BBC Good Food in Chrome. When
+  you find one you like, press <strong>Share</strong> in Chrome, choose <strong>MY
+  life</strong>, then <strong>A recipe</strong>. The app reads the page for you and the
+  recipe waits under <strong>To try</strong> with <strong>Keep</strong> and
+  <strong>Reject</strong> at the top. Nobody else sees your To try pile. Some websites
+  will not let their recipes be read; then the title and the link are saved and you can
+  add the rest. <strong>Ideas</strong> shows recipes from TheMealDB, a free collection,
+  without leaving the app.</p>
+  <p>On a recipe, the <strong>&minus;</strong> and <strong>+</strong> beside Serves
+  change the amounts. Tick the ingredients you need and press <strong>Add to
+  Shopping</strong>; things that are already on the list are not added twice. Salt,
+  pepper, oil and water start unticked; change that list under Settings &rsaquo;
+  Recipes.</p>
+  <p><strong>Cook mode</strong> shows one step at a time in big writing and keeps the
+  screen on. <strong>Read aloud</strong> reads each step as you move to it; press it
+  again to stop. A step that says how long gets a timer button, which rings and
+  vibrates when the time is up, as long as the app is open. <strong>I cooked
+  this</strong> keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
+  from the ones you have not cooked lately (&#8635; for another).</p>
 
   <h4 id="h-jig">Jigsaws</h4>
   <p><strong>Jigsaws</strong> are Barry's photographs made into puzzles, the same
@@ -7967,6 +8138,1248 @@ function wireLinkSettings(){
   };
 }
 
+/* ============================================================
+   Recipes — the family cookbook (ML17, step 43).
+   Everybody sees everybody's recipes, less any they choose not to
+   see, and only whoever added one can change it. Anyone can make a
+   copy of their own. Recipes found on the web, or among the Ideas,
+   wait in a To try pile, seen by nobody else, until kept or rejected.
+   Each person's categories, cupboard list, hidden recipes and what
+   they have cooked are kept with their home screen choices; the
+   recipes themselves live in the recipes table.
+   ============================================================ */
+let RECIPES=[], RCP_WHY='', RCP_LOADED=false;   // RCP_WHY is 'notset' until step 43 is run
+const RCP={q:'', cat:'', sort:'az', hidden:false};
+let RCP_CUR=null, RCP_SERVES=null, RCP_TICK=new Set();
+const RCP_CATS_DEFAULT=['Breakfast','Soups','Mains','Puddings','Baking','Sides','Salads','Drinks'];
+const RCP_CUPBOARD_DEFAULT=['salt','pepper','oil','water'];
+let RCP_PREFS={cats:RCP_CATS_DEFAULT.slice(), cupboard:RCP_CUPBOARD_DEFAULT.slice(),
+  hide:[], cooked:{}, today:true};
+
+function rcpPrefsFrom(saved){
+  const r=saved&&saved.recipes;
+  const c=r&&r.cooked;
+  return {
+    cats: r&&Array.isArray(r.cats) ? r.cats.filter(Boolean) : RCP_CATS_DEFAULT.slice(),
+    cupboard: r&&Array.isArray(r.cupboard) ? r.cupboard.filter(Boolean) : RCP_CUPBOARD_DEFAULT.slice(),
+    hide: r&&Array.isArray(r.hide) ? r.hide.map(Number) : [],
+    cooked: c&&typeof c==='object'&&!Array.isArray(c) ? c : {},
+    today: !(r&&r.today===false) };
+}
+
+const rcpMine = r => r.created_by===ME.id;
+// The cookbook as you see it: nothing waiting in the To try pile, and none
+// of other people's you said you did not want.
+function rcpVisible(){
+  return RECIPES.filter(r=>!r.to_try&&(rcpMine(r)||!RCP_PREFS.hide.includes(r.id)));
+}
+const rcpPile   = () => RECIPES.filter(r=>r.to_try&&rcpMine(r));
+const rcpHidden = () => RECIPES.filter(r=>!r.to_try&&!rcpMine(r)&&RCP_PREFS.hide.includes(r.id));
+const rcpPic = p => p ? (p.url&&/^https:\/\//i.test(p.url) ? p.url : SIGNED[p.path]||'') : '';
+const rcpHead = s => /:$/.test(String(s||'').trim());
+
+/* ---------- ingredients ----------
+   Each is kept as {qty, unit, name} so it can be scaled for more or fewer
+   people and go onto the shopping list with its amount. A line ending in a
+   colon is a heading, such as "For the sauce:". */
+const RCP_NUM='(?:\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:[.,]\\d+)?[½¼¾⅓⅔⅛]?|[½¼¾⅓⅔⅛])';
+const RCP_QTY=new RegExp('^('+RCP_NUM+'(?:\\s*(?:-|–|to)\\s*'+RCP_NUM+')?'
+  +'(?:\\s*x\\s*'+RCP_NUM+')?)\\s*','i');
+const RCP_UNIT=new RegExp('^(fl\\.? ?oz|kg|g|mg|ml|cl|l|litres?|liters?|tsp|tbsp|tbs|dsp|'
+  +'teaspoons?|tablespoons?|dessertspoons?|cups?|oz|lbs?|pints?|pinch(?:es)?|handfuls?|'
+  +'cloves?|tins?|cans?|packs?|packets?|bunch(?:es)?|slices?|sprigs?|sticks?|knobs?|'
+  +'dash(?:es)?|splash(?:es)?|jars?|bags?|sheets?|rashers?|heads?|stalks?|sachets?)'
+  +'\\.?(?=\\s|$|\\/|\\)|-|–)\\s*','i');
+const RCP_TIGHT=/^(kg|g|mg|ml|cl|l)$/i;      // written 200g, not 200 g
+const RCP_FRAC={'½':.5,'¼':.25,'¾':.75,'⅓':1/3,'⅔':2/3,'⅛':.125};
+
+function parseIng(line){
+  let s=String(line??'').replace(/\s+/g,' ').trim().replace(/^[-•*·]\s*/,'');
+  if(!s) return null;
+  if(rcpHead(s)&&s.length<60) return {head:s.replace(/:$/,'').trim()};
+  let qty='', unit='';
+  const q=s.match(RCP_QTY);
+  if(q&&q[0].length<s.length){
+    qty=q[1].trim(); s=s.slice(q[0].length);
+    const u=s.match(RCP_UNIT);
+    if(u){ unit=u[1]; s=s.slice(u[0].length); }
+    // The same amount again another way, as in 450g/1lb: one is enough.
+    s=s.replace(/^(?:[-–\/]\s*[\d.,½¼¾⅓⅔⅛]+(?:\s*[-–]\s*[\d.,½¼¾⅓⅔⅛]+)?\s*[a-z]+\.?\s*)+/i,'')
+       .replace(/^of\s+/i,'');
+  }
+  s=s.trim();
+  if(!s&&!qty) return null;
+  return {qty, unit, name:s};
+}
+
+function rcpNum(t){
+  t=String(t).trim().replace(',','.');
+  let m=t.match(/^(\d+)\s+(\d+)\/(\d+)$/); if(m) return +m[1]+m[2]/m[3];
+  m=t.match(/^(\d+)\/(\d+)$/); if(m) return m[1]/m[2];
+  m=t.match(/^(\d+(?:\.\d+)?)([½¼¾⅓⅔⅛])$/); if(m) return +m[1]+RCP_FRAC[m[2]];
+  if(RCP_FRAC[t]) return RCP_FRAC[t];
+  return Number(t);
+}
+function rcpFmt(v){
+  if(!isFinite(v)||v<=0) return '';
+  if(v>=10) return String(Math.round(v));
+  const whole=Math.floor(v), part=v-whole;
+  const near=[[0,''],[.125,'⅛'],[.25,'¼'],[1/3,'⅓'],[.5,'½'],[2/3,'⅔'],[.75,'¾'],[1,'']]
+    .find(([f])=>Math.abs(part-f)<.04);
+  if(near) return near[0]===1 ? String(whole+1) : (whole||!near[1]?String(whole):'')+near[1];
+  return String(Math.round(v*10)/10);
+}
+// "2-3" scales both ends; "2 x 400" scales only how many, not their size.
+function scaleQty(qty,f){
+  if(!qty||f===1) return qty||'';
+  const re=new RegExp(RCP_NUM,'g');
+  if(/x/i.test(qty)){ let done=false;
+    return qty.replace(re,t=>{ if(done) return t; done=true; return rcpFmt(rcpNum(t)*f)||t; }); }
+  return qty.replace(re,t=>rcpFmt(rcpNum(t)*f)||t);
+}
+function amountText(i,f){
+  const q=scaleQty(i.qty,f);
+  if(!q) return i.unit||'';
+  return i.unit ? q+(RCP_TIGHT.test(i.unit)?'':' ')+i.unit : q;
+}
+function ingText(i,f){
+  if(i.head) return i.head+':';
+  return [amountText(i,f??1), i.name].filter(Boolean).join(' ');
+}
+// What goes on the shopping list: "onion", not "large onion, finely chopped".
+function shopName(i){
+  return String(i.name||'').split(',')[0].replace(/\([^)]*\)/g,'').replace(/\s+/g,' ').trim();
+}
+// Salt and pepper, oil, water: things nearly everyone has in, so they start unticked.
+function inCupboard(i){
+  const n=shopName(i).toLowerCase();
+  if(!n||!RCP_PREFS.cupboard.length) return false;
+  const parts=n.split(/\s+and\s+|\s*&\s*|\s*\/\s*/).map(s=>s.trim()).filter(Boolean);
+  return parts.every(p=>RCP_PREFS.cupboard.some(c=>{
+    c=String(c).toLowerCase().trim(); return c&&(p===c||p.endsWith(' '+c)); }));
+}
+
+// How long a step says to wait, in minutes, for its timer button.
+function stepMins(s){
+  const t=String(s||'');
+  const h=t.match(/(\d+(?:\.\d+)?)\s*(?:hrs?|hours?)\b/i);
+  const m=t.match(/(\d+)(?:\s*(?:-|–|to)\s*\d+)?\s*(?:mins?|minutes?)\b/i);
+  let n=0;
+  if(h){ n=Math.round(Number(h[1])*60);
+    if(m&&m.index>h.index&&m.index-h.index<20) n+=Number(m[1]); }
+  else if(m) n=Number(m[1]);
+  return n>0&&n<=600 ? n : 0;
+}
+function minsText(n){
+  if(!n) return '';
+  const h=Math.floor(n/60), m=n%60;
+  return (h?h+' hr'+(h===1?'':'s'):'')+(h&&m?' ':'')+(m?m+' min'+(m===1?'':'s'):'');
+}
+function rcpTimes(r){
+  return [r.prep_mins?'Prep '+minsText(r.prep_mins):'', r.cook_mins?'Cook '+minsText(r.cook_mins):'']
+    .filter(Boolean).join(', ');
+}
+// Lines typed or pasted as steps, without the numbers people paste in with them.
+function stepLines(txt){
+  return String(txt||'').split(/\n+/).map(s=>s.trim()
+    .replace(/^(?:step\s*)?\d+\s*[.):-]\s*/i,'').replace(/^step\s*\d+\s*$/i,'')).filter(Boolean);
+}
+
+/* ---------- loading and the list ---------- */
+async function loadRecipes(){
+  const {data,error}=await sb.from('recipes').select('*').order('created_at',{ascending:false});
+  RCP_LOADED=true;
+  if(error){
+    RCP_WHY=/relation|does not exist|schema cache/i.test(error.message||'') ? 'notset' : 'error';
+    console.error(error); return false;
+  }
+  RCP_WHY=''; RECIPES=data||[];
+  await signPaths(RECIPES.flatMap(r=>arr(r.photos).map(p=>p&&p.path)).filter(Boolean));
+  return true;
+}
+
+async function openRecipes(){
+  showSheet('recipes'); lockBackground();
+  if(!RCP_LOADED) $('rcpBody').innerHTML='<p class="empty">Fetching the recipes…</p>';
+  await loadRecipes(); renderRecipes(); $('rcpBody').scrollTop=0;
+}
+
+function rcpWhyHtml(){
+  return `<div class="card"><div class="field"><dd style="color:${
+    RCP_WHY==='notset'?'var(--muted)':'var(--red)'}">${RCP_WHY==='notset'
+    ? 'Recipes needs its place in the database first. Run the step 43 file in '
+      +'Supabase, then press refresh at the top.'
+    : 'Could not load the recipes just now. Nothing has been lost &mdash; check '
+      +'your signal and press refresh at the top.'}</dd></div></div>`;
+}
+
+function rcpShown(){
+  let rows=RCP.hidden ? rcpVisible().concat(rcpHidden()) : rcpVisible();
+  if(RCP.cat) rows=rows.filter(r=>arr(r.categories).includes(RCP.cat));
+  // Every word has to be there somewhere: "leek potato" finds the soup, and
+  // so does an ingredient on its own.
+  const words=RCP.q.toLowerCase().split(/\s+/).filter(Boolean);
+  if(words.length) rows=rows.filter(r=>{
+    const hay=[r.title, arr(r.categories).join(' '),
+      arr(r.ingredients).map(i=>i.head||i.name).join(' '), r.notes, r.source_name,
+      rcpMine(r)?'':whoWrote(r.created_by)].join(' ').toLowerCase();
+    return words.every(w=>hay.includes(w));
+  });
+  const az=(a,b)=>String(a.title).localeCompare(String(b.title),'en',{sensitivity:'base'});
+  const last=r=>(RCP_PREFS.cooked[r.id]||{}).last||'';
+  const by={az,
+    newest:(a,b)=>String(b.created_at).localeCompare(String(a.created_at)),
+    lately:(a,b)=>last(a).localeCompare(last(b))||az(a,b)};
+  return rows.sort(by[RCP.sort]||az);
+}
+
+function rcpRow(r){
+  const pic=rcpPic(arr(r.photos)[0]);
+  const bits=[arr(r.categories).join(', '), rcpTimes(r)].filter(Boolean).join(' · ');
+  const who=r.to_try ? 'from '+(r.source_name||linkHost(r.source_url)||'the web')
+    : !rcpMine(r) ? 'from '+whoWrote(r.created_by)
+    : r.share_all ? '' : 'just you';
+  return `<button class="rcprow" data-ropen="${r.id}">
+    ${pic?`<img src="${esc(pic)}" alt="" loading="lazy">`
+      :'<span class="rcpnopic" aria-hidden="true">&#127869;</span>'}
+    <span class="rcpwhat"><b>${esc(r.title)}</b>
+      ${bits?`<span>${esc(bits)}</span>`:''}
+      ${who?`<span class="rcpwho">${esc(who)}</span>`:''}</span></button>`;
+}
+
+function renderRecipes(){
+  const body=$('rcpBody'); if(!body) return;
+  const y=body.scrollTop;
+  if(RCP_WHY){ body.innerHTML=rcpWhyHtml(); return; }
+  const vis=rcpVisible(), pile=rcpPile(), hid=rcpHidden();
+  if(!hid.length) RCP.hidden=false;
+  // Only the categories something is actually filed under, your own order first.
+  const used=[...new Set(vis.flatMap(r=>arr(r.categories)))];
+  const cats=RCP_PREFS.cats.filter(c=>used.includes(c))
+    .concat(used.filter(c=>!RCP_PREFS.cats.includes(c)).sort());
+  if(RCP.cat&&!cats.includes(RCP.cat)) RCP.cat='';
+  const sorts=[['az','A to Z'],['newest','Newest'],['lately','Not cooked lately']];
+  body.innerHTML=`
+    <div class="rcptop">
+      <button class="btn primary" id="rcpAdd">+ Add a recipe</button>
+      <span class="rcptwo"><button class="btn" id="rcpFind">Find new recipes</button>
+        <button class="btn" id="rcpIdeas">Ideas</button></span></div>
+    ${pile.length?`<p class="dsec">To try<span class="lcount">${pile.length}</span></p>
+      <div class="card">${pile.map(rcpRow).join('')}</div>`:''}
+    <div class="card msearch"><div class="mqrow">
+      <input id="rcpQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="Search recipes and ingredients" value="${esc(RCP.q)}"
+        aria-label="Search recipes"></div></div>
+    ${cats.length?`<div class="chips lnkchips">
+      <button class="chip" data-rcat="" aria-pressed="${!RCP.cat}">All &middot; ${vis.length}</button>
+      ${cats.map(c=>`<button class="chip" data-rcat="${esc(c)}" aria-pressed="${RCP.cat===c}">${
+        esc(c)} &middot; ${vis.filter(r=>arr(r.categories).includes(c)).length}</button>`).join('')}</div>`:''}
+    <div class="kindpick lnksort">${sorts.map(([k,t])=>`<button data-rsort="${k}"
+      aria-pressed="${RCP.sort===k}">${t}</button>`).join('')}</div>
+    <div id="rcpList"></div>
+    ${hid.length?`<p class="coords" style="text-align:center;margin:4px 0 18px">
+      <button class="linkbtn" id="rcpShowHid">${RCP.hidden?'Leave out':'Show'} the ${hid.length}
+      you chose not to see</button></p>`:''}`;
+  paintRecipeList();
+  body.scrollTop=y;
+}
+
+// Only the list is drawn again while you type, so the search box keeps the keyboard.
+function paintRecipeList(){
+  const box=$('rcpList'); if(!box) return;
+  if(!rcpVisible().length&&!RCP.hidden){
+    box.innerHTML=`<div class="card"><div class="field"><dd style="color:var(--muted)">
+      No recipes yet. Press <strong>Add a recipe</strong> to put in one of your own,
+      or <strong>Find new recipes</strong> to look on the internet.</dd></div></div>`;
+    return;
+  }
+  const rows=rcpShown();
+  box.innerHTML=rows.length
+    ? `<div class="card">${rows.map(rcpRow).join('')}</div>`
+    : `<div class="card"><div class="field"><dd style="color:var(--muted)">Nothing matches that.</dd></div></div>`;
+}
+
+$('rcpBody').addEventListener('click',ev=>{
+  const o=ev.target.closest('[data-ropen]');
+  if(o){ openRecipe(Number(o.dataset.ropen)); return; }
+  if(ev.target.closest('#rcpAdd')){ editRecipe(null); return; }
+  if(ev.target.closest('#rcpFind')){ findRecipes(); return; }
+  if(ev.target.closest('#rcpIdeas')){ openIdeas(); return; }
+  if(ev.target.closest('#rcpShowHid')){ RCP.hidden=!RCP.hidden; renderRecipes(); return; }
+  const c=ev.target.closest('[data-rcat]');
+  if(c){ RCP.cat=c.dataset.rcat; renderRecipes(); return; }
+  const so=ev.target.closest('[data-rsort]');
+  if(so){ RCP.sort=so.dataset.rsort; renderRecipes(); return; }
+});
+$('rcpBody').addEventListener('input',ev=>{
+  if(ev.target.id==='rcpQ'){ RCP.q=ev.target.value; paintRecipeList(); }
+});
+$('rcpBody').addEventListener('keydown',ev=>{
+  if(ev.target.id==='rcpQ'&&ev.key==='Enter'){ ev.preventDefault(); ev.target.blur(); }
+});
+
+/* ---------- one recipe ---------- */
+function rcpFactor(r){
+  if(r.serves) return (RCP_SERVES||r.serves)/r.serves;
+  return RCP_SERVES||1;                     // no Serves: a plain multiple
+}
+function rcpStartTicks(r){
+  RCP_TICK=new Set(arr(r.ingredients).map((x,i)=>!x.head&&!inCupboard(x)?i:-1).filter(i=>i>=0));
+}
+
+function openRecipe(id){
+  const r=RECIPES.find(x=>x.id===id); if(!r) return;
+  if(RCP_CUR!==id){ RCP_SERVES=r.serves||1; rcpStartTicks(r); }
+  RCP_CUR=id;
+  renderRecipe();
+  showSheet('recipe'); $('rcpView').scrollTop=0; lockBackground();
+}
+function shutRecipe(){ $('recipe').classList.add('hidden'); lockBackground(); }
+
+function stepsHtml(list){
+  let html='', n=0, open=false;
+  arr(list).forEach(s=>{
+    if(rcpHead(s)){
+      if(open){ html+='</ol>'; open=false; }
+      html+=`<p class="rcphead">${esc(String(s).replace(/:$/,''))}</p>`; return;
+    }
+    if(!open){ html+=`<ol class="rcpsteps" start="${n+1}">`; open=true; }
+    n++; html+=`<li>${esc(s)}</li>`;
+  });
+  return html+(open?'</ol>':'');
+}
+
+function renderRecipe(){
+  const body=$('rcpView'); if(!body) return;
+  const r=RECIPES.find(x=>x.id===RCP_CUR);
+  if(!r){ $('rvTitle').textContent='Recipe';
+    body.innerHTML='<div class="card"><div class="field"><dd style="color:var(--muted)">'
+      +'That recipe is no longer there.</dd></div></div>'; return; }
+  const y=body.scrollTop;
+  $('rvTitle').textContent=r.title;
+  const f=rcpFactor(r), mine=rcpMine(r), hidden=!mine&&RCP_PREFS.hide.includes(r.id);
+  const pics=arr(r.photos).map(rcpPic).filter(Boolean);
+  const ings=arr(r.ingredients);
+  const cooked=RCP_PREFS.cooked[r.id];
+  const meta=[arr(r.categories).join(', '), rcpTimes(r),
+    mine?(r.share_all?'':'Just you'):'From '+whoWrote(r.created_by)].filter(Boolean);
+  const ticked=[...RCP_TICK].filter(i=>ings[i]&&!ings[i].head).length;
+  const step=r.serves
+    ? `<span>Serves <b>${RCP_SERVES}</b>${RCP_SERVES!==r.serves?` <small>(written for ${r.serves})</small>`:''}</span>`
+    : `<span>Amounts <b>&times;${rcpFmt(RCP_SERVES)||RCP_SERVES}</b></span>`;
+  body.innerHTML=`
+    ${r.to_try?`<div class="card rcptry"><div class="field"><dd>Found on ${
+      esc(r.source_name||linkHost(r.source_url)||'the web')}. Keep it in the family cookbook,
+      or reject it?</dd></div>
+      <div class="pfoot"><button id="rvReject">Reject</button>
+        <button id="rvKeep" class="go">Keep</button></div></div>`:''}
+    ${pics.length?`<img class="rcpcover" src="${esc(pics[0])}" alt="" data-rpic="0">`:''}
+    ${pics.length>1?`<div class="rcpthumbs">${pics.slice(1).map((p,i)=>
+      `<img src="${esc(p)}" alt="" loading="lazy" data-rpic="${i+1}">`).join('')}</div>`:''}
+    <h2 class="rcptitle">${esc(r.title)}</h2>
+    ${meta.length?`<p class="rcpmeta">${esc(meta.join(' · '))}</p>`:''}
+    ${r.source_url?`<p class="rcpmeta"><a href="${esc(r.source_url)}" target="_blank"
+      rel="noopener noreferrer">From ${esc(r.source_name||linkHost(r.source_url))} &rsaquo;</a></p>`:''}
+    <button class="btn primary" id="rvCook">Cook mode &middot; read it out</button>
+    ${r.video_url?`<a class="btn rcpvid" href="${esc(r.video_url)}" target="_blank"
+      rel="noopener noreferrer">&#9654; Watch the video</a>`:''}
+
+    ${ings.length?`<p class="dsec" style="margin-top:16px">Ingredients</p>
+    <div class="card">
+      <div class="rcpserve"><button id="rvLess" aria-label="Fewer">&minus;</button>${step}
+        <button id="rvMore" aria-label="More">+</button></div>
+      ${ings.map((x,i)=>x.head?`<p class="rcphead">${esc(x.head)}</p>`
+        :`<label class="rcping"><input type="checkbox" data-ring="${i}" ${RCP_TICK.has(i)?'checked':''}>
+          <span>${esc(ingText(x,f))}</span></label>`).join('')}
+    </div>
+    <button class="btn" id="rvShop" style="border:1.5px solid var(--rule)" ${ticked?'':'disabled'}>
+      Add ${ticked} to Shopping</button>
+    <p class="coords" style="text-align:center">Untick what you already have.
+      <button class="linkbtn" id="rvAll">${ticked?'Untick all':'Tick all'}</button></p>`:''}
+
+    ${arr(r.prep_steps).length?`<p class="dsec" style="margin-top:16px">Preparing</p>
+      <div class="card">${stepsHtml(r.prep_steps)}</div>`:''}
+    ${arr(r.cook_steps).length?`<p class="dsec" style="margin-top:16px">Cooking</p>
+      <div class="card">${stepsHtml(r.cook_steps)}</div>`:''}
+    ${r.notes?`<p class="dsec" style="margin-top:16px">Notes</p>
+      <div class="card"><div class="field"><dd class="rcpnote">${esc(r.notes)}</dd></div></div>`:''}
+
+    <div class="card" style="margin-top:16px">
+      ${r.to_try?'':`<button class="menuitem" id="rvCooked">I cooked this${cooked
+        ?` <small style="color:var(--muted)">(${cooked.n} time${cooked.n===1?'':'s'}, last ${
+          esc(fmtDate(cooked.last))})</small>`:''}</button>`}
+      ${mine?'<button class="menuitem" id="rvEdit">Change this recipe &rsaquo;</button>'
+        :'<button class="menuitem" id="rvCopy">Make a copy of my own &rsaquo;</button>'}
+      ${mine?'':hidden?'<button class="menuitem" id="rvUnhide">See it in my list again</button>'
+        :'<button class="menuitem" id="rvHide">Don’t show me this one</button>'}
+    </div>`;
+  body.scrollTop=y;
+}
+
+$('rcpView').addEventListener('click',async ev=>{
+  const r=RECIPES.find(x=>x.id===RCP_CUR); if(!r) return;
+  const t=ev.target;
+  const pic=t.closest('[data-rpic]');
+  if(pic){ lightbox(pic.getAttribute('src')); return; }
+  if(t.closest('#rvCook')){ openCook(r); return; }
+  if(t.closest('#rvLess')||t.closest('#rvMore')){
+    const up=!!t.closest('#rvMore');
+    RCP_SERVES = r.serves ? Math.min(100,Math.max(1,RCP_SERVES+(up?1:-1)))
+      : Math.min(10,Math.max(.5,RCP_SERVES+(up?.5:-.5)));
+    renderRecipe(); return;
+  }
+  if(t.closest('#rvAll')){
+    if([...RCP_TICK].length) RCP_TICK.clear();
+    else arr(r.ingredients).forEach((x,i)=>{ if(!x.head) RCP_TICK.add(i); });
+    renderRecipe(); return;
+  }
+  if(t.closest('#rvShop')){ await rcpToShopping(r); return; }
+  if(t.closest('#rvEdit')){ editRecipe(r.id); return; }
+  if(t.closest('#rvCopy')){ editRecipe(null, rcpCopyOf(r)); return; }
+  if(t.closest('#rvCooked')){
+    const c=RCP_PREFS.cooked[r.id]||{n:0};
+    RCP_PREFS.cooked={...RCP_PREFS.cooked, [r.id]:{n:(c.n||0)+1, last:isoDay(new Date())}};
+    await saveTiles(); renderRecipe(); toast('Noted. Enjoy it'); return;
+  }
+  if(t.closest('#rvHide')){
+    if(!confirm('Leave "'+r.title+'" out of your list? Nobody else is affected, and '
+      +'Settings › Recipes can bring it back.')) return;
+    RCP_PREFS.hide=RCP_PREFS.hide.concat(r.id); await saveTiles();
+    shutRecipe(); renderRecipes(); toast('Gone from your list'); return;
+  }
+  if(t.closest('#rvUnhide')){
+    RCP_PREFS.hide=RCP_PREFS.hide.filter(x=>x!==r.id); await saveTiles();
+    renderRecipe(); renderRecipes(); toast('Back in your list'); return;
+  }
+  if(t.closest('#rvKeep')){
+    const {error}=await sb.from('recipes').update({to_try:false}).eq('id',r.id);
+    if(error){ toast('Could not keep it'); console.error(error); return; }
+    await loadRecipes(); renderRecipe(); renderRecipes();
+    toast(r.share_all?'Kept, in the family cookbook':'Kept'); return;
+  }
+  if(t.closest('#rvReject')){
+    if(!confirm('Reject "'+r.title+'"? It is deleted.')) return;
+    if(!await rcpDelete(r)) return;
+    shutRecipe(); renderRecipes(); toast('Rejected'); return;
+  }
+});
+$('rcpView').addEventListener('change',ev=>{
+  const b=ev.target.closest('[data-ring]'); if(!b) return;
+  const i=Number(b.dataset.ring);
+  if(b.checked) RCP_TICK.add(i); else RCP_TICK.delete(i);
+  renderRecipe();
+});
+
+async function rcpDelete(r){
+  const files=arr(r.photos).map(p=>p&&p.path).filter(Boolean);
+  const {error}=await sb.from('recipes').delete().eq('id',r.id);
+  if(error){ toast('Could not delete it'); console.error(error); return false; }
+  if(files.length) await sb.storage.from('photos').remove(files);
+  await loadRecipes();
+  return true;
+}
+
+/* ---------- onto the shopping list ---------- */
+function chooseShopList(){
+  const mine=LISTS.filter(x=>x.owner_id===ME.id), theirs=LISTS.filter(x=>x.owner_id!==ME.id);
+  const all=mine.concat(theirs);
+  if(all.length<2) return Promise.resolve(all.length?all[0].id:null);
+  return new Promise(done=>{
+    const box=document.createElement('div');
+    box.className='daypick';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Which shopping list?</p>
+      ${all.map(l=>`<button class="menuitem" data-pickl="${l.id}">${esc(l.name)}${
+        l.owner_id!==ME.id?` <small style="color:var(--muted)">(${esc(whoWrote(l.owner_id))}’s)</small>`:''
+        } &rsaquo;</button>`).join('')}
+      <div class="pfoot"><button id="plShut">Cancel</button></div></div>`;
+    document.body.appendChild(box);
+    const close=v=>{ box.remove(); done(v); };
+    box.querySelector('#plShut').onclick=()=>close(null);
+    box.onclick=ev=>{ if(ev.target===box) close(null); };
+    box.querySelectorAll('[data-pickl]').forEach(b=>b.onclick=()=>close(Number(b.dataset.pickl)));
+  });
+}
+
+async function rcpToShopping(r){
+  const f=rcpFactor(r);
+  const want=arr(r.ingredients).map((x,i)=>RCP_TICK.has(i)&&!x.head?x:null).filter(Boolean);
+  if(!want.length){ toast('Tick what you need first'); return; }
+  await loadShopping();
+  const lid=await chooseShopList();
+  if(!lid) return;
+  const on=SHOP.filter(x=>x.list_id===lid);
+  let added=0, back=0, had=0, failed=0;
+  let order=Math.max(100,...on.map(x=>x.sort_order||0));
+  for(const x of want){
+    const name=shopName(x)||x.name;
+    if(!name) continue;
+    const same=on.find(y=>String(y.name).trim().toLowerCase()===name.toLowerCase());
+    if(same&&!same.got){ had++; continue; }
+    if(same){
+      const {error}=await sb.from('shopping').update({got:false,got_at:null}).eq('id',same.id);
+      if(error){ failed++; console.error(error); } else back++;
+      continue;
+    }
+    const amt=amountText(x,f);
+    const {error}=await sb.from('shopping').insert({created_by:ME.id, list_id:lid,
+      name:name.charAt(0).toUpperCase()+name.slice(1), qty:amt||null, sort_order:++order});
+    if(error){ failed++; console.error(error); } else added++;
+  }
+  await loadShopping();
+  const list=(LISTS.find(l=>l.id===lid)||{}).name||'Shopping';
+  const said=[added?added+' added':'', back?back+' put back on':'',
+    had?had+' already on it':''].filter(Boolean).join(', ');
+  toast(failed?'Some could not be added. Try again.':list+': '+(said||'nothing to add'));
+}
+
+/* ---------- adding and changing ---------- */
+// Somebody else's recipe, ready to save as your own. The photos are copied
+// when it is saved, so yours do not vanish if they delete theirs.
+function rcpCopyOf(r){
+  const keep=['title','categories','serves','prep_mins','cook_mins','ingredients','prep_steps',
+    'cook_steps','notes','photos','video_url','source_url','source_name'];
+  const d={}; keep.forEach(k=>{ d[k]=JSON.parse(JSON.stringify(r[k]??null)); });
+  d.share_all=false;
+  return d;
+}
+
+let RE=null;     // the recipe being written: {old, d, fresh:[paths], gone:[paths]}
+
+function editRecipe(id,start){
+  const old=id?RECIPES.find(x=>x.id===id):null;
+  if(old&&!rcpMine(old)) return;
+  const d=old?JSON.parse(JSON.stringify(old)):{title:'', categories:[], serves:null,
+    prep_mins:null, cook_mins:null, ingredients:[], prep_steps:[], cook_steps:[], notes:'',
+    photos:[], video_url:'', source_url:'', source_name:null, share_all:true, ...(start||{})};
+  RE={old, d, fresh:[], gone:[], who:d.share_all===false?'me':'all'};
+  $('reTitleBar').textContent=old?'Change recipe':start?'Your copy':'New recipe';
+  const cats=[...new Set(RCP_PREFS.cats.concat(arr(d.categories)))];
+  const num=v=>v==null?'':String(v);
+  $('reBody').innerHTML=`
+    <label>Title<input id="reTitle" value="${esc(d.title)}" placeholder="What it is called"></label>
+    <p class="ulhead">Categories <span>as many as suit it</span></p>
+    <span class="pickrow" id="reCats">${cats.map(c=>`<button type="button" data-recat="${esc(c)}"
+      aria-pressed="${arr(d.categories).includes(c)}">${esc(c)}</button>`).join('')}</span>
+    <span class="ulrow"><input id="reNewCat" placeholder="A new category" autocomplete="off">
+      <button type="button" id="reAddCat">Add</button></span>
+    <div class="rcpnums">
+      <label>Serves<input id="reServes" type="number" inputmode="numeric" min="1" max="100" value="${num(d.serves)}"></label>
+      <label>Prep, mins<input id="rePrep" type="number" inputmode="numeric" min="0" value="${num(d.prep_mins)}"></label>
+      <label>Cook, mins<input id="reCook" type="number" inputmode="numeric" min="0" value="${num(d.cook_mins)}"></label>
+    </div>
+    <p class="ulhead">Photos <span>tap one to make it the cover</span></p>
+    <div class="rcpthumbs" id="rePics"></div>
+    <div class="rcppicbtns">
+      <label class="btn">Camera<input type="file" id="reCam" accept="image/*" capture="environment"></label>
+      <label class="btn">Choose<input type="file" id="rePick" accept="image/*" multiple></label></div>
+    <label>Video link<span class="ulrow"><input id="reVideo" type="url" inputmode="url"
+      autocomplete="off" placeholder="https://" value="${esc(d.video_url||'')}">
+      <button type="button" data-repaste="reVideo">Paste</button></span></label>
+    <label>Ingredients <small>one to a line, such as 200g plain flour. End a line with : for a heading.</small>
+      <textarea id="reIngs" rows="8">${esc(arr(d.ingredients).map(x=>ingText(x,1)).join('\n'))}</textarea></label>
+    <label>Preparing <small>one step to a line</small>
+      <textarea id="rePrepSteps" rows="5">${esc(arr(d.prep_steps).join('\n'))}</textarea></label>
+    <label>Cooking <small>one step to a line</small>
+      <textarea id="reCookSteps" rows="7">${esc(arr(d.cook_steps).join('\n'))}</textarea></label>
+    <label>Notes<textarea id="reNotes" rows="3" placeholder="Your own tweaks">${esc(d.notes||'')}</textarea></label>
+    <label>Where it came from<span class="ulrow"><input id="reSrc" type="url" inputmode="url"
+      autocomplete="off" placeholder="https:// (optional)" value="${esc(d.source_url||'')}">
+      <button type="button" data-repaste="reSrc">Paste</button></span></label>
+    <p class="ulhead">Who can see it</p>
+    <span class="pickrow">${[['all','Family cookbook'],['me','Just me']].map(([k,t])=>
+      `<button type="button" data-rewho="${k}" aria-pressed="${RE.who===k}">${t}</button>`).join('')}</span>
+    ${old?'<button class="btn danger" id="reDel" style="margin:24px 0 8px">Delete this recipe</button>':''}`;
+  paintRePics();
+  showSheet('recipeEd'); $('reBody').scrollTop=0; lockBackground();
+  if(!d.title) setTimeout(()=>$('reTitle').focus(),60);
+}
+
+function paintRePics(){
+  const box=$('rePics'); if(!box||!RE) return;
+  const ps=arr(RE.d.photos);
+  box.innerHTML=ps.length ? ps.map((p,i)=>`<span class="rcpthumb">
+      <img src="${esc(rcpPic(p))}" alt="" data-recover="${i}">
+      ${i===0?'<small>Cover</small>':''}
+      <button type="button" data-repicx="${i}" aria-label="Remove this photo">&times;</button></span>`).join('')
+    : '<span class="coords" style="margin:0">None yet.</span>';
+}
+
+async function rcpAddPhotos(files){
+  files=[...(files||[])].filter(f=>/^image\//.test(f.type));
+  if(!files.length) return;
+  for(let i=0;i<files.length;i++){
+    toast(files.length>1?'Adding photo '+(i+1)+' of '+files.length:'Adding the photo…');
+    try{
+      const blob=await shrink(files[i],1400);
+      const path=`rec/${ME.id}/${crypto.randomUUID()}.jpg`;
+      const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(error){ toast('Could not upload it'); console.error(error); continue; }
+      if(!RE) { await sb.storage.from('photos').remove([path]); return; }
+      RE.fresh.push(path);
+      RE.d.photos=arr(RE.d.photos).concat({path});
+      await signPaths([path]);
+    }catch(e){ console.error(e); toast('Could not read that image'); }
+  }
+  paintRePics();
+}
+
+$('reBody').addEventListener('click',async ev=>{
+  if(!RE) return;
+  const t=ev.target;
+  const c=t.closest('[data-recat]');
+  if(c){ c.setAttribute('aria-pressed',String(c.getAttribute('aria-pressed')!=='true')); return; }
+  if(t.closest('#reAddCat')){
+    const inp=$('reNewCat'), v=inp.value.trim(); if(!v) return;
+    const have=[...$('reCats').querySelectorAll('[data-recat]')]
+      .find(b=>b.dataset.recat.toLowerCase()===v.toLowerCase());
+    if(have) have.setAttribute('aria-pressed','true');
+    else { const b=document.createElement('button'); b.type='button'; b.dataset.recat=v;
+      b.textContent=v; b.setAttribute('aria-pressed','true'); $('reCats').appendChild(b); }
+    inp.value=''; return;
+  }
+  const w=t.closest('[data-rewho]');
+  if(w){ RE.who=w.dataset.rewho;
+    $('reBody').querySelectorAll('[data-rewho]').forEach(x=>x.setAttribute('aria-pressed',String(x===w)));
+    return; }
+  const pa=t.closest('[data-repaste]');
+  if(pa){ let s=''; try{ s=await navigator.clipboard.readText(); }catch(e){}
+    const u=findUrl(s), inp=$(pa.dataset.repaste);
+    if(u) inp.value=u; else { toast('Press and hold in the box, then choose Paste'); inp.focus(); }
+    return; }
+  const cv=t.closest('[data-recover]');
+  if(cv){ const i=Number(cv.dataset.recover); if(!i) return;
+    const ps=arr(RE.d.photos).slice(); ps.unshift(ps.splice(i,1)[0]); RE.d.photos=ps;
+    paintRePics(); toast('Now the cover'); return; }
+  const x=t.closest('[data-repicx]');
+  if(x){ const i=Number(x.dataset.repicx), ps=arr(RE.d.photos).slice(), p=ps.splice(i,1)[0];
+    RE.d.photos=ps;
+    if(p&&p.path){
+      if(RE.fresh.includes(p.path)){ RE.fresh=RE.fresh.filter(q=>q!==p.path);
+        await sb.storage.from('photos').remove([p.path]); }
+      else if(p.path.startsWith('rec/'+ME.id+'/')) RE.gone.push(p.path);
+    }
+    paintRePics(); return; }
+  if(t.closest('#reDel')){
+    if(!confirm('Delete "'+RE.old.title+'"? It goes from the family cookbook for everyone.')) return;
+    const old=RE.old;
+    if(!await rcpDelete(old)) return;
+    RE=null; $('recipeEd').classList.add('hidden'); shutRecipe(); renderRecipes(); toast('Deleted');
+  }
+});
+$('reBody').addEventListener('keydown',ev=>{
+  if(ev.target.id==='reNewCat'&&ev.key==='Enter'){ ev.preventDefault(); $('reAddCat').click(); }
+});
+$('reBody').addEventListener('change',ev=>{
+  if(ev.target.id==='reCam'||ev.target.id==='rePick'){
+    const files=[...ev.target.files]; ev.target.value=''; rcpAddPhotos(files); }
+});
+
+async function cancelRecipe(){
+  if(RE&&RE.fresh.length) await sb.storage.from('photos').remove(RE.fresh);
+  RE=null; $('recipeEd').classList.add('hidden'); lockBackground();
+}
+
+async function saveRecipe(){
+  if(!RE) return;
+  const v=id=>$(id).value.trim();
+  const title=v('reTitle');
+  if(!title){ toast('Give it a title'); $('reTitle').focus(); return; }
+  const int=(id,lo,hi)=>{ const n=parseInt(v(id),10); return isFinite(n)&&n>=lo&&n<=hi?n:null; };
+  const vid=v('reVideo'), src=v('reSrc');
+  if(vid&&!findUrl(vid)){ toast('The video link is not a web address'); return; }
+  if(src&&!findUrl(src)){ toast('Where it came from is not a web address'); return; }
+  const cats=[...$('reCats').querySelectorAll('[data-recat][aria-pressed="true"]')].map(b=>b.dataset.recat);
+  $('reSave').disabled=true;
+  // Photos from somebody else's recipe become copies of your own.
+  const photos=[];
+  for(const p of arr(RE.d.photos)){
+    if(p.path&&!p.path.startsWith('rec/'+ME.id+'/')){
+      const to=`rec/${ME.id}/${crypto.randomUUID()}.jpg`;
+      const {error}=await sb.storage.from('photos').copy(p.path,to);
+      if(error){ console.error(error); continue; }
+      RE.fresh.push(to); photos.push({path:to}); await signPaths([to]);
+    } else photos.push(p);
+  }
+  const srcUrl=src?findUrl(src):null;
+  const rec={title, categories:cats,
+    serves:int('reServes',1,100), prep_mins:int('rePrep',0,10000), cook_mins:int('reCook',0,10000),
+    ingredients:$('reIngs').value.split('\n').map(parseIng).filter(Boolean),
+    prep_steps:stepLines($('rePrepSteps').value), cook_steps:stepLines($('reCookSteps').value),
+    notes:v('reNotes')||null, photos, video_url:vid?findUrl(vid):null,
+    source_url:srcUrl,
+    source_name:srcUrl?(RE.d.source_url&&sameUrl(RE.d.source_url,srcUrl)&&RE.d.source_name
+      ||linkHost(srcUrl)):null,
+    share_all:RE.who==='all', updated_at:new Date().toISOString()};
+  let id=RE.old?RE.old.id:null;
+  if(RE.old){
+    const {error}=await sb.from('recipes').update(rec).eq('id',id);
+    if(error){ $('reSave').disabled=false; toast('Could not save it'); console.error(error); return; }
+  } else {
+    const {data,error}=await sb.from('recipes').insert({...rec, created_by:ME.id}).select().single();
+    if(error){ $('reSave').disabled=false; toast('Could not add it'); console.error(error); return; }
+    id=data.id;
+  }
+  if(RE.gone.length) await sb.storage.from('photos').remove(RE.gone);
+  const freshCats=cats.filter(c=>!RCP_PREFS.cats.includes(c));
+  if(freshCats.length){ RCP_PREFS.cats=RCP_PREFS.cats.concat(freshCats); await saveTiles(); }
+  const wasNew=!RE.old;
+  RE=null; $('reSave').disabled=false;
+  $('recipeEd').classList.add('hidden');
+  await loadRecipes();
+  if(wasNew&&!RECIPES.some(r=>r.id===id)) RECIPES.unshift({...rec, id, created_by:ME.id});
+  renderRecipes();
+  if(wasNew||RCP_CUR===id){ RCP_CUR=null; openRecipe(id); }
+  toast(wasNew?'Added':'Saved');
+}
+$('reCancel').onclick=cancelRecipe;
+$('reSave').onclick=saveRecipe;
+
+/* ---------- finding recipes on the web ----------
+   The app cannot read another website itself, so a small reader in Supabase
+   (read-recipe) fetches the page and hands back the recipe card that most
+   recipe sites build in for Google. What it finds waits in To try. */
+function findRecipes(){
+  const box=document.createElement('div');
+  box.className='daypick lnked';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Find new recipes</p>
+    <label>What do you fancy?<input id="frQ" autocomplete="off" placeholder="Leek and potato soup"></label>
+    <span class="pickrow"><button type="button" id="frGoogle">Search Google</button>
+      <button type="button" id="frBbc">Search BBC Good Food</button></span>
+    <p class="lsub" style="margin-top:12px">Found one you like? In Chrome press <strong>Share</strong>,
+      choose <strong>MY life</strong>, then <strong>A recipe</strong>. It is read for you and
+      waits under <strong>To try</strong>.</p>
+    <p class="ulhead">Or paste a recipe&rsquo;s web address</p>
+    <span class="ulrow"><input id="frUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://">
+      <button type="button" id="frPaste">Paste</button></span>
+    <div class="pfoot lfoot"><button id="frShut">Close</button>
+      <button id="frRead" class="go">Read the recipe</button></div></div>`;
+  document.body.appendChild(box);
+  const q=s=>box.querySelector(s), close=()=>box.remove();
+  q('#frShut').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  const go=base=>{ const w=q('#frQ').value.trim();
+    if(!w){ toast('Say what you fancy first'); q('#frQ').focus(); return; }
+    window.open(base+encodeURIComponent(w),'_blank','noopener'); };
+  q('#frGoogle').onclick=()=>go('https://www.google.com/search?q=recipe+');
+  q('#frBbc').onclick=()=>go('https://www.bbcgoodfood.com/search?q=');
+  q('#frQ').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); q('#frGoogle').click(); } };
+  q('#frPaste').onclick=async()=>{ let s=''; try{ s=await navigator.clipboard.readText(); }catch(e){}
+    const u=findUrl(s); if(u) q('#frUrl').value=u;
+    else { toast('Press and hold in the box, then choose Paste'); q('#frUrl').focus(); } };
+  q('#frRead').onclick=()=>{ const u=findUrl(q('#frUrl').value);
+    if(!u){ toast('That does not look like a web address'); q('#frUrl').focus(); return; }
+    close(); readRecipe(u,''); };
+}
+
+// What the reader sent back, as a recipe. Categories come across only where
+// they match one of yours, so a site's "Western" does not join your list.
+function rcpFromWeb(d,url,title){
+  d=d&&typeof d==='object'?d:{};
+  const mineCat=c=>{ c=String(c||'').toLowerCase().trim();
+    return RCP_PREFS.cats.find(x=>{ const l=x.toLowerCase(); return l===c||l===c+'s'||l+'s'===c; }); };
+  const n=(v,lo,hi)=>{ v=Number(v); return isFinite(v)&&v>=lo&&v<=hi?Math.round(v):null; };
+  const img=/^https:\/\//i.test(String(d.image||''))?String(d.image):'';
+  return {
+    title:String(d.title||title||linkHost(url)||'A recipe').slice(0,200),
+    categories:[...new Set(arr(d.categories).map(mineCat).filter(Boolean))],
+    serves:n(d.serves,1,100), prep_mins:n(d.prep_mins,1,10000), cook_mins:n(d.cook_mins,1,10000),
+    ingredients:arr(d.ingredients).map(parseIng).filter(Boolean),
+    prep_steps:[],
+    cook_steps:arr(d.steps).map(s=>s&&s.head?String(s.head).replace(/:$/,'')+':'
+      :String(s&&s.text||'').trim()).filter(Boolean),
+    notes:d.description?String(d.description):null,
+    photos:img?[{url:img}]:[],
+    video_url:/^https?:\/\//i.test(String(d.video_url||''))?String(d.video_url):null,
+    source_url:url, source_name:String(d.site||linkHost(url)||'')||null};
+}
+
+async function rcpToTry(rec){
+  const {data,error}=await sb.from('recipes')
+    .insert({...rec, created_by:ME.id, to_try:true, share_all:true}).select().single();
+  if(error){ toast('Could not save it'); console.error(error); return null; }
+  await loadRecipes();
+  if(!RECIPES.some(r=>r.id===data.id)) RECIPES.unshift(data);   // a slow read can miss it
+  if($('recipes').classList.contains('hidden')) await openRecipes(); else renderRecipes();
+  RCP_CUR=null; openRecipe(data.id);
+  return data;
+}
+
+async function readRecipe(url,title){
+  const u=findUrl(url);
+  if(!u){ toast('That does not look like a web address'); return; }
+  await loadRecipes();
+  if(RCP_WHY){ await openRecipes(); return; }
+  const dup=RECIPES.find(r=>rcpMine(r)&&r.source_url&&sameUrl(r.source_url,u));
+  if(dup&&!confirm('You already have this one, as "'+dup.title+'". Add it again anyway?')){
+    await openRecipes(); openRecipe(dup.id); return; }
+  toast('Reading the recipe…');
+  let got=null;
+  try{
+    const {data,error}=await sb.functions.invoke('read-recipe',{body:{url:u}});
+    if(error) console.error(error); else got=data;
+  }catch(e){ console.error(e); }
+  const made=await rcpToTry(rcpFromWeb(got,u,title));
+  if(made) toast(got&&got.found ? 'Read it. Keep it or reject it at the top'
+    : 'Could not read a recipe on that page, so the title and link are saved. Add the rest when you like');
+}
+
+// Arriving from Chrome's Share menu: a recipe, or a link for URL Links?
+function sharedIn(s){
+  if(!s.url){ toast('That share had no web address in it'); return; }
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Save this as</p>
+    <p class="lsub">${esc(s.title||linkHost(s.url))}</p>
+    <button class="menuitem" id="siRecipe">A recipe &rsaquo;</button>
+    <button class="menuitem" id="siLink">A link in URL Links &rsaquo;</button>
+    <div class="pfoot"><button id="siShut">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#siShut').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#siRecipe').onclick=async()=>{ close(); await openRecipes(); readRecipe(s.url,s.title); };
+  box.querySelector('#siLink').onclick=async()=>{ close(); await openLinks(); editLink(null,s); };
+}
+
+/* ---------- Ideas, from TheMealDB ----------
+   A free online collection with its own pictures, ingredients and method,
+   which the app can read directly. Many of them are American, so the
+   measures want checking. */
+const MEALDB='https://www.themealdb.com/api/json/v1/1/';
+const IDEAS={q:'', cat:'', list:[], state:'', cats:[]};
+
+async function mealGet(path){
+  const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(MEALDB+path,{signal:ctl.signal});
+    if(!r.ok) throw new Error('TheMealDB '+r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+async function openIdeas(){
+  showSheet('ideas'); $('ideasBody').scrollTop=0; lockBackground();
+  renderIdeas();
+  if(!IDEAS.cats.length) mealGet('categories.php').then(j=>{
+    IDEAS.cats=arr(j&&j.categories).map(c=>c.strCategory).filter(Boolean);
+    renderIdeas(); }).catch(e=>console.warn('Ideas categories',e));
+  if(!IDEAS.list.length&&IDEAS.state!=='loading') ideasLoad('random');
+}
+
+async function ideasLoad(how,arg){
+  IDEAS.state='loading'; paintIdeaList();
+  try{
+    let meals=[];
+    if(how==='random'){
+      const all=await Promise.all([0,1,2,3,4,5].map(()=>mealGet('random.php').catch(()=>null)));
+      const seen=new Set();
+      meals=all.flatMap(j=>arr(j&&j.meals)).filter(m=>m&&!seen.has(m.idMeal)&&seen.add(m.idMeal));
+      if(!meals.length) throw new Error('none came back');
+    } else if(how==='search') meals=arr((await mealGet('search.php?s='+encodeURIComponent(arg))).meals);
+    else meals=arr((await mealGet('filter.php?c='+encodeURIComponent(arg))).meals);
+    IDEAS.list=meals; IDEAS.state=meals.length?'ok':'none';
+  }catch(e){ console.warn('Ideas',e); IDEAS.state='fail'; }
+  paintIdeaList();
+}
+
+function renderIdeas(){
+  const body=$('ideasBody'); if(!body) return;
+  body.innerHTML=`
+    <p class="coords" style="margin:0 0 10px">Ideas from TheMealDB, a free collection on the
+      internet. Many are American, so check the measures. Anything you like goes into
+      <strong>To try</strong>.</p>
+    <div class="card msearch"><div class="mqrow">
+      <input id="idQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="Search, e.g. chicken pie" value="${esc(IDEAS.q)}" aria-label="Search ideas"></div></div>
+    <div class="chips lnkchips"><button class="chip" data-idcat="" aria-pressed="false">Surprise me</button>
+      ${IDEAS.cats.map(c=>`<button class="chip" data-idcat="${esc(c)}" aria-pressed="${
+        IDEAS.cat===c}">${esc(c)}</button>`).join('')}</div>
+    <div id="idList"></div>`;
+  paintIdeaList();
+}
+function paintIdeaList(){
+  const box=$('idList'); if(!box) return;
+  const note=t=>`<div class="card"><div class="field"><dd style="color:var(--muted)">${t}</dd></div></div>`;
+  if(IDEAS.state==='loading'){ box.innerHTML=note('Fetching ideas…'); return; }
+  if(IDEAS.state==='fail'){ box.innerHTML=note('Could not reach TheMealDB just now. Check your '
+    +'signal and try again. <button class="linkbtn" data-idcat="">Try again</button>'); return; }
+  if(IDEAS.state==='none'){ box.innerHTML=note('Nothing there for that. Try another word.'); return; }
+  box.innerHTML=`<div class="idgrid">${IDEAS.list.map(m=>`<button class="idcard" data-idea="${esc(m.idMeal)}">
+    <img src="${esc(m.strMealThumb?m.strMealThumb+'/preview':'')}" alt="" loading="lazy">
+    <span>${esc(m.strMeal)}</span></button>`).join('')}</div>`;
+}
+
+$('ideasBody').addEventListener('click',ev=>{
+  const c=ev.target.closest('[data-idcat]');
+  if(c){ const cat=c.dataset.idcat; IDEAS.cat=cat; IDEAS.q='';
+    renderIdeas(); ideasLoad(cat?'cat':'random',cat); return; }
+  const i=ev.target.closest('[data-idea]');
+  if(i) showIdea(i.dataset.idea);
+});
+$('ideasBody').addEventListener('keydown',ev=>{
+  if(ev.target.id!=='idQ'||ev.key!=='Enter') return;
+  ev.preventDefault();
+  const q=ev.target.value.trim(); ev.target.blur();
+  IDEAS.q=q; IDEAS.cat='';
+  [...$('ideasBody').querySelectorAll('[data-idcat]')].forEach(b=>b.setAttribute('aria-pressed','false'));
+  ideasLoad(q?'search':'random',q);
+});
+
+function rcpFromMeal(m){
+  const ings=[];
+  for(let n=1;n<=20;n++){
+    const what=String(m['strIngredient'+n]||'').trim(), much=String(m['strMeasure'+n]||'').trim();
+    if(what) ings.push(parseIng((much?much+' ':'')+what));
+  }
+  const steps=String(m.strInstructions||'').split(/\r?\n+/).map(s=>s.trim())
+    .filter(s=>s&&!/^(step\s*)?\d+\.?$/i.test(s)).map(s=>s.replace(/^(?:step\s*)?\d+\s*[.):-]\s*/i,''));
+  const cat=String(m.strCategory||'').toLowerCase();
+  const mine=RCP_PREFS.cats.find(x=>{ const l=x.toLowerCase(); return l===cat||l===cat+'s'; });
+  return {title:String(m.strMeal||'An idea'), categories:mine?[mine]:[], serves:null,
+    prep_mins:null, cook_mins:null, ingredients:ings.filter(Boolean), prep_steps:[], cook_steps:steps,
+    notes:null, photos:/^https:\/\//.test(m.strMealThumb||'')?[{url:m.strMealThumb}]:[],
+    video_url:/^https?:\/\//.test(m.strYoutube||'')?m.strYoutube:null,
+    source_url:/^https?:\/\//.test(m.strSource||'')?m.strSource
+      :'https://www.themealdb.com/meal/'+encodeURIComponent(m.idMeal),
+    source_name:'TheMealDB'};
+}
+
+async function showIdea(id){
+  let m=IDEAS.list.find(x=>x.idMeal===id);
+  if(!m||!m.strInstructions){
+    toast('Fetching it…');
+    try{ m=arr((await mealGet('lookup.php?i='+encodeURIComponent(id))).meals)[0]; }
+    catch(e){ console.warn(e); m=null; }
+    if(!m){ toast('Could not fetch that one. Try again'); return; }
+  }
+  const r=rcpFromMeal(m);
+  const box=document.createElement('div');
+  box.className='daypick lnked';
+  box.innerHTML=`<div class="inner">
+    ${r.photos.length?`<img class="rcpcover" src="${esc(r.photos[0].url)}" alt="">`:''}
+    <p class="dsec" style="padding-top:10px">${esc(r.title)}</p>
+    <p class="lsub">${esc([m.strCategory,m.strArea].filter(Boolean).join(' · '))}</p>
+    <ul class="idings">${r.ingredients.map(x=>`<li>${esc(ingText(x,1))}</li>`).join('')}</ul>
+    <p class="lsub">${esc(r.cook_steps.slice(0,2).join(' '))}${r.cook_steps.length>2?'…':''}</p>
+    <div class="pfoot lfoot"><button id="idShut">Close</button>
+      <button id="idAdd" class="go">Add to To try</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#idShut').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#idAdd').onclick=async()=>{
+    await loadRecipes();
+    if(RCP_WHY){ close(); $('ideas').classList.add('hidden'); await openRecipes(); return; }
+    const dup=RECIPES.find(x=>rcpMine(x)&&x.source_url&&sameUrl(x.source_url,r.source_url));
+    if(dup&&!confirm('You already have this one, as "'+dup.title+'". Add it again anyway?')) return;
+    close(); $('ideas').classList.add('hidden');
+    if(await rcpToTry(r)) toast('In To try. Keep it or reject it at the top');
+  };
+}
+
+/* ---------- Cook mode ----------
+   One step at a time in big writing, read out if you like, with the screen
+   kept awake and a timer for any step that says how long. */
+let COOK=null, COOK_LOCK=null, COOK_TICK=null;
+let COOK_SAY=false;
+try{ COOK_SAY=localStorage.getItem('cooksay')==='1'; }catch(e){}
+
+function cookPages(r){
+  const f=rcpFactor(r), pages=[];
+  const ings=arr(r.ingredients);
+  if(ings.some(x=>!x.head)) pages.push({label:'Ingredients', list:ings.map(x=>ingText(x,f))});
+  const add=(steps,what)=>{
+    let head='', n=0;
+    arr(steps).forEach(s=>{
+      if(rcpHead(s)){ head=String(s).replace(/:$/,''); return; }
+      n++; pages.push({label:what+' · step '+n+(head?' · '+head:''), text:s, mins:stepMins(s)});
+    });
+  };
+  add(r.prep_steps,'Preparing'); add(r.cook_steps,'Cooking');
+  pages.push({label:'All done', text:'That is the end of the recipe. Enjoy it.', end:true});
+  return pages;
+}
+
+function cookVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const vs=speechSynthesis.getVoices()||[];
+  return vs.find(v=>/en[-_]GB/i.test(v.lang)&&/female|google/i.test(v.name))
+    || vs.find(v=>/en[-_]GB/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
+}
+function cookSay(text){
+  if(!('speechSynthesis' in window)){ toast('This phone cannot read aloud'); return false; }
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(String(text).replace(/\s*·\s*/g,', '));
+  const v=cookVoice();
+  try{ if(v) u.voice=v; }catch(e){}       // some phones offer voices they will not take
+  u.lang=v&&v.lang?v.lang:'en-GB'; u.rate=.95;
+  speechSynthesis.speak(u);
+  return true;
+}
+function cookPageWords(p){
+  if(p.list) return 'Ingredients. '+p.list.join('. ');
+  return p.label+'. '+p.text;
+}
+
+async function cookAwake(){
+  try{
+    if(navigator.wakeLock&&!COOK_LOCK&&COOK&&document.visibilityState==='visible'){
+      COOK_LOCK=await navigator.wakeLock.request('screen');
+      COOK_LOCK.addEventListener('release',()=>{ COOK_LOCK=null; });
+    }
+  }catch(e){ console.warn('Keeping the screen on',e); }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&COOK) cookAwake();
+});
+
+function openCook(r){
+  COOK={r, pages:cookPages(r), i:0, timers:[]};
+  $('cookTitle').textContent=r.title;
+  showSheet('cook'); lockBackground();
+  cookAwake();
+  renderCook(true);
+}
+
+function renderCook(speak){
+  if(!COOK) return;
+  const p=COOK.pages[COOK.i], n=COOK.pages.length;
+  $('cookCount').textContent=(COOK.i+1)+' of '+n;
+  $('cookBody').innerHTML=`
+    <div id="cookTimers"></div>
+    <div class="cookpage">
+      <p class="cooklabel">${esc(p.label)}</p>
+      ${p.list?`<ul class="cooklist">${p.list.map(x=>rcpHead(x)
+          ?`<li class="cookhead">${esc(x.replace(/:$/,''))}</li>`:`<li>${esc(x)}</li>`).join('')}</ul>`
+        :`<p class="cooktext">${esc(p.text)}</p>`}
+      ${p.mins?`<button class="btn cooktime" data-cooktimer="${p.mins}">Start the timer: ${
+        esc(minsText(p.mins))}</button>`:''}
+      ${p.end?`<button class="btn cooktime" id="cookCooked">I cooked this</button>`:''}
+    </div>
+    <div class="cookbar">
+      <button id="cookBack" ${COOK.i?'':'disabled'}>&lsaquo; Back</button>
+      <button id="cookSay" aria-pressed="${COOK_SAY}">${COOK_SAY?'&#128266; Reading':'&#128264; Read aloud'}</button>
+      <button id="cookNext" class="next" ${COOK.i<n-1?'':'disabled'}>Next &rsaquo;</button>
+    </div>
+    ${COOK_SAY?'<p class="coords" style="text-align:center"><button class="linkbtn" id="cookAgain">Say it again</button></p>':''}`;
+  paintCookTimers();
+  $('cookBody').scrollTop=0;
+  if(speak&&COOK_SAY) cookSay(cookPageWords(p));
+}
+
+function paintCookTimers(){
+  const box=$('cookTimers'); if(!box||!COOK) return;
+  const now=Date.now();
+  box.innerHTML=COOK.timers.map(t=>{
+    const left=Math.max(0,Math.round((t.ends-now)/1000));
+    const mm=Math.floor(left/60), ss=String(left%60).padStart(2,'0');
+    return `<div class="ctimer ${left?'':'ring'}"><span>${esc(t.label)}</span>
+      <b>${left?mm+':'+ss:'Done'}</b>
+      <button data-cookstop="${t.id}">${left?'Cancel':'Stop'}</button></div>`;
+  }).join('');
+}
+
+function cookBeep(){
+  try{
+    const C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    const ctx=new C();
+    [0,.35,.7].forEach(at=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(.25,ctx.currentTime+at);
+      g.gain.setValueAtTime(0,ctx.currentTime+at+.22);
+      o.start(ctx.currentTime+at); o.stop(ctx.currentTime+at+.25);
+    });
+    setTimeout(()=>ctx.close(),1500);
+  }catch(e){}
+}
+
+function cookTick(){
+  if(!COOK||!COOK.timers.length){ clearInterval(COOK_TICK); COOK_TICK=null; return; }
+  const now=Date.now();
+  COOK.timers.forEach(t=>{
+    if(!t.rang&&now>=t.ends){
+      t.rang=true; cookBeep();
+      try{ navigator.vibrate&&navigator.vibrate([400,200,400,200,400]); }catch(e){}
+      if(COOK_SAY) setTimeout(()=>cookSay('The '+t.label+' timer has finished.'),900);
+      toast(t.label+' timer finished');
+    }
+    // Keeps ringing every few seconds until it is stopped.
+    else if(t.rang&&Math.floor((now-t.ends)/1000)%6===0&&now-t.ends<120000) cookBeep();
+  });
+  paintCookTimers();
+}
+
+$('cookBody').addEventListener('click',async ev=>{
+  if(!COOK) return;
+  const t=ev.target;
+  if(t.closest('#cookNext')&&COOK.i<COOK.pages.length-1){ COOK.i++; renderCook(true); return; }
+  if(t.closest('#cookBack')&&COOK.i>0){ COOK.i--; renderCook(true); return; }
+  if(t.closest('#cookAgain')){ cookSay(cookPageWords(COOK.pages[COOK.i])); return; }
+  if(t.closest('#cookSay')){
+    COOK_SAY=!COOK_SAY;
+    try{ localStorage.setItem('cooksay',COOK_SAY?'1':'0'); }catch(e){}
+    if(!COOK_SAY&&'speechSynthesis' in window) speechSynthesis.cancel();
+    renderCook(COOK_SAY); return;
+  }
+  const tm=t.closest('[data-cooktimer]');
+  if(tm){
+    const mins=Number(tm.dataset.cooktimer), p=COOK.pages[COOK.i];
+    COOK.timers.push({id:Date.now(), label:minsText(mins)+' ('+p.label.split(' · ').slice(0,2).join(' ')+')',
+      ends:Date.now()+mins*60000});
+    if(!COOK_TICK) COOK_TICK=setInterval(cookTick,1000);
+    paintCookTimers(); toast('Timer started'); return;
+  }
+  const st=t.closest('[data-cookstop]');
+  if(st){ COOK.timers=COOK.timers.filter(x=>String(x.id)!==st.dataset.cookstop); paintCookTimers(); return; }
+  if(t.closest('#cookCooked')){
+    const id=COOK.r.id, c=RCP_PREFS.cooked[id]||{n:0};
+    RCP_PREFS.cooked={...RCP_PREFS.cooked, [id]:{n:(c.n||0)+1, last:isoDay(new Date())}};
+    await saveTiles(); toast('Noted. Enjoy it');
+    if(!$('recipe').classList.contains('hidden')) renderRecipe();
+  }
+});
+
+function shutCook(){
+  if(COOK&&COOK.timers.some(t=>!t.rang)
+     &&!confirm('A timer is still running. Stop it and leave Cook mode?')) return false;
+  COOK=null;
+  if(COOK_TICK){ clearInterval(COOK_TICK); COOK_TICK=null; }
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  if(COOK_LOCK){ COOK_LOCK.release().catch(()=>{}); COOK_LOCK=null; }
+  $('cook').classList.add('hidden'); lockBackground();
+  return true;
+}
+$('cookShut').onclick=shutCook;
+$('rvBack').onclick=shutRecipe;
+$('ideasBack').onclick=()=>{ $('ideas').classList.add('hidden'); lockBackground(); };
+
+/* ---------- Today: an idea for tonight ----------
+   The same one all day, changing when Today's day does, and picked from the
+   half of the cookbook you have cooked least lately. ↻ moves on to another. */
+let RCP_SPIN={day:'', n:0};
+function rcpTodayPick(){
+  const pool=rcpVisible(); if(!pool.length) return null;
+  const last=r=>(RCP_PREFS.cooked[r.id]||{}).last||'';
+  const sorted=pool.slice().sort((a,b)=>last(a).localeCompare(last(b))||a.id-b.id);
+  const day=briefDay(); if(RCP_SPIN.day!==day) RCP_SPIN={day, n:0};
+  let h=0; for(const ch of day) h=(h*31+ch.charCodeAt(0))>>>0;
+  const half=Math.max(1,Math.ceil(sorted.length/2));
+  return sorted[((h%half)+RCP_SPIN.n)%sorted.length];
+}
+function briefRecipeHtml(){
+  if(!RCP_PREFS.today||!RCP_LOADED||RCP_WHY) return '';
+  const r=rcpTodayPick(); if(!r) return '';
+  return `<p class="dsec">Tonight&rsquo;s idea</p>
+    <div class="card rcpidea">${rcpRow(r)}
+      ${rcpVisible().length>1?'<button class="rcpspin" data-briefspin="1" aria-label="Another idea" title="Another idea">&#8635;</button>':''}</div>`;
+}
+function paintBriefRecipe(){
+  const slot=$('briefRecipe'); if(!slot) return;
+  slot.innerHTML=briefRecipeHtml();
+  const o=slot.querySelector('[data-ropen]');
+  if(o) o.onclick=async()=>{ const id=Number(o.dataset.ropen);
+    shutBrief(); await openRecipes(); RCP_CUR=null; openRecipe(id); };
+  const s=slot.querySelector('[data-briefspin]');
+  if(s) s.onclick=()=>{ RCP_SPIN.n++; paintBriefRecipe(); };
+}
+
+/* ---------- Settings: categories, the cupboard, hidden recipes ---------- */
+function rcpCatRows(){
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    What recipes can be filed under. A recipe can have several. Renaming or
+    removing one changes your own recipes to match.</dd></div>
+  ${RCP_PREFS.cats.map(c=>`<div class="setrow fieldrow">
+    <input data-rcname="${esc(c)}" value="${esc(c)}" style="flex:1 1 150px">
+    <button class="x" data-rcdrop="${esc(c)}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd"><input id="rcNew" placeholder="New category">
+    <button class="btn primary" id="rcAdd">Add category</button></div>`;
+}
+function rcpCupRows(){
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    Things you nearly always have in. On a recipe they start unticked, so they
+    are not added to the shopping list unless you tick them.</dd></div>
+  ${RCP_PREFS.cupboard.map(c=>`<div class="setrow fieldrow">
+    <span style="flex:1">${esc(c)}</span>
+    <button class="x" data-cupdrop="${esc(c)}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd"><input id="cupNew" placeholder="Such as stock cubes">
+    <button class="btn primary" id="cupAdd">Add</button></div>`;
+}
+function rcpHidRows(){
+  const hid=rcpHidden();
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    Other people&rsquo;s recipes you chose not to see. They are still in the
+    family cookbook for everyone else.</dd></div>
+  ${hid.length?hid.map(r=>`<div class="setrow fieldrow">
+    <span style="flex:1">${esc(r.title)} <small style="color:var(--muted)">from ${esc(whoWrote(r.created_by))}</small></span>
+    <button class="btn" data-unhide="${r.id}" style="width:auto;padding:8px 12px;font-size:15px;
+      border:1.5px solid var(--rule)">See again</button></div>`).join('')
+    :'<div class="field"><dd>None.</dd></div>'}`;
+}
+
+async function relabelCat(from,to){
+  if(!RCP_LOADED) await loadRecipes();
+  const hit=RECIPES.filter(r=>rcpMine(r)&&arr(r.categories).includes(from));
+  const res=await Promise.all(hit.map(r=>{
+    const cats=[...new Set(arr(r.categories).map(c=>c===from?to:c).filter(Boolean))];
+    return sb.from('recipes').update({categories:cats}).eq('id',r.id);
+  }));
+  if(res.some(x=>x.error)){ console.error(res); return false; }
+  if(hit.length) await loadRecipes();
+  return true;
+}
+
+function wireRecipeSettings(){
+  const body=$('setBody'); if(!body) return;
+  const save=async msg=>{ await saveTiles(); openSettings(); if(msg) toast(msg); };
+  body.querySelectorAll('[data-rcname]').forEach(inp=>inp.onchange=async()=>{
+    const from=inp.dataset.rcname, to=inp.value.trim();
+    if(!to||to===from){ inp.value=from; return; }
+    if(RCP_PREFS.cats.some(c=>c!==from&&c.toLowerCase()===to.toLowerCase())){
+      toast('You already have that one'); inp.value=from; return; }
+    const ok=await relabelCat(from,to);
+    RCP_PREFS.cats=RCP_PREFS.cats.map(c=>c===from?to:c);
+    if(RCP.cat===from) RCP.cat=to;
+    await save(ok?'Renamed':'Renamed, but some recipes kept the old name. Try again.');
+  });
+  body.querySelectorAll('[data-rcdrop]').forEach(b=>b.onclick=async()=>{
+    const c=b.dataset.rcdrop;
+    if(!RCP_LOADED) await loadRecipes();
+    const n=RECIPES.filter(r=>rcpMine(r)&&arr(r.categories).includes(c)).length;
+    if(!confirm('Remove the category "'+c+'"?'+(n?' It comes off '+n+' of your recipes.':''))) return;
+    const ok=await relabelCat(c,null);
+    RCP_PREFS.cats=RCP_PREFS.cats.filter(x=>x!==c);
+    if(RCP.cat===c) RCP.cat='';
+    await save(ok?'Removed':'Removed, but some recipes still have it. Try again.');
+  });
+  const ra=$('rcAdd');
+  if(ra) ra.onclick=()=>{
+    const v=$('rcNew').value.trim();
+    if(!v){ toast('Give it a name'); return; }
+    if(RCP_PREFS.cats.some(c=>c.toLowerCase()===v.toLowerCase())){ toast('You already have that one'); return; }
+    RCP_PREFS.cats.push(v); save('Added');
+  };
+  body.querySelectorAll('[data-cupdrop]').forEach(b=>b.onclick=()=>{
+    RCP_PREFS.cupboard=RCP_PREFS.cupboard.filter(x=>x!==b.dataset.cupdrop); save('Removed');
+  });
+  const ca=$('cupAdd');
+  if(ca) ca.onclick=()=>{
+    const v=$('cupNew').value.trim().toLowerCase();
+    if(!v){ toast('Say what it is'); return; }
+    if(RCP_PREFS.cupboard.includes(v)){ toast('It is already there'); return; }
+    RCP_PREFS.cupboard.push(v); save('Added');
+  };
+  body.querySelectorAll('[data-unhide]').forEach(b=>b.onclick=()=>{
+    RCP_PREFS.hide=RCP_PREFS.hide.filter(x=>x!==Number(b.dataset.unhide)); save('Back in your list');
+  });
+  const rt=$('rcpTodayOn');
+  if(rt) rt.onchange=async()=>{ RCP_PREFS.today=rt.checked; await saveTiles();
+    toast(rt.checked?'Today will suggest a recipe':'No recipe idea on Today'); };
+}
+
 /* ---------- shopping: a list each, shared with whoever ---------- */
 let LISTS=[], LIST_SHARES=[], CUR_LIST=null;
 
@@ -8352,7 +9765,7 @@ const TILE_DEST={
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
   money:   {label:'Finances',   go:openMoney},
   jig:     {label:'Jigsaws',    go:openJig},
-  recipes: {label:'Recipes',    go:()=>toast('Recipes \u2014 coming soon')},
+  recipes: {label:'Recipes',    go:openRecipes},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -8383,7 +9796,8 @@ function shade(hex,amt){
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
-  settings:['settings'], pick:['app'], jig:['jig','jigPlay']};
+  settings:['settings'], pick:['app'], jig:['jig','jigPlay'],
+  recipes:['recipes','recipe','recipeEd','ideas','cook']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -8486,6 +9900,7 @@ function loadTiles(){
     ? {m:Number(tx[1])-1, d:Number(tx[2])} : {m:3, d:6};
   BACKUP_DONE = (saved&&typeof saved.backup==='string')?saved.backup:'';
   LINK_PREFS = linkPrefsFrom(saved);
+  RCP_PREFS = rcpPrefsFrom(saved);
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -8503,6 +9918,7 @@ function loadTiles(){
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, links:LINK_PREFS,
+              recipes:RCP_PREFS,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
@@ -9595,6 +11011,8 @@ union all select 'wishes',               count(*), coalesce(jsonb_agg(t), '[]') 
 -- URL Links
 union all select 'url_links',            count(*), coalesce(jsonb_agg(t), '[]') from url_links t
 union all select 'url_link_shares',      count(*), coalesce(jsonb_agg(t), '[]') from url_link_shares t
+-- Recipes
+union all select 'recipes',              count(*), coalesce(jsonb_agg(t), '[]') from recipes t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -10168,7 +11586,7 @@ $('trayHelp').onclick=()=>openHelp();
 // The strip steps out of the way while you are typing into a form, and while
 // you are ticking contacts, where the bottom of the screen is already spoken for.
 function paintTray(){
-  const busy=['editor','logEd','itemEd','chat'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
+  const busy=['editor','logEd','itemEd','chat','recipeEd','cook'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
   $('tray').style.display=(busy||PICKING)?'none':'';
 }
 /* ============================================================
@@ -13588,11 +15006,15 @@ function renderBrief(){
       ||'<div class="field"><dd style="color:var(--muted)">Nothing on the ASAP '
        +'list. Add one under Calendar &rsaquo; Regular jobs.</dd></div>'}</div>
 
+    <div id="briefRecipe"></div>
+
     <p class="coords" style="text-align:center;margin:14px 2px 20px">
       Shown once a day. Turn it off under Settings &rsaquo; Home screen, or
       open it again whenever you like from the menu.</p>`;
 
   paintBsky();
+  paintBriefRecipe();
+  if(RCP_PREFS.today&&!RCP_LOADED) loadRecipes().then(paintBriefRecipe);
   // A fresh look each time Today opens, but not on every redraw.
   if(BSKY_HANDLE && (BSKY.handle!==BSKY_HANDLE || (BSKY.state!=='loading'
       && Date.now()-(BSKY.at||0)>15*60*1000))) loadBsky();
@@ -13657,6 +15079,7 @@ const AREAS={
   shop:    {title:'Shopping',     set:null,        help:'shop'},
   wish:    {title:'Wishlist',     set:null,        help:'wish'},
   links:   {title:'URL Links',    set:'URL Links', help:'links'},
+  recipes: {title:'Recipes',      set:'Recipes',   help:'recipes'},
   jig:     {title:'Jigsaws',      set:null,        help:'jig'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
@@ -13676,13 +15099,15 @@ const AREA_SHUT={
   shop: ()=>$('shop').classList.add('hidden'),
   wish: ()=>$('wish').classList.add('hidden'),
   links:()=>$('links').classList.add('hidden'),
+  recipes:()=>{ if(COOK&&!shutCook()) return;
+    ['recipes','recipe','recipeEd','ideas'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, jig:openJig, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -13704,6 +15129,10 @@ function areaItems(area){
     it('Add an entry',            ()=>{ shutMenu(); openItem(null); })];
   if(area==='links') return [
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
+  if(area==='recipes') return [
+    it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
+    it('Find new recipes',        ()=>{ shutMenu(); findRecipes(); }),
+    it('Ideas',                   ()=>{ shutMenu(); openIdeas(); })];
   if(area==='shop') return [
     it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
   if(area==='chats') return [
@@ -13893,8 +15322,7 @@ async function start(){
   showHome();            // the front door, with the contacts list waiting behind it
   if(SHARED_IN){          // something shared from Chrome comes first
     const s=SHARED_IN; SHARED_IN=null;
-    await openLinks();
-    if(s.url) editLink(null,s); else toast('That share had no web address in it');
+    sharedIn(s);
   } else maybeBrief();    // what the day has in it, once a day
   watchForNewDay();
   loadDevices();

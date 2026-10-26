@@ -532,6 +532,94 @@ const seed = () => {
   ok('but never anybody else’s', !rn.some(w => w.where.some(x => x[2] === 401 || x[2] === 402)));
   await ev(() => { $('settings').classList.add('hidden'); lockBackground(); });
 
+  console.log('\nFrom a book: sorting the words Google Lens copied');
+  const pageA = ['LEEK AND POTATO SOUP', 'A comforting soup for a cold day on the', 'towpath, ready in under an hour.',
+    'Serves 4', 'Prep time 15 mins', 'Cooking time 30 mins', 'Ingredients', '50g butter', '2 large leeks, trimmed and',
+    'sliced', '450g/1lb floury potatoes, peeled', 'and diced', '1 litre vegetable stock', 'For the topping',
+    '150ml single cream', 'salt and freshly ground black pepper', 'Method', '1. Melt the butter in a large pan over a',
+    'low heat. Add the leeks and cook for 10', 'minutes until soft.', '2. Add the potatoes and stock, bring to',
+    'the boil, then simmer for 20 minutes.', '3. Blend until smooth and season to taste.', 'Stir in the cream.', '42'].join('\n');
+  const a = await ev(t => splitRecipe(t), pageA);
+  ok('a title in capitals is written normally', a.title === 'Leek and potato soup', a.title);
+  ok('serves and both times are picked out', a.serves === 4 && a.prep_mins === 15 && a.cook_mins === 30,
+     [a.serves, a.prep_mins, a.cook_mins].join(','));
+  ok('the words about it go into Notes, joined up', a.notes === 'A comforting soup for a cold day on the towpath, ready in under an hour.', a.notes);
+  const ingA = await ev(r => r.ingredients.map(x => ingText(x, 1)), a);
+  ok('ingredients that ran onto a second line are joined up', JSON.stringify(ingA) === JSON.stringify(['50g butter',
+     '2 large leeks, trimmed and sliced', '450g floury potatoes, peeled and diced', '1 litre vegetable stock',
+     'For the topping:', '150ml single cream', 'salt and freshly ground black pepper']), JSON.stringify(ingA));
+  ok('numbered steps are kept whole, without their numbers', JSON.stringify(a.cook_steps) === JSON.stringify([
+     'Melt the butter in a large pan over a low heat. Add the leeks and cook for 10 minutes until soft.',
+     'Add the potatoes and stock, bring to the boil, then simmer for 20 minutes.',
+     'Blend until smooth and season to taste. Stir in the cream.']), JSON.stringify(a.cook_steps));
+  ok('the page number is left out', !JSON.stringify(a).includes('"42"'));
+
+  const pageB = ['Flapjacks', '250g porridge oats', '125g butter', '125g light brown sugar', '3 tbsp golden syrup',
+    'Heat the oven to 180C/160C fan. Line a 20cm square tin with baking paper.',
+    'Melt the butter, sugar and syrup in a pan, then stir in the oats.',
+    'Press into the tin and bake for 20-25 minutes.'].join('\n');
+  const bk = await ev(t => splitRecipe(t), pageB);
+  ok('with no headings, the short lines are the ingredients', bk.title === 'Flapjacks' && bk.ingredients.length === 4
+     && bk.ingredients[3].unit === 'tbsp', JSON.stringify(bk.ingredients));
+  ok('and the sentences are the method', bk.cook_steps.length === 3 && /^Heat the oven/.test(bk.cook_steps[0]),
+     JSON.stringify(bk.cook_steps));
+  ok('"bake for 20-25 minutes" stays a step, not a cooking time', bk.cook_mins === null);
+
+  const pageC = ['Scones', 'Makes 8', 'INGREDIENTS:', '225g self-raising flour', 'pinch of salt', '55g butter', '150ml milk',
+    'METHOD:', '1', 'Heat the oven to 220C.', '2', 'Rub the butter into the flour and salt until it looks like',
+    'breadcrumbs.', '3', 'Stir in the milk to make a soft dough, then bake for 12-15 minutes.'].join('\n');
+  const c = await ev(t => splitRecipe(t), pageC);
+  ok('headings in capitals with colons, and Makes 8', c.serves === 8 && c.ingredients.length === 4, JSON.stringify(c).slice(0, 160));
+  ok('step numbers on lines of their own', JSON.stringify(c.cook_steps) === JSON.stringify(['Heat the oven to 220C.',
+     'Rub the butter into the flour and salt until it looks like breadcrumbs.',
+     'Stir in the milk to make a soft dough, then bake for 12-15 minutes.']), JSON.stringify(c.cook_steps));
+
+  const pageD = ['Roast chicken', 'Preparation', 'Take the chicken out of the fridge an hour before.', 'Method',
+    'Roast for 1 hour 20 minutes.', 'Cook’s tip', 'Save the bones for stock.'].join('\n');
+  const d = await ev(t => splitRecipe(t), pageD);
+  ok('a Preparation heading fills Preparing', JSON.stringify(d.prep_steps) === '["Take the chicken out of the fridge an hour before."]');
+  ok('a Cook’s tip goes into Notes', d.notes === 'Save the bones for stock.', d.notes);
+  const empty = await ev(() => splitRecipe('  \n \n'));
+  ok('nothing pasted, nothing made up', !empty.title && !empty.ingredients.length && !empty.cook_steps.length);
+
+  console.log('\nFrom a book: the screens');
+  await ev(() => { $('recipeEd').classList.add('hidden'); $('recipe').classList.add('hidden'); openRecipes(); });
+  await settle(400);
+  await ev(() => { try{ localStorage.removeItem('bookhow'); }catch(e){} });
+  await p.click('#rcpBook'); await settle(300);
+  ok('From a book opens, with the instructions showing the first time', await p.isVisible('#bkText')
+     && await ev(() => document.querySelector('.bookdet').open) && /Google Lens/.test(await p.textContent('.bookhow')));
+  await p.click('#bkGo'); await settle(200);
+  ok('it wants the words first', await p.isVisible('#bkText'));
+  await p.fill('#bkText', pageA);
+  await p.click('#bkGo'); await settle(400);
+  ok('Fill in the recipe opens the editor, filled in', await p.isVisible('#recipeEd')
+     && await p.inputValue('#reTitle') === 'Leek and potato soup' && await p.inputValue('#reServes') === '4'
+     && await p.inputValue('#reCook') === '30' && /trimmed and sliced/.test(await p.inputValue('#reIngs'))
+     && (await p.inputValue('#reCookSteps')).split('\n').length === 3);
+  ok('nothing is saved until you press Save', !(await writes()).some(w => w.op === 'insert' && w.table === 'recipes'));
+  await clearWrites();
+  await p.click('#reSave'); await settle(700);
+  const bookIns = ((await writes()).find(w => w.op === 'insert' && w.table === 'recipes') || {}).rows;
+  ok('and Save keeps it as a recipe of your own', bookIns && bookIns.title === 'Leek and potato soup'
+     && bookIns.ingredients.length === 7 && bookIns.cook_steps.length === 3 && bookIns.to_try === undefined,
+     JSON.stringify(bookIns).slice(0, 150));
+  await ev(() => { try{ localStorage.setItem('bookhow', '1'); }catch(e){} });
+  await ev(() => { $('recipe').classList.add('hidden'); editRecipe(null); }); await settle(300);
+  ok('a new recipe offers it too', await p.isVisible('#reBook'));
+  await p.fill('#reTitle', 'My own name for it');
+  await p.click('#reBook'); await settle(300);
+  ok('and after the first time the instructions are folded away', !(await ev(() => document.querySelector('.bookdet').open)));
+  await p.fill('#bkText', pageC);
+  await p.click('#bkGo'); await settle(300);
+  ok('it fills the editor already open, keeping a title you typed', await p.inputValue('#reServes') === '8'
+     && /225g self-raising flour/.test(await p.inputValue('#reIngs')) && await p.inputValue('#reTitle') === 'My own name for it');
+  await ev(() => cancelRecipe()); await settle(200);
+  await ev(() => { RCP_CUR = null; editRecipe(306); }); await settle(300);
+  ok('changing a recipe you already have does not offer it', !await p.isVisible('#reBook'));
+  await ev(() => cancelRecipe());
+  ok('the menu offers it', await ev(() => areaItems('recipes').some(i => i.label === 'From a book or a page')));
+
   console.log('\nThe saved choices');
   const pf = await ev(() => rcpPrefsFrom({ recipes:{ cats:['A'], cupboard:[], hide:['7'], cooked:{ 5:{ n:2, last:'2026-10-01' } }, today:false } }));
   ok('come back as they were saved', JSON.stringify(pf) === JSON.stringify({ cats:['A'], cupboard:[], hide:[7],
@@ -541,7 +629,7 @@ const seed = () => {
 
   console.log('\nThe backup, the menu and Help');
   ok('the backup in the app includes recipes', await ev(() => /from recipes t/.test(BACKUP_SQL_1)));
-  ok('the menu offers Add, Find and Ideas', await ev(() => areaItems('recipes').map(i => i.label).join('|')) === 'Add a recipe|Find new recipes|Ideas');
+  ok('the menu offers Add, From a book, Find and Ideas', await ev(() => areaItems('recipes').map(i => i.label).join('|')) === 'Add a recipe|From a book or a page|Find new recipes|Ideas');
   await ev(() => openHelp('recipes')); await settle(300);
   ok('Help has a section on it, and Help from Recipes goes there', await ev(() =>
      HELP_AT.recipes === 'h-recipes' && !!document.getElementById('h-recipes')

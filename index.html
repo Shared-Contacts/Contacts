@@ -729,7 +729,7 @@ i.key{vertical-align:middle}
 
 /* Today — what the day has in it */
 .briefdate{margin:14px 2px 2px;text-align:center;font-size:19px;font-weight:700;
-  color:var(--hull)}
+  color:var(--hull);white-space:pre-line}
 .bsky{display:block;margin:12px 0 4px;background:var(--panel);border:1px solid var(--rule);
   border-radius:var(--radius);overflow:hidden;color:var(--ink);text-decoration:none}
 .bsky img{display:block;width:100%;max-height:34vh;object-fit:contain;background:#F0EEE7}
@@ -888,6 +888,12 @@ i.key{vertical-align:middle}
   #printArea .reptab.trend th:first-child{position:static;box-shadow:none}
 }
 .txn .rec{color:var(--hull);font-style:normal;margin-left:5px}
+/* Reconciled: agreed with the bank. Green, beside the amount. */
+.txn .recdot{display:inline-block;width:9px;height:9px;border-radius:50%;
+  background:#1D4A3A;margin-left:7px;vertical-align:1px}
+/* The pencil on a reconcile row, which opens the transaction itself. */
+.txn .redit{flex:0 0 auto;margin:-6px -6px -6px 0;padding:6px 8px;
+  color:var(--muted);font-size:17px;line-height:1}
 /* How recently an account was agreed with the bank. Green is fine, amber has
    been left long enough that finding a difference will be harder. */
 .acct .recon{font-style:normal;font-weight:700}
@@ -3462,6 +3468,10 @@ async function openSettings(goTo){
         Write the welcome email &rsaquo;</button></div>`:''}`
   };
 
+  // Already open means this is a redraw after a change (an account moved, a
+  // name saved), so you stay where you were rather than going back to the top.
+  const redraw=!$('settings').classList.contains('hidden');
+  const wasAt=$('setBody').scrollTop;
   $('setBody').innerHTML=SET_GROUPS.map(g=>{
     const list=cardsInGroup(g);
     if(!list.length) return '';
@@ -3469,7 +3479,7 @@ async function openSettings(goTo){
       + list.map(k=>card(k,bodies[k]||'',list)).join('');
   }).join('');
 
-  if(goTo) setTimeout(()=>{
+  if(goTo&&!redraw) setTimeout(()=>{
     const heads=[...$('setBody').querySelectorAll('p.dsec')];
     const h=heads.find(x=>x.textContent.trim()===goTo);
     if(h) h.scrollIntoView({block:'start'});
@@ -3662,7 +3672,7 @@ async function openSettings(goTo){
     if(error){toast('Could not add \u2014 that name may already exist');return;}
     await loadAll();openSettings();toast('Added');
   });
-  showSheet('settings');$('setBody').scrollTop=0;lockBackground();
+  showSheet('settings');$('setBody').scrollTop=redraw?wasAt:0;lockBackground();
 }
 
 
@@ -3881,7 +3891,12 @@ function openHelp(where){
   a tidy-up six months later quietly breaking a balance you already proved. You
   can always unlock it again if you need to put something right.</p>
   <p>If the difference will not go to zero, something is missing, duplicated or
-  typed wrong. Work through the statement line by line against the list.</p>
+  typed wrong. Work through the statement line by line against the list. The
+  <strong>pencil</strong> at the end of a row opens that transaction to put it
+  right; what you have ticked stays ticked while you do.</p>
+  <p>On the Finances screen a <strong>green dot</strong> beside the amount means
+  that one is reconciled. Reconciled ones are left out of the list until you
+  press <strong>Show more transactions</strong> at the bottom.</p>
 
   <h4 id="h-import">Bringing in a bank file</h4>
   <p>Every bank will let you download your transactions as a <strong>CSV</strong>
@@ -9612,6 +9627,10 @@ let MONEY_PICKING=false, MONEY_PICKED=new Set();
 // Searching. The words, whether to look in every account or just the one on
 // screen, and whether to leave out what is already agreed with the bank.
 let MONEY_Q='', MONEY_QALL=false, MONEY_QNOREC=false;
+// The ordinary list leaves out what is already agreed with the bank, until
+// you ask for more. Back to hidden each time Finances opens or the account
+// changes.
+let MONEY_REC=false;
 // Set when the list could not be fetched, so a failure never passes for an
 // empty cashbook.
 let TXNS_FAILED=false;
@@ -9804,6 +9823,7 @@ async function loadTxns(){
     if(MONEY_ACC!=='all') q=q.eq('account_id',MONEY_ACC);
     if(MONEY_FROM) q=q.gte('tdate',MONEY_FROM);
     if(MONEY_TODO) q=q.in('id',[...TODO_IDS].slice(0,400));
+    else if(!MONEY_REC) q=q.eq('reconciled',false);
   }
   const {data,error}=await q;
   if(error){ console.error(error); TXNS_FAILED=true; TXNS=[]; TXLINES=[]; return; }
@@ -9877,6 +9897,7 @@ function needsCat(t,lines){
 }
 
 async function openMoney(){
+  MONEY_REC=false; MONEY_SHOW=80;
   showSheet('money'); lockBackground();
   $('moneyBody').innerHTML='<p class="empty">Fetching your books…</p>';
   await loadMoney(); renderMoney(); $('moneyBody').scrollTop=0;
@@ -9946,7 +9967,7 @@ function renderMoney(){
           t.business?' &middot; business':''}${
           todo?'<i class="todo">'+(cats.length?'part done':'no category yet')+'</i>':''}</span></span>
       <span class="ta ${Number(t.total)<0?'neg':''}">${money(t.total,a?a.currency:'GBP')}
-        ${t.reconciled?'<i class="rec" title="Reconciled">&#10003;</i>':''}</span>
+        ${t.reconciled?'<i class="recdot" title="Reconciled" aria-label="Reconciled"></i>':''}</span>
     </button>`;
   }).join('');
 
@@ -10022,10 +10043,16 @@ function renderMoney(){
           :'Could not load your transactions. Your records are safe &mdash; tap the '
             +'refresh button at the top to try again.')
         :MONEY_Q?'Nothing matches that.'
-        :MONEY_TODO?'Nothing left to sort out here.':'Nothing recorded yet.'}</dd></div>`}
+        :MONEY_TODO?'Nothing left to sort out here.'
+        :!MONEY_REC?'Nothing waiting to be reconciled. Press Show more transactions '
+          +'to see the ones that are.'
+        :'Nothing recorded yet.'}</dd></div>`}
     </div>
-    ${TXNS.length>=MONEY_SHOW?`<button class="btn" id="moreTxns"
-      style="border:1.5px solid var(--rule);margin-bottom:20px">Show more</button>`:''}`;
+    ${TXNS.length>=MONEY_SHOW||(!MONEY_REC&&!MONEY_Q&&!MONEY_TODO&&!TXNS_FAILED)
+      ?`<button class="btn" id="moreTxns"
+      style="border:1.5px solid var(--rule);margin-bottom:${MONEY_REC?20:6}px">Show more transactions</button>
+      ${MONEY_REC?'':`<p class="coords" style="text-align:center;margin:0 0 20px">
+        Reconciled ones are hidden until you press this.</p>`}`:''}`;
 }
 
 // Always the year as well. Checking a list against a bank statement is no
@@ -10167,7 +10194,16 @@ async function newTxn(){
 }
 
 async function editTxn(id){
-  const t=TXNS.find(x=>x.id===id); if(!t) return;
+  let t=TXNS.find(x=>x.id===id), lines=TXLINES.filter(l=>l.transaction_id===id);
+  // From the reconcile screen it can be one the Finances list is not showing,
+  // so its lines are fetched on their own.
+  if(!t){
+    t=(RECON.rows||[]).find(x=>x.id===id); if(!t) return;
+    const {data,error}=await sb.from('transaction_items').select('*')
+      .eq('transaction_id',id).order('sort').order('id');
+    if(error){ toast('Could not open that one just now'); console.error(error); return; }
+    lines=data||[];
+  }
   TX={...t, to_account_id:null, to_amount:null, to_date:null};
   // What the transaction came to when it was opened. Splitting it across
   // several lines should still add up to this, so each new line starts with
@@ -10179,7 +10215,7 @@ async function editTxn(id){
   // A bank file says nothing about how you paid. Debit card is right far more
   // often than not; nothing is written until you save.
   if(!TX.pay_method) TX.pay_method='debit card';
-  TXL=TXLINES.filter(l=>l.transaction_id===id)
+  TXL=lines
     .map(l=>({id:l.id, category_id:l.category_id, description:l.description||'',
               qty:Number(l.qty), amount:Number(l.amount), business:!!l.business}));
   if(!TXL.length) TXL=[blankLine()];
@@ -10509,8 +10545,17 @@ async function saveTxn(){
     return;
   }
 
+  await txnDone('Saved');
+}
+
+// The editor closes and the screens underneath catch up, each keeping its
+// place rather than jumping back to the top.
+async function txnDone(msg){
   $('moneyEd').classList.add('hidden'); lockBackground();
-  await loadMoney(); renderMoney(); toast('Saved');
+  const y=$('moneyBody').scrollTop;
+  await loadMoney(); renderMoney(); $('moneyBody').scrollTop=y;
+  if(!$('recon').classList.contains('hidden')) await reconRefresh();
+  toast(msg);
 }
 
 // Two rows sharing one reference. Written one after the other rather than in
@@ -10577,8 +10622,7 @@ async function delTxn(){
     toast(/locked/i.test(error.message||'')?error.message:'Could not delete it');
     console.error(error); return;
   }
-  $('moneyEd').classList.add('hidden'); lockBackground();
-  await loadMoney(); renderMoney(); toast('Deleted');
+  await txnDone('Deleted');
 }
 
 /* ---------- Receipts against a transaction ----------
@@ -11548,7 +11592,9 @@ function renderRecon(){
     <span class="tick ${RECON.tick[t.id]?'on':''}">${RECON.tick[t.id]?'&#10003;':''}</span>
     <span class="td">${esc(shortDate(t.tdate))}</span>
     <span class="tn"><b>${photoDot(t)}${esc(payeeName(t.payee_id)||t.reference||kindOf(t.kind).label)}</b></span>
-    <span class="ta ${Number(t.total)<0?'neg':''}">${money(t.total,cur)}</span></button>`;
+    <span class="ta ${Number(t.total)<0?'neg':''}">${money(t.total,cur)}</span>
+    <span class="redit" data-rtx="${t.id}" role="button"
+      aria-label="Change this transaction">&#9998;</span></button>`;
 
   $('reconBody').innerHTML=`
   <div class="card">
@@ -11601,6 +11647,15 @@ function renderRecon(){
          Locking waits until the difference is zero.</p>`:''}`}
   <button class="btn danger" id="rcDrop">Delete this statement</button>
   <div style="height:30px"></div>`:''}`;
+}
+
+// Back from changing a transaction: the list is fetched again, but what you
+// had ticked and where you were on the screen stay as they were.
+async function reconRefresh(){
+  const kept=RECON.tick, y=$('reconBody').scrollTop;
+  await reconLoad();
+  RECON.rows.forEach(t=>{ if(t.id in kept) RECON.tick[t.id]=kept[t.id]; });
+  renderRecon(); $('reconBody').scrollTop=y;
 }
 
 async function reconSave(lock){
@@ -12135,6 +12190,7 @@ $('moneyBody').addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-acc]');
   if(a){
     MONEY_ACC=a.dataset.acc==='all'?'all':Number(a.dataset.acc);
+    MONEY_REC=false; MONEY_SHOW=80;
     rememberAccount(); foldToAccount();
     await loadTxns(); renderMoney(); paintMoneyPickBar(); return;
   }
@@ -12156,7 +12212,10 @@ $('moneyBody').addEventListener('click',async ev=>{
   if(ev.target.id==='goRecon')  { openRecon(); return; }
   if(ev.target.id==='goImport') { openImport(); return; }
   if(ev.target.id==='goAccts')  { openSettings('Finances'); return; }
-  if(ev.target.id==='moreTxns') { MONEY_SHOW+=80; await loadTxns(); renderMoney(); return; }
+  // The first press brings back the reconciled ones; after that, older ones.
+  if(ev.target.id==='moreTxns') {
+    if(MONEY_REC) MONEY_SHOW+=80; else MONEY_REC=true;
+    await loadTxns(); renderMoney(); return; }
 });
 
 $('moneyEdBody').addEventListener('click',async ev=>{
@@ -12200,8 +12259,7 @@ $('moneyEdBody').addEventListener('click',async ev=>{
     const mate=await pickTransferMate(TX);
     if(mate===undefined) return;
     if(await joinAsTransfer(TX.id,mate)){
-      $('moneyEd').classList.add('hidden'); lockBackground();
-      await loadMoney(); renderMoney(); toast('Joined as a transfer');
+      await txnDone('Joined as a transfer');
     }
     return;
   }
@@ -12209,8 +12267,7 @@ $('moneyEdBody').addEventListener('click',async ev=>{
     if(!confirm('Separate these two? Both stay exactly as they are, just no '
       +'longer joined to each other.')) return;
     if(await splitTransfer(TX)){
-      $('moneyEd').classList.add('hidden'); lockBackground();
-      await loadMoney(); renderMoney(); toast('Separated');
+      await txnDone('Separated');
     }
     return;
   }
@@ -12249,6 +12306,10 @@ $('moneyEdBody').addEventListener('change',ev=>{
 });
 
 $('reconBody').addEventListener('click',async ev=>{
+  // The pencil opens the transaction itself, to put right a wrong amount or
+  // date without leaving the statement.
+  const e=ev.target.closest('[data-rtx]');
+  if(e){ editTxn(Number(e.dataset.rtx)); return; }
   const r=ev.target.closest('[data-rt]');
   if(r){ const id=Number(r.dataset.rt);
          RECON.tick[id]=!RECON.tick[id]; renderRecon(); return; }
@@ -12750,7 +12811,7 @@ function whenWord(n){
     : new Date(Date.now()+n*86400000).toLocaleDateString('en-GB',{weekday:'long'});
 }
 
-// "Good afternoon, it's Friday 16th of October, 11:50 AM"
+// Two lines: "Good morning it's now 8:56 AM", then "Thursday 22nd October 2026".
 function nthDay(n){
   const t=n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');
   return n+t;
@@ -12761,7 +12822,8 @@ function briefHello(when){
   const wd=d.toLocaleDateString('en-GB',{weekday:'long'});
   const mo=d.toLocaleDateString('en-GB',{month:'long'});
   const hr=h%12||12, mi=String(d.getMinutes()).padStart(2,'0');
-  return `Good ${part}, it's ${wd} ${nthDay(d.getDate())} of ${mo}, ${hr}:${mi} ${h<12?'AM':'PM'}`;
+  return `Good ${part} it's now ${hr}:${mi} ${h<12?'AM':'PM'}\n`
+    +`${wd} ${nthDay(d.getDate())} ${mo} ${d.getFullYear()}`;
 }
 // The date under the day on a birthday row: "17th Oct".
 function bdayDate(n){
@@ -13096,8 +13158,10 @@ function openMenu(area){
 
   $('menuBody').querySelectorAll('[data-mi]').forEach(b=>
     b.onclick=()=>{ const x=MENU_ITEMS[+b.dataset.mi]; if(x) x.fn(); });
+  // Settings from the menu is a fresh start at the right section, even if it
+  // was already open underneath.
   $('menuBody').querySelector('[data-mset]').onclick=()=>{
-    shutMenu(); openSettings(a.set||undefined); };
+    shutMenu(); $('settings').classList.add('hidden'); openSettings(a.set||undefined); };
   $('menuBody').querySelector('[data-mhelp]').onclick=()=>{
     shutMenu(); openHelp(a.help); };
   $('menuBody').querySelector('[data-mref]').onclick=async b=>{

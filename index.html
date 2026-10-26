@@ -1023,6 +1023,12 @@ i.key{vertical-align:middle}
 .rcptop{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
 .rcptwo{display:flex;gap:8px}
 .rcptwo .btn{flex:1;border:1.5px solid var(--rule);font-size:16px;padding:12px 8px;color:var(--hull)}
+.rcptwo .btn.primary{border-color:var(--hull);color:#F2EFE4}
+.btn.rcpbookbtn{border:1.5px solid var(--hull);color:var(--hull);font-size:16px;padding:12px;margin-bottom:4px}
+.bookdet{margin:4px 0 8px;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.bookdet summary{font-weight:600;color:var(--hull);cursor:pointer}
+.bookhow{margin:8px 0;padding-left:20px;font-size:15px;line-height:1.45}
+.bookhow li{padding:2px 0}
 .rcprow{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 14px;
   border-bottom:1px solid #F0EEE7;color:inherit}
 .card .rcprow:last-child{border-bottom:none}
@@ -4260,6 +4266,10 @@ function openHelp(where){
   will not let their recipes be read; then the title and the link are saved and you can
   add the rest. <strong>Ideas</strong> shows recipes from TheMealDB, a free collection,
   without leaving the app.</p>
+  <p><strong>From a book</strong> copies a recipe from a cookery book, a magazine or a
+  printed page. Google Lens on your phone reads the words off the page; the app sorts
+  them into the title, ingredients and steps for you to check before saving.</p>
+  ${bookHowHtml()}
   <p>On a recipe, the <strong>&minus;</strong> and <strong>+</strong> beside Serves
   change the amounts. Tick the ingredients you need and press <strong>Add to
   Shopping</strong>; things that are already on the list are not added twice. Salt,
@@ -8361,7 +8371,8 @@ function renderRecipes(){
   const sorts=[['az','A to Z'],['newest','Newest'],['lately','Not cooked lately']];
   body.innerHTML=`
     <div class="rcptop">
-      <button class="btn primary" id="rcpAdd">+ Add a recipe</button>
+      <span class="rcptwo"><button class="btn primary" id="rcpAdd">+ Add a recipe</button>
+        <button class="btn" id="rcpBook">From a book</button></span>
       <span class="rcptwo"><button class="btn" id="rcpFind">Find new recipes</button>
         <button class="btn" id="rcpIdeas">Ideas</button></span></div>
     ${pile.length?`<p class="dsec">To try<span class="lcount">${pile.length}</span></p>
@@ -8404,6 +8415,7 @@ $('rcpBody').addEventListener('click',ev=>{
   if(o){ openRecipe(Number(o.dataset.ropen)); return; }
   if(ev.target.closest('#rcpAdd')){ editRecipe(null); return; }
   if(ev.target.closest('#rcpFind')){ findRecipes(); return; }
+  if(ev.target.closest('#rcpBook')){ fromBook(); return; }
   if(ev.target.closest('#rcpIdeas')){ openIdeas(); return; }
   if(ev.target.closest('#rcpShowHid')){ RCP.hidden=!RCP.hidden; renderRecipes(); return; }
   const c=ev.target.closest('[data-rcat]');
@@ -8657,6 +8669,7 @@ function editRecipe(id,start){
   const cats=[...new Set(RCP_PREFS.cats.concat(arr(d.categories)))];
   const num=v=>v==null?'':String(v);
   $('reBody').innerHTML=`
+    ${old?'':`<button type="button" class="btn rcpbookbtn" id="reBook">Copy it from a book or a page &rsaquo;</button>`}
     <label>Title<input id="reTitle" value="${esc(d.title)}" placeholder="What it is called"></label>
     <p class="ulhead">Categories <span>as many as suit it</span></p>
     <span class="pickrow" id="reCats">${cats.map(c=>`<button type="button" data-recat="${esc(c)}"
@@ -8727,6 +8740,7 @@ async function rcpAddPhotos(files){
 $('reBody').addEventListener('click',async ev=>{
   if(!RE) return;
   const t=ev.target;
+  if(t.closest('#reBook')){ fromBook(true); return; }
   const c=t.closest('[data-recat]');
   if(c){ c.setAttribute('aria-pressed',String(c.getAttribute('aria-pressed')!=='true')); return; }
   if(t.closest('#reAddCat')){
@@ -8871,6 +8885,183 @@ function findRecipes(){
   q('#frRead').onclick=()=>{ const u=findUrl(q('#frUrl').value);
     if(!u){ toast('That does not look like a web address'); q('#frUrl').focus(); return; }
     close(); readRecipe(u,''); };
+}
+
+/* ---------- From a book or a page ----------
+   Google Lens (or an iPhone's Live Text) copies the words off a photo of the
+   page; this sorts the pasted words into a recipe. Books lay recipes out the
+   same way near enough: a title, perhaps a line or two about it, then
+   Ingredients and Method. Lens keeps the page's line breaks, so a sentence
+   that ran onto the next line on the page is joined up again here. */
+const BOOK_HEAD={
+  ing:  /^(ingredients?|you('|’)?ll need|you will need|what you( will)? need|shopping list)[\s:.\-]*$/i,
+  prep: /^(preparation|prep|to prepare|before you start|getting ready|get ahead)[\s:.\-]*$/i,
+  cook: /^(method|instructions|directions|steps|how to make( it)?|to make|cooking|to cook|preparation method|what to do)[\s:.\-]*$/i,
+  notes:/^(notes?|tips?|cook('|’)?s tips?|variations?|serving suggestions?)[\s:.\-]*$/i
+};
+function bookHead(line){
+  if(line.length>30) return '';
+  return Object.keys(BOOK_HEAD).find(k=>BOOK_HEAD[k].test(line))||'';
+}
+// Lines that say how many it serves or how long it takes, wherever they are.
+function bookMeta(line,out){
+  if(line.length>48||!/\d/.test(line)) return false;
+  let m=line.match(/^(?:serves|feeds|makes)\s*:?\s*(?:about\s+|approx\.?\s+)?(\d+)/i)
+    ||line.match(/^for\s+(\d+)(?:\s+people)?$/i);
+  if(m){ if(!out.serves) out.serves=Math.min(100,Number(m[1])); return true; }
+  // "Cook for 20 minutes" is a step; "Cooking time 20 mins" and "Cook: 20 mins" are not.
+  m=line.match(/^prep(?:aration)?\s*(?:time\s*:?|:)\s*(.+)$/i);
+  if(m&&stepMins(m[1])){ out.prep_mins=out.prep_mins||stepMins(m[1]); return true; }
+  m=line.match(/^cook(?:ing)?\s*(?:time\s*:?|:)\s*(.+)$/i);
+  if(m&&stepMins(m[1])){ out.cook_mins=out.cook_mins||stepMins(m[1]); return true; }
+  return false;
+}
+const bookNum = /^(?:step\s*)?(\d{1,2})\s*[.):]?(?:\s+|$)/i;
+
+// Lines from the page back into whole steps.
+function bookSteps(lines){
+  const numbered=lines.filter(l=>bookNum.test(l)).length>=2;
+  const out=[];
+  lines.forEach(l=>{
+    const isHead=rcpHead(l)&&l.length<40;
+    const fresh = isHead || !out.length
+      || (numbered ? bookNum.test(l)
+                   : /[.!?)]["”']?$/.test(out[out.length-1])&&/^[A-ZÀ-Þ"“]/.test(l))
+      || rcpHead(out[out.length-1]);
+    if(fresh) out.push(l);
+    else if(/-$/.test(out[out.length-1])&&/^[a-z]/.test(l)) out[out.length-1]=out[out.length-1].slice(0,-1)+l;
+    else out[out.length-1]+=' '+l;
+  });
+  return stepLines(out.map(s=>s.replace(/^(\d{1,2})\s*[.):]?\s*$/,'$1.')).join('\n'))
+    .filter(s=>!/^\d{1,2}\.?$/.test(s));
+}
+
+// Lines from the page back into whole ingredients.
+function bookIngs(lines){
+  const out=[];
+  lines.forEach(l=>{
+    const head=(rcpHead(l)||/^for (the|a)\b/i.test(l)||/^to serve\b/i.test(l))&&l.length<40&&!/^\d/.test(l);
+    const prev=out[out.length-1];
+    // Only a line that plainly carries on from the one before: "salt and pepper"
+    // on a line of its own is an ingredient of its own.
+    const more=prev&&!rcpHead(prev)&&!head
+      &&(/^\(/.test(l)||/[,\-–(]$/.test(prev)||/\b(and|or|of|into|cut|to|about|plus)$/i.test(prev)
+         ||/^(and|or|into|to|cut|plus|then|about|at room|roughly|finely|thinly|halved|sliced|chopped|diced|peeled|trimmed|grated|crushed|deseeded|softened|melted|beaten)\b/.test(l));
+    if(more) out[out.length-1]=prev+' '+l;
+    else out.push(head&&!rcpHead(l)?l+':':l);
+  });
+  return out.map(parseIng).filter(Boolean);
+}
+
+function splitRecipe(text){
+  const lines=String(text||'').replace(/\r/g,'').split('\n')
+    .map(l=>l.replace(/\s+/g,' ').trim())
+    .filter(l=>l&&!/^\d{1,3}$/.test(l)&&!/^page \d+$/i.test(l));   // page numbers
+  const out={title:'', serves:null, prep_mins:null, cook_mins:null, ingredients:[],
+    prep_steps:[], cook_steps:[], notes:null};
+  const sec={intro:[], ing:[], prep:[], cook:[], notes:[]};
+  let at='intro';
+  lines.forEach(l=>{
+    const h=bookHead(l);
+    if(h){ at=h; return; }
+    if(bookMeta(l,out)) return;
+    if(at==='intro'&&!out.title&&/[a-z]/i.test(l)){ out.title=l; return; }
+    sec[at].push(l);
+  });
+  // No headings at all: the short lines straight after the title are the
+  // ingredients, and the method starts at the first proper sentence.
+  if(!sec.ing.length&&!sec.cook.length&&!sec.prep.length){
+    const i=sec.intro.findIndex(l=>l.length>45||/[.!?]$/.test(l)&&l.split(' ').length>5);
+    const cut=i<0?sec.intro.length:i;
+    sec.ing=sec.intro.slice(0,cut); sec.cook=sec.intro.slice(cut); sec.intro=[];
+  }
+  // A title in capitals, as many books print them, written normally.
+  if(out.title&&!/[a-z]/.test(out.title))
+    out.title=out.title.charAt(0)+out.title.slice(1).toLowerCase();
+  out.title=out.title.replace(/[:.]$/,'').slice(0,200);
+  out.ingredients=bookIngs(sec.ing);
+  out.prep_steps=bookSteps(sec.prep);
+  out.cook_steps=bookSteps(sec.cook);
+  const notes=bookSteps(sec.intro).concat(bookSteps(sec.notes));
+  out.notes=notes.length?notes.join('\n\n'):null;
+  return out;
+}
+
+function bookHowHtml(){
+  return `<ol class="bookhow">
+      <li>Lay the book flat in good light, with no shadow across the page.</li>
+      <li>Open <strong>Google Lens</strong>: tap the camera icon in the Google search bar
+        on your phone&rsquo;s home screen, or in the Google app.</li>
+      <li>Tap <strong>Text</strong> at the bottom. Hold the phone straight over the page so
+        the recipe fills the screen, and press the round button. A photo you took earlier
+        works too: tap the picture icon beside the round button.</li>
+      <li>Tap <strong>Select all</strong>, then <strong>Copy</strong>.</li>
+      <li>Come back here, press <strong>Paste</strong>, then <strong>Fill in the recipe</strong>.</li>
+    </ol>
+    <p class="lsub"><strong>Ingredients and method side by side?</strong> Copy them one at a
+      time: in Lens, drag across just the ingredients, Copy, Paste here; then the method,
+      and paste it underneath.</p>
+    <p class="lsub"><strong>Runs onto the next page?</strong> Do the next page the same way
+      and paste it underneath.</p>
+    <p class="lsub"><strong>On an iPhone</strong>, open the Camera, point it at the page and
+      tap the text button in the corner, then Select All and Copy.</p>`;
+}
+
+// into: the editor that is already open, or nothing to open a new recipe.
+function fromBook(into){
+  let seen=false;
+  try{ seen=localStorage.getItem('bookhow')==='1'; }catch(e){}
+  const box=document.createElement('div');
+  box.className='daypick lnked';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">From a book or a page</p>
+    <details class="bookdet" ${seen?'':'open'}><summary>How to copy the words from a book</summary>
+      ${bookHowHtml()}</details>
+    <label>The recipe&rsquo;s words<textarea id="bkText" rows="7"
+      placeholder="Press Paste, or press and hold here and choose Paste"></textarea></label>
+    <span class="pickrow"><button type="button" id="bkPaste">Paste</button>
+      <button type="button" id="bkClear">Clear</button></span>
+    <p class="lsub" style="margin-top:10px">Check what comes through before you save: now and
+      then a word or a number, such as &frac12;, is read wrongly.</p>
+    <div class="pfoot lfoot"><button id="bkShut">Cancel</button>
+      <button id="bkGo" class="go">Fill in the recipe</button></div></div>`;
+  document.body.appendChild(box);
+  const q=s=>box.querySelector(s), close=()=>box.remove();
+  q('#bkShut').onclick=close;
+  q('.bookdet').ontoggle=()=>{ try{ localStorage.setItem('bookhow','1'); }catch(e){} };
+  q('#bkClear').onclick=()=>{ q('#bkText').value=''; q('#bkText').focus(); };
+  q('#bkPaste').onclick=async()=>{
+    let t='';
+    try{ t=await navigator.clipboard.readText(); }catch(e){}
+    if(!t.trim()){ toast('Press and hold in the box, then choose Paste'); q('#bkText').focus(); return; }
+    const box2=q('#bkText');
+    box2.value=box2.value.trim()?box2.value.replace(/\s+$/,'')+'\n'+t:t;
+  };
+  q('#bkGo').onclick=()=>{
+    const r=splitRecipe(q('#bkText').value);
+    if(!r.title&&!r.ingredients.length&&!r.cook_steps.length){
+      toast('Paste the recipe’s words in first'); q('#bkText').focus(); return; }
+    try{ localStorage.setItem('bookhow','1'); }catch(e){}
+    close();
+    if(into&&RE&&!$('recipeEd').classList.contains('hidden')) fillEditor(r);
+    else editRecipe(null,r);
+    toast('Filled in. Check it, then Save');
+  };
+  // The first time, the instructions come first rather than the keyboard.
+  if(seen) setTimeout(()=>q('#bkText').focus(),60);
+}
+
+// Into the editor already open: anything typed there already is asked about first.
+function fillEditor(r){
+  const set=(id,v)=>{ if(v!=null&&v!=='') $(id).value=v; };
+  const typed=['reIngs','rePrepSteps','reCookSteps'].some(id=>$(id).value.trim());
+  if(typed&&!confirm('Replace the ingredients and steps already there?')) return;
+  if(!$('reTitle').value.trim()) set('reTitle', r.title);
+  set('reServes', r.serves); set('rePrep', r.prep_mins); set('reCook', r.cook_mins);
+  $('reIngs').value=r.ingredients.map(x=>ingText(x,1)).join('\n');
+  $('rePrepSteps').value=r.prep_steps.join('\n');
+  $('reCookSteps').value=r.cook_steps.join('\n');
+  if(r.notes&&!$('reNotes').value.trim()) $('reNotes').value=r.notes;
 }
 
 // What the reader sent back, as a recipe. Categories come across only where
@@ -15131,6 +15322,7 @@ function areaItems(area){
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
+    it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),
     it('Find new recipes',        ()=>{ shutMenu(); findRecipes(); }),
     it('Ideas',                   ()=>{ shutMenu(); openIdeas(); })];
   if(area==='shop') return [

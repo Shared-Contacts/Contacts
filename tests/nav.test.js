@@ -217,7 +217,7 @@ const ok = (what, cond, extra='') => {
     document.querySelector('[data-barref]').title === 'Refresh Data and Images'));
 
   // ---------------------------------------------------------------
-  console.log('\nRecipes, on the way');
+  console.log('\nRecipes (it said coming soon until step 43)');
   ok('there is a tile for it', await page.evaluate(() => !!TILE_DEST.recipes));
   ok('it is on the home screen by default',
      await page.evaluate(() => TILE_DEFAULTS.includes('recipes')));
@@ -233,15 +233,13 @@ const ok = (what, cond, extra='') => {
        loadTiles();
        return !TILES.some(t => t.dest === 'recipes');
      }));
-  const said = await page.evaluate(async () => {
+  await page.evaluate(async () => {
     MY_PROFILE.home_tiles = null; loadTiles();
-    window.__toasts = []; const t = window.toast;
-    window.toast = m => { window.__toasts.push(m); t(m); };
-    TILE_DEST.recipes.go();
-    window.toast = t;
-    return window.__toasts.slice();
+    await TILE_DEST.recipes.go();
   });
-  ok('and tapping it says it is coming', /coming soon/i.test(said[0] || ''), JSON.stringify(said));
+  await page.waitForTimeout(300);
+  ok('and tapping it opens Recipes', await page.isVisible('#recipes'));
+  await page.evaluate(() => { $('recipes').classList.add('hidden'); lockBackground(); });
 
   console.log('\n' + '='.repeat(52));
   console.log(pass + ' passed, ' + fail + ' failed');

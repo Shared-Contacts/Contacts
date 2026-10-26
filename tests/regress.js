@@ -20,6 +20,7 @@ const errs=[];
     ['shopping',   ()=>openShop()],
     ['where',      ()=>openWhere()],
     ['wishlist',   ()=>openWish()],
+    ['recipes',    ()=>openRecipes()],
     ['messages',   ()=>openChats()],
     ['sent to you',()=>openOffers()],
     ['import/export',()=>openIO()],

@@ -310,6 +310,11 @@ const seed = () => {
     + '?share_title=' + encodeURIComponent('Met Office forecast')
     + '&share_text=' + encodeURIComponent('Look https://www.metoffice.gov.uk/weather/forecast'));
   await p2.waitForTimeout(1300);
+  // Since Recipes (step 43) the app first asks which it is.
+  ok('it asks whether it is a recipe or a link',
+     await p2.isVisible('#siLink') && await p2.isVisible('#siRecipe'));
+  await p2.click('#siLink');
+  await p2.waitForTimeout(500);
   ok('URL Links opens', await p2.isVisible('#links'));
   ok('with the page ready to save', await p2.isVisible('.lnked')
      && await p2.inputValue('#leUrl') === 'https://www.metoffice.gov.uk/weather/forecast', await p2.inputValue('#leUrl').catch(() => ''));

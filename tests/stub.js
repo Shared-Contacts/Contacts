@@ -13,7 +13,7 @@ window.__rows = {
   contact_offers:[],
   log_days:[], log_options:[], log_cats:[], log_fields:[],
   live_locations:[], location_shares:[], shopping_lists:[], shopping_list_shares:[],
-  wishes:[], routines:[], devices:[],
+  wishes:[], routines:[], devices:[], recipes:[],
 
   // ---- the cashbook ----
   finance_members:[{user_id:'me'},{user_id:'sandra'}],
@@ -179,8 +179,12 @@ window.supabase={createClient:()=>({
       return Promise.resolve({error:null});
     },
     remove:paths=>{ window.__writes.push({op:'rmfile',bucket,paths});
-      return Promise.resolve({}); }})},
-  functions:{invoke:()=>Promise.resolve({})}
+      return Promise.resolve({}); },
+    copy:(from,to)=>{ window.__writes.push({op:'copyfile',bucket,from,to});
+      return Promise.resolve({data:{path:to},error:null}); }})},
+  // A suite can stand in for an edge function by setting window.__invoke.
+  functions:{invoke:(name,opts)=>{ window.__writes.push({op:'invoke',name,body:opts&&opts.body});
+    return window.__invoke ? Promise.resolve(window.__invoke(name,opts)) : Promise.resolve({}); }}
 })};
 const noop=()=>({addTo(){return this;}, on(){return this;}, once(){return this;},
   setView(){return this;}, remove(){}, invalidateSize(){}, fitBounds(){},

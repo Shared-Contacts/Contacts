@@ -86,9 +86,10 @@ const ok = (what, cond, extra='') => {
   await page.waitForTimeout(400);
   const one = await page.evaluate(() => navigator.clipboard.readText());
   ok('query 1 reaches the clipboard', /QUERY 1/.test(one), one.slice(0, 60));
-  // 36 union alls = 37 selects = the 37 rows it returned when it was run
-  // in Supabase. One row per table, so a missing table shows up here.
-  ok('all 37 tables are in it', one.split('union all').length - 1 === 36,
+  // 39 union alls = 40 selects: the 37 rows it returned when it was run in
+  // Supabase, plus log_shares (step 39) and the two URL Links tables (step 42),
+  // matching backup.sql. One row per table, so a missing table shows up here.
+  ok('all 40 tables are in it', one.split('union all').length - 1 === 39,
      String(one.split('union all').length - 1) + ' union alls');
   ok('it ends at the photographs',
      /bucket_id = 'photos';$/.test(one.trim()), one.trim().slice(-50));

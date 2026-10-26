@@ -519,6 +519,32 @@ input[name="postcode"]{text-transform:uppercase}
   background:#fff;font-size:15px;font-weight:600;color:var(--muted)}
 .pfoot button.go{background:var(--hull);border-color:var(--hull);color:var(--paper);flex:1.4}
 .pfoot button.go:disabled{opacity:.45}
+/* URL Links. The title is the link itself, so a tap anywhere on it opens the
+   page; the pencil at the end is kept apart so it is never hit by mistake. */
+.lnkpaste{margin:0 0 12px}
+.lnkchips{padding:0 0 10px}
+.lnksort button{padding:9px 6px;font-size:15px}
+.lnk{display:flex;align-items:flex-start;gap:4px;border-bottom:1px solid #F0EEE7}
+.card .lnk:last-child{border-bottom:none}
+.lnk .lgo{flex:1;min-width:0;display:block;padding:11px 0 11px 14px;color:inherit;text-decoration:none}
+.lnk .lgo b{display:block;font-weight:600;color:var(--hull);overflow-wrap:anywhere}
+.lnk .lmeta,.lnk .ldesc,.lnk .lwho{display:block;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.lnk .ldesc{color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lnk .lwho{font-style:italic}
+.lnk .ledit{flex:0 0 auto;padding:12px 14px;color:var(--muted);font-size:18px;line-height:1}
+.dsec .lcount{float:right;font-weight:400;text-transform:none;letter-spacing:0}
+.daypick.lnked{align-items:flex-start}
+.lnked .ulrow{display:flex;gap:8px;margin-top:4px}
+.lnked .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.lnked .ulrow button{flex:0 0 auto;border:1.5px solid var(--rule);border-radius:8px;
+  background:#fff;padding:0 14px;font-weight:600;color:var(--hull)}
+.lnked .ulhead{margin:14px 0 0;font-size:15px;color:var(--muted)}
+.lnked .ulhead span{font-size:13px}
+.lnked .lfoot{margin:16px -16px -16px;padding:9px 12px}
+.lnked .ldel{color:var(--red)}
+.lnked .lcopy{color:var(--hull);font-weight:600;padding:0;font-size:15px}
+.lsub{color:var(--muted);font-size:15px;margin:0 0 8px;overflow-wrap:anywhere}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
@@ -1070,6 +1096,12 @@ i.key{vertical-align:middle}
   <div class="sheetbody" id="wishBody"></div>
 </div>
 
+<div id="links" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="links" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="linksMenu" data-menu="links" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">URL Links</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="linksBody"></div>
+</div>
+
 <div id="jig" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="jig" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="jigMenu" data-menu="jig" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Jigsaws</span></div>
@@ -1323,7 +1355,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','log',
-  'logEd','where','wish','shop','io','offers','chats','chat',
+  'logEd','where','wish','links','shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
@@ -1917,6 +1949,7 @@ async function refreshAll(){
   await loadAll();
   await refreshPhotos(true);
   if(!$('home').classList.contains('hidden')) renderHome();
+  if(!$('links').classList.contains('hidden')){ await loadLinks(); renderLinks(); }
   toast('Up to date');
 }
 
@@ -3249,7 +3282,7 @@ const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
   'coal_type','gas_bottle','service_kind','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur','taxyear'];
+  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
   logsections:'Sections to show',who_aboard:'Who is aboard — choices',
@@ -3259,7 +3292,8 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   logcats:'Your own sections',logshare:'Share my log',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
-  fincur:'Currencies', taxyear:'Tax year'};
+  fincur:'Currencies', taxyear:'Tax year',
+  linklevels:'Levels', linksubjects:'Subjects'};
 
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
@@ -3268,6 +3302,7 @@ const SET_GROUPS=[
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
+  {label:'URL Links',  cards:['linklevels','linksubjects']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
 ];
@@ -3398,6 +3433,8 @@ async function openSettings(goTo){
     finpayees:  finPayeeRows(),
     fincur:     finCurRows(),
     taxyear:    taxYearRows(),
+    linklevels:   linkLevelRows(),
+    linksubjects: linkSubjectRows(),
     logsections: logSectionRows(),
     logcats: catRows(),
     logshare: logShareRows(),
@@ -3578,6 +3615,7 @@ async function openSettings(goTo){
     MY_PROFILE&&MY_PROFILE.my_contact_id);
   wireCats();
   wireFinance();
+  wireLinkSettings();
   $('setBody').querySelectorAll('[data-taxpre]').forEach(b=>b.onclick=()=>{
     const p=TAX_PRESETS.find(x=>x[0]===b.dataset.taxpre);
     if(p) setTaxStart(p[2],p[3]); });
@@ -3681,20 +3719,20 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['moneyImp','money'],['pairs','money'],['reports','reports'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
-  ['wish','wish'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['wish','wish'],['links','links'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   for(const [id,scr] of SCREEN_ORDER)
     if($(id) && !$(id).classList.contains('hidden')) return scr;
   return 'contacts';
 }
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
-  where:'h-where', wish:'h-wish', io:'h-io', settings:'h-settings',
+  where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
-  money:'Finances'};
+  money:'Finances', links:'URL Links'};
 
 function openHelp(where){
   const anchor = HELP_AT[where===undefined?currentScreen():where] || '';
@@ -4039,6 +4077,29 @@ function openHelp(where){
   anyone can move any of them. Calendar Club keeps its own list, in that app.</p>
   <p>The pencil beside one of your own ideas lets you reword it or change the
   explanation.</p>
+
+  <h4 id="h-urllinks">URL Links</h4>
+  <p><strong>URL Links</strong> is a library of web pages you want to find again,
+  like the bookmarks in Chrome but kept in the app, so they are on every phone
+  you sign in on and can be shared.</p>
+  <p>To add one, copy the web address in Chrome and press <strong>Paste a
+  link</strong>. Or, while you are on the page in Chrome, press
+  <strong>Share</strong> and choose <strong>MY life</strong>: the page and its
+  title come straight in. The title can be changed to anything you like.</p>
+  <p>Each link sits on a <strong>level</strong> &mdash; Everyday, Favourites,
+  Interesting or Maybe &mdash; and under as many <strong>subjects</strong> as
+  suit it, such as Weather and New Zealand. The buttons along the top narrow the
+  list to one level or one subject, and the search box looks through titles,
+  addresses, descriptions and subjects. <strong>Most used</strong> puts the ones
+  you open most often first; the app counts each time you open one of yours.</p>
+  <p>Tap a link to open it. The pencil at the end changes it, or deletes it.</p>
+  <p>A new link is yours alone. Under <strong>Who can see it</strong> you can
+  share it with <strong>Everyone</strong> or with the people you choose. Links
+  shared with you appear under <strong>Shared with you</strong>, with the name of
+  whoever added them. Their &#8942; button lets you keep a copy of your own, on
+  your own level, or stop seeing it.</p>
+  <p>Your levels and subjects are under <strong>Settings &rsaquo; URL
+  Links</strong>, to rename, reorder, add or remove.</p>
 
   <h4 id="h-jig">Jigsaws</h4>
   <p><strong>Jigsaws</strong> are Barry's photographs made into puzzles, the same
@@ -7388,6 +7449,524 @@ function renderWish(){
   });
 }
 
+/* ============================================================
+   URL Links — a library of web links, like the bookmarks in a
+   browser but kept in the app, searchable and shareable (step 42).
+   Each link sits on one of your levels and under any number of
+   subjects. The levels and the subject list are yours, kept with
+   your home screen choices; the links live in url_links.
+   ============================================================ */
+let ULINKS=[], ULINK_SHARES=[], ULINKS_WHY='';   // 'notset' until step 42 is run
+const LNK={q:'', level:'all', subject:'', sort:'used'};
+const LINK_LEVELS_DEFAULT=[{id:'everyday',name:'Everyday'},{id:'favourites',name:'Favourites'},
+  {id:'interesting',name:'Interesting'},{id:'maybe',name:'Maybe'}];
+const LINK_SUBJECTS_DEFAULT=['Mapping','Weather','New Zealand','News','Canals',
+  'Photography','Shopping','Reference'];
+let LINK_PREFS={levels:LINK_LEVELS_DEFAULT.map(x=>({...x})),
+  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[]};
+
+function linkPrefsFrom(saved){
+  const lp=saved&&saved.links;
+  return {
+    levels: lp&&Array.isArray(lp.levels)
+      ? lp.levels.filter(x=>x&&x.id&&x.name) : LINK_LEVELS_DEFAULT.map(x=>({...x})),
+    subjects: lp&&Array.isArray(lp.subjects)
+      ? lp.subjects.filter(Boolean) : LINK_SUBJECTS_DEFAULT.slice(),
+    hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [] };
+}
+
+function linkHost(u){
+  try{ return new URL(u).hostname.replace(/^www\./i,''); }catch(e){ return ''; }
+}
+// The first web address in whatever was pasted or shared. Chrome on a phone
+// often sends the address mixed in with the page's words rather than on its
+// own, and an address copied from a page sometimes comes without https://.
+function findUrl(s){
+  const m=String(s||'').match(/https?:\/\/[^\s<>"']+/i);
+  if(m) return m[0].replace(/[).,;:!?]+$/,'');
+  const t=String(s||'').trim();
+  if(/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(t)) return 'https://'+t;
+  return '';
+}
+// The same page whether or not it was copied with www. or a closing slash.
+function sameUrl(a,b){
+  const n=u=>String(u||'').trim().replace(/^https?:\/\/(www\.)?/i,'')
+    .replace(/\/+$/,'').toLowerCase();
+  return n(a)===n(b);
+}
+function levelName(id){
+  const l=LINK_PREFS.levels.find(x=>x.id===id); return l?l.name:'';
+}
+const linkMine = l => l.created_by===ME.id;
+const linkSharedWith = id => ULINK_SHARES.filter(s=>s.link_id===id).map(s=>s.viewer_id);
+
+async function loadLinks(){
+  const [l,s]=await Promise.all([
+    sb.from('url_links').select('*').order('created_at',{ascending:false}),
+    sb.from('url_link_shares').select('*')]);
+  if(l.error){
+    ULINKS_WHY=/relation|does not exist|schema cache/i.test(l.error.message||'')
+      ? 'notset' : 'error';
+    console.error(l.error); return false;
+  }
+  ULINKS_WHY=''; ULINKS=l.data||[];
+  if(s.error) console.error(s.error);
+  ULINK_SHARES=s.error?[]:(s.data||[]);
+  return true;
+}
+
+async function openLinks(){
+  showSheet('links'); lockBackground();
+  $('linksBody').innerHTML='<p class="empty">Fetching your links…</p>';
+  await loadLinks(); renderLinks(); $('linksBody').scrollTop=0;
+}
+
+// Every link you can see, less any shared ones you said you no longer want.
+function linksVisible(){
+  return ULINKS.filter(l=>linkMine(l)||!LINK_PREFS.hide.includes(l.id));
+}
+
+function linksShown(){
+  let rows=linksVisible();
+  if(LNK.level==='shared') rows=rows.filter(l=>!linkMine(l));
+  else if(LNK.level==='none') rows=rows.filter(l=>linkMine(l)&&!levelName(l.level));
+  else if(LNK.level!=='all') rows=rows.filter(l=>linkMine(l)&&l.level===LNK.level);
+  if(LNK.subject) rows=rows.filter(l=>arr(l.subjects).includes(LNK.subject));
+  // Every word has to be there somewhere, so "nz weather" finds the New
+  // Zealand weather page whichever order the words are in.
+  const words=LNK.q.toLowerCase().split(/\s+/).filter(Boolean);
+  if(words.length) rows=rows.filter(l=>{
+    const hay=[l.title,l.url,l.description,arr(l.subjects).join(' '),
+      levelName(l.level), linkMine(l)?'':whoWrote(l.created_by)].join(' ').toLowerCase();
+    return words.every(w=>hay.includes(w));
+  });
+  const az=(a,b)=>String(a.title).localeCompare(String(b.title),'en',{sensitivity:'base'});
+  const by={
+    used:(a,b)=>(b.opens||0)-(a.opens||0)
+      ||String(b.last_opened||'').localeCompare(String(a.last_opened||''))||az(a,b),
+    newest:(a,b)=>String(b.created_at).localeCompare(String(a.created_at)),
+    az};
+  return rows.sort(by[LNK.sort]||by.used);
+}
+
+function linkRow(l){
+  const mine=linkMine(l), who=linkSharedWith(l.id);
+  const meta=[linkHost(l.url)].concat(arr(l.subjects)).filter(Boolean)
+    .map(esc).join(' &middot; ');
+  const said=[];
+  if(!mine) said.push('from '+esc(whoWrote(l.created_by)));
+  else if(l.share_all) said.push('shared with everyone');
+  else if(who.length) said.push('shared with '+esc(who.map(whoWrote).join(', ')));
+  if(mine&&l.opens) said.push('opened '+l.opens+(l.opens===1?' time':' times'));
+  return `<div class="lnk">
+    <a class="lgo" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"
+      data-lopen="${l.id}"><b>${esc(l.title)}</b>
+      <span class="lmeta">${meta}</span>
+      ${l.description?`<span class="ldesc">${esc(l.description)}</span>`:''}
+      ${said.length?`<span class="lwho">${said.join(' &middot; ')}</span>`:''}</a>
+    <button class="ledit" data-ledit="${l.id}" aria-label="${
+      mine?'Change this link':'What you can do with this link'}">${mine?'&#9998;':'&#8942;'}</button>
+  </div>`;
+}
+
+function renderLinks(){
+  const body=$('linksBody'); if(!body) return;
+  const y=body.scrollTop;
+  if(ULINKS_WHY){
+    body.innerHTML=`<div class="card"><div class="field"><dd style="color:${
+      ULINKS_WHY==='notset'?'var(--muted)':'var(--red)'}">${ULINKS_WHY==='notset'
+      ? 'URL Links needs its place in the database first. Run the step 42 file in '
+        +'Supabase, then press refresh at the top.'
+      : 'Could not load your links just now. Nothing has been lost &mdash; check '
+        +'your signal and press refresh at the top.'}</dd></div></div>`;
+    return;
+  }
+  const vis=linksVisible(), mine=vis.filter(linkMine);
+  const lv=(id,label,n)=>`<button class="chip" data-llevel="${esc(id)}"
+    aria-pressed="${LNK.level===id}">${esc(label)} &middot; ${n}</button>`;
+  const levels=[lv('all','All',vis.length)]
+    .concat(LINK_PREFS.levels.map(x=>lv(x.id,x.name,mine.filter(l=>l.level===x.id).length)))
+    .concat(mine.some(l=>!levelName(l.level))
+      ?[lv('none','Unsorted',mine.filter(l=>!levelName(l.level)).length)]:[])
+    .concat(vis.some(l=>!linkMine(l))
+      ?[lv('shared','Shared with you',vis.filter(l=>!linkMine(l)).length)]:[]);
+  // Only the subjects something is actually filed under, your own order first.
+  const used=[...new Set(vis.flatMap(l=>arr(l.subjects)))];
+  const subj=LINK_PREFS.subjects.filter(s=>used.includes(s))
+    .concat(used.filter(s=>!LINK_PREFS.subjects.includes(s)).sort());
+  if(LNK.subject&&!subj.includes(LNK.subject)) LNK.subject='';
+  const sorts=[['used','Most used'],['newest','Newest'],['az','A to Z']];
+
+  body.innerHTML=`
+    <button class="btn primary lnkpaste" id="lnkPaste">+ Paste a link</button>
+    <div class="card msearch"><div class="mqrow">
+      <input id="lnkQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="Search links" value="${esc(LNK.q)}" aria-label="Search links"></div></div>
+    <div class="chips lnkchips">${levels.join('')}</div>
+    ${subj.length?`<div class="chips lnkchips">
+      <button class="chip" data-lsubj="" aria-pressed="${!LNK.subject}">Any subject</button>
+      ${subj.map(s=>`<button class="chip" data-lsubj="${esc(s)}"
+        aria-pressed="${LNK.subject===s}">${esc(s)}</button>`).join('')}</div>`:''}
+    <div class="kindpick lnksort">${sorts.map(([k,t])=>`<button data-lsort="${k}"
+      aria-pressed="${LNK.sort===k}">${t}</button>`).join('')}</div>
+    <div id="lnkList"></div>`;
+  paintLinkList();
+  body.scrollTop=y;
+}
+
+// Only the list is drawn again while you type, so the search box keeps the
+// keyboard.
+function paintLinkList(){
+  const box=$('lnkList'); if(!box) return;
+  if(!linksVisible().length){
+    box.innerHTML=`<div class="card"><div class="field"><dd style="color:var(--muted)">
+      No links yet. Copy a web address in Chrome and press <strong>Paste a link</strong>,
+      or in Chrome press <strong>Share</strong> and choose <strong>MY life</strong>.</dd></div></div>`;
+    return;
+  }
+  const rows=linksShown();
+  if(!rows.length){
+    box.innerHTML=`<div class="card"><div class="field"><dd style="color:var(--muted)">
+      Nothing matches that.</dd></div></div>`;
+    return;
+  }
+  if(LNK.level!=='all'){ box.innerHTML=`<div class="card">${rows.map(linkRow).join('')}</div>`; return; }
+  const sec=(title,list)=>list.length?`<p class="dsec">${esc(title)}<span class="lcount">${
+    list.length}</span></p><div class="card">${list.map(linkRow).join('')}</div>`:'';
+  box.innerHTML=LINK_PREFS.levels.map(x=>sec(x.name,rows.filter(l=>linkMine(l)&&l.level===x.id))).join('')
+    + sec('Unsorted',rows.filter(l=>linkMine(l)&&!levelName(l.level)))
+    + sec('Shared with you',rows.filter(l=>!linkMine(l)));
+}
+
+// Only your own are counted. Somebody else's link would need their say-so
+// to change, and "most used" is about you.
+async function countLinkOpen(id){
+  const l=ULINKS.find(x=>x.id===id);
+  if(!l||!linkMine(l)) return;
+  l.opens=(l.opens||0)+1; l.last_opened=new Date().toISOString();
+  const {error}=await sb.from('url_links')
+    .update({opens:l.opens,last_opened:l.last_opened}).eq('id',id);
+  if(error) console.error(error);
+}
+
+// Whatever is on the clipboard, straight into a new link. If the phone will
+// not hand the clipboard over, the box opens empty and you paste into it.
+async function pasteLink(){
+  let txt='', denied=false;
+  try{
+    if(navigator.clipboard&&navigator.clipboard.readText) txt=await navigator.clipboard.readText();
+    else denied=true;
+  }catch(e){ denied=true; }
+  const url=findUrl(txt);
+  editLink(null, url?{url}:{});
+  if(!url) toast(denied||!txt.trim()
+    ? 'Press and hold in the web address box, then choose Paste'
+    : 'What you copied is not a web address');
+}
+
+/* Adding or changing one of your own. start fills in a new one: from the
+   clipboard, from Chrome's Share menu, or a copy of somebody else's. */
+function editLink(id,start){
+  const old=id?ULINKS.find(x=>x.id===id):null;
+  if(old&&!linkMine(old)) return linkActions(id);
+  const d=old?{...old}:{url:'', title:'', description:'',
+    level:(LINK_PREFS.levels[0]||{}).id||null, subjects:[], share_all:false, ...(start||{})};
+  const had=old?linkSharedWith(old.id):[];
+  let mode=d.share_all?'all':had.length?'some':'me';
+  const subjects=[...new Set(LINK_PREFS.subjects.concat(arr(d.subjects)))];
+
+  const box=document.createElement('div');
+  box.className='daypick lnked';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${old?'Change this link':'Add a link'}</p>
+    <label>Web address<span class="ulrow">
+      <input id="leUrl" type="url" inputmode="url" autocomplete="off" value="${esc(d.url)}"
+        placeholder="https://">
+      <button type="button" id="lePaste">Paste</button></span></label>
+    <label>Title<input id="leTitle" value="${esc(d.title||linkHost(d.url))}"
+      placeholder="What it is"></label>
+    <label>Description<textarea id="leDesc" rows="2"
+      placeholder="Optional">${esc(d.description||'')}</textarea></label>
+    <p class="ulhead">Level</p>
+    <span class="pickrow" id="leLevels">${LINK_PREFS.levels.map(x=>`<button type="button"
+      data-lelv="${esc(x.id)}" aria-pressed="${d.level===x.id}">${esc(x.name)}</button>`).join('')}</span>
+    <p class="ulhead">Subjects <span>as many as fit</span></p>
+    <span class="pickrow" id="leSubs">${subjects.map(s=>`<button type="button"
+      data-lesub="${esc(s)}" aria-pressed="${arr(d.subjects).includes(s)}">${esc(s)}</button>`).join('')}</span>
+    <span class="ulrow"><input id="leNewSub" placeholder="A new subject" autocomplete="off">
+      <button type="button" id="leAddSub">Add</button></span>
+    <p class="ulhead">Who can see it</p>
+    <span class="pickrow">${[['me','Just me'],['all','Everyone'],['some','Choose people']]
+      .map(([k,t])=>`<button type="button" data-lewho="${k}" aria-pressed="${mode===k}">${t}</button>`).join('')}</span>
+    <div class="checks" id="lePeople" ${mode==='some'?'':'hidden'}>${USERS.length
+      ? USERS.map(u=>`<label><input type="checkbox" data-leppl="${u.id}"
+          ${had.includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')
+      : '<span style="color:var(--muted)">Nobody else has an account yet.</span>'}</div>
+    ${old?`<p class="ulhead" style="margin-top:14px"><button type="button" class="lcopy"
+      id="leCopy">Copy the web address</button></p>`:''}
+    <div class="pfoot lfoot">
+      ${old?'<button id="leDel" class="ldel">Delete</button>':''}
+      <button id="leCancel">Cancel</button><button id="leGo" class="go">Save</button></div></div>`;
+  document.body.appendChild(box);
+  const q=s=>box.querySelector(s);
+  const close=()=>box.remove();
+  q('#leCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+
+  // A title nobody has typed follows the address, so pasting is all it takes.
+  let titled=!!(d.title&&d.title!==linkHost(d.url));
+  q('#leTitle').oninput=()=>{ titled=!!q('#leTitle').value.trim(); };
+  const follow=()=>{ const u=findUrl(q('#leUrl').value);
+    if(u&&!titled) q('#leTitle').value=linkHost(u); };
+  q('#leUrl').oninput=follow; q('#leUrl').onchange=follow;
+  q('#lePaste').onclick=async()=>{
+    let t='';
+    try{ t=await navigator.clipboard.readText(); }catch(e){}
+    const u=findUrl(t);
+    if(!u){ toast(t?'What you copied is not a web address'
+      :'Press and hold in the box, then choose Paste'); q('#leUrl').focus(); return; }
+    q('#leUrl').value=u; follow();
+  };
+  box.querySelectorAll('[data-lelv]').forEach(b=>b.onclick=()=>{
+    const on=b.getAttribute('aria-pressed')!=='true';
+    box.querySelectorAll('[data-lelv]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed',String(on));
+  });
+  const subToggle=b=>b.onclick=()=>
+    b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));
+  box.querySelectorAll('[data-lesub]').forEach(subToggle);
+  q('#leAddSub').onclick=()=>{
+    const v=q('#leNewSub').value.trim();
+    if(!v) return;
+    const have=[...box.querySelectorAll('[data-lesub]')]
+      .find(b=>b.dataset.lesub.toLowerCase()===v.toLowerCase());
+    if(have){ have.setAttribute('aria-pressed','true'); q('#leNewSub').value=''; return; }
+    const b=document.createElement('button');
+    b.type='button'; b.dataset.lesub=v; b.textContent=v; b.setAttribute('aria-pressed','true');
+    subToggle(b); q('#leSubs').appendChild(b); q('#leNewSub').value='';
+  };
+  q('#leNewSub').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); q('#leAddSub').click(); } };
+  box.querySelectorAll('[data-lewho]').forEach(b=>b.onclick=()=>{
+    mode=b.dataset.lewho;
+    box.querySelectorAll('[data-lewho]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    q('#lePeople').hidden = mode!=='some';
+  });
+  if(q('#leCopy')) q('#leCopy').onclick=async()=>{
+    toast(await copyText(q('#leUrl').value.trim())?'Copied':'Could not copy it'); };
+  if(q('#leDel')) q('#leDel').onclick=async()=>{
+    if(!confirm('Delete "'+old.title+'"? Anyone you shared it with loses it too.')) return;
+    const {error}=await sb.from('url_links').delete().eq('id',old.id);
+    if(error){ toast('Could not delete it'); console.error(error); return; }
+    close(); await loadLinks(); renderLinks(); toast('Deleted');
+  };
+
+  q('#leGo').onclick=async()=>{
+    const url=findUrl(q('#leUrl').value);
+    if(!url){ toast('That does not look like a web address'); q('#leUrl').focus(); return; }
+    const lvb=box.querySelector('[data-lelv][aria-pressed="true"]');
+    const subs=[...box.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b=>b.dataset.lesub);
+    const rec={url, title:q('#leTitle').value.trim()||linkHost(url)||url,
+      description:q('#leDesc').value.trim()||null,
+      level:lvb?lvb.dataset.lelv:null, subjects:subs, share_all:mode==='all'};
+    if(!old){
+      const dup=ULINKS.find(x=>linkMine(x)&&sameUrl(x.url,url));
+      if(dup&&!confirm('You already have this one, as "'+dup.title+'". Add it again anyway?')) return;
+    }
+    q('#leGo').disabled=true;
+    let lid=old?old.id:null;
+    if(old){
+      const {error}=await sb.from('url_links').update(rec).eq('id',lid);
+      if(error){ q('#leGo').disabled=false; toast('Could not save it'); console.error(error); return; }
+    } else {
+      const {data,error}=await sb.from('url_links').insert({...rec, created_by:ME.id})
+        .select().single();
+      if(error){ q('#leGo').disabled=false; toast('Could not add it'); console.error(error); return; }
+      lid=data.id;
+    }
+    // Who it is shared with by name. Everyone covers them all, so the names go.
+    const want=mode==='some'?[...box.querySelectorAll('[data-leppl]:checked')]
+      .map(x=>x.dataset.leppl):[];
+    const drop=had.filter(v=>!want.includes(v)), add=want.filter(v=>!had.includes(v));
+    let shareErr=null;
+    if(drop.length){
+      const {error}=await sb.from('url_link_shares').delete().eq('link_id',lid).in('viewer_id',drop);
+      shareErr=shareErr||error;
+    }
+    if(add.length){
+      const {error}=await sb.from('url_link_shares')
+        .insert(add.map(v=>({link_id:lid, viewer_id:v})));
+      shareErr=shareErr||error;
+    }
+    if(shareErr) console.error(shareErr);
+    // A subject made up here joins your list for next time.
+    const fresh=subs.filter(s=>!LINK_PREFS.subjects.includes(s));
+    if(fresh.length){ LINK_PREFS.subjects=LINK_PREFS.subjects.concat(fresh); await saveTiles(); }
+    close(); await loadLinks(); renderLinks();
+    toast(shareErr?'Saved, but who can see it did not change. Try again.'
+      : old?'Saved':'Added');
+  };
+  if(!d.url) setTimeout(()=>q('#leUrl').focus(),50);
+}
+
+// Somebody else's link: open it, keep your own copy, or stop seeing it.
+function linkActions(id){
+  const l=ULINKS.find(x=>x.id===id); if(!l) return;
+  const byName=ULINK_SHARES.some(s=>s.link_id===id&&s.viewer_id===ME.id);
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(l.title)}</p>
+    <p class="lsub">${esc(linkHost(l.url))} &middot; from ${esc(whoWrote(l.created_by))}</p>
+    ${l.description?`<p class="lsub">${esc(l.description)}</p>`:''}
+    <button class="menuitem" id="laKeep">Keep a copy of my own &rsaquo;</button>
+    <button class="menuitem" id="laCopy">Copy the web address</button>
+    <button class="menuitem" id="laHide">Stop seeing it</button>
+    <div class="pfoot"><button id="laShut">Close</button></div></div>`;
+  document.body.appendChild(box);
+  const q=s=>box.querySelector(s), close=()=>box.remove();
+  q('#laShut').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  q('#laKeep').onclick=()=>{ close();
+    editLink(null,{url:l.url, title:l.title, description:l.description, subjects:arr(l.subjects)}); };
+  q('#laCopy').onclick=async()=>{ toast(await copyText(l.url)?'Copied':'Could not copy it'); };
+  q('#laHide').onclick=async()=>{
+    if(!confirm('Stop seeing "'+l.title+'"? Only '+whoWrote(l.created_by)
+      +' can share it with you again.')) return;
+    if(byName){
+      const {error}=await sb.from('url_link_shares').delete()
+        .eq('link_id',id).eq('viewer_id',ME.id);
+      if(error){ toast('Could not do that'); console.error(error); return; }
+    }
+    // Shared with everyone, there is no row of yours to take away, so it is
+    // put out of sight on your side instead.
+    if(l.share_all&&!LINK_PREFS.hide.includes(id)){
+      LINK_PREFS.hide=LINK_PREFS.hide.concat(id); await saveTiles();
+    }
+    close(); await loadLinks(); renderLinks(); toast('Gone from your list');
+  };
+}
+
+$('linksBody').addEventListener('click',ev=>{
+  const o=ev.target.closest('[data-lopen]');
+  if(o){ countLinkOpen(Number(o.dataset.lopen)); return; }   // the link itself opens it
+  const e=ev.target.closest('[data-ledit]');
+  if(e){ editLink(Number(e.dataset.ledit)); return; }
+  if(ev.target.closest('#lnkPaste')){ pasteLink(); return; }
+  const lv=ev.target.closest('[data-llevel]');
+  if(lv){ LNK.level=lv.dataset.llevel; renderLinks(); return; }
+  const sj=ev.target.closest('[data-lsubj]');
+  if(sj){ LNK.subject=sj.dataset.lsubj; renderLinks(); return; }
+  const so=ev.target.closest('[data-lsort]');
+  if(so){ LNK.sort=so.dataset.lsort; renderLinks(); return; }
+});
+$('linksBody').addEventListener('input',ev=>{
+  if(ev.target.id==='lnkQ'){ LNK.q=ev.target.value; paintLinkList(); }
+});
+$('linksBody').addEventListener('keydown',ev=>{
+  if(ev.target.id==='lnkQ'&&ev.key==='Enter'){ ev.preventDefault(); ev.target.blur(); }
+});
+
+/* ---------- Settings: your levels and subjects ---------- */
+function linkLevelRows(){
+  const n=LINK_PREFS.levels.length;
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    How much each link matters to you. Rename them, change the order, or add
+    more. Removing one leaves its links Unsorted &mdash; nothing is deleted.</dd></div>
+  ${LINK_PREFS.levels.map((x,i)=>`<div class="setrow fieldrow">
+    <span style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto">
+      <button class="mv" data-lvmv="${esc(x.id)}:up" ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
+      <button class="mv" data-lvmv="${esc(x.id)}:down" ${i===n-1?'disabled':''} aria-label="Move down">&#9660;</button>
+    </span>
+    <input data-lvname="${esc(x.id)}" value="${esc(x.name)}" style="flex:1 1 150px">
+    <button class="x" data-lvdrop="${esc(x.id)}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd"><input id="lvNew" placeholder="New level">
+    <button class="btn primary" id="lvAdd">Add level</button></div>`;
+}
+function linkSubjectRows(){
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    What links can be filed under. A link can have several. Renaming or
+    removing one changes your own links to match.</dd></div>
+  ${LINK_PREFS.subjects.map(s=>`<div class="setrow fieldrow">
+    <input data-sjname="${esc(s)}" value="${esc(s)}" style="flex:1 1 150px">
+    <button class="x" data-sjdrop="${esc(s)}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd"><input id="sjNew" placeholder="New subject">
+    <button class="btn primary" id="sjAdd">Add subject</button></div>`;
+}
+
+// Your own links carrying one subject get it renamed, or taken off.
+async function relabelSubject(from,to){
+  if(!ULINKS.length) await loadLinks();
+  const hit=ULINKS.filter(l=>linkMine(l)&&arr(l.subjects).includes(from));
+  const res=await Promise.all(hit.map(l=>{
+    const subs=[...new Set(arr(l.subjects).map(s=>s===from?to:s).filter(Boolean))];
+    return sb.from('url_links').update({subjects:subs}).eq('id',l.id);
+  }));
+  if(res.some(r=>r.error)){ console.error(res); return false; }
+  return true;
+}
+
+function wireLinkSettings(){
+  const body=$('setBody'); if(!body) return;
+  const save=async msg=>{ await saveTiles(); openSettings(); if(msg) toast(msg); };
+  body.querySelectorAll('[data-lvmv]').forEach(b=>b.onclick=ev=>{
+    ev.preventDefault();
+    const [id,dir]=b.dataset.lvmv.split(':'), L=LINK_PREFS.levels;
+    const i=L.findIndex(x=>x.id===id), j=dir==='up'?i-1:i+1;
+    if(i<0||j<0||j>=L.length) return;
+    L.splice(j,0,L.splice(i,1)[0]); save();
+  });
+  body.querySelectorAll('[data-lvname]').forEach(inp=>inp.onchange=()=>{
+    const x=LINK_PREFS.levels.find(l=>l.id===inp.dataset.lvname);
+    const v=inp.value.trim();
+    if(!x) return;
+    if(!v){ inp.value=x.name; return; }
+    x.name=v; save('Saved');
+  });
+  body.querySelectorAll('[data-lvdrop]').forEach(b=>b.onclick=()=>{
+    const x=LINK_PREFS.levels.find(l=>l.id===b.dataset.lvdrop);
+    if(!x||!confirm('Remove the level "'+x.name+'"? Its links become Unsorted.')) return;
+    LINK_PREFS.levels=LINK_PREFS.levels.filter(l=>l!==x);
+    if(LNK.level===x.id) LNK.level='all';
+    save('Removed');
+  });
+  const la=$('lvAdd');
+  if(la) la.onclick=()=>{
+    const v=$('lvNew').value.trim();
+    if(!v){ toast('Give it a name'); return; }
+    if(LINK_PREFS.levels.some(l=>l.name.toLowerCase()===v.toLowerCase())){
+      toast('You already have that one'); return; }
+    LINK_PREFS.levels.push({id:'lv'+Date.now().toString(36), name:v}); save('Added');
+  };
+  body.querySelectorAll('[data-sjname]').forEach(inp=>inp.onchange=async()=>{
+    const from=inp.dataset.sjname, to=inp.value.trim();
+    if(!to||to===from){ inp.value=from; return; }
+    if(LINK_PREFS.subjects.some(s=>s!==from&&s.toLowerCase()===to.toLowerCase())){
+      toast('You already have that one'); inp.value=from; return; }
+    const ok=await relabelSubject(from,to);
+    LINK_PREFS.subjects=LINK_PREFS.subjects.map(s=>s===from?to:s);
+    if(LNK.subject===from) LNK.subject=to;
+    await save(ok?'Renamed':'Renamed, but some links kept the old name. Try again.');
+  });
+  body.querySelectorAll('[data-sjdrop]').forEach(b=>b.onclick=async()=>{
+    const s=b.dataset.sjdrop;
+    if(!ULINKS.length) await loadLinks();
+    const n=ULINKS.filter(l=>linkMine(l)&&arr(l.subjects).includes(s)).length;
+    if(!confirm('Remove the subject "'+s+'"?'+(n?' It comes off '+n+' of your links.':''))) return;
+    const ok=await relabelSubject(s,null);
+    LINK_PREFS.subjects=LINK_PREFS.subjects.filter(x=>x!==s);
+    if(LNK.subject===s) LNK.subject='';
+    await save(ok?'Removed':'Removed, but some links still have it. Try again.');
+  });
+  const sa=$('sjAdd');
+  if(sa) sa.onclick=()=>{
+    const v=$('sjNew').value.trim();
+    if(!v){ toast('Give it a name'); return; }
+    if(LINK_PREFS.subjects.some(s=>s.toLowerCase()===v.toLowerCase())){
+      toast('You already have that one'); return; }
+    LINK_PREFS.subjects.push(v); save('Added');
+  };
+}
+
 /* ---------- shopping: a list each, shared with whoever ---------- */
 let LISTS=[], LIST_SHARES=[], CUR_LIST=null;
 
@@ -7764,6 +8343,7 @@ const TILE_DEST={
   shop:    {label:'Shopping',   go:openShop},
   where:   {label:'Where I am', go:openWhere},
   wish:    {label:'Wishlist',   go:openWish},
+  links:   {label:'URL Links',  go:openLinks},
   io:      {label:'Import & export', go:openIO},
   pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
   settings:{label:'Settings',   go:openSettings},
@@ -7782,9 +8362,9 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
-  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F'};
+  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','settings'];
+  'money','recipes','alarm','jig','links','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -7905,6 +8485,7 @@ function loadTiles(){
   TAX_START = tx&&taxOk(Number(tx[1])-1,Number(tx[2]))
     ? {m:Number(tx[1])-1, d:Number(tx[2])} : {m:3, d:6};
   BACKUP_DONE = (saved&&typeof saved.backup==='string')?saved.backup:'';
+  LINK_PREFS = linkPrefsFrom(saved);
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -7921,7 +8502,7 @@ function loadTiles(){
 }
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON,
-              backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF,
+              backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, links:LINK_PREFS,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
@@ -9001,6 +9582,7 @@ union all select 'profiles',             count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'log_options',          count(*), coalesce(jsonb_agg(t), '[]') from log_options t
 union all select 'log_cats',             count(*), coalesce(jsonb_agg(t), '[]') from log_cats t
 union all select 'log_fields',           count(*), coalesce(jsonb_agg(t), '[]') from log_fields t
+union all select 'log_shares',           count(*), coalesce(jsonb_agg(t), '[]') from log_shares t
 -- Calendar
 union all select 'items',                count(*), coalesce(jsonb_agg(t), '[]') from items t
 union all select 'item_shares',          count(*), coalesce(jsonb_agg(t), '[]') from item_shares t
@@ -9010,6 +9592,9 @@ union all select 'shopping_lists',       count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'shopping',             count(*), coalesce(jsonb_agg(t), '[]') from shopping t
 union all select 'shopping_list_shares', count(*), coalesce(jsonb_agg(t), '[]') from shopping_list_shares t
 union all select 'wishes',               count(*), coalesce(jsonb_agg(t), '[]') from wishes t
+-- URL Links
+union all select 'url_links',            count(*), coalesce(jsonb_agg(t), '[]') from url_links t
+union all select 'url_link_shares',      count(*), coalesce(jsonb_agg(t), '[]') from url_link_shares t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -13071,6 +13656,7 @@ const AREAS={
   diary:   {title:'Calendar',     set:null,        help:'diary'},
   shop:    {title:'Shopping',     set:null,        help:'shop'},
   wish:    {title:'Wishlist',     set:null,        help:'wish'},
+  links:   {title:'URL Links',    set:'URL Links', help:'links'},
   jig:     {title:'Jigsaws',      set:null,        help:'jig'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
@@ -13089,13 +13675,14 @@ const AREA_SHUT={
   diary:()=>$('diary').classList.add('hidden'),
   shop: ()=>$('shop').classList.add('hidden'),
   wish: ()=>$('wish').classList.add('hidden'),
+  links:()=>$('links').classList.add('hidden'),
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, jig:openJig, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, jig:openJig, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -13115,6 +13702,8 @@ function areaItems(area){
     it('Choose several to delete',()=>{ shutMenu(); startMoneyPicking(); })];
   if(area==='diary') return [
     it('Add an entry',            ()=>{ shutMenu(); openItem(null); })];
+  if(area==='links') return [
+    it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
   if(area==='shop') return [
     it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
   if(area==='chats') return [
@@ -13273,6 +13862,20 @@ document.addEventListener('visibilitychange',async()=>{
   if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
 });
 
+// A page shared to the app from Chrome's Share menu arrives as
+// index.html?share_url=...&share_title=...&share_text=... (see manifest.json).
+// It is taken off the address at once, so a refresh cannot add it twice.
+let SHARED_IN=null;
+(function(){
+  try{
+    const p=new URLSearchParams(location.search);
+    if(!['share_url','share_text','share_title'].some(k=>p.has(k))) return;
+    SHARED_IN={url:findUrl(p.get('share_url'))||findUrl(p.get('share_text')),
+               title:(p.get('share_title')||'').trim()};
+    history.replaceState(null,'',location.pathname);
+  }catch(e){}
+})();
+
 async function start(){
   const {data:{user}}=await sb.auth.getUser();
   if(!user){$('signin').classList.remove('hidden');$('app').classList.add('hidden');
@@ -13288,7 +13891,11 @@ async function start(){
   await loadAll();
   $('app').classList.remove('hidden');
   showHome();            // the front door, with the contacts list waiting behind it
-  maybeBrief();          // what the day has in it, once a day
+  if(SHARED_IN){          // something shared from Chrome comes first
+    const s=SHARED_IN; SHARED_IN=null;
+    await openLinks();
+    if(s.url) editLink(null,s); else toast('That share had no web address in it');
+  } else maybeBrief();    // what the day has in it, once a day
   watchForNewDay();
   loadDevices();
   loadShares();

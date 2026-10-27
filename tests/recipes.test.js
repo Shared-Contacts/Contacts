@@ -579,6 +579,32 @@ const seed = () => {
   const d = await ev(t => splitRecipe(t), pageD);
   ok('a Preparation heading fills Preparing', JSON.stringify(d.prep_steps) === '["Take the chicken out of the fridge an hour before."]');
   ok('a Cook’s tip goes into Notes', d.notes === 'Save the bones for stock.', d.notes);
+  // A real page (Zoe's sweetcorn dhal, 27 Oct 2026): badges above the title, the
+  // ingredients down the left, so Lens copies them before the title and the words about it.
+  const dhalLeft = ['5-10g', '12', 'FIBRE', 'PLANTS', 'Preparation time: 10 minutes', 'Cook time: 30 minutes',
+    'Ingredients (Serves 4)', '2 x 195g tins sweetcorn', 'and their liquid', '4 tbsp extra virgin olive oil',
+    '1 onion, finely chopped', '1 tsp garam masala', '1½ tsp chilli flakes', '160g red split lentils',
+    '1 tbsp dried curry leaves', '(optional)', 'Salt and black pepper', 'Top-ups', 'Soft-boiled egg', 'Coriander',
+    'Swap', 'Fresh spinach for frozen (add at', 'the end to wilt through)'];
+  const dhalRight = ['Sweetcorn and', 'Spinach Dhal', 'This is a great moment to incorporate those half-used bags',
+    'of grains in the back of your cupboard. Simply add them to the', 'dhal while cooking.', 'Method',
+    '1. Empty 1 tin of sweetcorn and its liquid into a blender,', 'add 550ml water and blend until smooth.',
+    '2. Heat 2 tablespoons of the oil in a saucepan.', '182'];
+  for (const [name, page] of [['left column first', dhalLeft.concat(dhalRight)], ['right column first', dhalRight.concat(dhalLeft)]]) {
+    const z = await ev(t => splitRecipe(t), page.join('\n'));
+    const zi = await ev(r => r.ingredients.map(x => ingText(x, 1)), z);
+    ok(`two columns (${name}): the title, not the fibre badge`, z.title === 'Sweetcorn and Spinach Dhal', z.title);
+    ok(`two columns (${name}): "Ingredients (Serves 4)" is a heading, and serves 4`,
+       z.serves === 4 && z.prep_mins === 10 && z.cook_mins === 30 && zi[0] === '2 x 195g tins sweetcorn and their liquid',
+       [z.serves, z.prep_mins, z.cook_mins, zi[0]].join(' | '));
+    ok(`two columns (${name}): Top-ups and Swap are small headings, brackets joined up`,
+       JSON.stringify(zi.slice(-7)) === JSON.stringify(['1 tbsp dried curry leaves (optional)', 'Salt and black pepper',
+       'Top-ups:', 'Soft-boiled egg', 'Coriander', 'Swap:', 'Fresh spinach for frozen (add at the end to wilt through)']),
+       JSON.stringify(zi));
+    ok(`two columns (${name}): the words about it go into Notes, the steps stay steps`,
+       /^This is a great moment.*dhal while cooking\.$/.test(z.notes) && z.cook_steps.length === 2
+       && !/FIBRE|5-10g/.test(JSON.stringify(z)), z.notes + ' | ' + JSON.stringify(z.cook_steps));
+  }
   const empty = await ev(() => splitRecipe('  \n \n'));
   ok('nothing pasted, nothing made up', !empty.title && !empty.ingredients.length && !empty.cook_steps.length);
 

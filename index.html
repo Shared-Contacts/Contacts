@@ -1051,6 +1051,7 @@ i.key{vertical-align:middle}
   background:var(--red);color:#fff;font-size:17px;line-height:1}
 .rcptitle{font-size:24px;line-height:1.25;margin:14px 0 4px;color:var(--ink);overflow-wrap:anywhere}
 .rcpmeta{color:var(--muted);font-size:15px;margin:0 0 10px;overflow-wrap:anywhere}
+.rcpabout{font-size:16px;font-style:italic;margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}
 .rcpmeta a{color:var(--hull);font-weight:600;text-decoration:none}
 .btn.rcpvid{margin-top:8px;border:1.5px solid var(--rule);color:var(--hull);text-decoration:none}
 .rcpserve{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
@@ -8331,7 +8332,7 @@ function rcpShown(){
   const words=RCP.q.toLowerCase().split(/\s+/).filter(Boolean);
   if(words.length) rows=rows.filter(r=>{
     const hay=[r.title, arr(r.categories).join(' '),
-      arr(r.ingredients).map(i=>i.head||i.name).join(' '), r.notes, r.source_name,
+      arr(r.ingredients).map(i=>i.head||i.name).join(' '), r.about, r.notes, r.source_name,
       rcpMine(r)?'':whoWrote(r.created_by)].join(' ').toLowerCase();
     return words.every(w=>hay.includes(w));
   });
@@ -8473,7 +8474,7 @@ function renderRecipe(){
   const pics=arr(r.photos).map(rcpPic).filter(Boolean);
   const ings=arr(r.ingredients);
   const cooked=RCP_PREFS.cooked[r.id];
-  const meta=[arr(r.categories).join(', '), rcpTimes(r),
+  const meta=[arr(r.categories).join(', '), !ings.length&&r.serves?'Serves '+r.serves:'', rcpTimes(r),
     mine?(r.share_all?'':'Just you'):'From '+whoWrote(r.created_by)].filter(Boolean);
   const ticked=[...RCP_TICK].filter(i=>ings[i]&&!ings[i].head).length;
   const step=r.serves
@@ -8489,6 +8490,7 @@ function renderRecipe(){
     ${pics.length>1?`<div class="rcpthumbs">${pics.slice(1).map((p,i)=>
       `<img src="${esc(p)}" alt="" loading="lazy" data-rpic="${i+1}">`).join('')}</div>`:''}
     <h2 class="rcptitle">${esc(r.title)}</h2>
+    ${r.about?`<p class="rcpabout">${esc(r.about)}</p>`:''}
     ${meta.length?`<p class="rcpmeta">${esc(meta.join(' · '))}</p>`:''}
     ${r.source_url?`<p class="rcpmeta"><a href="${esc(r.source_url)}" target="_blank"
       rel="noopener noreferrer">From ${esc(r.source_name||linkHost(r.source_url))} &rsaquo;</a></p>`:''}
@@ -8649,7 +8651,7 @@ async function rcpToShopping(r){
 // Somebody else's recipe, ready to save as your own. The photos are copied
 // when it is saved, so yours do not vanish if they delete theirs.
 function rcpCopyOf(r){
-  const keep=['title','categories','serves','prep_mins','cook_mins','ingredients','prep_steps',
+  const keep=['title','about','categories','serves','prep_mins','cook_mins','ingredients','prep_steps',
     'cook_steps','notes','photos','video_url','source_url','source_name'];
   const d={}; keep.forEach(k=>{ d[k]=JSON.parse(JSON.stringify(r[k]??null)); });
   d.share_all=false;
@@ -8662,7 +8664,7 @@ function editRecipe(id,start){
   const old=id?RECIPES.find(x=>x.id===id):null;
   if(old&&!rcpMine(old)) return;
   const d=old?JSON.parse(JSON.stringify(old)):{title:'', categories:[], serves:null,
-    prep_mins:null, cook_mins:null, ingredients:[], prep_steps:[], cook_steps:[], notes:'',
+    prep_mins:null, cook_mins:null, ingredients:[], prep_steps:[], cook_steps:[], about:'', notes:'',
     photos:[], video_url:'', source_url:'', source_name:null, share_all:true, ...(start||{})};
   RE={old, d, fresh:[], gone:[], who:d.share_all===false?'me':'all'};
   $('reTitleBar').textContent=old?'Change recipe':start?'Your copy':'New recipe';
@@ -8671,6 +8673,8 @@ function editRecipe(id,start){
   $('reBody').innerHTML=`
     ${old?'':`<button type="button" class="btn rcpbookbtn" id="reBook">Copy it from a book or a page &rsaquo;</button>`}
     <label>Title<input id="reTitle" value="${esc(d.title)}" placeholder="What it is called"></label>
+    <label>Description <small>a line or two, shown under the title</small><textarea id="reAbout" rows="2"
+      maxlength="2000" placeholder="Optional">${esc(d.about||'')}</textarea></label>
     <p class="ulhead">Categories <span>as many as suit it</span></p>
     <span class="pickrow" id="reCats">${cats.map(c=>`<button type="button" data-recat="${esc(c)}"
       aria-pressed="${arr(d.categories).includes(c)}">${esc(c)}</button>`).join('')}</span>
@@ -8820,7 +8824,7 @@ async function saveRecipe(){
     serves:int('reServes',1,100), prep_mins:int('rePrep',0,10000), cook_mins:int('reCook',0,10000),
     ingredients:$('reIngs').value.split('\n').map(parseIng).filter(Boolean),
     prep_steps:stepLines($('rePrepSteps').value), cook_steps:stepLines($('reCookSteps').value),
-    notes:v('reNotes')||null, photos, video_url:vid?findUrl(vid):null,
+    about:v('reAbout').slice(0,2000)||null, notes:v('reNotes')||null, photos, video_url:vid?findUrl(vid):null,
     source_url:srcUrl,
     source_name:srcUrl?(RE.d.source_url&&sameUrl(RE.d.source_url,srcUrl)&&RE.d.source_name
       ||linkHost(srcUrl)):null,
@@ -8923,9 +8927,17 @@ function bookHeadOf(line){
   const m=line.match(/^(.+?)\s*(?:\((.+)\)|[:\-–]\s*((?:serves|feeds|makes|for)\b.+))$/i);
   return m&&bookHead(m[1]) ? [bookHead(m[1]), m[2]||m[3]] : ['',''];
 }
-// Badges printed near the title, such as "5-10g FIBRE", "12 PLANTS", "450 kcal", "V GF":
-// never the title.
-const bookBadge = /^(?:(?:[\d.,\-–\/½¼¾]+\s*(?:g|mg|kg|kcal|cals?|%)?|fibre|fiber|plants?|protein|fat|saturates|carbs?|carbohydrates?|sugars?|salt|kcal|calories|cals?|energy|per serving|vegan|vegetarian|v|vg|gf|df|gluten[- ]free|dairy[- ]free)(?:[\s,·|]+|$))+$/i;
+// Badges printed near the title, such as "5-10g FIBRE", "12 PLANTS", "450 kcal", "V GF",
+// and the bits of a nutrition panel ("Energy 2950kJ", "Sugars 15.9g Low 18%"):
+// never the title, an ingredient or a step.
+const bookBadge = /^(?:(?:[\d.,\-–\/½¼¾]+\s*(?:g|mg|kg|kj|kcal|cals?|%)?|fibre|fiber|plants?|protein|fat|saturates|carbs?|carbohydrates?|sugars?|salt|kcal|kj|calories|cals?|energy|low|med|medium|high|per serving|per portion|vegan|vegetarian|v|vg|gf|df|gluten[- ]free|dairy[- ]free)(?:[\s,·|]+|$))+$/i;
+function bookPanel(l,inIngs){
+  if(/^salt$/i.test(l)) return false;                     // an ingredient
+  // Among the ingredients, an amount whose name went onto the next line.
+  if(inIngs&&/^[\d.,\-–\/½¼¾]+\s*(g|kg|ml|l|oz|lb)?$/i.test(l)) return false;
+  return bookBadge.test(l)
+    ||l.length<60&&/\b(intake|(each|per) (portion|serving)|nutrition(al)? (information|info|facts))\b/i.test(l);
+}
 // Small headings inside a list of ingredients.
 const BOOK_SUB = /^(top-?ups?|toppings?|garnish(es)?|swaps?|extras?|optional extras|to finish)$/i;
 // A line that could be (part of) a recipe's name: short, no numbers or commas,
@@ -8949,19 +8961,26 @@ function bookProse(lines,i){
 // Lines from the page back into whole steps.
 function bookSteps(lines){
   const numbered=lines.filter(l=>bookNum.test(l)).length>=2;
+  // Numbered steps start only at the next number, so "20 minutes, then..." carries on.
+  const numOf=l=>{ const m=l.match(bookNum); return m?Number(m[1]):0; };
+  let next=Math.max(1,numOf(lines.find(l=>bookNum.test(l))||''));
   const out=[];
   lines.forEach(l=>{
     const isHead=rcpHead(l)&&l.length<40;
-    const fresh = isHead || !out.length
-      || (numbered ? bookNum.test(l)
+    const dot=/^[•·*]\s*/.test(l);                     // a bullet point starts a new one
+    l=l.replace(/^[•·*]\s*/,'');
+    const step=numbered&&numOf(l)===next;
+    if(step) next++;
+    const fresh = isHead || dot || !out.length
+      || (numbered ? step
                    : /[.!?)]["”']?$/.test(out[out.length-1])&&/^[A-ZÀ-Þ"“]/.test(l))
       || rcpHead(out[out.length-1]);
     if(fresh) out.push(l);
     else if(/-$/.test(out[out.length-1])&&/^[a-z]/.test(l)) out[out.length-1]=out[out.length-1].slice(0,-1)+l;
     else out[out.length-1]+=' '+l;
   });
-  return stepLines(out.map(s=>s.replace(/^(\d{1,2})\s*[.):]?\s*$/,'$1.')).join('\n'))
-    .filter(s=>!/^\d{1,2}\.?$/.test(s));
+  return out.map(s=>numbered?s.replace(bookNum,''):s)
+    .flatMap(s=>stepLines(s)).filter(s=>!/^\d{1,2}\.?$/.test(s));
 }
 
 // Lines from the page back into whole ingredients.
@@ -8975,7 +8994,7 @@ function bookIngs(lines){
     // Only a line that plainly carries on from the one before: "salt and pepper"
     // on a line of its own is an ingredient of its own.
     const more=prev&&!rcpHead(prev)&&!head
-      &&(/^\(/.test(l)||/[,\-–(]$/.test(prev)||(prev.split('(').length>prev.split(')').length)||/\b(and|or|of|into|cut|to|about|plus)$/i.test(prev)
+      &&(/^\(/.test(l)||/^[\d.,\-–\/½¼¾]+\s*[a-z]{0,2}$/i.test(prev)||/[,\-–(]$/.test(prev)||(prev.split('(').length>prev.split(')').length)||/\b(and|or|of|into|cut|to|about|plus)$/i.test(prev)
          ||/^(and|or|into|to|cut|plus|then|about|at room|roughly|finely|thinly|halved|sliced|chopped|diced|peeled|trimmed|grated|crushed|deseeded|softened|melted|beaten)\b/.test(l));
     if(more) out[out.length-1]=prev+' '+l;
     else out.push(head&&!rcpHead(l)?l+':':l);
@@ -8983,21 +9002,34 @@ function bookIngs(lines){
   return out.map(parseIng).filter(Boolean);
 }
 
+// A line of an ingredients list: it starts with an amount ("2½ tsp", "140g (5oz)"),
+// not a step number ("1 Heat the oil"), or a bullet.
+const bookAmount = l => RCP_QTY.test(l)&&!/^\d{1,2}[.)]?\s+[A-ZÀ-Þ]/.test(l)&&!/^\d{1,2}[.)]\s/.test(l)
+  || /^[-•*·]\s/.test(l);
+
 function splitRecipe(text){
-  const lines=String(text||'').replace(/\r/g,'').split('\n')
-    .map(l=>l.replace(/\s+/g,' ').trim())
-    .filter(l=>l&&!/^\d{1,3}$/.test(l)&&!/^page \d+$/i.test(l));   // page numbers
-  const out={title:'', serves:null, prep_mins:null, cook_mins:null, ingredients:[],
+  const lines=String(text||'').replace(/\r/g,'')
+    // "...for sharing Preparation time: 25 minutes Cooking time: 15 minutes" all on one line
+    .replace(/[ \t]+(?=(?:prep(?:aration)?|cook(?:ing)?)\s*time\s*:|serves\s*:)/gi,'\n')
+    .split('\n')
+    .map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean)
+    // "Serves:" with its "2" on the line below
+    .reduce((a,l)=>{ const p=a[a.length-1];
+      if(p&&/^(prep(aration)?( time)?|cook(ing)?( time)?|serves|makes)\s*:?$/i.test(p)&&/^\d/.test(l)) a[a.length-1]=p+' '+l;
+      else a.push(l);
+      return a; },[])
+    .filter(l=>!/^\d{1,3}$/.test(l)&&!/^page \d+$/i.test(l));   // page numbers
+  const out={title:'', about:null, serves:null, prep_mins:null, cook_mins:null, ingredients:[],
     prep_steps:[], cook_steps:[], notes:null};
   const sec={intro:[], ing:[], prep:[], cook:[], notes:[]};
   let at='intro';
-  lines.forEach(l=>{
+  lines.forEach((l,i)=>{
     const [h,rest]=bookHeadOf(l);
     if(h){ at=h; if(rest) bookMeta(rest.replace(/^(\d)/,'serves $1'),out); return; }
     if(bookMeta(l,out)) return;
-    // Badges: anywhere but the ingredients ("Salt" on its own is one of those),
-    // and after the title only the ones in capitals or with a number.
-    if(at!=='ing'&&bookBadge.test(l)&&(at==='intro'&&!out.title||/\d/.test(l)||!/[a-z]/.test(l))) return;
+    if(at==='intro'&&!out.title&&bookBadge.test(l)) return;
+    if(bookPanel(l,at==='ing')) return;
+    if(/^salt$/i.test(l)&&/^[\d.,]+\s*(g|mg|%)$/i.test(lines[i+1]||'')) return;   // "Salt 1.5g" in a panel
     if(at==='intro'&&!out.title&&/[a-z]/i.test(l)){ out.title=l; return; }
     // A name that runs onto a second line: "Sweetcorn and" / "Spinach Dhal".
     if(at==='intro'&&!sec.intro.length&&/\b(and|with|&|or|of|in|on)$/i.test(out.title)&&bookTitleLike(l)){
@@ -9018,12 +9050,20 @@ function splitRecipe(text){
       sec.ing=sec.ing.slice(0,t);
     }
   }
-  // No headings at all: the short lines straight after the title are the
-  // ingredients, and the method starts at the first proper sentence.
+  // No headings at all. The ingredients start at the first line with an amount
+  // (or, with no amounts anywhere, the first short line); any words before that
+  // are about the recipe. The method starts at the first line after them that
+  // is neither an ingredient nor the rest of one.
   if(!sec.ing.length&&!sec.cook.length&&!sec.prep.length){
-    const i=sec.intro.findIndex(l=>l.length>45||/[.!?]$/.test(l)&&l.split(' ').length>5);
-    const cut=i<0?sec.intro.length:i;
-    sec.ing=sec.intro.slice(0,cut); sec.cook=sec.intro.slice(cut); sec.intro=[];
+    const L=sec.intro;
+    const short=l=>l.split(' ').length<=5&&!/[.!?]$/.test(l);
+    let a=L.findIndex(bookAmount);
+    if(a<0) a=L.findIndex(short);
+    if(a<0) a=L.length;
+    const more=l=>bookAmount(l)||short(l)||/^[a-z(]/.test(l);
+    let b=L.findIndex((l,i)=>i>a&&!more(l));
+    if(b<0) b=L.length;
+    sec.intro=L.slice(0,a); sec.ing=L.slice(a,b); sec.cook=L.slice(b);
   }
   // A title in capitals, as many books print them, written normally.
   if(out.title&&!/[a-z]/.test(out.title))
@@ -9032,7 +9072,9 @@ function splitRecipe(text){
   out.ingredients=bookIngs(sec.ing);
   out.prep_steps=bookSteps(sec.prep);
   out.cook_steps=bookSteps(sec.cook);
-  const notes=bookSteps(sec.intro).concat(bookSteps(sec.notes));
+  // The words about the recipe go under its title; tips and the like into Notes.
+  out.about=bookSteps(sec.intro).join(' ').slice(0,2000)||null;
+  const notes=bookSteps(sec.notes);
   out.notes=notes.length?notes.join('\n\n'):null;
   return out;
 }
@@ -9111,6 +9153,7 @@ function fillEditor(r){
   $('reIngs').value=r.ingredients.map(x=>ingText(x,1)).join('\n');
   $('rePrepSteps').value=r.prep_steps.join('\n');
   $('reCookSteps').value=r.cook_steps.join('\n');
+  if(r.about&&!$('reAbout').value.trim()) $('reAbout').value=r.about;
   if(r.notes&&!$('reNotes').value.trim()) $('reNotes').value=r.notes;
 }
 
@@ -9130,7 +9173,7 @@ function rcpFromWeb(d,url,title){
     prep_steps:[],
     cook_steps:arr(d.steps).map(s=>s&&s.head?String(s.head).replace(/:$/,'')+':'
       :String(s&&s.text||'').trim()).filter(Boolean),
-    notes:d.description?String(d.description):null,
+    about:d.description?String(d.description).slice(0,2000):null, notes:null,
     photos:img?[{url:img}]:[],
     video_url:/^https?:\/\//i.test(String(d.video_url||''))?String(d.video_url):null,
     source_url:url, source_name:String(d.site||linkHost(url)||'')||null};

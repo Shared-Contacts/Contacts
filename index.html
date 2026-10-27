@@ -8917,6 +8917,34 @@ function bookMeta(line,out){
   return false;
 }
 const bookNum = /^(?:step\s*)?(\d{1,2})\s*[.):]?(?:\s+|$)/i;
+// "Ingredients (Serves 4)" or "Method:" with a bit after it: the heading, and what came after.
+function bookHeadOf(line){
+  const h=bookHead(line); if(h) return [h,''];
+  const m=line.match(/^(.+?)\s*(?:\((.+)\)|[:\-–]\s*((?:serves|feeds|makes|for)\b.+))$/i);
+  return m&&bookHead(m[1]) ? [bookHead(m[1]), m[2]||m[3]] : ['',''];
+}
+// Badges printed near the title, such as "5-10g FIBRE", "12 PLANTS", "450 kcal", "V GF":
+// never the title.
+const bookBadge = /^(?:(?:[\d.,\-–\/½¼¾]+\s*(?:g|mg|kg|kcal|cals?|%)?|fibre|fiber|plants?|protein|fat|saturates|carbs?|carbohydrates?|sugars?|salt|kcal|calories|cals?|energy|per serving|vegan|vegetarian|v|vg|gf|df|gluten[- ]free|dairy[- ]free)(?:[\s,·|]+|$))+$/i;
+// Small headings inside a list of ingredients.
+const BOOK_SUB = /^(top-?ups?|toppings?|garnish(es)?|swaps?|extras?|optional extras|to finish)$/i;
+// A line that could be (part of) a recipe's name: short, no numbers or commas,
+// and the main words with capitals ("Sweetcorn and Spinach Dhal").
+function bookTitleLike(l){
+  return l.length<=40&&!/[\d,()]/.test(l)&&!/[.:;!?]$/.test(l)&&!bookHead(l)&&!BOOK_SUB.test(l)
+    &&l.split(' ').every(w=>w.length<4||/^[A-ZÀ-Þ]/.test(w));
+}
+// The start of a paragraph of writing: a full line of words, going on into a
+// sentence of a dozen words or more that ends with a full stop.
+function bookProse(lines,i){
+  if(!/^[A-ZÀ-Þ"“]/.test(lines[i])||lines[i].split(' ').length<5) return false;
+  let s='';
+  for(let j=i;j<lines.length&&j<i+6;j++){
+    s+=' '+lines[j];
+    if(/[a-z][.!?]["”']?(\s|$)/.test(lines[j])) return s.trim().split(' ').length>=12;
+  }
+  return false;
+}
 
 // Lines from the page back into whole steps.
 function bookSteps(lines){
@@ -8940,12 +8968,14 @@ function bookSteps(lines){
 function bookIngs(lines){
   const out=[];
   lines.forEach(l=>{
-    const head=(rcpHead(l)||/^for (the|a)\b/i.test(l)||/^to serve\b/i.test(l))&&l.length<40&&!/^\d/.test(l);
+    const head=(rcpHead(l)||/^for (the|a)\b/i.test(l)||/^to serve\b/i.test(l)
+      ||BOOK_SUB.test(l))
+      &&l.length<40&&!/^\d/.test(l);
     const prev=out[out.length-1];
     // Only a line that plainly carries on from the one before: "salt and pepper"
     // on a line of its own is an ingredient of its own.
     const more=prev&&!rcpHead(prev)&&!head
-      &&(/^\(/.test(l)||/[,\-–(]$/.test(prev)||/\b(and|or|of|into|cut|to|about|plus)$/i.test(prev)
+      &&(/^\(/.test(l)||/[,\-–(]$/.test(prev)||(prev.split('(').length>prev.split(')').length)||/\b(and|or|of|into|cut|to|about|plus)$/i.test(prev)
          ||/^(and|or|into|to|cut|plus|then|about|at room|roughly|finely|thinly|halved|sliced|chopped|diced|peeled|trimmed|grated|crushed|deseeded|softened|melted|beaten)\b/.test(l));
     if(more) out[out.length-1]=prev+' '+l;
     else out.push(head&&!rcpHead(l)?l+':':l);
@@ -8962,12 +8992,32 @@ function splitRecipe(text){
   const sec={intro:[], ing:[], prep:[], cook:[], notes:[]};
   let at='intro';
   lines.forEach(l=>{
-    const h=bookHead(l);
-    if(h){ at=h; return; }
+    const [h,rest]=bookHeadOf(l);
+    if(h){ at=h; if(rest) bookMeta(rest.replace(/^(\d)/,'serves $1'),out); return; }
     if(bookMeta(l,out)) return;
+    // Badges: anywhere but the ingredients ("Salt" on its own is one of those),
+    // and after the title only the ones in capitals or with a number.
+    if(at!=='ing'&&bookBadge.test(l)&&(at==='intro'&&!out.title||/\d/.test(l)||!/[a-z]/.test(l))) return;
     if(at==='intro'&&!out.title&&/[a-z]/i.test(l)){ out.title=l; return; }
+    // A name that runs onto a second line: "Sweetcorn and" / "Spinach Dhal".
+    if(at==='intro'&&!sec.intro.length&&/\b(and|with|&|or|of|in|on)$/i.test(out.title)&&bookTitleLike(l)){
+      out.title+=' '+l; return; }
     sec[at].push(l);
   });
+  // No title before the ingredients: on a page with the ingredients down one side,
+  // Lens copies that side first, so the name and the words about the recipe come
+  // after the ingredients. The name is the line or two just above that paragraph.
+  if(!out.title&&sec.ing.length){
+    const p=sec.ing.findIndex((l,i)=>i>0&&bookProse(sec.ing,i)&&bookTitleLike(sec.ing[i-1]));
+    if(p>0){
+      let t=p-1;
+      while(t>0&&p-t<3&&bookTitleLike(sec.ing[t-1])
+        &&(/\b(and|with|&|or|of|in|on)$/i.test(sec.ing[t-1])||/^[a-z]/.test(sec.ing[t]))) t--;
+      out.title=sec.ing.slice(t,p).join(' ');
+      sec.intro=sec.intro.concat(sec.ing.slice(p));
+      sec.ing=sec.ing.slice(0,t);
+    }
+  }
   // No headings at all: the short lines straight after the title are the
   // ingredients, and the method starts at the first proper sentence.
   if(!sec.ing.length&&!sec.cook.length&&!sec.prep.length){

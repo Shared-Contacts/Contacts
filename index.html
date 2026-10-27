@@ -1362,7 +1362,7 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 
 <div id="reports" class="sheet hidden">
   <div class="sheetbar"><button id="repBack">Back</button>
-    <span class="title">Reports</span><span class="bartools"><button class="bt" data-barhelp="reports" aria-label="How the reports work" title="How the reports work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
+    <span class="title">Reports</span><span class="bartools"><button class="bt" data-barhelp="reports" aria-label="How the reports work" title="How the reports work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="repBody"></div>
 </div>
 
@@ -2079,6 +2079,7 @@ async function refreshAll(){
   if(!$('links').classList.contains('hidden')){ await loadLinks(); renderLinks(); }
   if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
     if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
+  if(!$('reports').classList.contains('hidden')) await repLoad();
   toast('Up to date');
 }
 
@@ -3411,7 +3412,7 @@ const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
   'coal_type','gas_bottle','service_kind','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects',
+  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects','linkopen',
   'rcpcats','rcpcupboard','rcphidden'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
@@ -3423,7 +3424,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
   fincur:'Currencies', taxyear:'Tax year',
-  linklevels:'Levels', linksubjects:'Subjects',
+  linklevels:'Levels', linksubjects:'Subjects', linkopen:'Open new links with',
   rcpcats:'Categories', rcpcupboard:'Usually in the cupboard', rcphidden:'Recipes you chose not to see'};
 
 // Everything to do with one screen sits under that screen's heading.
@@ -3433,7 +3434,7 @@ const SET_GROUPS=[
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
-  {label:'URL Links',  cards:['linklevels','linksubjects']},
+  {label:'URL Links',  cards:['linklevels','linksubjects','linkopen']},
   {label:'Recipes',    cards:['rcpcats','rcpcupboard','rcphidden']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
@@ -3568,6 +3569,7 @@ async function openSettings(goTo){
     taxyear:    taxYearRows(),
     linklevels:   linkLevelRows(),
     linksubjects: linkSubjectRows(),
+    linkopen:     linkOpenRows(),
     rcpcats:      rcpCatRows(),
     rcpcupboard:  rcpCupRows(),
     rcphidden:    rcpHidRows(),
@@ -4036,6 +4038,9 @@ function openHelp(where){
   the print screen can save it as a PDF. <strong>Download</strong> saves a file
   that Excel or Google Sheets opens, with plain numbers and a column for the
   currency.</p>
+  <p><strong>Refresh transactions</strong>, under the dates, fetches the
+  figures again. A change you have just saved shows up anyway, but use it if
+  something was changed on another phone while the report was open.</p>
 
   <h4 id="h-pairs">Transfers that came in as two loose halves</h4>
   <p>Money moved between two of your own accounts appears on <em>both</em>
@@ -4237,6 +4242,14 @@ function openHelp(where){
   addresses, descriptions and subjects. <strong>Most used</strong> puts the ones
   you open most often first; the app counts each time you open one of yours.</p>
   <p>Tap a link to open it. The pencil at the end changes it, or deletes it.</p>
+  <p><strong>Open with</strong> chooses, once, where a link opens:
+  <strong>Chrome</strong>, the <strong>YouTube app</strong>, the
+  <strong>Barclays app</strong>, or <strong>Phone decides</strong>, the ordinary
+  way. It is filled in for you when you add a link: YouTube and Barclays pages
+  get their own app, and everything else gets your usual choice, set under
+  Settings &rsaquo; URL Links &rsaquo; Open new links with. If the phone does not
+  have that app, or the app will not take the link, it opens the ordinary way
+  instead.</p>
   <p>A new link is yours alone. Under <strong>Who can see it</strong> you can
   share it with <strong>Everyone</strong> or with the people you choose. Links
   shared with you appear under <strong>Shared with you</strong>, with the name of
@@ -7654,7 +7667,8 @@ function linkPrefsFrom(saved){
       ? lp.levels.filter(x=>x&&x.id&&x.name) : LINK_LEVELS_DEFAULT.map(x=>({...x})),
     subjects: lp&&Array.isArray(lp.subjects)
       ? lp.subjects.filter(Boolean) : LINK_SUBJECTS_DEFAULT.slice(),
-    hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [] };
+    hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [],
+    openWith: lp&&typeof lp.openWith==='string' ? lp.openWith : '' };
 }
 
 function linkHost(u){
@@ -7678,6 +7692,32 @@ function sameUrl(a,b){
 }
 function levelName(id){
   const l=LINK_PREFS.levels.find(x=>x.id===id); return l?l.name:'';
+}
+/* Which app a link opens in, chosen once when it is added (asked for
+   27 Oct 2026, step 45). On an Android phone the app is asked for by name; if
+   it is not on the phone, or will not take the link, the page opens the
+   ordinary way instead. On a computer it is always the ordinary way. */
+const LINK_APPS=[
+  {k:'',         label:'Phone decides'},
+  {k:'chrome',   label:'Chrome',       pkg:'com.android.chrome'},
+  {k:'youtube',  label:'YouTube app',  pkg:'com.google.android.youtube',
+   hosts:/(^|\.)(youtube\.com|youtu\.be)$/i},
+  {k:'barclays', label:'Barclays app', pkg:'com.barclays.android.barclaysmobilebanking',
+   hosts:/(^|\.)barclays\.co\.uk$/i}];
+const linkApp = k => LINK_APPS.find(a=>a.k===(k||''))||LINK_APPS[0];
+// The guess for a new link: the site's own app if it has one, else your usual.
+function linkAppFor(url){
+  const h=linkHost(url);
+  const a=h&&LINK_APPS.find(x=>x.hosts&&x.hosts.test(h));
+  return a?a.k:(LINK_PREFS.openWith||'');
+}
+const ON_ANDROID=/Android/i.test(navigator.userAgent);
+function linkHref(l){
+  const a=linkApp(l.open_with);
+  const m=String(l.url||'').match(/^(https?):\/\/([^#]*)$/i);
+  if(!a.pkg||!ON_ANDROID||!m) return l.url;
+  return 'intent://'+m[2]+'#Intent;scheme='+m[1].toLowerCase()+';package='+a.pkg
+    +';S.browser_fallback_url='+encodeURIComponent(l.url)+';end';
 }
 const linkMine = l => l.created_by===ME.id;
 const linkSharedWith = id => ULINK_SHARES.filter(s=>s.link_id===id).map(s=>s.viewer_id);
@@ -7740,10 +7780,12 @@ function linkRow(l){
   else if(l.share_all) said.push('shared with everyone');
   else if(who.length) said.push('shared with '+esc(who.map(whoWrote).join(', ')));
   if(mine&&l.opens) said.push('opened '+l.opens+(l.opens===1?' time':' times'));
+  const href=linkHref(l), app=linkApp(l.open_with);
+  // An app is asked for from the page itself; a new tab would be left blank.
   return `<div class="lnk">
-    <a class="lgo" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"
+    <a class="lgo" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
       data-lopen="${l.id}"><b>${esc(l.title)}</b>
-      <span class="lmeta">${meta}</span>
+      <span class="lmeta">${meta}${app.k?' &middot; opens in '+esc(app.label):''}</span>
       ${l.description?`<span class="ldesc">${esc(l.description)}</span>`:''}
       ${said.length?`<span class="lwho">${said.join(' &middot; ')}</span>`:''}</a>
     <button class="ledit" data-ledit="${l.id}" aria-label="${
@@ -7853,6 +7895,7 @@ function editLink(id,start){
   if(old&&!linkMine(old)) return linkActions(id);
   const d=old?{...old}:{url:'', title:'', description:'',
     level:(LINK_PREFS.levels[0]||{}).id||null, subjects:[], share_all:false, ...(start||{})};
+  if(!old&&d.open_with===undefined) d.open_with=linkAppFor(d.url);
   const had=old?linkSharedWith(old.id):[];
   let mode=d.share_all?'all':had.length?'some':'me';
   const subjects=[...new Set(LINK_PREFS.subjects.concat(arr(d.subjects)))];
@@ -7869,6 +7912,9 @@ function editLink(id,start){
       placeholder="What it is"></label>
     <label>Description<textarea id="leDesc" rows="2"
       placeholder="Optional">${esc(d.description||'')}</textarea></label>
+    <p class="ulhead">Open with</p>
+    <span class="pickrow" id="leApps">${LINK_APPS.map(a=>`<button type="button"
+      data-leapp="${a.k}" aria-pressed="${(d.open_with||'')===a.k}">${esc(a.label)}</button>`).join('')}</span>
     <p class="ulhead">Level</p>
     <span class="pickrow" id="leLevels">${LINK_PREFS.levels.map(x=>`<button type="button"
       data-lelv="${esc(x.id)}" aria-pressed="${d.level===x.id}">${esc(x.name)}</button>`).join('')}</span>
@@ -7898,8 +7944,15 @@ function editLink(id,start){
   // A title nobody has typed follows the address, so pasting is all it takes.
   let titled=!!(d.title&&d.title!==linkHost(d.url));
   q('#leTitle').oninput=()=>{ titled=!!q('#leTitle').value.trim(); };
+  // Open with follows the address too, until you pick one yourself.
+  let appPicked=!!old;
+  const pickApp=k=>box.querySelectorAll('[data-leapp]')
+    .forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.leapp===k)));
+  box.querySelectorAll('[data-leapp]').forEach(b=>b.onclick=()=>{
+    appPicked=true; pickApp(b.dataset.leapp); });
   const follow=()=>{ const u=findUrl(q('#leUrl').value);
-    if(u&&!titled) q('#leTitle').value=linkHost(u); };
+    if(u&&!titled) q('#leTitle').value=linkHost(u);
+    if(u&&!appPicked) pickApp(linkAppFor(u)); };
   q('#leUrl').oninput=follow; q('#leUrl').onchange=follow;
   q('#lePaste').onclick=async()=>{
     let t='';
@@ -7946,22 +7999,32 @@ function editLink(id,start){
     const url=findUrl(q('#leUrl').value);
     if(!url){ toast('That does not look like a web address'); q('#leUrl').focus(); return; }
     const lvb=box.querySelector('[data-lelv][aria-pressed="true"]');
+    const apb=box.querySelector('[data-leapp][aria-pressed="true"]');
     const subs=[...box.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b=>b.dataset.lesub);
     const rec={url, title:q('#leTitle').value.trim()||linkHost(url)||url,
       description:q('#leDesc').value.trim()||null,
-      level:lvb?lvb.dataset.lelv:null, subjects:subs, share_all:mode==='all'};
+      level:lvb?lvb.dataset.lelv:null, subjects:subs, share_all:mode==='all',
+      open_with:apb&&apb.dataset.leapp||null};
     if(!old){
       const dup=ULINKS.find(x=>linkMine(x)&&sameUrl(x.url,url));
       if(dup&&!confirm('You already have this one, as "'+dup.title+'". Add it again anyway?')) return;
     }
     q('#leGo').disabled=true;
     let lid=old?old.id:null;
+    // Before step 45 there is nowhere to keep Open with, so the link is saved
+    // without it rather than not at all.
+    const noApp=e=>e&&/open_with/i.test(e.message||'');
+    let appLost=false;
     if(old){
-      const {error}=await sb.from('url_links').update(rec).eq('id',lid);
+      let {error}=await sb.from('url_links').update(rec).eq('id',lid);
+      if(noApp(error)){ appLost=true; const {open_with,...bare}=rec;
+        ({error}=await sb.from('url_links').update(bare).eq('id',lid)); }
       if(error){ q('#leGo').disabled=false; toast('Could not save it'); console.error(error); return; }
     } else {
-      const {data,error}=await sb.from('url_links').insert({...rec, created_by:ME.id})
+      let {data,error}=await sb.from('url_links').insert({...rec, created_by:ME.id})
         .select().single();
+      if(noApp(error)){ appLost=true; const {open_with,...bare}=rec;
+        ({data,error}=await sb.from('url_links').insert({...bare, created_by:ME.id}).select().single()); }
       if(error){ q('#leGo').disabled=false; toast('Could not add it'); console.error(error); return; }
       lid=data.id;
     }
@@ -7985,6 +8048,7 @@ function editLink(id,start){
     if(fresh.length){ LINK_PREFS.subjects=LINK_PREFS.subjects.concat(fresh); await saveTiles(); }
     close(); await loadLinks(); renderLinks();
     toast(shareErr?'Saved, but who can see it did not change. Try again.'
+      : appLost?'Saved, but Open with needs the step 45 file run first'
       : old?'Saved':'Added');
   };
   if(!d.url) setTimeout(()=>q('#leUrl').focus(),50);
@@ -8009,7 +8073,8 @@ function linkActions(id){
   q('#laShut').onclick=close;
   box.onclick=ev=>{ if(ev.target===box) close(); };
   q('#laKeep').onclick=()=>{ close();
-    editLink(null,{url:l.url, title:l.title, description:l.description, subjects:arr(l.subjects)}); };
+    editLink(null,{url:l.url, title:l.title, description:l.description, subjects:arr(l.subjects),
+      open_with:l.open_with??undefined}); };
   q('#laCopy').onclick=async()=>{ toast(await copyText(l.url)?'Copied':'Could not copy it'); };
   q('#laHide').onclick=async()=>{
     if(!confirm('Stop seeing "'+l.title+'"? Only '+whoWrote(l.created_by)
@@ -8064,6 +8129,14 @@ function linkLevelRows(){
   <div class="setadd"><input id="lvNew" placeholder="New level">
     <button class="btn primary" id="lvAdd">Add level</button></div>`;
 }
+function linkOpenRows(){
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    What a new link is set to open with. YouTube and Barclays pages go to their
+    own app whatever this says. You can still change it on each link.</dd></div>
+  <div class="setadd"><span class="pickrow">${LINK_APPS.filter(a=>!a.hosts).map(a=>`<button
+    type="button" data-lodef="${a.k}" aria-pressed="${(LINK_PREFS.openWith||'')===a.k}">${
+    esc(a.label)}</button>`).join('')}</span></div>`;
+}
 function linkSubjectRows(){
   return `<div class="field"><dd style="color:var(--muted);font-size:15px">
     What links can be filed under. A link can have several. Renaming or
@@ -8090,6 +8163,8 @@ async function relabelSubject(from,to){
 function wireLinkSettings(){
   const body=$('setBody'); if(!body) return;
   const save=async msg=>{ await saveTiles(); openSettings(); if(msg) toast(msg); };
+  body.querySelectorAll('[data-lodef]').forEach(b=>b.onclick=()=>{
+    LINK_PREFS.openWith=b.dataset.lodef; save('Saved'); });
   body.querySelectorAll('[data-lvmv]').forEach(b=>b.onclick=ev=>{
     ev.preventDefault();
     const [id,dir]=b.dataset.lvmv.split(':'), L=LINK_PREFS.levels;
@@ -12089,6 +12164,10 @@ async function loadMoney(){
   // Finances is open to anyone signed in. You simply see your own accounts.
   MONEY_ON = true;
   MONEY_WHY='';
+  // Whatever brought the books back in (a save, the refresh arrow, the
+  // five-minute catch-up) may have changed a figure, so the report fetches
+  // afresh next time rather than showing what it added up before.
+  REP.key=''; REP.prevKey='';
   await loadTodo();
   await loadTxns();
 }
@@ -13660,6 +13739,7 @@ function renderReports(){
         <div class="checks">${accs}</div>
         <div class="pickrow"><button type="button" id="repAll">Tick all</button>
           <button type="button" id="repNone">Untick all</button></div></details>
+      ${REP.busy?'':`<div class="pickrow"><button type="button" id="repFresh">&#8635; Refresh transactions</button></div>`}
     </div>
     <h2 class="reptitle">${esc(kind.label)}</h2>
     <div id="repOut">${out}</div>`;
@@ -13679,6 +13759,10 @@ function renderReports(){
   $('repAll').onclick=()=>{ REP.accs=null; repLoad(); };
   $('repNone').onclick=()=>{ REP.accs=new Set(); repLoad(); };
   const ag=$('repAgain'); if(ag) ag.onclick=()=>{ REP.key=''; REP.prevKey=''; repLoad(); };
+  // The categories and payees come back too, in case one was renamed.
+  const rf=$('repFresh'); if(rf) rf.onclick=async()=>{
+    REP.busy=true; renderReports();
+    await loadMoney(); REP.busy=false; await repLoad(); toast('Transactions refreshed'); };
   const pr=$('repPrint'); if(pr) pr.onclick=printReport;
   const dl=$('repCsv'); if(dl) dl.onclick=downloadReport;
   repWireTop();

@@ -425,7 +425,7 @@ const seed = () => {
   ok('only the site’s categories that match yours: Soup is your Soups', web && JSON.stringify(web.categories) === '["Soups"]',
      JSON.stringify(web && web.categories));
   ok('its picture and where it came from', web && web.photos[0].url === 'https://images.example/soup.jpg'
-     && web.source_name === 'Good Food' && web.notes === 'A winter classic');
+     && web.source_name === 'Good Food' && web.about === 'A winter classic' && web.notes === null);
   ok('and it opens, with Keep and Reject', await p.isVisible('#recipe') && await p.isVisible('#rvKeep'));
 
   await ev(() => { window.__invoke = () => ({ data:null, error:{ message:'read-recipe test: the website said no' } }); });
@@ -543,7 +543,7 @@ const seed = () => {
   ok('a title in capitals is written normally', a.title === 'Leek and potato soup', a.title);
   ok('serves and both times are picked out', a.serves === 4 && a.prep_mins === 15 && a.cook_mins === 30,
      [a.serves, a.prep_mins, a.cook_mins].join(','));
-  ok('the words about it go into Notes, joined up', a.notes === 'A comforting soup for a cold day on the towpath, ready in under an hour.', a.notes);
+  ok('the words about it go into the description, joined up', a.about === 'A comforting soup for a cold day on the towpath, ready in under an hour.' && a.notes === null, a.about);
   const ingA = await ev(r => r.ingredients.map(x => ingText(x, 1)), a);
   ok('ingredients that ran onto a second line are joined up', JSON.stringify(ingA) === JSON.stringify(['50g butter',
      '2 large leeks, trimmed and sliced', '450g floury potatoes, peeled and diced', '1 litre vegetable stock',
@@ -601,10 +601,45 @@ const seed = () => {
        JSON.stringify(zi.slice(-7)) === JSON.stringify(['1 tbsp dried curry leaves (optional)', 'Salt and black pepper',
        'Top-ups:', 'Soft-boiled egg', 'Coriander', 'Swap:', 'Fresh spinach for frozen (add at the end to wilt through)']),
        JSON.stringify(zi));
-    ok(`two columns (${name}): the words about it go into Notes, the steps stay steps`,
-       /^This is a great moment.*dhal while cooking\.$/.test(z.notes) && z.cook_steps.length === 2
-       && !/FIBRE|5-10g/.test(JSON.stringify(z)), z.notes + ' | ' + JSON.stringify(z.cook_steps));
+    ok(`two columns (${name}): the words about it go into the description, the steps stay steps`,
+       /^This is a great moment.*dhal while cooking\.$/.test(z.about) && z.cook_steps.length === 2
+       && !/FIBRE|5-10g/.test(JSON.stringify(z)), z.about + ' | ' + JSON.stringify(z.cook_steps));
   }
+  const bTop = ['Beef and bean burritos', 'This popular Mexican-style dish creates an ideal supper for sharing'];
+  const bPanel = ['Each portion contains:', 'Energy', '2950kJ', '700cal', '35%', 'Sugars', '15.9g', 'Low', '18%',
+    'Salt', '1.5g', 'Low', '25%', "% = an adult's reference intake"];
+  const bIngs = ['2½ tsp rapeseed oil', '140g (5oz) lean beef steak (such as sirloin), cut into thin strips',
+    '1 tsp hot chilli powder', '1 small red onion, finely chopped', '227g (8oz) can chopped tomatoes in rich natural juice',
+    '6-8 tsp 5% fat Greek-style natural yoghurt (optional)'];
+  const bSteps = n => [n(1) + 'Heat 2 teaspoons of the rapeseed oil in a non-stick', 'saucepan over a medium-high heat. Add beef; cook for',
+    '2-3 minutes or until sealed all over, stirring frequently.', n(2) + 'Add red onion, red pepper and remaining oil to pan;',
+    'stir-fry over a medium-high heat for 3-4 minutes.', n(3) + 'Meanwhile, warm tortillas according to packet instructions.'];
+  const bTips = ["COOK'S TIPS", '• Skinless, boneless chicken or turkey thigh meat or lean', 'pork can be substituted for the beef.',
+    '• Swap the red pepper for a yellow or orange pepper.'];
+  const burritos = {
+    'times on lines of their own, steps numbered 1 2 3':
+      [...bTop, 'Preparation time: 25 minutes', 'Cooking time: 15 minutes', 'Serves: 2', ...bPanel, ...bIngs, ...bSteps(n => n + ' '), ...bTips],
+    'times run on after the words, no step numbers':
+      [bTop[0], bTop[1] + ' Preparation time: 25 minutes Cooking time: 15 minutes', 'Serves:', '2', 'an adults refletence intake',
+       ...bIngs, ...bSteps(() => ''), ...bTips] };
+  for (const [name, page] of Object.entries(burritos)) {
+    const r = await ev(t => splitRecipe(t), page.join('\n'));
+    const ri = await ev(x => x.ingredients.map(i => ingText(i, 1)), r);
+    ok(`no headings (${name}): title, description, serves and times`, r.title === 'Beef and bean burritos'
+       && r.about === 'This popular Mexican-style dish creates an ideal supper for sharing'
+       && r.serves === 2 && r.prep_mins === 25 && r.cook_mins === 15, JSON.stringify(r).slice(0, 200));
+    ok(`no headings (${name}): the ingredients, without the nutrition panel`, JSON.stringify(ri) === JSON.stringify(bIngs), JSON.stringify(ri));
+    ok(`no headings (${name}): the steps, without their numbers`, JSON.stringify(r.cook_steps) === JSON.stringify([
+       'Heat 2 teaspoons of the rapeseed oil in a non-stick saucepan over a medium-high heat. Add beef; cook for 2-3 minutes or until sealed all over, stirring frequently.',
+       'Add red onion, red pepper and remaining oil to pan; stir-fry over a medium-high heat for 3-4 minutes.',
+       'Meanwhile, warm tortillas according to packet instructions.']), JSON.stringify(r.cook_steps));
+    ok(`no headings (${name}): the cook's tips into Notes, one to a paragraph`, r.notes ===
+       'Skinless, boneless chicken or turkey thigh meat or lean pork can be substituted for the beef.\n\nSwap the red pepper for a yellow or orange pepper.',
+       JSON.stringify(r.notes));
+  }
+  const counted = await ev(t => splitRecipe(t).cook_steps, ['Method', '1. Put the oven on.', '2. Bake for', '20 minutes, then cool.'].join('\n'));
+  ok('a line starting "20 minutes" carries on the step before', counted.length === 2 && /Bake for 20 minutes, then cool\./.test(counted[1]),
+     JSON.stringify(counted));
   const empty = await ev(() => splitRecipe('  \n \n'));
   ok('nothing pasted, nothing made up', !empty.title && !empty.ingredients.length && !empty.cook_steps.length);
 
@@ -622,13 +657,15 @@ const seed = () => {
   ok('Fill in the recipe opens the editor, filled in', await p.isVisible('#recipeEd')
      && await p.inputValue('#reTitle') === 'Leek and potato soup' && await p.inputValue('#reServes') === '4'
      && await p.inputValue('#reCook') === '30' && /trimmed and sliced/.test(await p.inputValue('#reIngs'))
-     && (await p.inputValue('#reCookSteps')).split('\n').length === 3);
+     && (await p.inputValue('#reCookSteps')).split('\n').length === 3
+     && /^A comforting soup/.test(await p.inputValue('#reAbout')) && !(await p.inputValue('#reNotes')));
   ok('nothing is saved until you press Save', !(await writes()).some(w => w.op === 'insert' && w.table === 'recipes'));
   await clearWrites();
   await p.click('#reSave'); await settle(700);
   const bookIns = ((await writes()).find(w => w.op === 'insert' && w.table === 'recipes') || {}).rows;
   ok('and Save keeps it as a recipe of your own', bookIns && bookIns.title === 'Leek and potato soup'
-     && bookIns.ingredients.length === 7 && bookIns.cook_steps.length === 3 && bookIns.to_try === undefined,
+     && bookIns.ingredients.length === 7 && bookIns.cook_steps.length === 3 && bookIns.to_try === undefined
+     && /^A comforting soup/.test(bookIns.about),
      JSON.stringify(bookIns).slice(0, 150));
   await ev(() => { try{ localStorage.setItem('bookhow', '1'); }catch(e){} });
   await ev(() => { $('recipe').classList.add('hidden'); editRecipe(null); }); await settle(300);
@@ -645,6 +682,26 @@ const seed = () => {
   ok('changing a recipe you already have does not offer it', !await p.isVisible('#reBook'));
   await ev(() => cancelRecipe());
   ok('the menu offers it', await ev(() => areaItems('recipes').some(i => i.label === 'From a book or a page')));
+
+  console.log('\nThe description, and Serves with no ingredients');
+  await ev(() => { RECIPES.push({ id:309, created_by:ME.id, title:'Beef and bean burritos', about:'An ideal supper for sharing',
+    categories:['Mains'], serves:2, prep_mins:25, cook_mins:15, ingredients:[], prep_steps:[], cook_steps:['Heat the oil.'],
+    notes:null, photos:[], video_url:null, source_url:null, source_name:null, to_try:false, share_all:true });
+    $('recipeEd').classList.add('hidden'); openRecipe(309); });
+  await settle(300);
+  ok('the description shows under the title', await p.textContent('#rcpView .rcpabout') === 'An ideal supper for sharing'
+     && await ev(() => document.querySelector('#rcpView .rcptitle').nextElementSibling.className) === 'rcpabout');
+  ok('with no ingredients, Serves shows by the times', /Mains · Serves 2 · Prep 25 mins, Cook 15 mins/.test(await p.textContent('#rcpView .rcpmeta')),
+     await p.textContent('#rcpView .rcpmeta'));
+  await ev(() => editRecipe(309)); await settle(300);
+  ok('the editor has it, under the title', await p.inputValue('#reAbout') === 'An ideal supper for sharing');
+  await p.fill('#reAbout', 'Mexican-style, for two'); await clearWrites();
+  await p.click('#reSave'); await settle(700);
+  const aboutUp = ((await writes()).find(w => w.op === 'update' && w.table === 'recipes') || {}).patch;
+  ok('and saves a change to it', aboutUp && aboutUp.about === 'Mexican-style, for two', JSON.stringify(aboutUp).slice(0, 120));
+  ok('searching finds words in it', await ev(() => { RECIPES.find(r => r.id === 302).about = 'A Mexican-style supper';
+    RCP.q = 'mexican'; return rcpShown().map(r => r.id).join() === '302'; }));
+  await ev(() => { RCP.q = ''; $('recipe').classList.add('hidden'); });
 
   console.log('\nThe saved choices');
   const pf = await ev(() => rcpPrefsFrom({ recipes:{ cats:['A'], cupboard:[], hide:['7'], cooked:{ 5:{ n:2, last:'2026-10-01' } }, today:false } }));

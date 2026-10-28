@@ -3423,7 +3423,7 @@ const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
   'coal_type','gas_bottle','service_kind','mecontact',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects','linkopen',
+  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects',
   'rcpcats','rcpcupboard','rcphidden'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
@@ -3435,7 +3435,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
   fincur:'Currencies', taxyear:'Tax year',
-  linklevels:'Levels', linksubjects:'Subjects', linkopen:'Open new links with',
+  linklevels:'Levels', linksubjects:'Subjects',
   rcpcats:'Categories', rcpcupboard:'Usually in the cupboard', rcphidden:'Recipes you chose not to see'};
 
 // Everything to do with one screen sits under that screen's heading.
@@ -3445,7 +3445,7 @@ const SET_GROUPS=[
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
-  {label:'URL Links',  cards:['linklevels','linksubjects','linkopen']},
+  {label:'URL Links',  cards:['linklevels','linksubjects']},
   {label:'Recipes',    cards:['rcpcats','rcpcupboard','rcphidden']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
@@ -3580,7 +3580,6 @@ async function openSettings(goTo){
     taxyear:    taxYearRows(),
     linklevels:   linkLevelRows(),
     linksubjects: linkSubjectRows(),
-    linkopen:     linkOpenRows(),
     rcpcats:      rcpCatRows(),
     rcpcupboard:  rcpCupRows(),
     rcphidden:    rcpHidRows(),
@@ -4253,14 +4252,12 @@ function openHelp(where){
   addresses, descriptions and subjects. <strong>Most used</strong> puts the ones
   you open most often first; the app counts each time you open one of yours.</p>
   <p>Tap a link to open it. The pencil at the end changes it, or deletes it.</p>
-  <p><strong>Open with</strong> chooses, once, where a link opens:
-  <strong>Chrome</strong>, the <strong>YouTube app</strong>, the
-  <strong>Barclays app</strong>, or <strong>Phone decides</strong>, the ordinary
-  way. It is filled in for you when you add a link: YouTube and Barclays pages
-  get their own app, and everything else gets your usual choice, set under
-  Settings &rsaquo; URL Links &rsaquo; Open new links with. If the phone does not
-  have that app, or the app will not take the link, it opens the ordinary way
-  instead.</p>
+  <p><strong>Open with</strong> chooses, once, where a link opens: the
+  <strong>YouTube app</strong>, the <strong>Barclays app</strong>, or
+  <strong>Phone decides</strong>, the ordinary way. It is filled in for you when
+  you add a link: YouTube and Barclays pages get their own app, and everything
+  else gets Phone decides. If the phone does not have that app, or the app will
+  not take the link, it opens the ordinary way instead.</p>
   <p>A new link is yours alone. Under <strong>Who can see it</strong> you can
   share it with <strong>Everyone</strong> or with the people you choose. Links
   shared with you appear under <strong>Shared with you</strong>, with the name of
@@ -7852,7 +7849,6 @@ function linkPrefsFrom(saved){
     subjects: lp&&Array.isArray(lp.subjects)
       ? lp.subjects.filter(Boolean) : LINK_SUBJECTS_DEFAULT.slice(),
     hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [],
-    openWith: lp&&typeof lp.openWith==='string' ? lp.openWith : '',
     where: lp&&lp.where&&typeof lp.where==='object' ? {...lp.where} : {} };
 }
 
@@ -7881,20 +7877,22 @@ function levelName(id){
 /* Which app a link opens in, chosen once when it is added (asked for
    27 Oct 2026, step 45). On an Android phone the app is asked for by name; if
    it is not on the phone, or will not take the link, the page opens the
-   ordinary way instead. On a computer it is always the ordinary way. */
+   ordinary way instead. On a computer it is always the ordinary way.
+   Chrome was a choice until 28 Oct 2026 (ML70): tested on the phone, asking
+   for Chrome only ever opened the window inside the app, so it was taken out.
+   A link still set to Chrome opens the ordinary way. */
 const LINK_APPS=[
   {k:'',         label:'Phone decides'},
-  {k:'chrome',   label:'Chrome',       pkg:'com.android.chrome'},
   {k:'youtube',  label:'YouTube app',  pkg:'com.google.android.youtube',
    hosts:/(^|\.)(youtube\.com|youtu\.be)$/i},
   {k:'barclays', label:'Barclays app', pkg:'com.barclays.android.barclaysmobilebanking',
    hosts:/(^|\.)barclays\.co\.uk$/i}];
 const linkApp = k => LINK_APPS.find(a=>a.k===(k||''))||LINK_APPS[0];
-// The guess for a new link: the site's own app if it has one, else your usual.
+// The guess for a new link: the site's own app if it has one, else Phone decides.
 function linkAppFor(url){
   const h=linkHost(url);
   const a=h&&LINK_APPS.find(x=>x.hosts&&x.hosts.test(h));
-  return a?a.k:(LINK_PREFS.openWith||'');
+  return a?a.k:'';
 }
 const ON_ANDROID=/Android/i.test(navigator.userAgent);
 /* Show on: Laptop, Both or Phone, for each link (asked for 28 Oct 2026, ML71).
@@ -8129,7 +8127,7 @@ function editLink(id,start){
       placeholder="Optional">${esc(d.description||'')}</textarea></label>
     <p class="ulhead">Open with</p>
     <span class="pickrow" id="leApps">${LINK_APPS.map(a=>`<button type="button"
-      data-leapp="${a.k}" aria-pressed="${(d.open_with||'')===a.k}">${esc(a.label)}</button>`).join('')}</span>
+      data-leapp="${a.k}" aria-pressed="${linkApp(d.open_with).k===a.k}">${esc(a.label)}</button>`).join('')}</span>
     <p class="ulhead">Show on</p>
     <span class="pickrow" id="leWhere">${LINK_WHERE.map(w=>`<button type="button"
       data-lewhere="${w.k}" aria-pressed="${where===w.k}">${w.label}</button>`).join('')}</span>
@@ -8363,14 +8361,6 @@ function linkLevelRows(){
   <div class="setadd"><input id="lvNew" placeholder="New level">
     <button class="btn primary" id="lvAdd">Add level</button></div>`;
 }
-function linkOpenRows(){
-  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
-    What a new link is set to open with. YouTube and Barclays pages go to their
-    own app whatever this says. You can still change it on each link.</dd></div>
-  <div class="setadd"><span class="pickrow">${LINK_APPS.filter(a=>!a.hosts).map(a=>`<button
-    type="button" data-lodef="${a.k}" aria-pressed="${(LINK_PREFS.openWith||'')===a.k}">${
-    esc(a.label)}</button>`).join('')}</span></div>`;
-}
 function linkSubjectRows(){
   return `<div class="field"><dd style="color:var(--muted);font-size:15px">
     What links can be filed under. A link can have several. Renaming or
@@ -8397,8 +8387,6 @@ async function relabelSubject(from,to){
 function wireLinkSettings(){
   const body=$('setBody'); if(!body) return;
   const save=async msg=>{ await saveTiles(); openSettings(); if(msg) toast(msg); };
-  body.querySelectorAll('[data-lodef]').forEach(b=>b.onclick=()=>{
-    LINK_PREFS.openWith=b.dataset.lodef; save('Saved'); });
   body.querySelectorAll('[data-lvmv]').forEach(b=>b.onclick=ev=>{
     ev.preventDefault();
     const [id,dir]=b.dataset.lvmv.split(':'), L=LINK_PREFS.levels;

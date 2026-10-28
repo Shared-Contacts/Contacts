@@ -2,6 +2,7 @@
 // 27 Oct 2026, step 45). Run as an Android phone, since that is the only
 // place the app is asked for by name. Chrome was taken off the list on
 // 28 Oct 2026 (ML70): on the phone it only ever opened the window inside the app.
+// Firefox was added the same day (ML82) to open pages as a browser of its own.
 const { chromium } = require('playwright');
 const path = require('path');
 const errors = []; let pass = 0, fail = 0;
@@ -22,6 +23,9 @@ const seed = () => {
     { id:104, created_by:'me', url:'https://example.org/page#part', title:'With a hash',
       description:null, level:'everyday', subjects:[], share_all:false, opens:0,
       last_opened:null, created_at:'2026-10-04T10:00:00Z', open_with:'youtube' },
+    { id:105, created_by:'me', url:'https://www.sage.com/en-gb/', title:'Sage',
+      description:null, level:'everyday', subjects:[], share_all:false, opens:0,
+      last_opened:null, created_at:'2026-10-04T11:00:00Z', open_with:'firefox' },
     { id:201, created_by:'sandra', url:'https://www.youtube.com/watch?v=zzz', title:'Her video',
       description:null, level:'maybe', subjects:[], share_all:true, opens:0,
       last_opened:null, created_at:'2026-10-05T10:00:00Z', open_with:'youtube' }];
@@ -78,6 +82,11 @@ const seed = () => {
   ok('a link still set to Chrome opens the ordinary way',
      a.href === 'https://www.metoffice.gov.uk/' && a.target === '_blank', JSON.stringify(a));
   ok('and says nothing about Chrome', !/opens in/.test(a.text), a.text);
+  a = await link(105);
+  ok('a Firefox one asks for Firefox, falling back to the page',
+     a.href === 'intent://www.sage.com/en-gb/#Intent;scheme=https;package=org.mozilla.firefox;'
+       + 'S.browser_fallback_url=https%3A%2F%2Fwww.sage.com%2Fen-gb%2F;end', a.href);
+  ok('and the row says Firefox', /opens in Firefox/.test(a.text), a.text);
   a = await link(104);
   ok('an address with a # in it opens the ordinary way rather than break', a.href === 'https://example.org/page#part', a.href);
   a = await link(201);
@@ -90,18 +99,18 @@ const seed = () => {
   const pressed = () => ev(() => [...document.querySelectorAll('[data-leapp][aria-pressed="true"]')].map(b => b.dataset.leapp));
   await ev(() => editLink(null, { url:'https://www.youtube.com/watch?v=new' })); await settle();
   ok('Open with is in the box', await p.isVisible('#leApps'));
-  ok('three choices, with no Chrome', await ev(() => [...document.querySelectorAll('[data-leapp]')].map(b => b.textContent).join('|'))
-     === 'Phone decides|YouTube app|Barclays app');
+  ok('four choices, with Firefox and no Chrome', await ev(() => [...document.querySelectorAll('[data-leapp]')].map(b => b.textContent).join('|'))
+     === 'Phone decides|Firefox|YouTube app|Barclays app');
   ok('a YouTube page starts on the YouTube app', JSON.stringify(await pressed()) === '["youtube"]', JSON.stringify(await pressed()));
   await p.fill('#leUrl', 'https://www.barclays.co.uk/'); await settle(100);
   ok('changing the address changes the guess', JSON.stringify(await pressed()) === '["barclays"]', JSON.stringify(await pressed()));
-  await p.click('[data-leapp="youtube"]');
-  await p.fill('#leUrl', 'https://www.barclays.co.uk/again'); await settle(100);
-  ok('once you pick one yourself, it stays', JSON.stringify(await pressed()) === '["youtube"]', JSON.stringify(await pressed()));
+  await p.click('[data-leapp="firefox"]');
+  await p.fill('#leUrl', 'https://www.youtube.com/watch?v=again'); await settle(100);
+  ok('once you pick one yourself, it stays', JSON.stringify(await pressed()) === '["firefox"]', JSON.stringify(await pressed()));
   await ev(() => { window.__writes = []; });
   await p.click('#leGo'); await settle(600);
   let ins = (await writes()).find(w => w.op === 'insert' && w.table === 'url_links');
-  ok('it is saved with the link', ins && ins.rows.open_with === 'youtube', JSON.stringify(ins && ins.rows));
+  ok('it is saved with the link', ins && ins.rows.open_with === 'firefox', JSON.stringify(ins && ins.rows));
 
   await ev(() => editLink(null, { url:'https://www.bbc.co.uk/sport' })); await settle();
   ok('an ordinary page starts on Phone decides', JSON.stringify(await pressed()) === '[""]', JSON.stringify(await pressed()));

@@ -635,6 +635,9 @@ input[name="postcode"]{text-transform:uppercase}
 .rtlist .item{padding:7px 14px}
 .rtlist .item .t{font-size:16px}
 .mvhead{flex:0 0 auto;color:var(--muted);font-size:20px;padding:0 8px}
+/* The job tapped on Today, picked out for a moment on the Regular list */
+.item.flashrow{animation:flashrow 2.4s ease-out}
+@keyframes flashrow{0%,40%{background:color-mix(in srgb,var(--hull) 22%,#FFFDF7)}100%{background:transparent}}
 .rtdone>summary{padding:10px 14px;color:var(--muted);font-size:15px;cursor:pointer;
   font-weight:600;list-style:none}
 .rtdone>summary::-webkit-details-marker{display:none}
@@ -1182,6 +1185,12 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbody" id="itBody"></div>
 </div>
 
+<div id="rtEd" class="sheet hidden">
+  <div class="sheetbar"><button id="rtCancel">Cancel</button>
+    <span class="title">Regular job</span><button id="rtSave">Save</button></div>
+  <div class="sheetbody" id="rtBody"></div>
+</div>
+
 <div id="io" class="sheet hidden">
   <div class="sheetbar"><button id="ioBack">Back</button>
     <span class="title">Import and export</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1482,7 +1491,7 @@ const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr = v => Array.isArray(v) ? v : [];
 
-const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','log',
+const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','rtEd','log',
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay'];
@@ -3864,7 +3873,7 @@ async function openSettings(goTo){
 // Which screen is in front, so Help and the settings button know where you are.
 const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['chats','chats'],
   ['moneyImp','money'],['pairs','money'],['reports','reports'],['recon','money'],['moneyEd','money'],['money','money'],
-  ['logEd','log'],['log','log'],['itemEd','diary'],['diary','diary'],
+  ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
@@ -4598,7 +4607,14 @@ function openHelp(where){
   engine oil, tax return, paint the shower. Ticking one drops it to the bottom
   with the date you did it; unticking brings it back to the top as needing doing.
   Nothing leaves the list until you remove it with the &times;. Give jobs a
-  heading to group them, and use "start the round again" to untick the lot.</p>
+  heading to group them, and use "start the round again" to untick the lot.
+  A new job starts under <strong>ASAP</strong>, which puts it on the Today
+  screen; tap the heading box and type another, or clear it for none. Tap a
+  job to open it: change the wording or heading, or add photos.</p>
+  <p><strong>Photos.</strong> Appointments, to-dos and regular jobs can all
+  have photos: <em>Camera</em> or <em>Choose</em> under Photos, tap one to see
+  it full size, &times; to take it off. The list shows &#128247; and how many.
+  Anyone in <em>Who else to remind</em> sees the photos too.</p>
   <p>The other Diary views are for things with a date. <strong>List</strong> groups everything by
   overdue, today, tomorrow and so on. <strong>Week</strong> shows the current
   week day by day. <strong>Month</strong> shows a calendar with a dot on each day
@@ -4802,7 +4818,7 @@ function itemRow(it){
       aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
     <button class="mid" data-item="${it.id}">
       <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
-      <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}</span>
+      <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}${photoCount(it)?' &middot; '+esc(photoCount(it)):''}</span>
       ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
     </button>
     ${it.done_at?'':`<span class="pickrow dly">
@@ -4902,7 +4918,7 @@ function diaryRoutine(){
   let html=`<details class="card logsec" open><summary>Add a regular job</summary>
     <div class="setadd">
       <input id="rtTitle" placeholder="What needs doing">
-      <input id="rtHead" list="dlHead" placeholder="Heading (optional), e.g. Boat">
+      <input id="rtHead" list="dlHead" value="ASAP" placeholder="Heading (optional), e.g. Boat">
       <datalist id="dlHead">${knownHeadings()
         .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
       <button class="btn primary" id="rtAdd">Add it</button>
@@ -4955,13 +4971,15 @@ function rememberHeading(h){
 }
 
 function routineRow(r){
+  const meta=[r.done&&r.done_at?'done '+new Date(r.done_at)
+      .toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'',
+    photoCount(r)].filter(Boolean).join(' · ');
   return `<div class="item">
     <button class="tick ${r.done?'on':''}" data-rt="${r.id}"
       aria-label="${r.done?'Mark as needing doing':'Mark as done'}">${r.done?'&#10003;':''}</button>
     <button class="mid" data-rtedit="${r.id}">
       <span class="t ${r.done?'done':''}">${esc(r.title)}</span>
-      ${r.done&&r.done_at?`<span class="w">done ${esc(new Date(r.done_at)
-        .toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>`:''}
+      ${meta?`<span class="w">${esc(meta)}</span>`:''}
     </button>
     <button class="mvhead" data-rtmove="${r.id}" aria-label="Change its heading">&#8942;</button>
     <button class="del" data-rtdel="${r.id}" aria-label="Remove">&times;</button></div>`;
@@ -4991,21 +5009,14 @@ function wireRoutine(){
     rememberHeading(to);
     await loadAll(); renderDiary(); toast('Moved');
   });
-  body.querySelectorAll('[data-rtdel]').forEach(b=>b.onclick=async()=>{
-    const r=ROUTINES.find(x=>x.id===Number(b.dataset.rtdel));
-    if(!confirm('Remove "'+r.title+'" from the regular list for good?'))return;
-    const {error}=await sb.from('routines').delete().eq('id',r.id);
-    if(error){toast('Could not remove it');return;}
-    await loadAll(); renderDiary(); toast('Removed');
-  });
-  body.querySelectorAll('[data-rtedit]').forEach(b=>b.onclick=async()=>{
-    const r=ROUTINES.find(x=>x.id===Number(b.dataset.rtedit));
-    const t=prompt('Change the wording:',r.title);
-    if(t===null||!t.trim())return;
-    const {error}=await sb.from('routines').update({title:t.trim()}).eq('id',r.id);
-    if(error){toast('Could not save');return;}
-    await loadAll(); renderDiary();
-  });
+  body.querySelectorAll('[data-rtdel]').forEach(b=>b.onclick=()=>
+    deleteRoutine(ROUTINES.find(x=>x.id===Number(b.dataset.rtdel))));
+  body.querySelectorAll('[data-rtedit]').forEach(b=>b.onclick=()=>
+    openRoutine(ROUTINES.find(x=>x.id===Number(b.dataset.rtedit))));
+  const hd=$('rtHead');
+  // ASAP is already in the box; tapping it selects the word, so typing
+  // another heading replaces it and one backspace clears it.
+  if(hd) hd.onfocus=()=>hd.select();
   body.querySelectorAll('[data-rthead]').forEach(b=>b.onclick=async()=>{
     const was=b.dataset.rthead;
     const now=prompt('Rename this heading. Every job under it moves with it.',was);
@@ -5040,6 +5051,168 @@ function wireRoutine(){
     await loadAll(); renderDiary(); toast('All unticked');
   };
 }
+
+/* ---------- one regular job, opened ----------
+   Tapping a job on the Regular list opens it here: the wording, its heading
+   and any photos. Ticking and the ⋮ and × on the row work as before. */
+let EDIT_RT=null;
+function openRoutine(r){
+  if(!r) return;
+  EDIT_RT=r;
+  $('rtBody').innerHTML=`<form id="rtForm" onsubmit="return false">
+    <fieldset><legend>What</legend>
+      <label>What needs doing<input name="title" value="${esc(r.title)}"></label>
+      <label>Heading<input name="heading" list="dlHeadRt" value="${esc(r.heading||'')}"
+        placeholder="None"></label>
+      <datalist id="dlHeadRt">${knownHeadings()
+        .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
+      <p class="coords">${r.done&&r.done_at?'Done '+esc(new Date(r.done_at)
+        .toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))
+        :'Still to do.'} Tick it on the list to change that.</p>
+    </fieldset>
+    <fieldset><legend>Photos</legend>${dphHtml('rtPics')}</fieldset>
+    <button type="button" class="btn danger" id="rtDelete">Remove from the list</button>
+  </form>`;
+  dphStart('rtPics', r.photos);
+  $('rtDelete').onclick=()=>deleteRoutine(r);
+  showSheet('rtEd'); $('rtBody').scrollTop=0; lockBackground();
+}
+
+function shutRoutine(){
+  EDIT_RT=null; $('rtEd').classList.add('hidden'); lockBackground();
+}
+
+async function saveRoutine(){
+  const r=EDIT_RT; if(!r) return;
+  const f=$('rtForm');
+  const title=f.elements['title'].value.trim();
+  if(!title){ toast('Give it a name'); return; }
+  const heading=f.elements['heading'].value.trim()||null;
+  const d={title, heading};
+  // Only sent when there is something to say, so a job still saves on a
+  // database that has not had step 46 yet.
+  const photos=dphNow();
+  if(photos.length || arr(r.photos).length) d.photos=photos;
+  $('rtSave').disabled=true;
+  const {error}=await sb.from('routines').update(d).eq('id',r.id);
+  $('rtSave').disabled=false;
+  if(error){ toast(dphStepMissing(d,error)||'Could not save'); console.error(error); return; }
+  await dphSaved();
+  rememberHeading(heading);
+  shutRoutine();
+  await loadAll(); renderDiary(); toast('Saved');
+}
+
+async function deleteRoutine(r){
+  if(!r) return;
+  if(!confirm('Remove "'+r.title+'" from the regular list for good?'))return;
+  const {error}=await sb.from('routines').delete().eq('id',r.id);
+  if(error){toast('Could not remove it');return;}
+  await dphForget(r);
+  if(EDIT_RT&&EDIT_RT.id===r.id){ await dphCancel(); shutRoutine(); }
+  await loadAll(); renderDiary(); toast('Removed');
+}
+
+/* ---------- photos on appointments, to-dos and regular jobs ----------
+   Kept in the photo store as dia/<owner's user id>/<random name>.jpg, and
+   listed on the entry as [{path}], the same way as recipe photos. Anyone the
+   entry is shared with (Who else to remind) can see them and add their own.
+   A photo taken and then cancelled is cleared away at once; one taken off a
+   saved entry only leaves the store when the entry is saved. */
+let DPH=null;                  // {box, photos, fresh, gone}
+
+function dphHtml(box){
+  return `<div class="rcpthumbs" id="${box}"></div>
+    <div class="rcppicbtns">
+      <label class="btn">Camera<input type="file" data-dphadd="1" accept="image/*" capture="environment"></label>
+      <label class="btn">Choose<input type="file" data-dphadd="1" accept="image/*" multiple></label></div>`;
+}
+function dphStart(box, photos){
+  DPH={box, photos:arr(photos).filter(p=>p&&p.path), fresh:[], gone:[]};
+  dphPaint();
+  const want=DPH;
+  signPaths(DPH.photos.map(p=>p.path)).then(()=>{ if(DPH===want) dphPaint(); });
+}
+function dphPaint(){
+  const box=DPH&&$(DPH.box); if(!box) return;
+  box.innerHTML=DPH.photos.length ? DPH.photos.map((p,i)=>`<span class="rcpthumb">
+      <img src="${esc(SIGNED[p.path]||'')}" alt="Photo ${i+1}" data-dphview="${i}">
+      <button type="button" data-dphx="${i}" aria-label="Remove this photo">&times;</button></span>`).join('')
+    : '<span class="coords" style="margin:0">None yet.</span>';
+}
+const dphNow = () => DPH ? DPH.photos.map(p=>({path:p.path})) : [];
+const dphMine = p => String(p||'').startsWith('dia/'+ME.id+'/');
+// "3 photos" for the rows on the lists
+function photoCount(x){
+  const n=arr(x&&x.photos).length;
+  return n ? '\u{1F4F7} '+n : '';
+}
+// Saving photos before step 46 has been run says so, rather than just failing.
+function dphStepMissing(d,err){
+  return 'photos' in d && /photos/i.test((err&&err.message)||'')
+    ? 'Could not save: photos need step 46 run in Supabase first' : '';
+}
+
+async function dphAdd(files){
+  files=[...(files||[])].filter(f=>/^image\//.test(f.type));
+  if(!files.length||!DPH) return;
+  const into=DPH;
+  for(let i=0;i<files.length;i++){
+    toast(files.length>1?'Adding photo '+(i+1)+' of '+files.length:'Adding the photo…');
+    try{
+      const blob=await shrink(files[i],1600);
+      const path=`dia/${ME.id}/${crypto.randomUUID()}.jpg`;
+      const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(error){ toast('Could not upload it'); console.error(error); continue; }
+      // Closed while it was uploading: nothing will save it, so tidy it away.
+      if(DPH!==into){ await sb.storage.from('photos').remove([path]); return; }
+      DPH.fresh.push(path);
+      DPH.photos.push({path});
+      await signPaths([path]);
+    }catch(e){ console.error(e); toast('Could not read that image'); }
+  }
+  dphPaint();
+}
+async function dphDrop(i){
+  if(!DPH) return;
+  const p=DPH.photos.splice(i,1)[0];
+  if(p&&p.path){
+    if(DPH.fresh.includes(p.path)){
+      DPH.fresh=DPH.fresh.filter(q=>q!==p.path);
+      await sb.storage.from('photos').remove([p.path]);
+    }
+    // Somebody else's photo on a shared entry comes off the entry; the file
+    // itself is theirs, so it stays in their folder.
+    else if(dphMine(p.path)) DPH.gone.push(p.path);
+  }
+  dphPaint();
+}
+async function dphCancel(){
+  const was=DPH; DPH=null;
+  if(was&&was.fresh.length) await sb.storage.from('photos').remove(was.fresh);
+}
+async function dphSaved(){
+  const was=DPH; DPH=null;
+  if(was&&was.gone.length) await sb.storage.from('photos').remove(was.gone);
+}
+// An entry deleted for good takes your photos with it.
+async function dphForget(x){
+  const mine=arr(x&&x.photos).map(p=>p&&p.path).filter(dphMine);
+  if(mine.length) await sb.storage.from('photos').remove(mine);
+}
+['itBody','rtBody'].forEach(id=>{
+  $(id).addEventListener('click',ev=>{
+    const v=ev.target.closest('[data-dphview]');
+    if(v&&DPH){ const p=DPH.photos[Number(v.dataset.dphview)];
+      if(p) lightbox(SIGNED[p.path]); return; }
+    const x=ev.target.closest('[data-dphx]');
+    if(x) dphDrop(Number(x.dataset.dphx));
+  });
+  $(id).addEventListener('change',ev=>{
+    if(!ev.target.matches('[data-dphadd]')) return;
+    const files=[...ev.target.files]; ev.target.value=''; dphAdd(files);
+  });
+});
 
 /* ---------- list ---------- */
 function diaryList(){
@@ -5455,10 +5628,13 @@ function openItem(it, presetContact, presetDay){
       </select></label>
     </fieldset>
 
+    <fieldset><legend>Photos</legend>${dphHtml('itPics')}</fieldset>
+
     ${it?'<button type="button" class="btn danger" id="itDelete">Delete this</button>':''}
   </form>`;
 
   const f=$('itForm');
+  dphStart('itPics', it&&it.photos);
   if(it){
     f.elements['title'].value=it.title||'';
     f.elements['notes'].value=it.notes||'';
@@ -5540,6 +5716,9 @@ async function saveItem(){
   // database that has not had step 38 yet.
   const away=ITEM_KIND==='appointment'?f.elements['away'].value:'';
   if(away || (EDIT_ITEM && EDIT_ITEM.away)) d.away=away||null;
+  // The same for photos and step 46.
+  const photos=dphNow();
+  if(photos.length || arr(EDIT_ITEM&&EDIT_ITEM.photos).length) d.photos=photos;
   if(ITEM_KIND==='appointment'){
     d.starts_at=isoValue(f.elements['starts_at'].value);
     d.ends_at  =isoValue(f.elements['ends_at'].value);
@@ -5565,6 +5744,7 @@ async function saveItem(){
     if(!err && (!r.data||!r.data.length)){
       $('itSave').disabled=false;
       alert('Someone else changed this while you had it open, so nothing was saved.');
+      await dphCancel();
       await loadAll(); $('itemEd').classList.add('hidden'); lockBackground(); renderDiary();
       return;
     }
@@ -5575,7 +5755,8 @@ async function saveItem(){
   if(err){ $('itSave').disabled=false;
     toast('away' in d && /away/i.test(err.message||'')
       ? 'Could not save: the away colours need step 38 run in Supabase first'
-      : 'Could not save'); console.error(err); return; }
+      : dphStepMissing(d,err)||'Could not save'); console.error(err); return; }
+  await dphSaved();
 
   // who else should see it
   let itemId=EDIT_ITEM?EDIT_ITEM.id:null;
@@ -5607,6 +5788,7 @@ async function deleteItem(it){
   if(!confirm('Delete "'+it.title+'"?')) return;
   const {error}=await sb.from('items').delete().eq('id',it.id);
   if(error){ toast('Could not delete'); return; }
+  await dphForget(it); await dphCancel();
   $('itemEd').classList.add('hidden'); lockBackground();
   await loadAll(); renderDiary(); toast('Deleted');
 }
@@ -10204,7 +10386,7 @@ function shade(hex,amt){
 
 // Which screens wear a tile's colour. Clearing them first means a tile you
 // took off the home screen hands its screen back to the colour scheme.
-const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd'],
+const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd','rtEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'],
@@ -11966,8 +12148,10 @@ async function newShopList(){
 }
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
 $('diaryAdd').onclick=()=>openItem(null,null,DIARY_VIEW==='month'?DIARY_DAY:null);
-$('itCancel').onclick=()=>{$('itemEd').classList.add('hidden');lockBackground();};
+$('itCancel').onclick=()=>{dphCancel();$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
+$('rtCancel').onclick=()=>{dphCancel();shutRoutine();};
+$('rtSave').onclick=saveRoutine;
 $('briefClose').onclick=shutBrief;
 $('inviteClose').onclick=()=>{ $('invite').classList.add('hidden'); lockBackground(); };
 $('loadBarGo').onclick=async()=>{
@@ -15405,8 +15589,9 @@ function renderBrief(){
 
   // No date column on these: they are the jobs with no date, which is what
   // puts them on the ASAP list in the first place.
-  const asapRows=asap.map(r=>`<div class="brow">
-      <span class="bwhat"><b>${esc(r.title)}</b></span></div>`).join('');
+  const asapRows=asap.map(r=>`<button class="brow" data-briefr="${r.id}">
+      <span class="bwhat"><b>${esc(r.title)}</b>${photoCount(r)
+        ?`<span>${esc(photoCount(r))}</span>`:''}</span></button>`).join('');
 
   const none='<div class="field"><dd style="color:var(--muted)">Nothing.</dd></div>';
   $('briefBody').innerHTML=`
@@ -15452,6 +15637,22 @@ function renderBrief(){
     shutBrief(); openDetail(Number(b.dataset.briefc)); });
   $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>{
     shutBrief(); openItem(ITEMS.find(x=>x.id===Number(b.dataset.briefi))); });
+  $('briefBody').querySelectorAll('[data-briefr]').forEach(b=>b.onclick=()=>{
+    shutBrief(); showRoutineJob(Number(b.dataset.briefr)); });
+}
+
+// From an ASAP job on Today: the Diary on its Regular list, with that job
+// picked out for a moment so the eye lands on it.
+function showRoutineJob(id){
+  DIARY_VIEW='routine';
+  try{ localStorage.setItem('dview',DIARY_VIEW); }catch(e){}
+  openDiary();
+  const b=$('diaryBody').querySelector(`[data-rtedit="${id}"]`);
+  const row=b&&b.closest('.item');
+  if(!row) return;
+  row.scrollIntoView({block:'center'});
+  row.classList.add('flashrow');
+  setTimeout(()=>row.classList.remove('flashrow'),2600);
 }
 
 function openBrief(){

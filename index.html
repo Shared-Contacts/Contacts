@@ -545,6 +545,8 @@ input[name="postcode"]{text-transform:uppercase}
 .lnked .ldel{color:var(--red)}
 .lnked .lcopy{color:var(--hull);font-weight:600;padding:0;font-size:15px}
 .lsub{color:var(--muted);font-size:15px;margin:0 0 8px;overflow-wrap:anywhere}
+.lhid{color:var(--muted);font-size:15px;margin:12px 4px}
+.lhid button{color:var(--hull);font-weight:600;font-size:15px;padding:0 0 0 6px}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
@@ -7652,13 +7654,13 @@ function renderWish(){
    your home screen choices; the links live in url_links.
    ============================================================ */
 let ULINKS=[], ULINK_SHARES=[], ULINKS_WHY='';   // 'notset' until step 42 is run
-const LNK={q:'', level:'all', subject:'', sort:'used'};
+const LNK={q:'', level:'all', subject:'', sort:'used', elsewhere:false};
 const LINK_LEVELS_DEFAULT=[{id:'everyday',name:'Everyday'},{id:'favourites',name:'Favourites'},
   {id:'interesting',name:'Interesting'},{id:'maybe',name:'Maybe'}];
 const LINK_SUBJECTS_DEFAULT=['Mapping','Weather','New Zealand','News','Canals',
   'Photography','Shopping','Reference'];
 let LINK_PREFS={levels:LINK_LEVELS_DEFAULT.map(x=>({...x})),
-  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[]};
+  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[], where:{}};
 
 function linkPrefsFrom(saved){
   const lp=saved&&saved.links;
@@ -7668,7 +7670,8 @@ function linkPrefsFrom(saved){
     subjects: lp&&Array.isArray(lp.subjects)
       ? lp.subjects.filter(Boolean) : LINK_SUBJECTS_DEFAULT.slice(),
     hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [],
-    openWith: lp&&typeof lp.openWith==='string' ? lp.openWith : '' };
+    openWith: lp&&typeof lp.openWith==='string' ? lp.openWith : '',
+    where: lp&&lp.where&&typeof lp.where==='object' ? {...lp.where} : {} };
 }
 
 function linkHost(u){
@@ -7712,6 +7715,23 @@ function linkAppFor(url){
   return a?a.k:(LINK_PREFS.openWith||'');
 }
 const ON_ANDROID=/Android/i.test(navigator.userAgent);
+/* Show on: Laptop, Both or Phone, for each link (asked for 28 Oct 2026, ML71).
+   It is your own choice, kept with your other URL Links settings, so a link
+   you share still shows everywhere for the people you share it with. */
+const ON_PHONE=/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent);
+const LINK_WHERE=[{k:'laptop',label:'Laptop'},{k:'',label:'Both'},{k:'phone',label:'Phone'}];
+const linkWhere = id => { const w=(LINK_PREFS.where||{})[id];
+  return w==='laptop'||w==='phone'?w:''; };
+// Kept for the other kind of device from this one.
+const linkElsewhere = l => { const w=linkWhere(l.id);
+  return !!w&&w!==(ON_PHONE?'phone':'laptop'); };
+// True when it changed, so the caller knows to save.
+function putLinkWhere(id,w){
+  w=w||''; if(linkWhere(id)===w) return false;
+  const all={...(LINK_PREFS.where||{})};
+  if(w) all[id]=w; else delete all[id];
+  LINK_PREFS.where=all; return true;
+}
 function linkHref(l){
   const a=linkApp(l.open_with);
   const m=String(l.url||'').match(/^(https?):\/\/([^#]*)$/i);
@@ -7744,8 +7764,12 @@ async function openLinks(){
 }
 
 // Every link you can see, less any shared ones you said you no longer want.
-function linksVisible(){
+function linksKept(){
   return ULINKS.filter(l=>linkMine(l)||!LINK_PREFS.hide.includes(l.id));
+}
+// Less any kept for the other device too, unless you asked to see them.
+function linksVisible(){
+  return linksKept().filter(l=>LNK.elsewhere||!linkElsewhere(l));
 }
 
 function linksShown(){
@@ -7785,7 +7809,8 @@ function linkRow(l){
   return `<div class="lnk">
     <a class="lgo" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
       data-lopen="${l.id}"><b>${esc(l.title)}</b>
-      <span class="lmeta">${meta}${app.k?' &middot; opens in '+esc(app.label):''}</span>
+      <span class="lmeta">${meta}${app.k?' &middot; opens in '+esc(app.label):''}${
+        linkWhere(l.id)?' &middot; '+linkWhere(l.id)+' only':''}</span>
       ${l.description?`<span class="ldesc">${esc(l.description)}</span>`:''}
       ${said.length?`<span class="lwho">${said.join(' &middot; ')}</span>`:''}</a>
     <button class="ledit" data-ledit="${l.id}" aria-label="${
@@ -7842,7 +7867,13 @@ function renderLinks(){
 // keyboard.
 function paintLinkList(){
   const box=$('lnkList'); if(!box) return;
-  if(!linksVisible().length){
+  // Links kept for the other device are said, never just missing, so the
+  // list can't look as though they have been lost.
+  const away=linksKept().filter(linkElsewhere).length, other=ON_PHONE?'laptop':'phone';
+  const foot=away?`<p class="lhid">${away} ${other}-only link${away===1?'':'s'} ${
+    LNK.elsewhere?'showing':'hidden'}<button type="button" data-lelse>${
+    LNK.elsewhere?'Hide them':'Show them'}</button></p>`:'';
+  if(!linksKept().length){
     box.innerHTML=`<div class="card"><div class="field"><dd style="color:var(--muted)">
       No links yet. Copy a web address in Chrome and press <strong>Paste a link</strong>,
       or in Chrome press <strong>Share</strong> and choose <strong>MY life</strong>.</dd></div></div>`;
@@ -7851,15 +7882,16 @@ function paintLinkList(){
   const rows=linksShown();
   if(!rows.length){
     box.innerHTML=`<div class="card"><div class="field"><dd style="color:var(--muted)">
-      Nothing matches that.</dd></div></div>`;
+      ${linksVisible().length?'Nothing matches that.'
+        :'All your links are kept for the '+other+'.'}</dd></div></div>`+foot;
     return;
   }
-  if(LNK.level!=='all'){ box.innerHTML=`<div class="card">${rows.map(linkRow).join('')}</div>`; return; }
+  if(LNK.level!=='all'){ box.innerHTML=`<div class="card">${rows.map(linkRow).join('')}</div>`+foot; return; }
   const sec=(title,list)=>list.length?`<p class="dsec">${esc(title)}<span class="lcount">${
     list.length}</span></p><div class="card">${list.map(linkRow).join('')}</div>`:'';
   box.innerHTML=LINK_PREFS.levels.map(x=>sec(x.name,rows.filter(l=>linkMine(l)&&l.level===x.id))).join('')
     + sec('Unsorted',rows.filter(l=>linkMine(l)&&!levelName(l.level)))
-    + sec('Shared with you',rows.filter(l=>!linkMine(l)));
+    + sec('Shared with you',rows.filter(l=>!linkMine(l))) + foot;
 }
 
 // Only your own are counted. Somebody else's link would need their say-so
@@ -7897,6 +7929,7 @@ function editLink(id,start){
     level:(LINK_PREFS.levels[0]||{}).id||null, subjects:[], share_all:false, ...(start||{})};
   if(!old&&d.open_with===undefined) d.open_with=linkAppFor(d.url);
   const had=old?linkSharedWith(old.id):[];
+  const where=old?linkWhere(old.id):'';
   let mode=d.share_all?'all':had.length?'some':'me';
   const subjects=[...new Set(LINK_PREFS.subjects.concat(arr(d.subjects)))];
 
@@ -7915,6 +7948,9 @@ function editLink(id,start){
     <p class="ulhead">Open with</p>
     <span class="pickrow" id="leApps">${LINK_APPS.map(a=>`<button type="button"
       data-leapp="${a.k}" aria-pressed="${(d.open_with||'')===a.k}">${esc(a.label)}</button>`).join('')}</span>
+    <p class="ulhead">Show on</p>
+    <span class="pickrow" id="leWhere">${LINK_WHERE.map(w=>`<button type="button"
+      data-lewhere="${w.k}" aria-pressed="${where===w.k}">${w.label}</button>`).join('')}</span>
     <p class="ulhead">Level</p>
     <span class="pickrow" id="leLevels">${LINK_PREFS.levels.map(x=>`<button type="button"
       data-lelv="${esc(x.id)}" aria-pressed="${d.level===x.id}">${esc(x.name)}</button>`).join('')}</span>
@@ -7962,6 +7998,8 @@ function editLink(id,start){
       :'Press and hold in the box, then choose Paste'); q('#leUrl').focus(); return; }
     q('#leUrl').value=u; follow();
   };
+  box.querySelectorAll('[data-lewhere]').forEach(b=>b.onclick=()=>
+    box.querySelectorAll('[data-lewhere]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))));
   box.querySelectorAll('[data-lelv]').forEach(b=>b.onclick=()=>{
     const on=b.getAttribute('aria-pressed')!=='true';
     box.querySelectorAll('[data-lelv]').forEach(x=>x.setAttribute('aria-pressed','false'));
@@ -7992,6 +8030,7 @@ function editLink(id,start){
     if(!confirm('Delete "'+old.title+'"? Anyone you shared it with loses it too.')) return;
     const {error}=await sb.from('url_links').delete().eq('id',old.id);
     if(error){ toast('Could not delete it'); console.error(error); return; }
+    if(putLinkWhere(old.id,'')) await saveTiles();
     close(); await loadLinks(); renderLinks(); toast('Deleted');
   };
 
@@ -8000,6 +8039,7 @@ function editLink(id,start){
     if(!url){ toast('That does not look like a web address'); q('#leUrl').focus(); return; }
     const lvb=box.querySelector('[data-lelv][aria-pressed="true"]');
     const apb=box.querySelector('[data-leapp][aria-pressed="true"]');
+    const wb=box.querySelector('[data-lewhere][aria-pressed="true"]');
     const subs=[...box.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b=>b.dataset.lesub);
     const rec={url, title:q('#leTitle').value.trim()||linkHost(url)||url,
       description:q('#leDesc').value.trim()||null,
@@ -8045,10 +8085,14 @@ function editLink(id,start){
     if(shareErr) console.error(shareErr);
     // A subject made up here joins your list for next time.
     const fresh=subs.filter(s=>!LINK_PREFS.subjects.includes(s));
-    if(fresh.length){ LINK_PREFS.subjects=LINK_PREFS.subjects.concat(fresh); await saveTiles(); }
+    if(fresh.length) LINK_PREFS.subjects=LINK_PREFS.subjects.concat(fresh);
+    const moved=putLinkWhere(lid,wb?wb.dataset.lewhere:'');
+    if(fresh.length||moved) await saveTiles();
     close(); await loadLinks(); renderLinks();
+    const gone=moved&&!LNK.elsewhere&&linkElsewhere({id:lid});
     toast(shareErr?'Saved, but who can see it did not change. Try again.'
       : appLost?'Saved, but Open with needs the step 45 file run first'
+      : gone?(old?'Saved':'Added')+'. It shows on the '+linkWhere(lid)+' only'
       : old?'Saved':'Added');
   };
   if(!d.url) setTimeout(()=>q('#leUrl').focus(),50);
@@ -8067,6 +8111,9 @@ function linkActions(id){
     <button class="menuitem" id="laKeep">Keep a copy of my own &rsaquo;</button>
     <button class="menuitem" id="laCopy">Copy the web address</button>
     <button class="menuitem" id="laHide">Stop seeing it</button>
+    <p class="lsub" style="margin:12px 0 0">Show on</p>
+    <span class="pickrow" style="margin-bottom:12px">${LINK_WHERE.map(w=>`<button type="button"
+      data-lawhere="${w.k}" aria-pressed="${linkWhere(id)===w.k}">${w.label}</button>`).join('')}</span>
     <div class="pfoot"><button id="laShut">Close</button></div></div>`;
   document.body.appendChild(box);
   const q=s=>box.querySelector(s), close=()=>box.remove();
@@ -8076,6 +8123,10 @@ function linkActions(id){
     editLink(null,{url:l.url, title:l.title, description:l.description, subjects:arr(l.subjects),
       open_with:l.open_with??undefined}); };
   q('#laCopy').onclick=async()=>{ toast(await copyText(l.url)?'Copied':'Could not copy it'); };
+  box.querySelectorAll('[data-lawhere]').forEach(b=>b.onclick=async()=>{
+    box.querySelectorAll('[data-lawhere]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    if(!putLinkWhere(id,b.dataset.lawhere)) return;
+    await saveTiles(); renderLinks(); toast('Saved'); });
   q('#laHide').onclick=async()=>{
     if(!confirm('Stop seeing "'+l.title+'"? Only '+whoWrote(l.created_by)
       +' can share it with you again.')) return;
@@ -8099,6 +8150,7 @@ $('linksBody').addEventListener('click',ev=>{
   const e=ev.target.closest('[data-ledit]');
   if(e){ editLink(Number(e.dataset.ledit)); return; }
   if(ev.target.closest('#lnkPaste')){ pasteLink(); return; }
+  if(ev.target.closest('[data-lelse]')){ LNK.elsewhere=!LNK.elsewhere; renderLinks(); return; }
   const lv=ev.target.closest('[data-llevel]');
   if(lv){ LNK.level=lv.dataset.llevel; renderLinks(); return; }
   const sj=ev.target.closest('[data-lsubj]');

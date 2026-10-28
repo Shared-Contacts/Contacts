@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Link test</title>
-<!-- A throwaway test page for URL Links' Open with (ML68, ML69, ML70).
-     Round 2 (28 Oct 2026): the Chrome tests use barryandsandra.com, because
-     the BBC News app took the BBC links in round 1, and two more ways to
-     reach the Barclays app's Play Store page were added.
-     It changes nothing in the app and saves nothing anywhere but this phone.
-     Each button tries a different way of asking the phone to open a page in
-     Chrome, the YouTube app or the Barclays app, so we can see which ones
-     the phone allows from inside the installed My Life app. -->
+<!-- A throwaway test page for URL Links' Open with (ML68 to ML70, ML85).
+     Round 3 (28 Oct 2026): Firefox. Open with Firefox brought up a "Choose
+     activity" box offering Chrome or Firefox, rather than going straight to
+     Firefox. Each button tries a different way of asking for Firefox, plus
+     what someone without Firefox would see, so we can keep the way that goes
+     straight there. Rounds 1 and 2 (Chrome, YouTube, Barclays) are settled.
+     It changes nothing in the app and saves nothing anywhere but this phone. -->
 <style>
 :root{--ink:#10231C;--hull:#1D4A3A;--red:#B3322A;--paper:#FBFAF7;--panel:#FFF;--rule:#E3E1D8;--muted:#5C6B64}
 *{box-sizing:border-box}
@@ -44,7 +43,7 @@ small{color:var(--muted)}
 </head>
 <body>
 <header>
-  <h1>Link test, round 2</h1>
+  <h1>Link test, round 3</h1>
   <p>For URL Links in the My Life app. Nothing here changes the app.</p>
 </header>
 <main>
@@ -69,46 +68,33 @@ small{color:var(--muted)}
 
 </main>
 <script>
-const YT_ID='jNQXAC9IVRw';            // a short, permanent public video
-const BARCLAYS='com.barclays.android.barclaysmobilebanking';
-const CHROME='com.android.chrome';
+const FIREFOX='org.mozilla.firefox';
 const enc=encodeURIComponent;
-// No app on the phone claims this site, so it shows what Chrome itself does.
+// No app on the phone claims this site, so it shows what the browsers do.
 const SITE='www.barryandsandra.com/';
+const STORE='https://play.google.com/store/apps/details?id='+FIREFOX;
+const OPENED=['Full Firefox, no question','Asked: Chrome or Firefox','A window inside My Life (with an X)',
+  'Full Chrome','Play Store, Firefox page','Asked which store','Nothing happened','Something else'];
 const TESTS=[
-  {n:1, group:'Chrome', what:'An ordinary link to barryandsandra.com (what the app does now)',
-   href:'https://'+SITE, blank:true},
-  {n:2, group:'Chrome', what:'Ask for Chrome, with the ordinary page if it says no (what Open with does now)',
-   href:'intent://'+SITE+'#Intent;scheme=https;package='+CHROME+';S.browser_fallback_url='+enc('https://'+SITE)+';end'},
-  {n:3, group:'Chrome', what:'Ask for Chrome, with no fallback',
-   href:'intent://'+SITE+'#Intent;scheme=https;package='+CHROME+';end'},
-  {n:4, group:'Chrome', what:'Ask the phone to choose a browser',
-   href:'intent://'+SITE+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end'},
-  {n:5, group:'YouTube', what:'An ordinary YouTube link',
-   href:'https://www.youtube.com/watch?v='+YT_ID, blank:true},
-  {n:6, group:'YouTube', what:'Ask for the YouTube app (what Open with does now)',
-   href:'intent://www.youtube.com/watch?v='+YT_ID+'#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url='+enc('https://www.youtube.com/watch?v='+YT_ID)+';end'},
-  {n:7, group:'YouTube', what:'YouTube’s own kind of link',
-   href:'vnd.youtube:'+YT_ID},
-  {n:8, group:'Barclays', what:'Ask for the Barclays app with the web page, no fallback',
-   href:'intent://www.barclays.co.uk/#Intent;scheme=https;package='+BARCLAYS+';end'},
-  {n:9, group:'Barclays', what:'Ask for the Barclays app to start, as if from its icon',
-   href:'intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package='+BARCLAYS+';end'},
-  {n:10, group:'Barclays', what:'Ask the Play Store to start the Barclays app',
-   href:'market://launch?id='+BARCLAYS},
-  {n:11, group:'Barclays', what:'The Barclays app’s page on the Play Store (last time this asked Google Play or App Market)',
-   href:'market://details?id='+BARCLAYS},
-  {n:12, group:'Barclays', what:'The same page, asking for Google Play by name (should skip the question)',
-   href:'intent://details?id='+BARCLAYS+'#Intent;scheme=market;package=com.android.vending;end'},
-  {n:13, group:'Barclays', what:'The same page, by its web address',
-   href:'https://play.google.com/store/apps/details?id='+BARCLAYS, blank:true}
+  {n:1, group:'Firefox', what:'Ask for Firefox, with the ordinary page if it says no (what Open with Firefox does now)',
+   href:'intent://'+SITE+'#Intent;scheme=https;package='+FIREFOX+';S.browser_fallback_url='+enc('https://'+SITE)+';end'},
+  {n:2, group:'Firefox', what:'Ask for Firefox, with no fallback',
+   href:'intent://'+SITE+'#Intent;scheme=https;package='+FIREFOX+';end'},
+  {n:3, group:'Firefox', what:'Ask for Firefox, saying it is a web page to view',
+   href:'intent://'+SITE+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package='+FIREFOX+';end'},
+  {n:4, group:'Firefox', what:'Firefox’s own kind of link (it may not have one; then expect Nothing happened)',
+   href:'intent://open-url?url='+enc('https://'+SITE)+'#Intent;scheme=firefox;package='+FIREFOX+';end'},
+  {n:5, group:'Without Firefox', what:'Ask for an app that is not on the phone, falling back to Firefox’s Play Store page (what someone without Firefox would get)',
+   href:'intent://'+SITE+'#Intent;scheme=https;package=org.mozilla.notonthisphone;S.browser_fallback_url='+enc(STORE)+';end'},
+  {n:6, group:'Without Firefox', what:'Firefox’s Play Store page, by its web address',
+   href:STORE, blank:true},
+  {n:7, group:'Afterwards', what:'When full Firefox opened (choose Firefox if it asked), press the recent-apps button. Were My Life and Firefox both there?',
+   answers:['Yes, both there','No, only one','Firefox never opened']}
 ];
-const ANSWERS=['Full Chrome opened','YouTube or Barclays app opened','A window inside My Life (with an X)',
-  'Play Store, Barclays page','Asked which store','Nothing happened','An error','Something else'];
 
 let got={};
-try{ got=JSON.parse(localStorage.getItem('linktest2')||'{}')||{}; }catch(e){ got={}; }
-const keep=()=>{ try{ localStorage.setItem('linktest2',JSON.stringify(got)); }catch(e){} };
+try{ got=JSON.parse(localStorage.getItem('linktest3')||'{}')||{}; }catch(e){ got={}; }
+const keep=()=>{ try{ localStorage.setItem('linktest3',JSON.stringify(got)); }catch(e){} };
 
 const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)
   ||(window.matchMedia&&matchMedia('(display-mode: minimal-ui)').matches);
@@ -124,8 +110,8 @@ let last='';
 document.getElementById('tests').innerHTML=TESTS.map(t=>{
   const head=t.group!==last?`<h2 style="margin:22px 0 0">${t.group}</h2>`:''; last=t.group;
   return head+`<div class="card"><p><strong>${t.n}.</strong> ${esc(t.what)}</p>
-    <a class="go" href="${esc(t.href)}"${t.blank?' target="_blank" rel="noopener"':''}>Try ${t.n}</a>
-    <div class="what">${ANSWERS.map(a=>`<button type="button" data-t="${t.n}" data-a="${esc(a)}"
+    ${t.href?`<a class="go" href="${esc(t.href)}"${t.blank?' target="_blank" rel="noopener"':''}>Try ${t.n}</a>`:''}
+    <div class="what">${(t.answers||OPENED).map(a=>`<button type="button" data-t="${t.n}" data-a="${esc(a)}"
       aria-pressed="${got[t.n]===a}">${esc(a)}</button>`).join('')}</div></div>`;
 }).join('');
 
@@ -133,7 +119,7 @@ function paint(){
   document.querySelectorAll('[data-t]').forEach(b=>
     b.setAttribute('aria-pressed',String(got[b.dataset.t]===b.dataset.a)));
   const lines=TESTS.map(t=>t.n+'. '+t.group+': '+(got[t.n]||'not tried'));
-  lines.unshift('Link test round 2, '+new Date().toLocaleString('en-GB'),
+  lines.unshift('Link test round 3, '+new Date().toLocaleString('en-GB'),
     'Opened '+(standalone?'inside the My Life app':'in a browser tab'),
     navigator.userAgent, '');
   document.getElementById('out').textContent=lines.join('\n');

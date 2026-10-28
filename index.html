@@ -4252,9 +4252,11 @@ function openHelp(where){
   addresses, descriptions and subjects. <strong>Most used</strong> puts the ones
   you open most often first; the app counts each time you open one of yours.</p>
   <p>Tap a link to open it. The pencil at the end changes it, or deletes it.</p>
-  <p><strong>Open with</strong> chooses, once, where a link opens: the
-  <strong>YouTube app</strong>, the <strong>Barclays app</strong>, or
-  <strong>Phone decides</strong>, the ordinary way. It is filled in for you when
+  <p><strong>Open with</strong> chooses, once, where a link opens:
+  <strong>Firefox</strong>, the <strong>YouTube app</strong>, the
+  <strong>Barclays app</strong>, or <strong>Phone decides</strong>, the ordinary
+  way. Firefox opens the page as a browser of its own, so this app stays open
+  behind it and you can switch between the two. It is filled in for you when
   you add a link: YouTube and Barclays pages get their own app, and everything
   else gets Phone decides. If the phone does not have that app, or the app will
   not take the link, it opens the ordinary way instead.</p>
@@ -7880,9 +7882,12 @@ function levelName(id){
    ordinary way instead. On a computer it is always the ordinary way.
    Chrome was a choice until 28 Oct 2026 (ML70): tested on the phone, asking
    for Chrome only ever opened the window inside the app, so it was taken out.
-   A link still set to Chrome opens the ordinary way. */
+   A link still set to Chrome opens the ordinary way. Firefox was added the
+   same day (ML82): Chrome hands a link to another app, so Firefox opens it
+   as a browser of its own and the app stays open behind it. */
 const LINK_APPS=[
   {k:'',         label:'Phone decides'},
+  {k:'firefox',  label:'Firefox',      pkg:'org.mozilla.firefox'},
   {k:'youtube',  label:'YouTube app',  pkg:'com.google.android.youtube',
    hosts:/(^|\.)(youtube\.com|youtu\.be)$/i},
   {k:'barclays', label:'Barclays app', pkg:'com.barclays.android.barclaysmobilebanking',

@@ -14590,12 +14590,19 @@ async function doMoneyImport(){
   const rows=(IMPORT.ready||[]).filter(x=>x.take);
   if(!rows.length){ toast('Nothing ticked to bring in'); return; }
   const now=new Date().toISOString();
+  /* The same thing bought twice in a day - two £5.60 rounds at the same pub -
+     is two identical rows in the file, so both got the same reference and the
+     database refused the whole file (29 Oct 2026, ML88). A repeat within the
+     file gets |2, |3 on the end. A reference already in the books is left
+     alone, so the database still stops the same statement coming in twice. */
+  const seen=new Map();
+  const refOnce=r=>{ const n=(seen.get(r)||0)+1; seen.set(r,n); return n>1?r+'|'+n:r; };
   const heads=rows.map(x=>({
     account_id:IMPORT.acc, tdate:x.date,
     kind:x.amount<0?'expense':'income',
     pay_method:x.method||'debit card',
     reference:x.desc||null,
-    bank_ref:x.ref||(x.date+'|'+x.amount.toFixed(2)+'|'+(x.desc||'').slice(0,40)),
+    bank_ref:refOnce(x.ref||(x.date+'|'+x.amount.toFixed(2)+'|'+(x.desc||'').slice(0,40))),
     imported_at:now, created_by:ME.id
   }));
   const {data,error}=await sb.from('transactions').insert(heads).select();

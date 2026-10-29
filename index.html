@@ -14539,11 +14539,31 @@ function importPreview(keepTicks){
   const otherCur=out.filter(x=>x.cur&&x.cur!==cur);
   const mine=out.filter(x=>!x.cur||x.cur===cur);
 
-  const claimed=new Set();
+  /* Each row's bank reference is worked out here, once, the way the import
+     saves it. The same thing bought twice in a day - two £5.60 rounds at the
+     same pub - is two identical rows, so a repeat gets |2, |3 on the end, or
+     the database refuses the whole file (ML88). */
+  const repeats=new Map();
   mine.forEach((x,i)=>{
     x.key=x.date+'|'+x.amount.toFixed(2)+'|'+x.desc.slice(0,30)+'|'+i;
-    const hit=matchInBooks(x,claimed);
-    if(hit){ claimed.add(hit.id); x.dup=true; x.was=hit; } else { x.dup=false; x.was=null; }
+    const r=x.ref||(x.date+'|'+x.amount.toFixed(2)+'|'+x.desc.slice(0,40));
+    const n=(repeats.get(r)||0)+1; repeats.set(r,n);
+    x.bref=n>1?r+'|'+n:r;
+  });
+  /* Then the exact match: a row whose reference is already in this account
+     came in from the bank before, whatever has happened to it since - its
+     amount split or changed, its date moved. Matching on amount alone missed
+     those, so they stayed ticked and the database refused the file (ML91). */
+  const byRef=new Map((IMPORT.have||[]).filter(t=>t.bank_ref).map(t=>[t.bank_ref,t]));
+  const claimed=new Set();
+  mine.forEach(x=>{
+    const t=byRef.get(x.bref);
+    x.was=t&&!claimed.has(t.id)?t:null;
+    if(x.was) claimed.add(t.id);
+  });
+  mine.forEach(x=>{
+    if(!x.was){ const hit=matchInBooks(x,claimed); if(hit){ claimed.add(hit.id); x.was=hit; } }
+    x.dup=!!x.was;
     x.take = was&&was.has(x.key) ? was.get(x.key) : !x.dup;
   });
   IMPORT.ready=mine;
@@ -14566,7 +14586,7 @@ function importPreview(keepTicks){
     ${esc(curs.join('/'))} account${curs.length===1?'':'s'}. Import the same file
     again with that account chosen and they will come in then.</dd></div></div>`:''}
   <div class="card">
-    ${mine.slice(0,60).map(x=>`<button class="txn rec ${x.take?'on':''}" data-imp="${esc(x.key)}">
+    ${mine.map(x=>`<button class="txn rec ${x.take?'on':''}" data-imp="${esc(x.key)}">
       <span class="tick ${x.take?'on':''}">${x.take?'&#10003;':''}</span>
       <span class="td wide">${esc(fullDate(x.date))}</span>
       <span class="tn"><b>${esc(x.desc||'—')}</b>${
@@ -14575,8 +14595,6 @@ function importPreview(keepTicks){
         :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`:''}</span>
       <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></button>`).join('')
       ||'<div class="field"><dd style="color:var(--muted)">Nothing in this file for this account.</dd></div>'}
-    ${mine.length>60?`<div class="field"><dd style="color:var(--muted)">
-      …and ${mine.length-60} more, all ticked.</dd></div>`:''}
   </div>
   ${mine.length?`<button class="btn primary" id="impGo" ${take?'':'disabled'}>Import ${
     take} transaction${take===1?'':'s'}</button>`:''}
@@ -14589,20 +14607,44 @@ function importPreview(keepTicks){
 async function doMoneyImport(){
   const rows=(IMPORT.ready||[]).filter(x=>x.take);
   if(!rows.length){ toast('Nothing ticked to bring in'); return; }
+  /* A last check by reference, straight from the database (ML91): the preview
+     only fetched the dates in the file, and a row brought in before may since
+     have been moved to another date. Any found are unticked and shown, rather
+     than the whole file being refused. One you ticked back on yourself,
+     knowing it matched, is a separate payment and gets a reference of its own. */
+  rows.forEach(x=>{ if(!x.bref) x.bref=x.ref
+    ||(x.date+'|'+Number(x.amount).toFixed(2)+'|'+String(x.desc||'').slice(0,40)); });
+  const refs=[...new Set(rows.map(x=>x.bref))];
+  const found=new Map();
+  for(let i=0;i<refs.length;i+=40){
+    const {data:f,error:fe}=await sb.from('transactions')
+      .select('id,tdate,total,reference,kind,payee_id,bank_ref')
+      .eq('account_id',IMPORT.acc).in('bank_ref',refs.slice(i,i+40));
+    if(fe){ console.error(fe); break; }
+    (f||[]).forEach(t=>{ if(t.bank_ref) found.set(t.bank_ref,t); });
+  }
+  const caught=rows.filter(x=>!x.dup&&found.has(x.bref));
+  if(caught.length){
+    IMPORT.have=IMPORT.have||[]; IMPORT.labels=IMPORT.labels||{};
+    caught.forEach(x=>{
+      const t=found.get(x.bref); x.take=false;
+      if(!IMPORT.have.some(h=>h.id===t.id)) IMPORT.have.push(t);
+      if(!IMPORT.labels[t.id])
+        IMPORT.labels[t.id]=payeeName(t.payee_id)||t.reference||kindOf(t.kind).label;
+    });
+    importPreview(true);
+    toast(caught.length===1
+      ? '1 of those came in before — now unticked. Look it over, then Import again'
+      : caught.length+' of those came in before — now unticked. Look them over, then Import again');
+    return;
+  }
   const now=new Date().toISOString();
-  /* The same thing bought twice in a day - two £5.60 rounds at the same pub -
-     is two identical rows in the file, so both got the same reference and the
-     database refused the whole file (29 Oct 2026, ML88). A repeat within the
-     file gets |2, |3 on the end. A reference already in the books is left
-     alone, so the database still stops the same statement coming in twice. */
-  const seen=new Map();
-  const refOnce=r=>{ const n=(seen.get(r)||0)+1; seen.set(r,n); return n>1?r+'|'+n:r; };
   const heads=rows.map(x=>({
     account_id:IMPORT.acc, tdate:x.date,
     kind:x.amount<0?'expense':'income',
     pay_method:x.method||'debit card',
     reference:x.desc||null,
-    bank_ref:refOnce(x.ref||(x.date+'|'+x.amount.toFixed(2)+'|'+(x.desc||'').slice(0,40))),
+    bank_ref:x.dup&&found.has(x.bref) ? x.bref+'|'+now : x.bref,
     imported_at:now, created_by:ME.id
   }));
   const {data,error}=await sb.from('transactions').insert(heads).select();

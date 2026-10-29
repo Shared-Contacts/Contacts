@@ -2,7 +2,8 @@
 // 27 Oct 2026, step 45). Run as an Android phone, since that is the only
 // place the app is asked for by name. Chrome was taken off the list on
 // 28 Oct 2026 (ML70): on the phone it only ever opened the window inside the app.
-// Firefox was added the same day (ML82) to open pages as a browser of its own.
+// Firefox was added the same day (ML82) to open pages as a browser of its own;
+// without Firefox a link set to it goes to Firefox's Play Store page (ML86).
 const { chromium } = require('playwright');
 const path = require('path');
 const errors = []; let pass = 0, fail = 0;
@@ -83,9 +84,9 @@ const seed = () => {
      a.href === 'https://www.metoffice.gov.uk/' && a.target === '_blank', JSON.stringify(a));
   ok('and says nothing about Chrome', !/opens in/.test(a.text), a.text);
   a = await link(105);
-  ok('a Firefox one asks for Firefox, falling back to the page',
+  ok('a Firefox one asks for Firefox, falling back to Firefox on the Play Store',
      a.href === 'intent://www.sage.com/en-gb/#Intent;scheme=https;package=org.mozilla.firefox;'
-       + 'S.browser_fallback_url=https%3A%2F%2Fwww.sage.com%2Fen-gb%2F;end', a.href);
+       + 'S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.mozilla.firefox;end', a.href);
   ok('and the row says Firefox', /opens in Firefox/.test(a.text), a.text);
   a = await link(104);
   ok('an address with a # in it opens the ordinary way rather than break', a.href === 'https://example.org/page#part', a.href);

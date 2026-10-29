@@ -3,6 +3,8 @@
 // reference, so the database refused the whole file with "Some of those are
 // already in". Here the database's rule - one reference per account - is
 // copied into the stand-in, so the old code fails this test as it did for real.
+// Then (ML91): a row brought in before is recognised by its reference even if
+// its amount or date has changed since, and the preview lists every row.
 const { chromium } = require('playwright');
 const path = require('path');
 const errors = [];
@@ -108,19 +110,90 @@ const CSV = [
   ok('each round has its own £5.60 line', lines.filter(l => l.amount === -5.6).length === 3,
      JSON.stringify(lines.map(l => l.amount)));
 
-  console.log('\nThe same file again is still stopped');
-  // Put what was just written into the books, then tick everything on by hand.
-  await p.evaluate(() => {
-    const w = window.__writes.find(x => x.op==='insert' && x.table==='transactions');
-    window.__rows.transactions = window.__rows.transactions.concat(w.rows.map((r,i) =>
-      Object.assign({ id:6000+i }, r)));
-    IMPORT.ready.forEach(x => { x.take = true; });
-    window.__refused = 0;
-  });
-  await p.evaluate(() => doMoneyImport());
-  await p.waitForTimeout(600);
-  ok('the database refuses a second copy of the statement',
-     await p.evaluate(() => window.__refused) === 1);
+  // What a fresh preview of the same file, into another account, looks like.
+  const again = async (acc, books) => {
+    await p.evaluate(([acc, books]) => {
+      window.__rows.accounts.push({id:acc,name:'Test '+acc,kind:'current',currency:'GBP',
+        opening_balance:0,opening_date:'2026-01-01',active:true,sort:60+acc});
+      window.__rows.transactions = window.__rows.transactions.concat(books);
+      IMPORT.acc = acc; IMPORT.ready = null; window.__writes = []; window.__refused = 0;
+      $('moneyImp').classList.remove('hidden');   // a finished import closes it
+    }, [acc, books]);
+    await p.evaluate(async () => { await scanBooks(); importPreview(); });
+    await p.waitForTimeout(300);
+    return (await p.textContent('#impOut')).replace(/\s+/g,' ');
+  };
+  const refOf = (date, amt, desc) => date + '|' + amt.toFixed(2) + '|' + desc;
+  const KINGS = 'THE KINGS ARMS        \tON 03 SEP CPM';
+  const LION = 'THE RED LION INN      \tON 02 SEP CPM';
+  const written = () => p.evaluate(() =>
+    ((window.__writes.find(x => x.op==='insert' && x.table==='transactions')||{}).rows||[]));
+
+  console.log('\nThe same file again');
+  const imported = [
+    {tdate:'2026-09-04', total:-11.7, bank_ref:refOf('2026-09-04',-11.7,KINGS)},
+    {tdate:'2026-09-03', total:-5.6, bank_ref:refOf('2026-09-03',-5.6,LION)},
+    {tdate:'2026-09-03', total:-5.6, bank_ref:refOf('2026-09-03',-5.6,LION)+'|2'},
+    {tdate:'2026-09-03', total:-5.6, bank_ref:refOf('2026-09-03',-5.6,LION)+'|3'},
+    {tdate:'2026-09-01', total:-2.25, bank_ref:refOf('2026-09-01',-2.25,'GREGGS PLC            \tON 28 AUG CPM')}];
+  const mk = (acc, base) => imported.map((t,i) => Object.assign({id:base+i, account_id:acc,
+    kind:'expense', reference:'already in', payee_id:null}, t));
+  let o = await again(10, mk(10, 7000));
+  ok('every row is seen as already in', /5 rows for this account, 5 already in your books/.test(o), o.slice(0,90));
+  ok('so nothing is ticked', await p.evaluate(() => IMPORT.ready.filter(x => x.take).length) === 0);
+  const kings = await p.evaluate(() => IMPORT.ready.find(x => /KINGS/.test(x.desc)).key);
+  await p.click(`[data-imp="${kings.replace(/"/g,'\\"')}"]`); await p.waitForTimeout(300);
+  await p.click('#impGo'); await p.waitForTimeout(700);
+  let wr = await written();
+  ok('one ticked back on by hand still comes in, as a separate payment',
+     wr.length === 1 && /KINGS/.test(wr[0].reference) && await p.evaluate(() => window.__refused) === 0,
+     JSON.stringify(wr.map(r => r.bank_ref)));
+  ok('with a reference of its own', wr.length === 1 && wr[0].bank_ref !== refOf('2026-09-04',-11.7,KINGS)
+     && wr[0].bank_ref.startsWith(refOf('2026-09-04',-11.7,KINGS) + '|'), wr[0] && wr[0].bank_ref);
+
+  console.log('\nOne brought in before, its amount changed since');
+  // Split or edited afterwards, so its amount no longer matches the statement.
+  const changed = mk(11, 7100).filter(t => /KINGS/.test(t.bank_ref)).map(t => Object.assign(t, {total:-20}));
+  o = await again(11, changed);
+  ok('it is still recognised, by its reference', /1 already in your books/.test(o), o.slice(0,90));
+  ok('and left unticked', await p.evaluate(() => IMPORT.ready.find(x => /KINGS/.test(x.desc)).take) === false);
+  await p.click('#impGo'); await p.waitForTimeout(700);
+  wr = await written();
+  ok('the other four come in without a refusal',
+     wr.length === 4 && await p.evaluate(() => window.__refused) === 0, 'wrote ' + wr.length);
+
+  console.log('\nOne brought in before, since moved to another date');
+  // Outside the dates the preview fetches, so only the last check can see it.
+  const moved = mk(12, 7200).filter(t => /KINGS/.test(t.bank_ref)).map(t => Object.assign(t, {tdate:'2026-08-01'}));
+  o = await again(12, moved);
+  ok('the preview cannot see it, so all five are ticked', /Import 5 transactions/.test(o), o.slice(-200));
+  await p.evaluate(() => { const t = $('toasts'); if (t) t.textContent = ''; });
+  await p.click('#impGo'); await p.waitForTimeout(700);
+  wr = await written();
+  const t1 = await p.evaluate(() => $('toasts') ? $('toasts').textContent : '');
+  ok('the last check stops before anything is written', wr.length === 0 && await p.evaluate(() => window.__refused) === 0);
+  ok('and says one came in before', /1 of those came in before/.test(t1), t1);
+  o = (await p.textContent('#impOut')).replace(/\s+/g,' ');
+  ok('that row is now unticked and shown as already here',
+     /Import 4 transactions/.test(o) && /already here as/.test(o), o.slice(-220));
+  await p.click('#impGo'); await p.waitForTimeout(700);
+  wr = await written();
+  ok('pressing Import again brings in the other four', wr.length === 4 && await p.evaluate(() => window.__refused) === 0,
+     'wrote ' + wr.length);
+
+  console.log('\nA long file shows every row');
+  const long = ['Number,Date,Account,Amount,Subcategory,Memo'];
+  for (let i = 0; i < 75; i++)
+    long.push(`"\t0",${String(1 + (i % 28)).padStart(2,'0')}/10/2026,20-00-00 12345678,-${(i + 1).toFixed(2)},Debit,"SHOP ${i}\tON 01 OCT CPM\t"`);
+  await p.evaluate(acc => { IMPORT.acc = acc; $('moneyImp').classList.remove('hidden'); }, 12);
+  await p.fill('#impPaste', long.join('\n'));
+  await p.click('#impRead'); await p.waitForTimeout(400);
+  await p.click('#impPreview'); await p.waitForTimeout(500);
+  o = (await p.textContent('#impOut')).replace(/\s+/g,' ');
+  ok('all 75 rows are listed', await p.evaluate(() => document.querySelectorAll('#impOut [data-imp]').length) === 75,
+     await p.evaluate(() => document.querySelectorAll('#impOut [data-imp]').length));
+  ok('with no "…and more, all ticked" line', !/more, all ticked/.test(o));
+  ok('and the button agrees with the ticks', /Import 75 transactions/.test(o), o.slice(-200));
 
   await b.close();
   console.log('\n' + '='.repeat(52));

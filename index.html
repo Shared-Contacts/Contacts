@@ -4255,11 +4255,16 @@ function openHelp(where){
   <p><strong>Open with</strong> chooses, once, where a link opens:
   <strong>Firefox</strong>, the <strong>YouTube app</strong>, the
   <strong>Barclays app</strong>, or <strong>Phone decides</strong>, the ordinary
-  way. Firefox opens the page as a browser of its own, so this app stays open
-  behind it and you can switch between the two. It is filled in for you when
-  you add a link: YouTube and Barclays pages get their own app, and everything
-  else gets Phone decides. If the phone does not have that app, or the app will
-  not take the link, it opens the ordinary way instead.</p>
+  way. It is filled in for you when you add a link: YouTube and Barclays pages
+  get their own app, and everything else gets Phone decides. If the phone does
+  not have that app, or the app will not take the link, it opens the ordinary
+  way instead.</p>
+  <p><strong>Firefox</strong> opens the page as a browser of its own, so this
+  app stays open behind it. The phone asks Chrome or Firefox each time: choose
+  Firefox. To come back here and keep the page open, switch with the button
+  that shows your open apps rather than the back arrow. If Firefox is not on
+  the phone, the link opens Firefox&rsquo;s page on the Play Store, to install
+  it.</p>
   <p>A new link is yours alone. Under <strong>Who can see it</strong> you can
   share it with <strong>Everyone</strong> or with the people you choose. Links
   shared with you appear under <strong>Shared with you</strong>, with the name of
@@ -7884,10 +7889,15 @@ function levelName(id){
    for Chrome only ever opened the window inside the app, so it was taken out.
    A link still set to Chrome opens the ordinary way. Firefox was added the
    same day (ML82): Chrome hands a link to another app, so Firefox opens it
-   as a browser of its own and the app stays open behind it. */
+   as a browser of its own and the app stays open behind it. Tested on the
+   phone 29 Oct 2026 (ML84, ML85): the phone always asks Chrome or Firefox
+   first, which the page cannot stop. Without Firefox, a link set to it goes to
+   Firefox's Play Store page (store) rather than the ordinary way, so it can be
+   installed (ML86). */
 const LINK_APPS=[
   {k:'',         label:'Phone decides'},
-  {k:'firefox',  label:'Firefox',      pkg:'org.mozilla.firefox'},
+  {k:'firefox',  label:'Firefox',      pkg:'org.mozilla.firefox',
+   store:'https://play.google.com/store/apps/details?id=org.mozilla.firefox'},
   {k:'youtube',  label:'YouTube app',  pkg:'com.google.android.youtube',
    hosts:/(^|\.)(youtube\.com|youtu\.be)$/i},
   {k:'barclays', label:'Barclays app', pkg:'com.barclays.android.barclaysmobilebanking',
@@ -7922,7 +7932,7 @@ function linkHref(l){
   const m=String(l.url||'').match(/^(https?):\/\/([^#]*)$/i);
   if(!a.pkg||!ON_ANDROID||!m) return l.url;
   return 'intent://'+m[2]+'#Intent;scheme='+m[1].toLowerCase()+';package='+a.pkg
-    +';S.browser_fallback_url='+encodeURIComponent(l.url)+';end';
+    +';S.browser_fallback_url='+encodeURIComponent(a.store||l.url)+';end';
 }
 const linkMine = l => l.created_by===ME.id;
 const linkSharedWith = id => ULINK_SHARES.filter(s=>s.link_id===id).map(s=>s.viewer_id);

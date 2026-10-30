@@ -1084,6 +1084,15 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .rcppicbtns label.btn{flex:1;margin:4px 0 0;border:1.5px solid var(--rule);color:var(--hull);
   font-size:16px;padding:12px 8px}
 .rcppicbtns input{display:none}
+.wpics{margin-bottom:8px}
+.wpics > .coords{margin:2px 0 0}
+.wpics .rcpthumbs .coords{display:none}
+.wpics .rcpthumbs:empty,.wpics .rcpthumbs:has(> .coords){padding:0}
+.wcopies{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 2px}
+.wcopies button{padding:5px 12px;font-size:14px;border:1.5px solid var(--rule);border-radius:16px;
+  color:var(--hull);font-weight:600}
+.sthumb{flex:0 0 44px;width:44px;height:44px;object-fit:cover;border-radius:6px;background:#F0EEE7;
+  margin-right:6px;align-self:center}
 #reBody .ulrow{display:flex;gap:8px;margin-top:4px}
 #reBody .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff;font-size:16px}
@@ -4209,6 +4218,10 @@ function openHelp(where){
   buttons along the top, so you can put something on Sandra's list for her next
   shop without it landing on yours.</p>
   <p>Ticked items drop into the trolley at the bottom until you clear it.</p>
+  <p>Tap something on the list to change the wording or how many, or to add a
+  photo &mdash; the packet you are after, say &mdash; with <em>Camera</em> or
+  <em>Choose</em>. The first photo shows small beside it on the list; tap it to
+  see it full size. Anyone who can use the list sees the photos.</p>
 
   <h4 id="h-messages">Messages</h4>
   <p>Conversations inside the app, between the people who have an account here.
@@ -4234,8 +4247,14 @@ function openHelp(where){
   where anyone can put ideas for this app. Move an idea between Idea, Maybe,
   Doing, Done and Not doing as it goes along. You can only remove your own, but
   anyone can move any of them. Calendar Club keeps its own list, in that app.</p>
-  <p>The pencil beside one of your own ideas lets you reword it or change the
-  explanation.</p>
+  <p>The pencil beside one of your own ideas lets you reword it, change the
+  explanation, or add or take off photos.</p>
+  <p><strong>Photos and screenshots.</strong> Add them with <em>Camera</em> or
+  <em>Choose</em> when you put an idea in, or later with the pencil. Everyone
+  sees them; tap one to see it full size. To put one into Claude on the laptop,
+  right-click the full-size picture and choose <em>Copy image</em>, then paste.</p>
+  <p><strong>Copy idea</strong> and <strong>Copy notes</strong> put that wording
+  on the clipboard, ready to paste into Claude as a to-do.</p>
 
   <h4 id="h-urllinks">URL Links</h4>
   <p><strong>URL Links</strong> is a library of web pages you want to find again,
@@ -5122,8 +5141,10 @@ async function deleteRoutine(r){
    listed on the entry as [{path}], the same way as recipe photos. Anyone the
    entry is shared with (Who else to remind) can see them and add their own.
    A photo taken and then cancelled is cleared away at once; one taken off a
-   saved entry only leaves the store when the entry is saved. */
-let DPH=null;                  // {box, photos, fresh, gone}
+   saved entry only leaves the store when the entry is saved.
+   Wishlist ideas and shopping items use the same code (step 47), with
+   their own folders: wsh/ and shp/. */
+let DPH=null;                  // {box, pre, step, photos, fresh, gone}
 
 function dphHtml(box){
   return `<div class="rcpthumbs" id="${box}"></div>
@@ -5131,8 +5152,9 @@ function dphHtml(box){
       <label class="btn">Camera<input type="file" data-dphadd="1" accept="image/*" capture="environment"></label>
       <label class="btn">Choose<input type="file" data-dphadd="1" accept="image/*" multiple></label></div>`;
 }
-function dphStart(box, photos){
-  DPH={box, photos:arr(photos).filter(p=>p&&p.path), fresh:[], gone:[]};
+function dphStart(box, photos, pre, step){
+  DPH={box, pre:pre||'dia', step:step||46,
+    photos:arr(photos).filter(p=>p&&p.path), fresh:[], gone:[]};
   dphPaint();
   const want=DPH;
   signPaths(DPH.photos.map(p=>p.path)).then(()=>{ if(DPH===want) dphPaint(); });
@@ -5145,16 +5167,16 @@ function dphPaint(){
     : '<span class="coords" style="margin:0">None yet.</span>';
 }
 const dphNow = () => DPH ? DPH.photos.map(p=>({path:p.path})) : [];
-const dphMine = p => String(p||'').startsWith('dia/'+ME.id+'/');
+const dphMine = (p,pre) => String(p||'').startsWith((pre||'dia')+'/'+ME.id+'/');
 // "3 photos" for the rows on the lists
 function photoCount(x){
   const n=arr(x&&x.photos).length;
   return n ? '\u{1F4F7} '+n : '';
 }
-// Saving photos before step 46 has been run says so, rather than just failing.
+// Saving photos before step 46 (or 47) has been run says so, rather than just failing.
 function dphStepMissing(d,err){
   return 'photos' in d && /photos/i.test((err&&err.message)||'')
-    ? 'Could not save: photos need step 46 run in Supabase first' : '';
+    ? 'Could not save: photos need step '+(DPH?DPH.step:46)+' run in Supabase first' : '';
 }
 
 async function dphAdd(files){
@@ -5165,7 +5187,7 @@ async function dphAdd(files){
     toast(files.length>1?'Adding photo '+(i+1)+' of '+files.length:'Adding the photo…');
     try{
       const blob=await shrink(files[i],1600);
-      const path=`dia/${ME.id}/${crypto.randomUUID()}.jpg`;
+      const path=`${into.pre}/${ME.id}/${crypto.randomUUID()}.jpg`;
       const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
       if(error){ toast('Could not upload it'); console.error(error); continue; }
       // Closed while it was uploading: nothing will save it, so tidy it away.
@@ -5187,7 +5209,7 @@ async function dphDrop(i){
     }
     // Somebody else's photo on a shared entry comes off the entry; the file
     // itself is theirs, so it stays in their folder.
-    else if(dphMine(p.path)) DPH.gone.push(p.path);
+    else if(dphMine(p.path,DPH.pre)) DPH.gone.push(p.path);
   }
   dphPaint();
 }
@@ -5200,23 +5222,27 @@ async function dphSaved(){
   if(was&&was.gone.length) await sb.storage.from('photos').remove(was.gone);
 }
 // An entry deleted for good takes your photos with it.
-async function dphForget(x){
-  const mine=arr(x&&x.photos).map(p=>p&&p.path).filter(dphMine);
+async function dphForget(x,pre){
+  await dphForgetAll([x],pre);
+}
+async function dphForgetAll(xs,pre){
+  const mine=xs.flatMap(x=>arr(x&&x.photos)).map(p=>p&&p.path).filter(p=>dphMine(p,pre));
   if(mine.length) await sb.storage.from('photos').remove(mine);
 }
-['itBody','rtBody'].forEach(id=>{
-  $(id).addEventListener('click',ev=>{
+function dphWire(el){
+  el.addEventListener('click',ev=>{
     const v=ev.target.closest('[data-dphview]');
     if(v&&DPH){ const p=DPH.photos[Number(v.dataset.dphview)];
       if(p) lightbox(SIGNED[p.path]); return; }
     const x=ev.target.closest('[data-dphx]');
     if(x) dphDrop(Number(x.dataset.dphx));
   });
-  $(id).addEventListener('change',ev=>{
+  el.addEventListener('change',ev=>{
     if(!ev.target.matches('[data-dphadd]')) return;
     const files=[...ev.target.files]; ev.target.value=''; dphAdd(files);
   });
-});
+}
+['itBody','rtBody','wishBody'].forEach(id=>dphWire($(id)));
 
 /* ---------- list ---------- */
 function diaryList(){
@@ -7729,11 +7755,23 @@ async function openWish(){
   showSheet('wish'); $('wishBody').scrollTop=0; lockBackground();
 }
 
-// Your own ideas can be reworded. Anybody can still move any of them along.
+// Copy buttons put an idea's wording on the clipboard, ready to paste into
+// Claude as a to-do.
+async function copyField(s){
+  if(!s){ toast('Nothing to copy'); return; }
+  toast(await copyText(s) ? 'Copied' : 'Could not copy it');
+}
+const wishCopyBtns=(t,n,attr)=>`<span class="wcopies">
+    <button type="button" ${attr}="t">Copy idea</button>
+    ${n?`<button type="button" ${attr}="n">Copy notes</button>`:''}</span>`;
+
+// Your own ideas can be reworded, and given photos. Anybody can still move
+// any of them along. Photos half-added to a new idea wait while this is open.
 function editWish(id){
   const w=WISHES.find(x=>x.id===id);
   if(!w) return;
   if(w.created_by!==ME.id){ toast('You can only change your own'); return; }
+  const adding = DPH&&DPH.box==='wPics' ? DPH : null;
   const box=document.createElement('div');
   box.className='daypick';
   box.innerHTML=`<div class="inner">
@@ -7741,20 +7779,31 @@ function editWish(id){
     <label>What would be good?<input id="weTitle" value="${esc(w.title)}"></label>
     <label>Anything worth explaining
       <textarea id="weNotes" rows="3">${esc(w.notes||'')}</textarea></label>
+    ${wishCopyBtns(w.title,true,'data-wecopy')}
+    <p class="dsec">Photos</p>${dphHtml('wePics')}
     <div class="pfoot"><button id="weCancel">Cancel</button>
       <button id="weGo" class="go">Save</button></div></div>`;
   document.body.appendChild(box);
-  const close=()=>box.remove();
+  dphWire(box);
+  dphStart('wePics', w.photos, 'wsh', 47);
+  const done=()=>{ box.remove(); DPH=adding; };
+  const close=async()=>{ box.remove(); await dphCancel(); DPH=adding; };
   box.querySelector('#weCancel').onclick=close;
   box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelectorAll('[data-wecopy]').forEach(b=>b.onclick=()=>copyField(
+    box.querySelector(b.dataset.wecopy==='t'?'#weTitle':'#weNotes').value.trim()));
   box.querySelector('#weGo').onclick=async()=>{
     const t=box.querySelector('#weTitle').value.trim();
     if(!t){ toast('It needs a title'); return; }
-    const {error}=await sb.from('wishes')
-      .update({title:t, notes:box.querySelector('#weNotes').value.trim()||null})
-      .eq('id',id);
-    if(error){ toast('Could not save it'); console.error(error); return; }
-    close(); await loadLists(); renderWish(); toast('Saved');
+    const d={title:t, notes:box.querySelector('#weNotes').value.trim()||null};
+    // Only sent when there is something to say, so an idea still saves on a
+    // database that has not had step 47 yet.
+    const photos=dphNow();
+    if(photos.length || arr(w.photos).length) d.photos=photos;
+    const {error}=await sb.from('wishes').update(d).eq('id',id);
+    if(error){ toast(dphStepMissing(d,error)||'Could not save it'); console.error(error); return; }
+    await dphSaved(); done();
+    await loadLists(); renderWish(); toast('Saved');
   };
   setTimeout(()=>box.querySelector('#weTitle').focus(),50);
 }
@@ -7771,6 +7820,7 @@ function renderWish(){
       <input id="wTitle" placeholder="What would be good?">
       <textarea id="wNotes" rows="2" placeholder="Anything worth explaining (optional)"
         style="width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;margin-bottom:8px"></textarea>
+      <div class="wpics"><p class="coords">Photos or screenshots (optional)</p>${dphHtml('wPics')}</div>
       <button class="btn primary" id="wAdd">Add it</button>
     </div></div>`;
 
@@ -7788,6 +7838,9 @@ function renderWish(){
             mineW?` <button class="addmore" data-wedit="${w.id}"
               style="padding:0 0 0 6px;font-size:15px" aria-label="Change this">&#9998;</button>`:''}</span>
           ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
+          ${arr(w.photos).length?`<span class="rcpthumbs">${arr(w.photos).map(p=>`<img
+            src="${esc(SIGNED[p.path]||'')}" alt="Photo" data-wpic="${esc(p.path)}">`).join('')}</span>`:''}
+          ${wishCopyBtns(w.title,w.notes,'data-wcopy="'+w.id+'" data-wfield')}
           <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
             ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
           <span class="pickrow" style="margin-top:8px">
@@ -7805,17 +7858,34 @@ function renderWish(){
     html+=`<div class="card"><div class="field"><dd>No ideas yet for this one.</dd></div></div>`;
 
   $('wishBody').innerHTML=html;
+  // The new idea's photos carry on through a redraw (moving another idea
+  // along, say) until it is added or the Wishlist is left.
+  if(DPH&&DPH.box==='wPics') dphPaint(); else dphStart('wPics', [], 'wsh', 47);
+  const pics=live.flatMap(w=>arr(w.photos).map(p=>p.path)).filter(p=>!SIGNED[p]);
+  if(pics.length) signPaths(pics).then(()=>{
+    $('wishBody').querySelectorAll('img[data-wpic]').forEach(i=>{
+      if(!i.getAttribute('src')) i.src=SIGNED[i.dataset.wpic]||''; });
+  });
   $('wishBody').querySelectorAll('[data-wapp]').forEach(b=>b.onclick=()=>{
     WISH_APP=b.dataset.wapp; renderWish(); });
   $('wAdd').onclick=async()=>{
     const t=$('wTitle').value.trim();
     if(!t){ toast('Say what the idea is'); return; }
-    const {error}=await sb.from('wishes').insert({
-      created_by:ME.id, app:WISH_APP, title:t,
-      notes:$('wNotes').value.trim()||null});
-    if(error){ toast('Could not add it'); console.error(error); return; }
+    const d={created_by:ME.id, app:WISH_APP, title:t,
+      notes:$('wNotes').value.trim()||null};
+    const photos=dphNow();
+    if(photos.length) d.photos=photos;
+    const {error}=await sb.from('wishes').insert(d);
+    if(error){ toast(dphStepMissing(d,error)||'Could not add it'); console.error(error); return; }
+    await dphSaved();
     await loadLists(); renderWish(); toast('Added');
   };
+  $('wishBody').querySelectorAll('img[data-wpic]').forEach(i=>i.onclick=()=>
+    lightbox(SIGNED[i.dataset.wpic]));
+  $('wishBody').querySelectorAll('[data-wcopy]').forEach(b=>b.onclick=()=>{
+    const w=WISHES.find(x=>x.id===Number(b.dataset.wcopy));
+    if(w) copyField(b.dataset.wfield==='t' ? w.title : (w.notes||''));
+  });
   $('wishBody').querySelectorAll('[data-wedit]').forEach(b=>b.onclick=()=>
     editWish(Number(b.dataset.wedit)));
   $('wishBody').querySelectorAll('[data-wset]').forEach(b=>b.onclick=async()=>{
@@ -7826,8 +7896,10 @@ function renderWish(){
   });
   $('wishBody').querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
     if(!confirm('Remove your idea?')) return;
+    const w=WISHES.find(x=>x.id===Number(b.dataset.wdel));
     const {error}=await sb.from('wishes').delete().eq('id',Number(b.dataset.wdel));
     if(error){ toast('Could not remove it'); return; }
+    await dphForget(w,'wsh');
     await loadLists(); renderWish();
   });
 }
@@ -10013,6 +10085,7 @@ async function binList(id){
     +(n?' and the '+n+' thing'+(n===1?'':'s')+' on it':'')+'?')) return;
   const {error}=await sb.from('shopping_lists').delete().eq('id',id);
   if(error){ toast('Could not delete it'); console.error(error); return; }
+  await dphForgetAll(SHOP.filter(x=>x.list_id===id),'shp');
   if(CUR_LIST===id) CUR_LIST=null;
   await loadShopping(); renderShop(); toast('List deleted');
 }
@@ -10024,6 +10097,7 @@ function renderShop(){
   const todo=items.filter(x=>!x.got);
   const got =items.filter(x=>x.got).sort((a,b)=>new Date(b.got_at||0)-new Date(a.got_at||0));
 
+  const pic=x=>arr(x.photos).find(p=>p&&p.path);
   const row=x=>`<div class="item">
     <button class="tick ${x.got?'on':''}" data-sgot="${x.id}"
       aria-label="${x.got?'Put it back':'Got it'}">${x.got?'&#10003;':''}</button>
@@ -10031,6 +10105,8 @@ function renderShop(){
       <span class="t ${x.got?'done':''}">${esc(x.name)}${x.qty?' &mdash; '+esc(x.qty):''}</span>
       ${x.created_by!==ME.id&&!x.got?`<span class="w">added by ${esc(whoWrote(x.created_by))}</span>`:''}
     </button>
+    ${pic(x)?`<img class="sthumb" src="${esc(SIGNED[pic(x).path]||'')}" alt="Photo"
+      data-spic="${esc(pic(x).path)}">`:''}
     <button class="del" data-sdel="${x.id}" aria-label="Remove">&times;</button></div>`;
 
   const counts={};
@@ -10093,6 +10169,13 @@ function renderShop(){
 
   $('shopBody').innerHTML=html;
 
+  const pics=items.map(pic).filter(Boolean).map(p=>p.path).filter(p=>!SIGNED[p]);
+  if(pics.length) signPaths(pics).then(()=>{
+    $('shopBody').querySelectorAll('img[data-spic]').forEach(i=>{
+      if(!i.getAttribute('src')) i.src=SIGNED[i.dataset.spic]||''; });
+  });
+  $('shopBody').querySelectorAll('img[data-spic]').forEach(i=>i.onclick=()=>
+    lightbox(SIGNED[i.dataset.spic]));
   $('shopBody').querySelectorAll('[data-slist]').forEach(b=>b.onclick=()=>{
     CUR_LIST=Number(b.dataset.slist); renderShop(); });
   $('shopBody').querySelectorAll('[data-sbin]').forEach(x=>{
@@ -10136,18 +10219,14 @@ function renderShop(){
     await loadShopping(); renderShop();
   });
   $('shopBody').querySelectorAll('[data-sdel]').forEach(b=>b.onclick=async()=>{
+    const x=SHOP.find(y=>y.id===Number(b.dataset.sdel));
     const {error}=await sb.from('shopping').delete().eq('id',Number(b.dataset.sdel));
     if(error){ toast('Could not remove it'); return; }
+    await dphForget(x,'shp');
     await loadShopping(); renderShop();
   });
-  $('shopBody').querySelectorAll('[data-sedit]').forEach(b=>b.onclick=async()=>{
-    const x=SHOP.find(y=>y.id===Number(b.dataset.sedit));
-    const n=prompt('Change it to:',x.name);
-    if(n===null||!n.trim()) return;
-    const {error}=await sb.from('shopping').update({name:n.trim()}).eq('id',x.id);
-    if(error){ toast('Could not save'); return; }
-    await loadShopping(); renderShop();
-  });
+  $('shopBody').querySelectorAll('[data-sedit]').forEach(b=>b.onclick=()=>
+    editShopItem(SHOP.find(y=>y.id===Number(b.dataset.sedit))));
   $('shopBody').querySelectorAll('[data-sshare]').forEach(b=>b.onchange=async()=>{
     const uid=b.dataset.sshare;
     const {error} = b.checked
@@ -10173,7 +10252,44 @@ function renderShop(){
     if(!confirm('Take everything in the trolley off this list?')) return;
     const {error}=await sb.from('shopping').delete().eq('got',true).eq('list_id',CUR_LIST);
     if(error){ toast('Could not clear it'); return; }
+    await dphForgetAll(got,'shp');
     await loadShopping(); renderShop(); toast('Cleared');
+  };
+}
+
+/* One thing on the list, opened: the wording, how many, and photos (the
+   packet you are after, say). Anyone who can use the list can add photos;
+   each person's go in their own folder, shp/<user id>/. Step 47. */
+function editShopItem(x){
+  if(!x) return;
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Change this</p>
+    <label>What is needed<input id="seName" value="${esc(x.name)}"></label>
+    <label>How much or how many<input id="seQty" value="${esc(x.qty||'')}"
+      placeholder="Optional"></label>
+    <p class="dsec">Photos</p>${dphHtml('sePics')}
+    <div class="pfoot"><button id="seCancel">Cancel</button>
+      <button id="seGo" class="go">Save</button></div></div>`;
+  document.body.appendChild(box);
+  dphWire(box);
+  dphStart('sePics', x.photos, 'shp', 47);
+  const close=async()=>{ box.remove(); await dphCancel(); };
+  box.querySelector('#seCancel').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#seGo').onclick=async()=>{
+    const n=box.querySelector('#seName').value.trim();
+    if(!n){ toast('Say what is needed'); return; }
+    const d={name:n, qty:box.querySelector('#seQty').value.trim()||null};
+    // Only sent when there is something to say, so an item still saves on a
+    // database that has not had step 47 yet.
+    const photos=dphNow();
+    if(photos.length || arr(x.photos).length) d.photos=photos;
+    const {error}=await sb.from('shopping').update(d).eq('id',x.id);
+    if(error){ toast(dphStepMissing(d,error)||'Could not save'); console.error(error); return; }
+    await dphSaved(); box.remove();
+    await loadShopping(); renderShop(); toast('Saved');
   };
 }
 
@@ -12619,7 +12735,9 @@ function renderMoney(){
         <input id="mq" type="search" enterkeyhint="search" autocomplete="off"
           placeholder="Search transactions" value="${esc(MONEY_Q)}"
           aria-label="Search transactions">
-        <button class="btn primary" id="mqGo">Search</button></div>
+        <button class="btn primary" id="mqGo">Search</button>
+        ${MONEY_Q?`<button class="btn" id="mqClearTop"
+          style="border:1.5px solid var(--rule)">Clear</button>`:''}</div>
       ${MONEY_ACC==='all'?'':`<div class="kindpick">
         <button data-qall="0" aria-pressed="${!MONEY_QALL}">Search this account</button>
         <button data-qall="1" aria-pressed="${MONEY_QALL}">Search all</button></div>`}
@@ -12920,6 +13038,12 @@ function renderTxnEditor(){
       <input type="checkbox" id="txBiz" ${TX.business?'checked':''}> Business</label></div>
   </div>
 
+  ${TX.id&&!TX.transfer_id?`
+    <button class="btn" id="txPair" style="border:1.5px solid var(--rule)">
+      This is money moved between my own accounts&hellip;</button>
+    <p class="coords" style="text-align:center;margin:8px 0 18px">
+      Joins it to the other side, wherever that landed.</p>`:''}
+
   ${isTransfer?`
   <div class="card"><h3>Amount</h3>
     <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Leaving (${esc(cur)})</label>
@@ -12995,12 +13119,6 @@ function renderTxnEditor(){
     Reconciled${TX.reconciled_on?' against the statement to '+esc(shortDate(TX.reconciled_on)):''}.
     If that statement is locked this will refuse to save until you unlock it on
     the reconcile screen.</dd></div></div>`:''}
-
-  ${TX.id&&!TX.transfer_id?`
-    <button class="btn" id="txPair" style="border:1.5px solid var(--rule)">
-      This is money moved between my own accounts&hellip;</button>
-    <p class="coords" style="text-align:center;margin:8px 0 18px">
-      Joins it to the other side, wherever that landed.</p>`:''}
 
   ${TX.id&&TX.transfer_id?`<div class="card"><div class="field"><dd style="color:var(--muted)">
       Joined to its other half${TX.other
@@ -14843,7 +14961,8 @@ $('moneyBody').addEventListener('click',async ev=>{
   // The summary of a group is for folding it, not for choosing an account.
   if(ev.target.closest('summary')) return;
   if(ev.target.id==='mqGo'){ runMoneySearch(); return; }
-  if(ev.target.id==='mqClear'){ const b=$('mq'); if(b) b.value=''; runMoneySearch(); return; }
+  if(ev.target.id==='mqClear'||ev.target.id==='mqClearTop'){
+    const b=$('mq'); if(b) b.value=''; runMoneySearch(); return; }
   const qa=ev.target.closest('[data-qall]');
   if(qa){ MONEY_QALL=qa.dataset.qall==='1'; runMoneySearch(); return; }
   const a=ev.target.closest('[data-acc]');
@@ -15770,7 +15889,7 @@ const AREA_SHUT={
               if(typeof paintMoneyPickBar==='function') paintMoneyPickBar(); },
   diary:()=>$('diary').classList.add('hidden'),
   shop: ()=>$('shop').classList.add('hidden'),
-  wish: ()=>$('wish').classList.add('hidden'),
+  wish: ()=>{ if(DPH&&DPH.box==='wPics') dphCancel(); $('wish').classList.add('hidden'); },
   links:()=>$('links').classList.add('hidden'),
   recipes:()=>{ if(COOK&&!shutCook()) return;
     ['recipes','recipe','recipeEd','ideas'].forEach(id=>$(id).classList.add('hidden')); },

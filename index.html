@@ -720,7 +720,7 @@ i.key{vertical-align:middle}
 .setmv{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:2px}
 .setmv .mv{font-size:12px;padding:3px 7px}
 .setadd{padding:12px 14px}
-.setadd input{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
+.setadd input,.setadd select#sAisle{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
   background:#fff;margin-bottom:8px}
 
 .signin{max-width:380px;margin:0 auto;padding:56px 24px}
@@ -1091,6 +1091,16 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .wcopies{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 2px}
 .wcopies button{padding:5px 12px;font-size:14px;border:1.5px solid var(--rule);border-radius:16px;
   color:var(--hull);font-weight:600}
+.aislehd{margin:0;padding:9px 14px 5px;font-size:13px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--hull);background:#F7F5EF;border-bottom:1px solid #F0EEE7}
+.aislehd.loose{color:var(--red)}
+.aislelist{padding:4px 14px 8px}
+.aislerow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #F0EEE7}
+.aislerow span{flex:1;min-width:0;overflow-wrap:anywhere}
+.aislerow button{flex:0 0 40px;height:40px;border:1.5px solid var(--rule);border-radius:8px;
+  font-size:18px;color:var(--hull)}
+.aislerow button:disabled{opacity:.3}
+.aislerow button.ax{color:var(--red)}
 .sthumb{flex:0 0 44px;width:44px;height:44px;object-fit:cover;border-radius:6px;background:#F0EEE7;
   margin-right:6px;align-self:center}
 #reBody .ulrow{display:flex;gap:8px;margin-top:4px}
@@ -4222,6 +4232,14 @@ function openHelp(where){
   photo &mdash; the packet you are after, say &mdash; with <em>Camera</em> or
   <em>Choose</em>. The first photo shows small beside it on the list; tap it to
   see it full size. Anyone who can use the list sees the photos.</p>
+  <p><strong>Aisles.</strong> Open <strong>Aisles, in shop order</strong> at the
+  bottom of one of your lists and tap <em>Start with supermarket aisles</em>, or
+  add your own. The arrows move an aisle earlier or later in the shop, the
+  pencil renames it. The list then reads in the order you walk round, under the
+  aisle names, with anything not sorted yet at the top. Pick the aisle when you
+  add something, or tap it later to choose one. Once something has been in an
+  aisle it goes there by itself next time, including things added from a recipe.
+  Each list has its own aisles, so a different shop can have a different order.</p>
 
   <h4 id="h-messages">Messages</h4>
   <p>Conversations inside the app, between the people who have an account here.
@@ -9020,8 +9038,11 @@ async function rcpToShopping(r){
       continue;
     }
     const amt=amountText(x,f);
-    const {error}=await sb.from('shopping').insert({created_by:ME.id, list_id:lid,
-      name:name.charAt(0).toUpperCase()+name.slice(1), qty:amt||null, sort_order:++order});
+    const d={created_by:ME.id, list_id:lid,
+      name:name.charAt(0).toUpperCase()+name.slice(1), qty:amt||null, sort_order:++order};
+    const aisle=aisleFor(lid,name);          // the aisle it went in last time
+    if(aisle) d.aisle=aisle;
+    const {error}=await sb.from('shopping').insert(d);
     if(error){ failed++; console.error(error); } else added++;
   }
   await loadShopping();
@@ -10049,15 +10070,17 @@ function wireRecipeSettings(){
 }
 
 /* ---------- shopping: a list each, shared with whoever ---------- */
-let LISTS=[], LIST_SHARES=[], CUR_LIST=null;
+let LISTS=[], LIST_SHARES=[], CUR_LIST=null, SHOP_MEM=[], AISLES_OPEN=false;
 
 async function loadShopping(){
-  const [l,sh,it]=await Promise.all([
+  const [l,sh,it,mem]=await Promise.all([
     sb.from('shopping_lists').select('*').order('created_at'),
     sb.from('shopping_list_shares').select('*'),
-    sb.from('shopping').select('*').order('sort_order').order('created_at')
+    sb.from('shopping').select('*').order('sort_order').order('created_at'),
+    sb.from('shopping_aisle_memory').select('*')
   ]);
   LISTS=l.data||[]; LIST_SHARES=sh.data||[]; SHOP=it.data||[];
+  SHOP_MEM=mem.data||[];        // empty until step 48 has been run
 
   if(!LISTS.some(x=>x.owner_id===ME.id)){
     const {data}=await sb.from('shopping_lists')
@@ -10090,9 +10113,52 @@ async function binList(id){
   await loadShopping(); renderShop(); toast('List deleted');
 }
 
+/* ---------- aisles (step 48) ----------
+   A list can have aisles in the order you walk round the shop, kept on the
+   list as [{id, name}]. Each thing on it can sit in one (shopping.aisle),
+   and the list reads in shop order. Where a thing went last time is kept in
+   shopping_aisle_memory, so it lands in the same aisle by itself next time.
+   Only the list's owner can change the aisles; anyone using it can sort. */
+const SUPERMARKET_AISLES=['Fruit & Veg','Meat & Fish','Dairy, Juice & Ready Meals',
+  'Frozen & Ice Cream','Pasta, Rice, Sauces & Tins','Home Baking, Eggs & Bread',
+  'Crisps, Tea, Coffee & Biscuits','Sweets & Soft Drinks','Beer, Wine & Cider',
+  'Pet Food & Household','Toilet Roll, Cards & Party','Health, Beauty & Baby'];
+const aislesOf = l => arr(l&&l.aisles).filter(a=>a&&a.id&&a.name);
+const newAisleId = () => 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const shopKey = n => String(n||'').trim().toLowerCase();
+// The aisle this thing went in last time on this list, if that aisle is still there.
+function aisleFor(lid, name){
+  const ids=aislesOf(LISTS.find(l=>l.id===lid)).map(a=>a.id);
+  const m=SHOP_MEM.find(x=>x.list_id===lid&&x.name===shopKey(name));
+  return m&&ids.includes(m.aisle) ? m.aisle : null;
+}
+async function rememberAisle(lid, name, aisle){
+  const k=shopKey(name);
+  if(!k||!aisle) return;
+  const {error}=await sb.from('shopping_aisle_memory')
+    .upsert({list_id:lid, name:k, aisle, updated_at:new Date().toISOString()},
+            {onConflict:'list_id,name'});
+  if(error){ console.error(error); return; }
+  SHOP_MEM=SHOP_MEM.filter(x=>!(x.list_id===lid&&x.name===k)).concat({list_id:lid,name:k,aisle});
+}
+const aisleSelect = (id, aisles, val) => `<select id="${id}" aria-label="Aisle">
+    <option value="">Aisle: not sorted yet</option>${aisles.map(a=>`<option value="${esc(a.id)}"
+      ${a.id===val?'selected':''}>${esc(a.name)}</option>`).join('')}</select>`;
+async function saveAisles(aisles){
+  const {error}=await sb.from('shopping_lists').update({aisles}).eq('id',CUR_LIST);
+  if(error){
+    toast(/aisles/i.test(error.message||'')?'Aisles need step 48 run in Supabase first'
+      :'Could not save the aisles');
+    console.error(error); return false;
+  }
+  AISLES_OPEN=true;
+  await loadShopping(); renderShop(); return true;
+}
+
 function renderShop(){
   const list=LISTS.find(x=>x.id===CUR_LIST);
   const mine=list&&list.owner_id===ME.id;
+  const aisles=aislesOf(list);
   const items=SHOP.filter(x=>x.list_id===CUR_LIST);
   const todo=items.filter(x=>!x.got);
   const got =items.filter(x=>x.got).sort((a,b)=>new Date(b.got_at||0)-new Date(a.got_at||0));
@@ -10131,14 +10197,26 @@ function renderShop(){
     return;
   }
 
+  // With aisles, the list reads in shop order under their names; anything not
+  // in one yet comes first, so it gets noticed and sorted.
+  let toGet;
+  if(aisles.length&&todo.length){
+    const ids=aisles.map(a=>a.id);
+    const loose=todo.filter(x=>!ids.includes(x.aisle));
+    toGet=(loose.length?`<p class="aislehd loose">Not sorted yet</p>${loose.map(row).join('')}`:'')
+      +aisles.map(a=>{ const here=todo.filter(x=>x.aisle===a.id);
+        return here.length?`<p class="aislehd">${esc(a.name)}</p>${here.map(row).join('')}`:''; }).join('');
+  }else toGet=todo.map(row).join('');
+
   html+=`<div class="card"><h3>Add to ${esc(list.name)}</h3><div class="setadd">
       <input id="sName" placeholder="What is needed?">
       <input id="sQty" placeholder="How much or how many (optional)">
+      ${aisles.length?aisleSelect('sAisle',aisles,''):''}
       <button class="btn primary" id="sAdd">Add it</button>
     </div></div>
     <p class="dsec">To get <span style="float:right;font-weight:400;text-transform:none;
       letter-spacing:0">${todo.length}</span></p>
-    <div class="card rtlist">${todo.length?todo.map(row).join('')
+    <div class="card rtlist">${todo.length?toGet
       :'<div class="field"><dd>Nothing on this list.</dd></div>'}</div>
     ${got.length?`<p class="dsec">In the trolley</p>
       <div class="card rtlist">${got.map(row).join('')}
@@ -10146,6 +10224,25 @@ function renderShop(){
           style="border:1.5px solid var(--rule)">Clear the trolley</button></div></div>`:''}`;
 
   if(mine){
+    html+=`<details class="card logsec" id="sAisles" ${AISLES_OPEN?'open':''}>
+      <summary>Aisles, in shop order</summary>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        Put the aisles in the order you walk round, and the list follows it.
+        Once something has been in an aisle it goes there by itself next time.</dd></div>
+      ${aisles.length?`<div class="aislelist">${aisles.map((a,i)=>`<div class="aislerow">
+        <span>${esc(a.name)}</span>
+        <button type="button" data-aup="${i}" aria-label="Earlier in the shop" ${i?'':'disabled'}>&uarr;</button>
+        <button type="button" data-adown="${i}" aria-label="Later in the shop"
+          ${i<aisles.length-1?'':'disabled'}>&darr;</button>
+        <button type="button" data-aname="${i}" aria-label="Rename">&#9998;</button>
+        <button type="button" data-adel="${i}" aria-label="Remove" class="ax">&times;</button>
+        </div>`).join('')}</div>`
+      :`<div class="setadd"><button class="btn" id="sAisleStart" style="border:1.5px solid var(--rule)">
+          Start with supermarket aisles</button></div>`}
+      <div class="setadd">
+        <input id="sAisleNew" placeholder="Another aisle, e.g. Bakery counter">
+        <button class="btn" id="sAisleAdd" style="border:1.5px solid var(--rule)">Add the aisle at the end</button>
+      </div></details>`;
     const shared=LIST_SHARES.filter(x=>x.list_id===CUR_LIST).map(x=>x.user_id);
     html+=`<details class="card logsec"><summary>Who can use this list</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
@@ -10203,13 +10300,49 @@ function renderShop(){
       if(!confirm('"'+same.name+'" is already on the list.\n\n'
         +'OK to add another one anyway, or Cancel to leave it.')) return;
     }
-    const {error}=await sb.from('shopping').insert({
-      created_by:ME.id, list_id:CUR_LIST, name:n,
+    const d={created_by:ME.id, list_id:CUR_LIST, name:n,
       qty:$('sQty').value.trim()||null,
-      sort_order:Math.max(100,...items.map(x=>x.sort_order))+1});
+      sort_order:Math.max(100,...items.map(x=>x.sort_order))+1};
+    // Only sent when there is one, so adding still works before step 48.
+    const aisle=$('sAisle')?$('sAisle').value:'';
+    if(aisle) d.aisle=aisle;
+    const {error}=await sb.from('shopping').insert(d);
     if(error){ toast('Could not add it'); console.error(error); return; }
+    await rememberAisle(CUR_LIST, n, aisle);
     await loadShopping(); renderShop();
   };
+  // Typing something that has been here before picks its aisle for you.
+  if($('sAisle')) $('sName').addEventListener('input',()=>{
+    const a=aisleFor(CUR_LIST, $('sName').value);
+    if(a) $('sAisle').value=a;
+  });
+  const ad=$('sAisles');
+  if(ad) ad.addEventListener('toggle',()=>{ AISLES_OPEN=ad.open; });
+  const at=$('sAisleStart');
+  if(at) at.onclick=()=>saveAisles(SUPERMARKET_AISLES.map(name=>({id:newAisleId(),name})));
+  const aa=$('sAisleAdd');
+  if(aa) aa.onclick=()=>{
+    const n=$('sAisleNew').value.trim();
+    if(!n){ toast('Type the aisle’s name'); return; }
+    saveAisles(aisles.concat({id:newAisleId(), name:n}));
+  };
+  const moveAisle=(i,by)=>{
+    const a=aisles.slice(); const [x]=a.splice(i,1); a.splice(i+by,0,x); saveAisles(a); };
+  $('shopBody').querySelectorAll('[data-aup]').forEach(b=>b.onclick=()=>moveAisle(Number(b.dataset.aup),-1));
+  $('shopBody').querySelectorAll('[data-adown]').forEach(b=>b.onclick=()=>moveAisle(Number(b.dataset.adown),1));
+  $('shopBody').querySelectorAll('[data-aname]').forEach(b=>b.onclick=()=>{
+    const i=Number(b.dataset.aname);
+    const n=prompt('Call this aisle:',aisles[i].name);
+    if(n===null||!n.trim()) return;
+    saveAisles(aisles.map((a,j)=>j===i?{...a,name:n.trim()}:a));
+  });
+  $('shopBody').querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{
+    const i=Number(b.dataset.adel);
+    const n=SHOP.filter(x=>x.list_id===CUR_LIST&&!x.got&&x.aisle===aisles[i].id).length;
+    if(!confirm('Take the aisle "'+aisles[i].name+'" off this list?'
+      +(n?'\n\nThe '+n+' thing'+(n===1?'':'s')+' in it will go to Not sorted yet.':''))) return;
+    saveAisles(aisles.filter((a,j)=>j!==i));
+  });
   $('shopBody').querySelectorAll('[data-sgot]').forEach(b=>b.onclick=async()=>{
     const x=SHOP.find(y=>y.id===Number(b.dataset.sgot));
     const want=!x.got;
@@ -10262,6 +10395,7 @@ function renderShop(){
    each person's go in their own folder, shp/<user id>/. Step 47. */
 function editShopItem(x){
   if(!x) return;
+  const aisles=aislesOf(LISTS.find(l=>l.id===x.list_id));
   const box=document.createElement('div');
   box.className='daypick';
   box.innerHTML=`<div class="inner">
@@ -10269,6 +10403,7 @@ function editShopItem(x){
     <label>What is needed<input id="seName" value="${esc(x.name)}"></label>
     <label>How much or how many<input id="seQty" value="${esc(x.qty||'')}"
       placeholder="Optional"></label>
+    ${aisles.length?`<label>Aisle${aisleSelect('seAisle',aisles,x.aisle)}</label>`:''}
     <p class="dsec">Photos</p>${dphHtml('sePics')}
     <div class="pfoot"><button id="seCancel">Cancel</button>
       <button id="seGo" class="go">Save</button></div></div>`;
@@ -10283,11 +10418,14 @@ function editShopItem(x){
     if(!n){ toast('Say what is needed'); return; }
     const d={name:n, qty:box.querySelector('#seQty').value.trim()||null};
     // Only sent when there is something to say, so an item still saves on a
-    // database that has not had step 47 yet.
+    // database that has not had step 47 (or 48) yet.
     const photos=dphNow();
     if(photos.length || arr(x.photos).length) d.photos=photos;
+    const sa=box.querySelector('#seAisle');
+    if(sa) d.aisle=sa.value||null;
     const {error}=await sb.from('shopping').update(d).eq('id',x.id);
     if(error){ toast(dphStepMissing(d,error)||'Could not save'); console.error(error); return; }
+    if(d.aisle) await rememberAisle(x.list_id, n, d.aisle);
     await dphSaved(); box.remove();
     await loadShopping(); renderShop(); toast('Saved');
   };
@@ -11719,6 +11857,7 @@ union all select 'routines',             count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'shopping_lists',       count(*), coalesce(jsonb_agg(t), '[]') from shopping_lists t
 union all select 'shopping',             count(*), coalesce(jsonb_agg(t), '[]') from shopping t
 union all select 'shopping_list_shares', count(*), coalesce(jsonb_agg(t), '[]') from shopping_list_shares t
+union all select 'shopping_aisle_memory', count(*), coalesce(jsonb_agg(t), '[]') from shopping_aisle_memory t
 union all select 'wishes',               count(*), coalesce(jsonb_agg(t), '[]') from wishes t
 -- URL Links
 union all select 'url_links',            count(*), coalesce(jsonb_agg(t), '[]') from url_links t

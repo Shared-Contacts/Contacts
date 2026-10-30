@@ -206,7 +206,7 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 .srow input{flex:1 1 auto;min-width:0}
 .srow select{flex:0 0 auto;max-width:42%}
 
-.homescreen{position:fixed;top:0;left:0;right:0;z-index:35;background:var(--paper);
+.homescreen{position:fixed;top:0;top:var(--vtop,0);left:0;right:0;z-index:35;background:var(--paper);
   height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
   display:flex;flex-direction:column;overflow:hidden}
 .homebar{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--panel);
@@ -279,7 +279,7 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 .swatchgrid button[aria-pressed="true"]{border-color:var(--ink);
   box-shadow:0 0 0 2px var(--paper) inset}
 
-.sheet{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--paper);
+.sheet{position:fixed;top:0;top:var(--vtop,0);left:0;right:0;z-index:40;background:var(--paper);
   height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
   display:flex;flex-direction:column;overflow:hidden}
 .sheet.hidden{display:none}
@@ -1043,6 +1043,8 @@ i.key{vertical-align:middle}
 .rcpwhat b{display:block;font-weight:600;color:var(--hull);overflow-wrap:anywhere}
 .rcpwhat span{display:block;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
 .rcpwhat .rcpwho{font-style:italic}
+.rcpwhat b .rcpstar,.rcpstar{display:inline;color:var(--brass,#D7A82E);font-size:inherit}
+.rcpfav{font-size:28px;line-height:1;color:var(--brass,#D7A82E);padding:0 4px;vertical-align:-2px}
 .rcpidea{display:flex;align-items:center}
 .rcpidea .rcprow{flex:1;min-width:0;border-bottom:none}
 .rcpspin{flex:0 0 auto;font-size:26px;color:var(--hull);padding:8px 16px}
@@ -1560,7 +1562,7 @@ function toast(t){
   const d=document.createElement('div');d.className='toast';d.textContent=t;
   d.setAttribute('role','status');box.appendChild(d);setTimeout(()=>d.remove(),2600);}
 
-const CAPS=['first_name','last_name','given_names','nickname','address','address_2',
+const CAPS=['first_name','last_name','given_names','nickname','partner_name','address','address_2',
   'town','county','country','boat_name','met_where','company','employer_name',
   'job_title','department'];
 function titleCase(v){
@@ -1569,6 +1571,20 @@ function titleCase(v){
 
 function fullName(c){if(c.is_organisation&&c.company)return c.company;
   return [c.first_name,c.last_name].filter(Boolean).join(' ')||c.company||'(no name)';}
+// The name at the top of a contact's card takes in their partner (step 49):
+// "Mary and John Smith" when married, "Mary Smith and John" when a partner or
+// engaged. Any other status, or no partner's name, and it is just their name.
+const partnerKind = n => /^married$/i.test(n||'') ? 'married'
+  : /^(partner|engaged)$/i.test(n||'') ? 'partner' : '';
+function headName(c){
+  const p=String(c.partner_name||'').trim();
+  const st=STATUSES.find(s=>s.id===c.status_id);
+  const kind=partnerKind(st&&st.name);
+  if(!p||!kind||c.is_organisation||!c.first_name) return fullName(c);
+  return kind==='married'
+    ? [c.first_name+' and '+p, c.last_name].filter(Boolean).join(' ')
+    : fullName(c)+' and '+p;
+}
 function fmtDate(d){if(!d)return'';const [y,m,day]=d.split('-').map(Number);
   return new Date(y,m-1,day).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
 function ageOf(c){if(!c.birth_date)return null;
@@ -1802,6 +1818,11 @@ function isGone(c){
   const d=DIED_STATUS();
   return !!(d && c.status_id===d.id);
 }
+// Settings > Contacts > People who have died: each person can leave them out
+// of the places a person is picked (not the links between people, and not
+// anyone already chosen). Kept with the home screen choices.
+let HIDE_GONE=false;
+const pickable = c => !(HIDE_GONE && isGone(c));
 
 /* ---------- Ways to reach somebody, shown beside them in the list ----------
    Plain glyphs rather than company logos: a handset, a bubble, an envelope, a
@@ -2429,7 +2450,7 @@ async function openDetail(id, keepPlace){
   CURRENT=CONTACTS.find(c=>c.id===id);if(!CURRENT)return;
   await signPaths([CURRENT.avatar_path,...arr(CURRENT.photos).map(p=>p.path)]);
   const c=CURRENT;
-  $('detTitle').textContent=fullName(c);
+  $('detTitle').textContent=headName(c);
   const age=ageOf(c),d=daysToBirthday(c);
   const st=STATUSES.find(s=>s.id===c.status_id);
   const R=(label,html)=>html?`<div class="field"><dt>${label}</dt><dd>${html}</dd></div>`:'';
@@ -2567,7 +2588,7 @@ async function openDetail(id, keepPlace){
         <label>${c.avatar_path?'Change':'Add'} profile photo<input type="file" accept="image/*" id="addAvatar"></label>
         ${c.avatar_path?'<button class="addmore" id="rmAvatar" style="color:var(--red)">Remove</button>':''}
       </span></div>
-    <h2 class="detname">${esc(fullName(c))}</h2>
+    <h2 class="detname">${esc(headName(c))}</h2>
     <p style="margin:0 0 10px"><button class="tg" id="favBtn"
       aria-pressed="${FAVS.includes(c.id)}">${FAVS.includes(c.id)
       ? '\u2605 Kept at the top' : '\u2606 Keep at the top'}</button></p>
@@ -2847,16 +2868,18 @@ async function openEditor(c){
         ${F('Given names','given_names')}${F('Nickname','nickname')}
       </div>
     </fieldset>
-    <fieldset><legend>Groups</legend>
-      <div class="checks">${groupsInOrder().map(g=>`<label><input type="checkbox" name="grp" value="${g.id}">${esc(g.name)}</label>`).join('')}</div>
-    </fieldset>
     <fieldset id="fsPerson"><legend>Status and dates</legend>
       <label>Relationship status<select name="status_id"><option value="">&mdash;</option>
         ${STATUSES.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label>
+      <div id="partnerRow">${F('Partner’s name','partner_name')}
+        <p class="coords" id="partnerHint"></p></div>
       <div class="two">${F('Born','birth_date','date')}${F('Died','death_date','date')}</div>
       <p class="coords" id="ageHint"></p>
       <details id="dtFormer"><summary>Previous or other names</summary>
         ${multiBlock('former_names','a previous name')}</details>
+    </fieldset>
+    <fieldset><legend>Groups</legend>
+      <div class="checks">${groupsInOrder().map(g=>`<label><input type="checkbox" name="grp" value="${g.id}">${esc(g.name)}</label>`).join('')}</div>
     </fieldset>
     <fieldset><legend>Notes</legend>
       <label>Notes<textarea name="notes" rows="4"></textarea></label>
@@ -2938,6 +2961,26 @@ async function openEditor(c){
   };
   orgBox.addEventListener('change',applyOrg);
 
+  // The partner's name only means something when Married, Partner or Engaged;
+  // the line under it shows how the name will read at the top of the card.
+  const stBox=f.elements['status_id'];
+  const applyPartner=()=>{
+    const st=STATUSES.find(s=>String(s.id)===stBox.value);
+    const kind=partnerKind(st&&st.name);
+    $('partnerRow').style.display = kind?'':'none';
+    const v={first_name:f.elements['first_name'].value.trim(),
+      last_name:f.elements['last_name'].value.trim(),
+      partner_name:f.elements['partner_name'].value.trim(), status_id:st?st.id:null};
+    $('partnerHint').textContent = kind
+      ? (v.partner_name&&v.first_name ? 'Shows as “'+headName(v)+'”'
+        : kind==='married' ? 'Just their first name: Mary and John Smith'
+        : 'First name, and surname if different: Mary Smith and John')
+      : '';
+  };
+  stBox.addEventListener('change',applyPartner);
+  ['partner_name','first_name','last_name'].forEach(n=>f.elements[n].addEventListener('input',applyPartner));
+  applyPartner();
+
   // keep the address-search box in step with the address fields
   const addrParts=['address','address_2','town','county','postcode','country'];
   const buildAddr=()=>{
@@ -3005,6 +3048,10 @@ async function saveContact(existing){
     if(!f.elements[k]) return;
     const v=f.elements[k].value.trim();data[k]=v===''?null:v;});
   data.status_id=f.elements['status_id'].value?Number(f.elements['status_id'].value):null;
+  // Only sent when there is something to say, so a contact still saves on a
+  // database that has not had step 49 yet.
+  const pn=f.elements['partner_name'].value.trim();
+  if(pn||(existing&&existing.partner_name)) data.partner_name=pn||null;
   Object.keys(LAB).forEach(k=>
     data[k]=DRAFT[k].filter(e=>e.value&&e.value.trim()).map(e=>({label:e.label,value:e.value.trim()})));
   data.latitude=DRAFT.lat;data.longitude=DRAFT.lng;
@@ -3023,6 +3070,7 @@ async function saveContact(existing){
     ['first_name','last_name','given_names','nickname','birth_date','death_date']
       .forEach(k=>data[k]=null);
     data.status_id=null;
+    if('partner_name' in data) data.partner_name=null;
     data.former_names=[];
   }
   if(!data.first_name&&!data.last_name&&!data.company){
@@ -3440,7 +3488,7 @@ try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
-  'coal_type','gas_bottle','service_kind','mecontact',
+  'coal_type','gas_bottle','service_kind','mecontact','hidegone',
   'shareall','hometiles','people',
   'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects',
   'rcpcats','rcpcupboard','rcphidden'];
@@ -3450,6 +3498,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
   alcohol:'Alcohol — choices',coal_type:'Coal — types',
   gas_bottle:'Gas — bottle sizes',service_kind:'Boat servicing — what was serviced',mecontact:'Which contact is you?',
+  hidegone:'People who have died',
   logcats:'Your own sections',logshare:'Share my log',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
@@ -3460,7 +3509,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
   {label:'Contacts',   cards:['groups','statuses','link_kinds','pet_types',
-                              'mecontact','shareall']},
+                              'mecontact','hidegone','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
@@ -3540,7 +3589,7 @@ function pickContact(title, currentId){
 
     const paint=()=>{
       const q=$('pkQ').value.trim();
-      const hits=(q?CONTACTS.filter(c=>matches(c,q)):CONTACTS.slice())
+      const hits=(q?CONTACTS.filter(c=>matches(c,q)):CONTACTS.slice()).filter(pickable)
         .sort(byName).slice(0,40);
       $('pkHits').innerHTML=hits.length
         ? hits.map(c=>`<button data-pk="${c.id}"
@@ -3617,6 +3666,16 @@ async function openSettings(goTo){
     service_kind: `<div class="field"><dd style="color:var(--muted);font-size:15px">
         Until you add your own: ${SERVICE_KINDS.join(', ')}.</dd></div>`
       + optionRows('service_kind','choice'),
+    hidegone: `<div class="field"><dd style="color:var(--muted);font-size:15px">
+        The Contacts list already keeps people who have died out of the way.
+        Tick this to leave them out of the other places you pick a person too:
+        who an appointment is about, who you bought from and overnight guests
+        in the Daily Log, and linking a payee. Linking people on a contact
+        still finds them, and anyone already chosen stays where they are.
+        Your choice alone.</dd></div>
+      <div class="checks" style="padding:0 14px 14px"><label>
+        <input type="checkbox" id="hideGone" ${HIDE_GONE?'checked':''}>
+        Hide people who have died from searches</label></div>`,
     mecontact: `<div class="field"><dd style="color:var(--muted);font-size:15px">
         Fills in new diary entries, and names the two "if not aboard" slots
         in the log.</dd></div>
@@ -3804,6 +3863,9 @@ async function openSettings(goTo){
   const bo=$('briefOn');
   if(bo) bo.onchange=async()=>{ BRIEF_ON=bo.checked; await saveTiles();
     if(BRIEF_ON) markBriefSeen(); };
+  const hg=$('hideGone');
+  if(hg) hg.onchange=async()=>{ HIDE_GONE=hg.checked; await saveTiles();
+    toast(HIDE_GONE?'Left out of searches':'Back in searches'); };
   const lsDone=async(error,msg)=>{
     if(error){ toast('Could not save that'); console.error(error); return; }
     await loadLog(); openSettings(); if(msg) toast(msg);
@@ -4347,6 +4409,11 @@ function openHelp(where){
   vibrates when the time is up, as long as the app is open. <strong>I cooked
   this</strong> keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
   from the ones you have not cooked lately (&#8635; for another).</p>
+  <p>The &#9734; beside a recipe&rsquo;s title makes it one of <strong>My
+  favourites</strong>, which sit at the top of the list. The rest are grouped by
+  category, in your order from Settings &rsaquo; Recipes, so a recipe in two
+  categories shows under both; ones with no category come last. Searching or
+  picking a category gives a plain list. Favourites are yours only.</p>
 
   <h4 id="h-jig">Jigsaws</h4>
   <p><strong>Jigsaws</strong> are Barry's photographs made into puzzles, the same
@@ -4362,6 +4429,11 @@ function openHelp(where){
   about the living. Nothing is deleted. Choose <strong>Those who have died</strong>
   from the list picker beside the search box to see them &mdash; dated ones first,
   most recent at the top, then anyone with no date.</p>
+  <p>To keep them out of the boxes where you pick a person too (who you bought
+  from, who was there, and so on), tick <strong>Hide people who have died from
+  searches</strong> under Settings &rsaquo; Contacts. That is for you only; anyone
+  already picked stays, and <strong>Link to another person</strong> still finds
+  them.</p>
 
   <h4 id="h-pick">Getting rid of several at once</h4>
   <p>Menu &rsaquo; <strong>Delete several contacts</strong>. Tap the ones you want
@@ -4471,6 +4543,13 @@ function openHelp(where){
   organisation</strong> at the top. The personal fields disappear and the
   business name becomes the record's name. That tick only appears when adding;
   afterwards there is a Change link if you got it wrong.</p>
+  <p><strong>Partner&rsquo;s name.</strong> Set the relationship status to
+  Married, Partner or Engaged and a <em>Partner&rsquo;s name</em> box appears.
+  Fill it in and the name at the top of their card takes them in:
+  <em>Mary and John Smith</em> when married, <em>Mary Smith and John</em> (or
+  <em>John Brown</em>) for a partner or fianc&eacute;. Any other status and the
+  partner is left out. The contact list still reads <em>Smith, Mary</em>, and
+  Connections work as before.</p>
 
   <h4 id="h-lists">Lists that grow</h4>
   <p>Phones, emails, websites, social accounts, pets and previous names all work
@@ -4649,7 +4728,8 @@ function openHelp(where){
   with the date you did it; unticking brings it back to the top as needing doing.
   Nothing leaves the list until you remove it with the &times;. Give jobs a
   heading to group them, and use "start the round again" to untick the lot.
-  A new job starts under <strong>ASAP</strong>, which puts it on the Today
+  A heading with every job in it ticked moves down below the ones that still
+  have something to do. A new job starts under <strong>ASAP</strong>, which puts it on the Today
   screen; tap the heading box and type another, or clear it for none. Tap a
   job to open it: change the wording or heading, or add photos.</p>
   <p><strong>Photos.</strong> Appointments, to-dos and regular jobs can all
@@ -4685,7 +4765,8 @@ function openHelp(where){
   <p>It arrives in their <strong>Sent to you</strong> screen, where they accept
   it, turn it down, or &mdash; if they already have that person &mdash; compare the
   two and take only the bits they want. Whatever they accept becomes a contact of
-  their own, theirs to edit, file or delete. Yours is untouched, and the two are
+  their own, theirs to edit, file or delete; the first one accepted opens
+  straight away so you can file it. Yours is untouched, and the two are
   not linked afterwards, so later changes do not travel.</p>
   <p>You can only pass on contacts you own. Somebody shared theirs with you, not
   with whoever you might send it to next.</p>
@@ -4971,7 +5052,11 @@ function diaryRoutine(){
     html+=`<div class="card"><div class="field"><dd>Nothing here yet. Add your
       first regular job below.</dd></div></div>`;
 
-  headings.sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b)).forEach(h=>{
+  // Headings with something still to do come first; ones where everything is
+  // ticked drop to the bottom, in the same order among themselves.
+  const left=h=>ROUTINES.some(r=>(r.heading||'')===h&&!r.done);
+  headings.sort((a,b)=>(left(b)-left(a))
+    ||(a===''?1:b===''?-1:a.localeCompare(b))).forEach(h=>{
     const rows=ROUTINES.filter(r=>(r.heading||'')===h);
     const todo=rows.filter(r=>!r.done).sort((a,b)=>a.sort_order-b.sort_order);
     const done=rows.filter(r=>r.done)
@@ -6503,7 +6588,7 @@ function wireBuys(f, iso){
       inp.dataset.cid='';
       const q=inp.value.trim();
       if(q.length<2){ box.classList.add('hidden'); return; }
-      const hits=CONTACTS.filter(c=>matches(c,q)).sort(byName).slice(0,8);
+      const hits=CONTACTS.filter(c=>pickable(c)&&matches(c,q)).sort(byName).slice(0,8);
       box.innerHTML=hits.map(c=>`<button type="button" data-bpick="${esc(String(c.id))}">${
           esc(fullName(c))}${c.town?' <span class="coords">'+esc(c.town)+'</span>':''}</button>`).join('')
         +`<button type="button" data-bnew style="color:var(--hull);font-weight:700">+ Add "${
@@ -7313,7 +7398,7 @@ function editLog(iso){
   $('guestSearch').oninput=()=>{
     const q=$('guestSearch').value.trim(), box=$('guestHits');
     if(q.length<2){ box.classList.add('hidden'); return; }
-    const hits=CONTACTS.filter(c=>matches(c,q)).sort(byName).slice(0,10);
+    const hits=CONTACTS.filter(c=>pickable(c)&&matches(c,q)).sort(byName).slice(0,10);
     box.innerHTML=(hits.map(c=>`<button type="button" data-gp="${esc(fullName(c))}">${esc(fullName(c))}</button>`).join(''))
       +`<button type="button" data-gp="${esc(q)}" style="color:var(--hull);font-weight:700">Add "${esc(q)}" anyway</button>`;
     box.classList.remove('hidden');
@@ -8567,7 +8652,7 @@ let RCP_CUR=null, RCP_SERVES=null, RCP_TICK=new Set();
 const RCP_CATS_DEFAULT=['Breakfast','Soups','Mains','Puddings','Baking','Sides','Salads','Drinks'];
 const RCP_CUPBOARD_DEFAULT=['salt','pepper','oil','water'];
 let RCP_PREFS={cats:RCP_CATS_DEFAULT.slice(), cupboard:RCP_CUPBOARD_DEFAULT.slice(),
-  hide:[], cooked:{}, today:true};
+  hide:[], cooked:{}, fav:[], today:true};
 
 function rcpPrefsFrom(saved){
   const r=saved&&saved.recipes;
@@ -8577,8 +8662,10 @@ function rcpPrefsFrom(saved){
     cupboard: r&&Array.isArray(r.cupboard) ? r.cupboard.filter(Boolean) : RCP_CUPBOARD_DEFAULT.slice(),
     hide: r&&Array.isArray(r.hide) ? r.hide.map(Number) : [],
     cooked: c&&typeof c==='object'&&!Array.isArray(c) ? c : {},
+    fav: r&&Array.isArray(r.fav) ? r.fav.map(Number).filter(Number.isFinite) : [],
     today: !(r&&r.today===false) };
 }
+const rcpFav = r => RCP_PREFS.fav.includes(r.id);
 
 const rcpMine = r => r.created_by===ME.id;
 // The cookbook as you see it: nothing waiting in the To try pile, and none
@@ -8755,7 +8842,7 @@ function rcpRow(r){
   return `<button class="rcprow" data-ropen="${r.id}">
     ${pic?`<img src="${esc(pic)}" alt="" loading="lazy">`
       :'<span class="rcpnopic" aria-hidden="true">&#127869;</span>'}
-    <span class="rcpwhat"><b>${esc(r.title)}</b>
+    <span class="rcpwhat"><b>${rcpFav(r)?'<span class="rcpstar" aria-label="My favourite">&#9733;</span> ':''}${esc(r.title)}</b>
       ${bits?`<span>${esc(bits)}</span>`:''}
       ${who?`<span class="rcpwho">${esc(who)}</span>`:''}</span></button>`;
 }
@@ -8808,9 +8895,23 @@ function paintRecipeList(){
     return;
   }
   const rows=rcpShown();
-  box.innerHTML=rows.length
-    ? `<div class="card">${rows.map(rcpRow).join('')}</div>`
-    : `<div class="card"><div class="field"><dd style="color:var(--muted)">Nothing matches that.</dd></div></div>`;
+  if(!rows.length){
+    box.innerHTML=`<div class="card"><div class="field"><dd style="color:var(--muted)">Nothing matches that.</dd></div></div>`;
+    return;
+  }
+  // Searching or looking at one category: a plain list. Otherwise your
+  // favourites first, then the rest under each of their categories in your
+  // order (one filed under two shows under both), then anything uncategorised.
+  if(RCP.q||RCP.cat){ box.innerHTML=`<div class="card">${rows.map(rcpRow).join('')}</div>`; return; }
+  const group=(title,list)=>list.length?`<p class="dsec">${title}<span class="lcount">${list.length}</span></p>
+    <div class="card">${list.map(rcpRow).join('')}</div>`:'';
+  const favs=rows.filter(rcpFav), rest=rows.filter(r=>!rcpFav(r));
+  const used=[...new Set(rest.flatMap(r=>arr(r.categories)))];
+  const cats=RCP_PREFS.cats.filter(c=>used.includes(c))
+    .concat(used.filter(c=>!RCP_PREFS.cats.includes(c)).sort());
+  box.innerHTML=group('&#9733; My favourites',favs)
+    +cats.map(c=>group(esc(c),rest.filter(r=>arr(r.categories).includes(c)))).join('')
+    +group(cats.length?'Not in a category':'Recipes',rest.filter(r=>!arr(r.categories).length));
 }
 
 $('rcpBody').addEventListener('click',ev=>{
@@ -8891,7 +8992,9 @@ function renderRecipe(){
     ${pics.length?`<img class="rcpcover" src="${esc(pics[0])}" alt="" data-rpic="0">`:''}
     ${pics.length>1?`<div class="rcpthumbs">${pics.slice(1).map((p,i)=>
       `<img src="${esc(p)}" alt="" loading="lazy" data-rpic="${i+1}">`).join('')}</div>`:''}
-    <h2 class="rcptitle">${esc(r.title)}</h2>
+    <h2 class="rcptitle">${esc(r.title)}${r.to_try?'':` <button class="rcpfav" id="rvFav"
+      aria-pressed="${rcpFav(r)}" aria-label="${rcpFav(r)?'Take off My favourites':'Add to My favourites'}">${
+      rcpFav(r)?'&#9733;':'&#9734;'}</button>`}</h2>
     ${r.about?`<p class="rcpabout">${esc(r.about)}</p>`:''}
     ${meta.length?`<p class="rcpmeta">${esc(meta.join(' · '))}</p>`:''}
     ${r.source_url?`<p class="rcpmeta"><a href="${esc(r.source_url)}" target="_blank"
@@ -8952,6 +9055,12 @@ $('rcpView').addEventListener('click',async ev=>{
   if(t.closest('#rvShop')){ await rcpToShopping(r); return; }
   if(t.closest('#rvEdit')){ editRecipe(r.id); return; }
   if(t.closest('#rvCopy')){ editRecipe(null, rcpCopyOf(r)); return; }
+  if(t.closest('#rvFav')){
+    const on=!rcpFav(r);
+    RCP_PREFS={...RCP_PREFS, fav:on?RCP_PREFS.fav.concat(r.id):RCP_PREFS.fav.filter(x=>x!==r.id)};
+    await saveTiles(); renderRecipe(); renderRecipes();
+    toast(on?'Added to My favourites':'Taken off My favourites'); return;
+  }
   if(t.closest('#rvCooked')){
     const c=RCP_PREFS.cooked[r.id]||{n:0};
     RCP_PREFS.cooked={...RCP_PREFS.cooked, [r.id]:{n:(c.n||0)+1, last:isoDay(new Date())}};
@@ -10742,6 +10851,7 @@ function loadTiles(){
   TILES_HIDDEN=(saved&&Array.isArray(saved.hidden))?saved.hidden.slice():[];
   HOME_BG=(saved&&saved.bg&&HOME_BGS.some(x=>x.id===saved.bg))?saved.bg:'paper';
   BRIEF_ON = !(saved&&saved.brief===false);
+  HIDE_GONE = !!(saved&&saved.hidegone===true);
   BSKY_OWN = (saved&&typeof saved.bsky==='string')?saved.bsky:'';
   BSKY_OFF = !!(saved&&saved.bskyoff===true);
   bskyApply();
@@ -10766,7 +10876,7 @@ function loadTiles(){
   });
 }
 async function saveTiles(){
-  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON,
+  const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, links:LINK_PREFS,
               recipes:RCP_PREFS,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
@@ -11619,7 +11729,7 @@ async function acceptOffers(ids){
   const list=offersToMe().filter(o=>ids.includes(o.id));
   if(!list.length) return;
   const box=await myInbox();
-  let made=0;
+  let made=0, first=null;
   for(const o of list){
     // Provenance last, so nothing in the payload can overwrite it.
     const d={created_by:ME.id, ...(o.payload||{}),
@@ -11627,7 +11737,7 @@ async function acceptOffers(ids){
     if(!d.first_name&&!d.last_name&&!d.company) continue;
     const {data,error}=await sb.from('contacts').insert(d).select().single();
     if(error||!data){ console.error(error); continue; }
-    made++;
+    made++; if(!first) first=data.id;
     if(box) await sb.from('contact_groups')
       .insert([{contact_id:data.id, group_id:box.id, user_id:ME.id}]);
     await sb.from('contact_offers')
@@ -11636,6 +11746,9 @@ async function acceptOffers(ids){
   OFF_PICKED.clear();
   await loadAll(); renderOffers(); render();
   toast(made===1?'Added to your contacts':made+' added to your contacts');
+  // Straight on to the new one (the first, if several), ready to check and fill in.
+  const c=first&&CONTACTS.find(x=>x.id===first);
+  if(c) openEditor(c);
 }
 
 async function declineOffers(ids){
@@ -11655,7 +11768,7 @@ async function declineOffers(ids){
 /* ============================================================
    Import and export
    ============================================================ */
-const IO_COLS=['first_name','last_name','given_names','nickname','company',
+const IO_COLS=['first_name','last_name','given_names','nickname','partner_name','company',
   'is_organisation','birth_date','death_date','address','address_2','town','county',
   'postcode','country','boat_name','boat_number','boat_notes','job_title','department',
   'met_where','met_date','what3words','notes','phones','emails','websites','socials',
@@ -16263,10 +16376,17 @@ async function start(){
 // Older Androids ignore interactive-widget, so measure what is actually
 // visible and size the sheets to that. Without this the top bar slides off
 // the screen while the keyboard is up.
+// iPhones do not shrink the page for the keyboard: they slide it up instead
+// (offsetTop), so a sheet pinned to the top ended short of the keyboard and
+// the contact list showed through underneath. Move the sheets down with it.
 (function(){
   const vv=window.visualViewport;
   if(!vv) return;
-  const fit=()=>document.documentElement.style.setProperty('--vh', vv.height+'px');
+  const fit=()=>{
+    const r=document.documentElement.style;
+    r.setProperty('--vh', vv.height+'px');
+    r.setProperty('--vtop', Math.max(0,vv.offsetTop)+'px');
+  };
   vv.addEventListener('resize',fit);
   vv.addEventListener('scroll',fit);
   fit();

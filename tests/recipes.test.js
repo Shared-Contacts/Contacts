@@ -167,7 +167,9 @@ const seed = () => {
   ok('the tile opens Recipes now', await ev(() => TILE_DEST.recipes.go === openRecipes));
   await ev(seed);
   await ev(() => openRecipes()); await settle();
-  const rows = await ev(() => [...document.querySelectorAll('#rcpList [data-ropen]')].map(b => +b.dataset.ropen));
+  // The list itself is grouped by category now (ML111), so the order is
+  // checked on what it is drawn from.
+  const rows = await ev(() => rcpShown().map(r => r.id));
   ok('everyone’s recipes are there, A to Z', JSON.stringify(rows) === '[302,402,301,401]', JSON.stringify(rows));
   ok('somebody else’s To try pile is never shown', !/secret pile/.test(await p.textContent('#rcpBody')));
   const pile = await ev(() => [...document.querySelectorAll('#rcpBody .card')][0].textContent);
@@ -194,8 +196,7 @@ const seed = () => {
      [...document.querySelectorAll('#rcpList [data-ropen]')].map(b => +b.dataset.ropen).join()) === '402,301,401');
   await p.fill('#rcpQ', ''); await settle(200);
   await p.click('[data-rsort="newest"]'); await settle(200);
-  ok('Newest first', await ev(() =>
-     [...document.querySelectorAll('#rcpList [data-ropen]')].map(b => +b.dataset.ropen).join()) === '302,401,301,402');
+  ok('Newest first', await ev(() => rcpShown().map(r => r.id).join()) === '302,401,301,402');
   await p.click('[data-rsort="az"]'); await settle(200);
 
   console.log('\nOne recipe');
@@ -706,7 +707,7 @@ const seed = () => {
   console.log('\nThe saved choices');
   const pf = await ev(() => rcpPrefsFrom({ recipes:{ cats:['A'], cupboard:[], hide:['7'], cooked:{ 5:{ n:2, last:'2026-10-01' } }, today:false } }));
   ok('come back as they were saved', JSON.stringify(pf) === JSON.stringify({ cats:['A'], cupboard:[], hide:[7],
-     cooked:{ 5:{ n:2, last:'2026-10-01' } }, today:false }), JSON.stringify(pf));
+     cooked:{ 5:{ n:2, last:'2026-10-01' } }, fav:[], today:false }), JSON.stringify(pf));
   const pd = await ev(() => rcpPrefsFrom(null));
   ok('and anyone new gets the starting lists', pd.cats.includes('Soups') && pd.cupboard.includes('salt') && pd.today === true);
 

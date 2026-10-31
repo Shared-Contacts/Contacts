@@ -96,6 +96,10 @@ label.f input:focus,label.f textarea:focus{outline:2px solid var(--hull);outline
   color:#F2EFE4;padding:12px 20px;border-radius:999px;z-index:60;font-size:16px;
   box-shadow:0 4px 14px rgba(16,35,28,.3);max-width:92vw;text-align:center}
 .hidden{display:none!important}
+.kinds{display:flex;gap:8px;padding:0 14px 12px;border-bottom:1px solid #F0EEE7}
+.kinds button{flex:1;padding:9px 6px;border:1.5px solid var(--rule);border-radius:8px;
+  font-weight:600;color:var(--hull)}
+.kinds button[aria-pressed="true"]{background:var(--hull);color:#F2EFE4;border-color:var(--hull)}
 .empty{padding:26px 14px;text-align:center;color:var(--muted)}
 footer{text-align:center;padding:4px 14px 30px;color:var(--muted);font-size:15px}
 footer a{color:var(--hull);font-weight:600}
@@ -122,6 +126,14 @@ footer a{color:var(--hull);font-weight:600}
           <input id="fFirst" autocomplete="off" enterkeyhint="next"></label>
         <label class="f"><span>Last name</span>
           <input id="fLast" autocomplete="off" enterkeyhint="next"></label>
+      </div>
+      <label class="f"><span>Partner&rsquo;s name</span>
+        <input id="fPartner" autocomplete="off" enterkeyhint="next"
+          placeholder="Optional: first name, and surname if different"></label>
+      <div class="kinds hidden" id="fKinds" role="group" aria-label="Together how">
+        <button type="button" data-kind="Married">Married</button>
+        <button type="button" data-kind="Partner">Partner</button>
+        <button type="button" data-kind="Engaged">Engaged</button>
       </div>
       <label class="f"><span>Boat name</span>
         <input id="fBoat" autocomplete="off" enterkeyhint="next"></label>
@@ -309,10 +321,41 @@ function dropPhoto(){
   $('fShot').value=''; $('fShotAny').value='';
 }
 
+/* ---------- A partner (step 49) ---------- */
+// The book's relationship statuses, looked up while there is a signal and
+// kept on the phone, so a jot made with none still knows what Married is.
+const SKEY='jot-statuses';
+let KIND='';
+async function statuses(){
+  if(ME && navigator.onLine){
+    try{
+      const {data,error}=await sb.from('statuses').select('id,name');
+      if(!error && data){ store(SKEY,data); return data; }
+    }catch(e){ console.warn('statuses',e); }
+  }
+  return recall(SKEY,[]);
+}
+const kindOf = n => /^married$/i.test(n||'') ? 'married'
+  : /^(partner|engaged)$/i.test(n||'') ? 'partner' : '';
+// "Mary and John Smith" when married, "Mary Smith and John" for a partner or
+// fiancé, the same as the top of a card in the main app.
+function jotName(first, last, partner, status){
+  const own=[first,last].filter(Boolean).join(' ');
+  const p=String(partner||'').trim(), k=kindOf(status);
+  if(!p || !k || !first) return own;
+  return k==='married' ? [first+' and '+p, last].filter(Boolean).join(' ') : own+' and '+p;
+}
+function paintKinds(){
+  $('fKinds').classList.toggle('hidden', !$('fPartner').value.trim());
+  $('fKinds').querySelectorAll('[data-kind]').forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.kind===KIND)));
+}
+
 /* ---------- Saving ---------- */
 function readForm(){
   const v=id=>$(id).value.trim();
   return { first_name:v('fFirst')||null, last_name:v('fLast')||null,
+           partner_name:v('fPartner')||null, partner_kind:v('fPartner')?KIND:'',
            boat_name:v('fBoat')||null, phone:v('fPhone'),
            met_where:v('fWhere')||null, met_date:v('fDate')||null,
            notes:v('fNotes')||null,
@@ -320,7 +363,8 @@ function readForm(){
 }
 
 function clearForm(){
-  ['fFirst','fLast','fBoat','fPhone','fWhere','fNotes'].forEach(id=>$(id).value='');
+  ['fFirst','fLast','fPartner','fBoat','fPhone','fWhere','fNotes'].forEach(id=>$(id).value='');
+  KIND=''; paintKinds();
   $('fDate').value=isoDay(new Date());
   dropPhoto();
   $('fFirst').focus();
@@ -331,6 +375,9 @@ async function save(){
   const f=readForm();
   if(!f.first_name && !f.last_name && !f.boat_name){
     toast('A name or a boat name, at least'); $('fFirst').focus(); return;
+  }
+  if(f.partner_name && !f.partner_kind){
+    toast('Married, partner or engaged?'); return;
   }
   $('save').disabled=true; $('save').textContent='Saving…';
   const r=await sendOne(f, SHOT);
@@ -357,6 +404,11 @@ async function sendOne(f, shot){
     notes:f.notes, latitude:f.latitude, longitude:f.longitude,
     created_by:ME.id };
   if(f.phone) row.phones=[{label:'Mobile', value:f.phone}];
+  if(f.partner_name){
+    row.partner_name=f.partner_name;
+    const st=(await statuses()).find(x=>String(x.name).toLowerCase()===String(f.partner_kind).toLowerCase());
+    if(st) row.status_id=st.id;
+  }
 
   let made=null;
   try{
@@ -427,7 +479,7 @@ async function flushQueue(loud){
 /* ---------- What this phone has added ---------- */
 function noteRecent(f, r){
   const list=recall(RKEY,[]);
-  list.unshift({ name:[f.first_name,f.last_name].filter(Boolean).join(' ')
+  list.unshift({ name:jotName(f.first_name,f.last_name,f.partner_name,f.partner_kind)
                 || f.boat_name || 'Somebody',
               boat:f.boat_name||'', at:Date.now(),
               waiting:!!r.queued, cid:r.sent||null, qid:r.queued||null });
@@ -498,16 +550,18 @@ async function findThem(){
   // are its wildcards, so none of them can be allowed through from a search box.
   const like=`%${s.replace(/[%_,().]/g,' ').trim()}%`;
   const {data,error}=await sb.from('contacts')
-    .select('id,first_name,last_name,boat_name,town,phones,mobile,phone')
+    .select('id,first_name,last_name,partner_name,status_id,boat_name,town,phones,mobile,phone')
     .or(`first_name.ilike.${like},last_name.ilike.${like},boat_name.ilike.${like}`)
     .limit(25);
   if(error){ console.error(error);
     $('hits').innerHTML='<p class="empty">Could not reach the book just now.</p>'; return; }
   const rows=data||[];
   if(!rows.length){ $('hits').innerHTML='<p class="empty">Nobody of that name.</p>'; return; }
+  const sts=await statuses();
 
   $('hits').innerHTML=`<div class="card">${rows.map(c=>{
-    const name=[c.first_name,c.last_name].filter(Boolean).join(' ')||c.boat_name||'Somebody';
+    const name=jotName(c.first_name,c.last_name,c.partner_name,
+      (sts.find(x=>x.id===c.status_id)||{}).name)||c.boat_name||'Somebody';
     const num=(Array.isArray(c.phones)&&c.phones[0]&&c.phones[0].value)||c.mobile||c.phone||'';
     const sub=[c.boat_name,c.town].filter(Boolean).join(' · ');
     return `<div class="hit">
@@ -519,6 +573,12 @@ async function findThem(){
 }
 
 /* ---------- Wiring ---------- */
+$('fPartner').addEventListener('input',paintKinds);
+$('fPartner').addEventListener('focus',()=>statuses(),{once:true});
+$('fKinds').onclick=ev=>{
+  const b=ev.target.closest('[data-kind]'); if(!b) return;
+  KIND = KIND===b.dataset.kind ? '' : b.dataset.kind; paintKinds();
+};
 $('tabAdd').onclick=()=>showTab('add');
 $('tabFind').onclick=()=>showTab('find');
 function showTab(which){

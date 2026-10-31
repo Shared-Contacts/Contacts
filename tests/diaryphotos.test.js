@@ -78,6 +78,8 @@ const pic = n => ({ name: 'photo' + n + '.png', mimeType: 'image/png', buffer: P
   await p.click('[data-briefr="1"]'); await settle(300);
   ok('Today closes', !(await visible('brief')));
   ok('the Diary opens', await visible('diary'));
+  ok('with the job’s own screen open over it (ML121)', await visible('rtEd')
+    && await ev(() => $('rtForm').elements.title.value) === 'Tax return');
   ok('on the Regular list', await ev(() => DIARY_VIEW === 'routine'
     && document.querySelector('[data-dview="routine"]').getAttribute('aria-pressed') === 'true'));
   ok('the job is picked out', await ev(() =>
@@ -86,6 +88,8 @@ const pic = n => ({ name: 'photo' + n + '.png', mimeType: 'image/png', buffer: P
   await settle(2800);
   ok('the picking out fades after a moment', await ev(() => !document.querySelector('.flashrow')));
   ok('the Diary remembers Regular next time', await ev(() => localStorage.getItem('dview')) === 'routine');
+  await p.click('#rtCancel'); await settle(200);
+  ok('Cancel goes back to the Regular list', !(await visible('rtEd')) && await visible('diary'));
 
   // ---------------------------------------------------------------
   console.log('\nOpening a regular job');

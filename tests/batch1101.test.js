@@ -22,9 +22,14 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   const shown = id => ev(id => !document.getElementById(id).classList.contains('hidden'), id);
 
   console.log('\nRegular: a note under the add box (ML120)');
-  const note = await ev(() => { const d = document.createElement('div'); ROUTINES = []; d.innerHTML = diaryRoutine();
-    return d.querySelector('#rtAdd').parentElement.textContent.replace(/\s+/g, ' '); });
-  ok('it says the heading can be anything', /Change the heading to whatever category you want/.test(note), note);
+  const add = await ev(() => { const d = document.createElement('div'); ROUTINES = []; d.innerHTML = diaryRoutine();
+    const box = d.querySelector('#rtAdd').parentElement;
+    return { note: box.textContent.replace(/\s+/g, ' '),
+      order: [...box.children].map(e => e.id || (e.tagName === 'P' ? 'note' : e.tagName)) }; });
+  ok('the heading comes first, then its note, then What needs doing (31 Oct)',
+    add.order.join() === 'rtHead,note,rtTitle,dlHead,rtAdd', add.order.join());
+  ok('the note says the heading can be anything and is kept',
+    /Change heading to whatever you want, e.g. Car, Health, Maintenance. It will save itself for further entries./.test(add.note), add.note);
 
   console.log('\nToday: tapping an ASAP job opens it (ML121)');
   await ev(() => {
@@ -56,7 +61,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   });
   await ev(() => openRecipes()); await settle(500);
   await ev(() => openRecipe(1)); await settle(400);
-  ok('your own recipe has Edit recipe on the top bar', await ev(() => $('rvBar').textContent.trim()) === 'Edit recipe');
+  ok('your own recipe has Edit on the top bar', await ev(() => $('rvBar').textContent.trim()) === 'Edit');
   ok('Change this recipe has gone from the bottom', !/Change this recipe/.test(await ev(() => $('rcpView').textContent)));
   const pos = await ev(() => {
     const at = el => el ? el.getBoundingClientRect().top : -1;
@@ -74,7 +79,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('pressing it counts', await ev(() => RCP_PREFS.cooked[1] && RCP_PREFS.cooked[1].n === 1));
   ok('and says so on the button', /1 time, last/.test(await ev(() => $('rvCooked').textContent)));
   await p.click('#rvEdit'); await settle(500);
-  ok('Edit recipe opens the recipe to change', await shown('recipeEd'));
+  ok('Edit opens the recipe to change', await shown('recipeEd'));
   await ev(() => { $('recipeEd').classList.add('hidden'); openRecipe(2); }); await settle(400);
   ok('someone else\'s recipe has no Edit on the bar', await ev(() => $('rvBar').textContent.trim()) === '');
   ok('Make a copy of my own is still at the bottom', !!(await ev(() => $('rvCopy'))));
@@ -82,7 +87,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('they can say they cooked it too', !!(await ev(() => $('rvCooked'))));
   await ev(() => { RECIPES.find(r => r.id === 1).to_try = true; openRecipe(1); }); await settle(300);
   ok('no I cooked this on one still in To try', !(await ev(() => $('rvCooked'))));
-  ok('help points at Edit recipe', /with <strong>Edit recipe<\/strong> at the top right/.test(await ev(() => document.documentElement.innerHTML)));
+  ok('help points at Edit', /with <strong>Edit<\/strong> at the top right/.test(await ev(() => document.documentElement.innerHTML)));
 
   console.log('\nThe Jotter: a partner\'s name (ML118)');
   const j = await b.newPage({ viewport: { width: 390, height: 844 } });

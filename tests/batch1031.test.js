@@ -168,6 +168,24 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); }
   ok('and is the visible height', vt[3] === '420px', vt.join());
   ok('with the keyboard gone it is back at the top', vt[4] === '0px', vt.join());
 
+  console.log('\niPhone keyboard: nothing showing round it (ML115)');
+  const vis = () => ev(() => [getComputedStyle($('app')).visibility, getComputedStyle($('home')).visibility]);
+  await ev(() => { document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden'));
+    $('app').classList.remove('hidden'); $('home').classList.remove('hidden'); });
+  ok('with no page open, the list and home screen show', (await vis()).join() === 'visible,visible', (await vis()).join());
+  await ev(() => openEditor(null)); await settle(400);
+  ok('with a contact open for editing, both are hidden', (await vis()).join() === 'hidden,hidden', (await vis()).join());
+  ok('the editor itself still shows', await ev(() => getComputedStyle($('editor')).visibility === 'visible'
+    && $('edForm').offsetParent !== null));
+  ok('and so does the bar at the bottom', await ev(() => getComputedStyle($('tray')).visibility === 'visible'));
+  ok('a pick-a-person box still shows over it', await ev(async () => {
+    const pr = pickContact('Who?', null); await new Promise(r => setTimeout(r, 100));
+    const v = getComputedStyle(document.querySelector('.daypick')).visibility;
+    document.querySelector('#pkCancel').click(); await pr; return v === 'visible'; }));
+  await ev(() => document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden')));
+  ok('close it and they are back', (await vis()).join() === 'visible,visible', (await vis()).join());
+  await ev(() => $('home').classList.add('hidden'));
+
   console.log('\nRecipes: favourites and categories (ML111)');
   await ev(() => {
     window.__rows.recipes = [

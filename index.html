@@ -283,6 +283,11 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
   height:100dvh;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
   display:flex;flex-direction:column;overflow:hidden}
 .sheet.hidden{display:none}
+/* While a page is open, the contact list and home screen under it are hidden.
+   An iPhone slides the page up for the keyboard, and their tiles showed round
+   it. Hidden rather than removed, so the list keeps its place. */
+body:has(> .sheet:not(.hidden)) > #app,
+body:has(> .sheet:not(.hidden)) > #home{visibility:hidden}
 .sheetbar{flex:0 0 auto;position:sticky;top:0;z-index:6;background:var(--hull);color:#F2EFE4;
   border-bottom:3px solid var(--brass);
   display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 12px 12px}

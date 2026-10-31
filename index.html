@@ -4386,7 +4386,7 @@ function openHelp(where){
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
   everybody&rsquo;s recipes, with the name of whoever added them. Only whoever added a
-  recipe can change it, with <strong>Edit recipe</strong> at the top right; anyone else can <strong>Make a copy of my own</strong> to change
+  recipe can change it, with <strong>Edit</strong> at the top right; anyone else can <strong>Make a copy of my own</strong> to change
   as they like. If there is one you never want to see, <strong>Don&rsquo;t show me this
   one</strong> takes it out of your list only; Settings &rsaquo; Recipes brings it
   back.</p>
@@ -5050,12 +5050,13 @@ function diaryRoutine(){
   const headings=[...new Set(ROUTINES.map(r=>r.heading||''))];
   let html=`<details class="card logsec" open><summary>Add a regular job</summary>
     <div class="setadd">
-      <input id="rtTitle" placeholder="What needs doing">
       <input id="rtHead" list="dlHead" value="ASAP" placeholder="Heading (optional), e.g. Boat">
+      <p class="coords" style="margin:2px 0 0">Change heading to whatever you want, e.g. Car,
+        Health, Maintenance. It will save itself for further entries.</p>
+      <input id="rtTitle" placeholder="What needs doing">
       <datalist id="dlHead">${knownHeadings()
         .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
       <button class="btn primary" id="rtAdd">Add it</button>
-      <p class="coords" style="margin:2px 0 0">Change the heading to whatever category you want.</p>
     </div></details>
     <p class="coords">Jobs you come back to. Untick one and it rises to the top as
     needing doing; tick it and it drops down. Nothing is deleted unless you say so.</p>`;
@@ -8986,7 +8987,7 @@ function renderRecipe(){
   const y=body.scrollTop;
   $('rvTitle').textContent=r.title;
   // Your own recipe: Edit on the top bar, where Save sits on the edit screen.
-  $('rvBar').innerHTML=rcpMine(r)?'<button id="rvEdit">Edit recipe</button>':'';
+  $('rvBar').innerHTML=rcpMine(r)?'<button id="rvEdit">Edit</button>':'';
   if($('rvEdit')) $('rvEdit').onclick=()=>editRecipe(r.id);
   const f=rcpFactor(r), mine=rcpMine(r), hidden=!mine&&RCP_PREFS.hide.includes(r.id);
   const pics=arr(r.photos).map(rcpPic).filter(Boolean);

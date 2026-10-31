@@ -1065,6 +1065,9 @@ i.key{vertical-align:middle}
 .rcpmeta{color:var(--muted);font-size:15px;margin:0 0 10px;overflow-wrap:anywhere}
 .rcpabout{font-size:16px;font-style:italic;margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}
 .rcpmeta a{color:var(--hull);font-weight:600;text-decoration:none}
+.btn.rcpcooked{margin-top:8px;background:var(--brass);color:#FFF;display:flex;flex-direction:column;
+  align-items:center;gap:2px}
+.btn.rcpcooked small{font-size:13px;font-weight:400;opacity:.9}
 .btn.rcpvid{margin-top:8px;border:1.5px solid var(--rule);color:var(--hull);text-decoration:none}
 .rcpserve{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
   border-bottom:1px solid #F0EEE7}
@@ -1243,7 +1246,7 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 
 <div id="recipe" class="sheet hidden">
   <div class="sheetbar"><button id="rvBack">Back</button>
-    <span class="title" id="rvTitle">Recipe</span><span style="width:56px"></span></div>
+    <span class="title" id="rvTitle">Recipe</span><span id="rvBar" style="min-width:56px;text-align:right"></span></div>
   <div class="sheetbody" id="rcpView"></div>
 </div>
 
@@ -4259,6 +4262,9 @@ function openHelp(where){
   an empty form with the cursor waiting: first name, last name, boat name, a
   phone number, a photo from the camera, where you met and a line of notes. A
   boat name on its own is enough to save.</p>
+  <p>Put in a <strong>Partner&rsquo;s name</strong> and tap Married, Partner or
+  Engaged, and they go in reading <em>Mary and John Smith</em> or <em>Mary Smith and
+  John</em>, the same as in this app.</p>
   <p>It is the same web address as this app, so it is the <em>same sign-in</em>
   &mdash; sign in here once and the Jotter is signed in too. Whatever you put in
   turns up as an ordinary contact, yours to tidy up later.</p>
@@ -4380,7 +4386,7 @@ function openHelp(where){
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
   everybody&rsquo;s recipes, with the name of whoever added them. Only whoever added a
-  recipe can change it; anyone else can <strong>Make a copy of my own</strong> to change
+  recipe can change it, with <strong>Edit recipe</strong> at the top right; anyone else can <strong>Make a copy of my own</strong> to change
   as they like. If there is one you never want to see, <strong>Don&rsquo;t show me this
   one</strong> takes it out of your list only; Settings &rsaquo; Recipes brings it
   back.</p>
@@ -4412,7 +4418,7 @@ function openHelp(where){
   screen on. <strong>Read aloud</strong> reads each step as you move to it; press it
   again to stop. A step that says how long gets a timer button, which rings and
   vibrates when the time is up, as long as the app is open. <strong>I cooked
-  this</strong> keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
+  this</strong>, under Cook mode, keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
   from the ones you have not cooked lately (&#8635; for another).</p>
   <p>The &#9734; beside a recipe&rsquo;s title makes it one of <strong>My
   favourites</strong>, which sit at the top of the list. The rest are grouped by
@@ -5049,6 +5055,7 @@ function diaryRoutine(){
       <datalist id="dlHead">${knownHeadings()
         .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
       <button class="btn primary" id="rtAdd">Add it</button>
+      <p class="coords" style="margin:2px 0 0">Change the heading to whatever category you want.</p>
     </div></details>
     <p class="coords">Jobs you come back to. Untick one and it rises to the top as
     needing doing; tick it and it drops down. Nothing is deleted unless you say so.</p>`;
@@ -8973,11 +8980,14 @@ function stepsHtml(list){
 function renderRecipe(){
   const body=$('rcpView'); if(!body) return;
   const r=RECIPES.find(x=>x.id===RCP_CUR);
-  if(!r){ $('rvTitle').textContent='Recipe';
+  if(!r){ $('rvTitle').textContent='Recipe'; $('rvBar').innerHTML='';
     body.innerHTML='<div class="card"><div class="field"><dd style="color:var(--muted)">'
       +'That recipe is no longer there.</dd></div></div>'; return; }
   const y=body.scrollTop;
   $('rvTitle').textContent=r.title;
+  // Your own recipe: Edit on the top bar, where Save sits on the edit screen.
+  $('rvBar').innerHTML=rcpMine(r)?'<button id="rvEdit">Edit recipe</button>':'';
+  if($('rvEdit')) $('rvEdit').onclick=()=>editRecipe(r.id);
   const f=rcpFactor(r), mine=rcpMine(r), hidden=!mine&&RCP_PREFS.hide.includes(r.id);
   const pics=arr(r.photos).map(rcpPic).filter(Boolean);
   const ings=arr(r.ingredients);
@@ -9005,6 +9015,8 @@ function renderRecipe(){
     ${r.source_url?`<p class="rcpmeta"><a href="${esc(r.source_url)}" target="_blank"
       rel="noopener noreferrer">From ${esc(r.source_name||linkHost(r.source_url))} &rsaquo;</a></p>`:''}
     <button class="btn primary" id="rvCook">Cook mode &middot; read it out</button>
+    ${r.to_try?'':`<button class="btn rcpcooked" id="rvCooked">I cooked this${cooked
+      ?`<small>${cooked.n} time${cooked.n===1?'':'s'}, last ${esc(fmtDate(cooked.last))}</small>`:''}</button>`}
     ${r.video_url?`<a class="btn rcpvid" href="${esc(r.video_url)}" target="_blank"
       rel="noopener noreferrer">&#9654; Watch the video</a>`:''}
 
@@ -9028,15 +9040,11 @@ function renderRecipe(){
     ${r.notes?`<p class="dsec" style="margin-top:16px">Notes</p>
       <div class="card"><div class="field"><dd class="rcpnote">${esc(r.notes)}</dd></div></div>`:''}
 
-    <div class="card" style="margin-top:16px">
-      ${r.to_try?'':`<button class="menuitem" id="rvCooked">I cooked this${cooked
-        ?` <small style="color:var(--muted)">(${cooked.n} time${cooked.n===1?'':'s'}, last ${
-          esc(fmtDate(cooked.last))})</small>`:''}</button>`}
-      ${mine?'<button class="menuitem" id="rvEdit">Change this recipe &rsaquo;</button>'
-        :'<button class="menuitem" id="rvCopy">Make a copy of my own &rsaquo;</button>'}
-      ${mine?'':hidden?'<button class="menuitem" id="rvUnhide">See it in my list again</button>'
+    ${mine?'':`<div class="card" style="margin-top:16px">
+      <button class="menuitem" id="rvCopy">Make a copy of my own &rsaquo;</button>
+      ${hidden?'<button class="menuitem" id="rvUnhide">See it in my list again</button>'
         :'<button class="menuitem" id="rvHide">Don’t show me this one</button>'}
-    </div>`;
+    </div>`}`;
   body.scrollTop=y;
 }
 
@@ -9058,7 +9066,6 @@ $('rcpView').addEventListener('click',async ev=>{
     renderRecipe(); return;
   }
   if(t.closest('#rvShop')){ await rcpToShopping(r); return; }
-  if(t.closest('#rvEdit')){ editRecipe(r.id); return; }
   if(t.closest('#rvCopy')){ editRecipe(null, rcpCopyOf(r)); return; }
   if(t.closest('#rvFav')){
     const on=!rcpFav(r);
@@ -16069,18 +16076,20 @@ function renderBrief(){
     shutBrief(); showRoutineJob(Number(b.dataset.briefr)); });
 }
 
-// From an ASAP job on Today: the Diary on its Regular list, with that job
-// picked out for a moment so the eye lands on it.
+// From an ASAP job on Today: the job's own screen, opened over the Diary's
+// Regular list so Cancel or Save lands there, with the job picked out.
 function showRoutineJob(id){
   DIARY_VIEW='routine';
   try{ localStorage.setItem('dview',DIARY_VIEW); }catch(e){}
   openDiary();
   const b=$('diaryBody').querySelector(`[data-rtedit="${id}"]`);
   const row=b&&b.closest('.item');
-  if(!row) return;
-  row.scrollIntoView({block:'center'});
-  row.classList.add('flashrow');
-  setTimeout(()=>row.classList.remove('flashrow'),2600);
+  if(row){
+    row.scrollIntoView({block:'center'});
+    row.classList.add('flashrow');
+    setTimeout(()=>row.classList.remove('flashrow'),2600);
+  }
+  openRoutine(ROUTINES.find(x=>x.id===id));
 }
 
 function openBrief(){

@@ -456,7 +456,12 @@ input[name="postcode"]{text-transform:uppercase}
 .mrow .x{flex:0 0 auto;color:var(--red);font-size:24px;padding:0 6px}
 .addmore{color:var(--hull);font-weight:700;padding:8px 0;font-size:16px}
 
-.map{height:220px;border-radius:8px;border:1.5px solid var(--rule);margin-top:10px}
+.map{height:220px;border-radius:8px;border:1.5px solid var(--rule);margin-top:10px;position:relative}
+/* Our location sits in the map's free corner, the bottom left. */
+.herebtn{position:absolute;left:8px;bottom:8px;z-index:500;background:#fff;color:var(--hull);
+  border:2px solid rgba(0,0,0,.2);border-radius:8px;padding:7px 11px;font-weight:700;
+  font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.herebtn:disabled{opacity:.6}
 .map.detail{height:190px;margin:0;border:none;border-radius:0;position:relative}
 .mapfree{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:500;
   background:rgba(16,35,28,.82);color:#F2EFE4;padding:6px 13px;border-radius:999px;
@@ -465,6 +470,12 @@ input[name="postcode"]{text-transform:uppercase}
 .geo{display:flex;gap:8px;margin-top:12px}
 .geo input{flex:1;min-width:0;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .geo button{flex:0 0 auto;padding:11px 16px;border-radius:8px;background:var(--hull);color:#F2EFE4;font-weight:600}
+/* An x inside the search box empties it in one go; it hides when the box is empty. */
+.geoin{position:relative;flex:1;min-width:0;display:flex}
+.geoin input{padding-right:40px}
+.geo .geox{position:absolute;right:2px;top:50%;transform:translateY(-50%);background:none;
+  color:var(--muted);padding:4px 11px;font-size:24px;line-height:1;font-weight:400}
+.geoin input:placeholder-shown + .geox{display:none}
 .coords{margin:8px 0 0;font-size:14px;color:var(--muted)}
 .weekday{display:block;margin-top:6px;padding:6px 11px;border-radius:8px;
   background:var(--hull);color:var(--paper);font-weight:700;font-size:15px}
@@ -640,6 +651,12 @@ input[name="postcode"]{text-transform:uppercase}
 .rtlist .item{padding:7px 14px}
 .rtlist .item .t{font-size:16px}
 .mvhead{flex:0 0 auto;color:var(--muted);font-size:20px;padding:0 8px}
+/* Hold a job still to do and it lifts, ready to slide up or down. A long
+   press must not select the words or bring up the phone's own menu. */
+#diaryBody [data-rtdrag]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#diaryBody [data-rtdrag].lifted{position:relative;z-index:5;background:var(--panel);
+  border-radius:10px;box-shadow:0 6px 18px rgba(16,35,28,.28)}
+body.jobdrag{cursor:grabbing}
 /* The job tapped on Today, picked out for a moment on the Regular list */
 .item.flashrow{animation:flashrow 2.4s ease-out}
 @keyframes flashrow{0%,40%{background:color-mix(in srgb,var(--hull) 22%,#FFFDF7)}100%{background:transparent}}
@@ -786,6 +803,9 @@ i.key{vertical-align:middle}
 .brow .bwhat b{display:block;font-weight:600}
 .brow .bwhat span{display:block;color:var(--muted);font-size:14px}
 .brow .bcake{flex:0 0 auto;font-size:18px;line-height:1.4}
+/* On the day a party popper that moves; the day after, the morning after. */
+.brow .bcake.party img{width:34px;height:34px;display:block;margin-top:-4px}
+.brow .bcake.party,.brow .bcake.hangover{font-size:26px;line-height:1.1}
 
 /* Accounts gathered under the bank they belong to */
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
@@ -1668,7 +1688,9 @@ async function loadAll(){
     sb.from('items').select('*'),
     sb.from('item_shares').select('*'),
     sb.from('shopping').select('*'),
-    sb.from('contact_offers').select('*').is('decided_at',null)
+    // Everything still waiting, plus what has happened to the ones you sent,
+    // so you can be told who took them.
+    sb.from('contact_offers').select('*').or('decided_at.is.null,from_user.eq.'+ME.id)
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){
     console.error(r.error);
@@ -2427,6 +2449,69 @@ async function placeName(lat,lng){
   }catch(e){ return null; }
 }
 
+// The full address for a spot, split into the boxes a contact has, for
+// Our location. Null if the lookup fails, so nothing is overwritten with blanks.
+async function fullAddress(lat,lng){
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=18'
+      +'&addressdetails=1&accept-language=en-GB&lat='+lat+'&lon='+lng);
+    const j=await r.json();
+    const a=j&&j.address; if(!a) return null;
+    const town=a.city||a.town||a.village||a.hamlet||'';
+    const road=a.road||a.pedestrian||a.footway||a.path||a.cycleway||'';
+    let line2=a.suburb||a.neighbourhood||a.quarter||'';
+    if(line2===town) line2='';
+    const out={address:[a.house_number,road].filter(Boolean).join(' ')||a.house_name||'',
+      address_2:line2, town, county:a.county||a.state_district||a.state||'',
+      postcode:a.postcode||'', country:a.country||''};
+    out.text=[out.address,out.address_2,out.town,out.postcode,out.country]
+      .filter(Boolean).join(', ')||j.display_name||'';
+    return out;
+  }catch(e){ return null; }
+}
+
+/* Every map you can put a pin on gets the same two helpers: an x that empties
+   its search box in one go (the box often fills itself with a whole address),
+   and Our location, which moves the pin to where the phone is now and puts that
+   address in the search box. found(address) does anything more a screen wants,
+   and can hand back what to say. */
+function geoTools(input, mapEl, mapObj, found){
+  if(!input||!mapEl||!mapObj) return;
+  if(!input.parentNode.classList.contains('geoin')){
+    const wrap=document.createElement('span'); wrap.className='geoin';
+    input.parentNode.insertBefore(wrap,input); wrap.appendChild(input);
+    const x=document.createElement('button');
+    x.type='button'; x.className='geox'; x.innerHTML='&times;';
+    x.setAttribute('aria-label','Empty the search box');
+    wrap.appendChild(x);
+    x.onclick=()=>{ input.value='';
+      input.dispatchEvent(new Event('input',{bubbles:true})); input.focus(); };
+  }
+  if(mapEl.querySelector('.herebtn')) return;
+  const b=document.createElement('button');
+  b.type='button'; b.className='herebtn'; b.innerHTML='&#128205; Our location';
+  // A tap on the button is not a tap on the map, which would drop the pin there.
+  ['click','dblclick','mousedown','touchstart','pointerdown']
+    .forEach(t=>b.addEventListener(t,e=>e.stopPropagation()));
+  b.addEventListener('click',()=>ourLocation(input,mapObj,found,b));
+  mapEl.appendChild(b);
+}
+function ourLocation(input,mapObj,found,btn){
+  if(!navigator.geolocation){ toast('This device cannot report a position'); return; }
+  btn.disabled=true; toast('Finding where you are…');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const la=pos.coords.latitude, ln=pos.coords.longitude;
+    mapObj.map.setView([la,ln],17); mapObj.drop(la,ln,true);
+    const a=await fullAddress(la,ln);
+    btn.disabled=false;
+    if(a&&a.text&&input) input.value=a.text;
+    const said=found?found(a):null;
+    toast(said||(a?'Pin moved to where you are':'Pin moved to where you are; no address found for it'));
+  }, ()=>{ btn.disabled=false;
+    toast('Could not find where you are. Is Location switched on?'); },
+  {enableHighAccuracy:true, timeout:15000, maximumAge:30000});
+}
+
 async function geocode(q,mapObj){
   if(!q.trim()||!mapObj)return;
   try{
@@ -3043,6 +3128,15 @@ async function openEditor(c){
     $('metQ').addEventListener('input',()=>{metTouched=true;});
     $('geoGo').onclick=()=>geocode($('geoQ').value.trim()||buildAddr(),hm);
     $('metGo').onclick=()=>geocode($('metQ').value.trim()||buildMet(),mm);
+    // Our location on the home map writes over the address boxes as well;
+    // nothing is kept until Save.
+    geoTools($('geoQ'),$('homeMap'),hm,a=>{
+      if(!a) return null;
+      ['address','address_2','town','county','postcode','country'].forEach(k=>{
+        if(f.elements[k]) f.elements[k].value=a[k]||''; });
+      return 'Address filled in from where you are. Save to keep it.';
+    });
+    geoTools($('metQ'),$('metEditMap'),mm);
   },100);
 
   $('edSave').onclick=()=>saveContact(c);
@@ -4572,6 +4666,11 @@ function openHelp(where){
   <h4 id="h-maps">Maps</h4>
   <p>Two maps: where they live, and where you met. Tap the map to drop a pin,
   or drag the pin to adjust it.</p>
+  <p><strong>Our location</strong>, in the bottom corner of any map you can put
+  a pin on (here and in the Daily Log), moves the pin to where your phone is now
+  and puts that address in the Find box. On the "where they live" map it also
+  writes over the address boxes; nothing is kept until you press Save. The
+  <strong>&times;</strong> in a Find box empties it in one tap.</p>
   <p>The <strong>Find</strong> box fills itself in from the address you have
   typed, so usually you just press Find. Type over it if the pin lands wide.
   The "where we met" map starts at wherever you are, so if you are adding
@@ -4742,7 +4841,9 @@ function openHelp(where){
   A heading with every job in it ticked moves down below the ones that still
   have something to do. A new job starts under <strong>ASAP</strong>, which puts it on the Today
   screen; tap the heading box and type another, or clear it for none. Tap a
-  job to open it: change the wording or heading, or add photos.</p>
+  job to open it: change the wording or heading, or add photos. To change the
+  order under a heading, hold a job still for a moment until it lifts, then slide
+  it up or down and let go.</p>
   <p><strong>Photos.</strong> Appointments, to-dos and regular jobs can all
   have photos: <em>Camera</em> or <em>Choose</em> under Photos, tap one to see
   it full size, &times; to take it off. The list shows &#128247; and how many.
@@ -4773,9 +4874,12 @@ function openHelp(where){
   <p>Everything you add is private to you. To pass somebody on, open the contact
   and use <strong>Send a copy to&hellip;</strong>, or tick several in Menu &rsaquo;
   Tidy up contacts and use <strong>Send</strong>.</p>
-  <p>It arrives in their <strong>Sent to you</strong> screen, where they accept
-  it, turn it down, or &mdash; if they already have that person &mdash; compare the
-  two and take only the bits they want. Whatever they accept becomes a contact of
+  <p>It arrives in their <strong>Sent to you</strong> screen. Tapping it shows the
+  whole contact first, then they accept it, turn it down, or &mdash; if they
+  already have that person &mdash; compare the two and take only the bits they
+  want. You are told what they decided: it shows at the top of your own
+  <strong>Sent to you</strong> screen, with a red number on its tile, until you
+  press OK. Whatever they accept becomes a contact of
   their own, theirs to edit, file or delete; the first one accepted opens
   straight away so you can file it. Yours is untouched, and the two are
   not linked afterwards, so later changes do not travel.</p>
@@ -4914,7 +5018,7 @@ function paintDue(){
 function tilePip(dest){
   if(dest==='diary') return dueSoonCount();
   if(dest==='shop')  return SHOP.filter(x=>!x.got).length;
-  if(dest==='offers') return offersToMe().length;
+  if(dest==='offers') return offersToMe().length+offersBack().length;
   if(dest==='chats')  return unreadTotal();
   return 0;
 }
@@ -5059,7 +5163,8 @@ function diaryRoutine(){
       <button class="btn primary" id="rtAdd">Add it</button>
     </div></details>
     <p class="coords">Jobs you come back to. Untick one and it rises to the top as
-    needing doing; tick it and it drops down. Nothing is deleted unless you say so.</p>`;
+    needing doing; tick it and it drops down. Hold one for a moment and slide it to
+    move it up or down. Nothing is deleted unless you say so.</p>`;
 
   if(!ROUTINES.length)
     html+=`<div class="card"><div class="field"><dd>Nothing here yet. Add your
@@ -5080,7 +5185,7 @@ function diaryRoutine(){
         border-bottom:1px dotted var(--muted)">${esc(h||'Anything else')}</button>
       <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">
         ${todo.length} to do</span></p><div class="card rtlist">`;
-    todo.forEach(r=>{ html+=routineRow(r); });
+    todo.forEach(r=>{ html+=routineRow(r,true); });
     if(done.length)
       html+=`<details class="rtdone"><summary>${done.length} done &mdash; show</summary>
         ${done.map(routineRow).join('')}</details>`;
@@ -5109,11 +5214,11 @@ function rememberHeading(h){
   try{ localStorage.setItem('headings',JSON.stringify(all)); }catch(e){}
 }
 
-function routineRow(r){
+function routineRow(r,movable){
   const meta=[r.done&&r.done_at?'done '+new Date(r.done_at)
       .toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'',
     photoCount(r)].filter(Boolean).join(' · ');
-  return `<div class="item">
+  return `<div class="item"${movable?` data-rtdrag="${r.id}"`:''}>
     <button class="tick ${r.done?'on':''}" data-rt="${r.id}"
       aria-label="${r.done?'Mark as needing doing':'Mark as done'}">${r.done?'&#10003;':''}</button>
     <button class="mid" data-rtedit="${r.id}">
@@ -5188,6 +5293,92 @@ function wireRoutine(){
       .update({done:false,done_at:null}).eq('created_by',ME.id).eq('done',true);
     if(error){toast('Could not reset them');return;}
     await loadAll(); renderDiary(); toast('All unticked');
+  };
+  dragJobs(body);
+}
+
+/* Moving a job up or down under its heading. Hold it still for half a second
+   and it lifts; slide it, let go, and the new order is saved. A quick tap
+   still opens the job, and a swipe that starts moving straight away still
+   scrolls the list. Only jobs still to do move: the done ones sit in date order. */
+function dragJobs(body){
+  let hold=null, drag=null, swallow=false, x0=0, y0=0;
+  const isRow=e=>e&&e.matches&&e.matches('[data-rtdrag]');
+  const stop=()=>{ clearTimeout(hold); hold=null; };
+  const place=()=>{
+    const {row,card}=drag;
+    row.style.transform='';
+    const h=row.offsetHeight, want=drag.top+(drag.y-drag.startY), mid=want+h/2;
+    for(let moved=true;moved;){
+      moved=false;
+      const p=row.previousElementSibling, n=row.nextElementSibling;
+      if(isRow(p)){ const b=p.getBoundingClientRect();
+        if(mid<b.top+b.height/2){ card.insertBefore(row,p); moved=true; continue; } }
+      if(isRow(n)){ const b=n.getBoundingClientRect();
+        if(mid>b.top+b.height/2){ card.insertBefore(n,row); moved=true; } }
+    }
+    row.style.transform='translateY('+(want-row.getBoundingClientRect().top)+'px)';
+    // Near the top or bottom of the screen, the list creeps along with you.
+    const box=body.getBoundingClientRect();
+    if(drag.y<box.top+48) body.scrollTop-=12;
+    else if(drag.y>box.bottom-48) body.scrollTop+=12;
+  };
+  const finish=async()=>{
+    stop();
+    if(!drag) return;
+    const {row,card}=drag; drag=null;
+    row.style.transform=''; row.classList.remove('lifted');
+    document.body.classList.remove('jobdrag');
+    swallow=true; setTimeout(()=>{ swallow=false; },400);
+    const rows=[...card.children].filter(isRow)
+      .map(e=>ROUTINES.find(r=>r.id===Number(e.dataset.rtdrag))).filter(Boolean);
+    let slots=rows.map(r=>r.sort_order).sort((a,b)=>a-b);
+    // Two jobs on the same number cannot be told apart, so number them afresh.
+    if(new Set(slots).size<slots.length) slots=slots.map((v,i)=>slots[0]+i);
+    const changed=rows.map((r,i)=>({r,to:slots[i]})).filter(x=>x.r.sort_order!==x.to);
+    if(!changed.length) return;
+    const res=await Promise.all(changed.map(x=>
+      sb.from('routines').update({sort_order:x.to}).eq('id',x.r.id)));
+    if(res.some(x=>x.error)){ toast('Could not save the new order');
+      console.error(res.find(x=>x.error).error); }
+    await loadAll(); renderDiary();
+  };
+  body.querySelectorAll('[data-rtdrag]').forEach(row=>{
+    row.addEventListener('contextmenu',ev=>ev.preventDefault());
+    row.addEventListener('pointerdown',ev=>{
+      if(ev.button>0||drag||ev.target.closest('.tick,.mvhead,.del')) return;
+      x0=ev.clientX; y0=ev.clientY; stop();
+      hold=setTimeout(()=>{
+        hold=null;
+        if(!row.isConnected) return;
+        drag={row, card:row.parentElement, startY:y0, y:y0,
+              top:row.getBoundingClientRect().top};
+        row.classList.add('lifted'); document.body.classList.add('jobdrag');
+        try{ if(navigator.vibrate) navigator.vibrate(15); }catch(e){}
+      },450);
+    });
+  });
+  const move=ev=>{
+    if(hold&&Math.hypot(ev.clientX-x0,ev.clientY-y0)>8) stop();
+    if(!drag) return;
+    drag.y=ev.clientY; place();
+  };
+  // The listeners on window are put back each time the list is drawn; the old
+  // ones would hold on to rows that are no longer there.
+  if(window.__jobDrag) window.__jobDrag();
+  const touch=ev=>{ if(drag&&ev.cancelable) ev.preventDefault(); };
+  const click=ev=>{ if(swallow){ ev.preventDefault(); ev.stopPropagation(); swallow=false; } };
+  window.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',finish);
+  window.addEventListener('pointercancel',finish);
+  window.addEventListener('touchmove',touch,{passive:false});
+  body.addEventListener('click',click,true);
+  window.__jobDrag=()=>{
+    window.removeEventListener('pointermove',move);
+    window.removeEventListener('pointerup',finish);
+    window.removeEventListener('pointercancel',finish);
+    window.removeEventListener('touchmove',touch,{passive:false});
+    body.removeEventListener('click',click,true);
   };
 }
 
@@ -7470,6 +7661,7 @@ function editLog(iso){
           }, true);
         const go=box.querySelector(`[data-pgo="${i}"]`);
         if(go) go.onclick=()=>geocode(box.querySelector(`[data-pq="${i}"]`).value, PMAPS[i]);
+        geoTools(box.querySelector(`[data-pq="${i}"]`), $('pmap'+i), PMAPS[i]);
       };
       d.addEventListener('toggle',build);
       if(d.open) setTimeout(build,60);
@@ -7489,6 +7681,7 @@ function editLog(iso){
     const m=showMap('logEditMap',LOGDRAFT.blat,LOGDRAFT.blng,
       (la,ln)=>{LOGDRAFT.blat=la;LOGDRAFT.blng=ln;showC();});
     $('logGeoGo').onclick=()=>geocode($('logGeoQ').value,m);
+    geoTools($('logGeoQ'),$('logEditMap'),m);
 
     drawPlaces();
     const pa=$('placeAdd');
@@ -11495,6 +11688,12 @@ function myMatchFor(payload){
   return CONTACTS.find(c=>c.created_by===ME.id && matchKey(c)===k) || null;
 }
 const offersToMe = () => OFFERS.filter(o=>o.to_user===ME.id && !o.decided_at);
+// Ones you sent that somebody has now decided about, until you have seen them.
+// Decisions from before senders were told (2 Nov 2026) are left in peace, or
+// every old hand-over would turn up at once.
+const OFFERS_BACK_FROM='2026-11-02';
+const offersBack = () => OFFERS.filter(o=>o.from_user===ME.id && o.decided_at
+  && o.decided_at>=OFFERS_BACK_FROM);
 
 async function sendContacts(ids, userIds){
   const rows=[];
@@ -11567,8 +11766,38 @@ function openOffers(){
   renderOffers();
   showSheet('offers'); $('offBody').scrollTop=0; lockBackground();
 }
+function offersBackHtml(){
+  const back=offersBack();
+  if(!back.length) return '';
+  const said=o=>o.outcome==='declined' ? 'said no thanks to'
+    : o.outcome==='merged' ? 'accepted (into the one they already had)' : 'accepted';
+  return `<p class="dsec">Contacts you sent</p>
+    <div class="card rtlist">${back.map(o=>`<div class="item">
+      <span class="mid"><span class="t" style="font-weight:400">
+        <strong>${esc(whoWrote(o.to_user))}</strong> ${esc(said(o))}
+        <strong>${esc(o.name||'a contact')}</strong></span>
+        <span class="w">${esc(new Date(o.decided_at).toLocaleDateString('en-GB',
+          {day:'numeric',month:'short'}))}</span></span>
+      <button class="btn" data-offseen="${o.id}" style="flex:0 0 auto;padding:6px 14px;
+        border:1.5px solid var(--rule)">OK</button></div>`).join('')}</div>
+    ${back.length>1?`<button class="btn" data-offseen="all" style="margin-top:8px">
+      OK to all ${back.length}</button>`:''}`;
+}
+// Seen it: the slip is cleared away. The contact they accepted is theirs and
+// is not touched.
+async function clearOfferBack(id){
+  const ids=id==='all' ? offersBack().map(o=>o.id) : [Number(id)];
+  const {error}=await sb.from('contact_offers').delete().in('id',ids);
+  if(error){ toast('Could not clear that'); console.error(error); return; }
+  OFFERS=OFFERS.filter(o=>!ids.includes(o.id));
+  renderOffers();
+  if($('home') && !$('home').classList.contains('hidden')) renderHome();
+}
+
 function renderOffers(){
-  const list=offersToMe();
+  const list=offersToMe(), back=offersBackHtml();
+  const wireBack=()=>$('offBody').querySelectorAll('[data-offseen]').forEach(b=>
+    b.onclick=()=>clearOfferBack(b.dataset.offseen));
   if(!OFFERS_READY){
     $('offBody').innerHTML=`<div class="card"><div class="field"><dd>
       This part needs its database step first. In Supabase, open the SQL Editor
@@ -11576,15 +11805,16 @@ function renderOffers(){
     $('offBar').classList.add('hidden'); return;
   }
   if(!list.length){
-    $('offBody').innerHTML=`<div class="card"><div class="field"><dd>
+    $('offBody').innerHTML=back+`<div class="card"><div class="field"><dd>
       Nothing waiting. When somebody sends you a contact it turns up here, and
       you decide whether to keep it.</dd></div></div>`;
-    $('offBar').classList.add('hidden'); return;
+    $('offBar').classList.add('hidden'); wireBack(); return;
   }
-  $('offBody').innerHTML=`
+  $('offBody').innerHTML=back+`
     <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
-      Accepting makes a contact of your own, yours to edit or delete. The person
-      who sent it keeps theirs, and the two are not linked afterwards.</dd></div></div>
+      Tap one to look at it before you decide. Accepting makes a contact of your
+      own, yours to edit or delete. The person who sent it keeps theirs, the two
+      are not linked afterwards, and they are told you accepted it.</dd></div></div>
     <div class="card rtlist">${list.map(o=>{
       const mine=myMatchFor(o.payload||{});
       const p=o.payload||{};
@@ -11610,7 +11840,8 @@ function renderOffers(){
     renderOffers();
   });
   $('offBody').querySelectorAll('[data-offone]').forEach(b=>b.onclick=()=>
-    acceptOffers([Number(b.dataset.offone)]));
+    viewOffer(Number(b.dataset.offone)));
+  wireBack();
   $('offBody').querySelectorAll('[data-offcmp]').forEach(b=>b.onclick=()=>
     compareOffer(Number(b.dataset.offcmp)));
   $('offBody').querySelectorAll('[data-offno]').forEach(b=>b.onclick=()=>
@@ -11628,7 +11859,7 @@ function renderOffers(){
 }
 
 const FIELD_NAME={first_name:'First name',last_name:'Last name',
-  given_names:'Given names',nickname:'Nickname',company:'Company',
+  given_names:'Given names',nickname:'Nickname',partner_name:'Partner\'s name',company:'Company',
   birth_date:'Born',death_date:'Died',address:'Address',address_2:'Address line 2',
   town:'Town',county:'County',postcode:'Postcode',country:'Country',
   boat_name:'Boat',boat_number:'Boat number',boat_notes:'Boat notes',
@@ -11637,6 +11868,46 @@ const FIELD_NAME={first_name:'First name',last_name:'Last name',
   is_organisation:'Is a business',
   phones:'Phone numbers',emails:'Email addresses',websites:'Websites',
   socials:'Social accounts',pets:'Pets',former_names:'Other names'};
+
+// A look at the whole contact before deciding, with nothing saved until you
+// press Accept.
+function viewOffer(id){
+  const o=offersToMe().find(x=>x.id===id); if(!o) return;
+  const p=o.payload||{};
+  const DATES=['birth_date','death_date','met_date'];
+  const rows=[];
+  Object.keys(FIELD_NAME).forEach(k=>{
+    if(LISTY.includes(k)) return;
+    let v=p[k];
+    if(v===null||v===undefined||v===''||v===false) return;
+    v = k==='is_organisation' ? 'Yes' : DATES.includes(k) ? fmtDate(String(v)) : String(v);
+    rows.push(`<div class="field"><dt>${esc(FIELD_NAME[k])}</dt>
+      <dd style="white-space:pre-wrap">${esc(v)}</dd></div>`);
+  });
+  LISTY.forEach(k=>{
+    const xs=arr(p[k]).filter(x=>x&&x.value);
+    if(xs.length) rows.push(`<div class="field"><dt>${esc(FIELD_NAME[k])}</dt><dd>${
+      xs.map(x=>(x.label?esc(x.label)+': ':'')+esc(x.value)).join('<br>')}</dd></div>`);
+  });
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='offView';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(o.name||'Someone')}
+      &mdash; from ${esc(whoWrote(o.from_user))}</p>
+    <div style="max-height:56vh;overflow-y:auto">${rows.join('')
+      ||'<div class="field"><dd>Nothing filled in but the name.</dd></div>'}</div>
+    <div class="pfoot">
+      <button id="ovNo" style="color:var(--red)">No thanks</button>
+      <button id="ovLeave">Leave it</button>
+      <button id="ovYes" class="go">Accept</button>
+    </div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#ovLeave').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#ovYes').onclick=()=>{ close(); acceptOffers([id]); };
+  box.querySelector('#ovNo').onclick=()=>{ close(); declineOffers([id]); };
+}
 
 function compareOffer(id){
   const o=offersToMe().find(x=>x.id===id); if(!o) return;
@@ -15994,6 +16265,17 @@ function paintBsky(){
     const t=slot.querySelector('[data-bskyagain]'); if(t) t.onclick=loadBsky; };
 }
 
+// The birthday's own icon: a cake in the week ahead, a moving party popper on
+// the day (Google's free animated emoji, only fetched on someone's birthday,
+// with a still one if it will not load) and a woozy face the day after.
+const PARTY_GIF='https://fonts.gstatic.com/s/e/notoemoji/latest/1f389/512.webp';
+function bdayIcon(d){
+  if(d===0) return `<span class="bcake party" aria-hidden="true"><img src="${PARTY_GIF}"
+    alt="" onerror="this.parentNode.textContent='\u{1F389}'"></span>`;
+  if(d===-1) return '<span class="bcake hangover" aria-hidden="true">\u{1F974}</span>';
+  return '<span class="bcake" aria-hidden="true">\u{1F382}</span>';
+}
+
 function renderBrief(){
   const days=briefBirthdays(), items=briefItems(), asap=briefAsap();
   // The bar says Today and the date goes underneath: a long weekday and a
@@ -16010,7 +16292,7 @@ function renderBrief(){
         <small>${esc(bdayDate(d))}</small></span>
       <span class="bwhat"><b>${esc(fullName(c))}</b>
         ${years?`<span>${esc(years)}</span>`:''}</span>
-      <span class="bcake" aria-hidden="true">\u{1F382}</span></button>`;
+      ${bdayIcon(d)}</button>`;
   }).join('');
 
   // Today, and anything overdue, always shows; the rest of the week waits for a tap.

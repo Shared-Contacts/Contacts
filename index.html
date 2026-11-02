@@ -1832,11 +1832,15 @@ const bestFirst = q => (a,b) => nameRank(a,q)-nameRank(b,q) || byName(a,b);
 
 // Anyone already in Contacts under this name: a business by its name, a
 // person by first and last name, whatever the capitals and punctuation.
+const sameKey = d => normName(d.is_organisation ? d.company
+  : [d.first_name,d.last_name].filter(Boolean).join(' '));
 function sameNameAs(d){
-  const key=normName(d.is_organisation ? d.company
-    : [d.first_name,d.last_name].filter(Boolean).join(' '));
+  const key=sameKey(d);
   return key ? CONTACTS.filter(c=>normName(fullName(c))===key) : [];
 }
+// A name someone has already said to keep as a new contact, so they are not
+// asked the same thing twice on one form.
+let SAME_OK='';
 // Gives back the id of the one to use instead, 'keep' to add the new one
 // anyway, or nothing to go back and look again.
 function askSameName(name,list){
@@ -3222,6 +3226,27 @@ async function openEditor(c){
   },100);
 
   $('edSave').onclick=()=>saveContact(c);
+
+  // A new contact is checked against Contacts as soon as its name is in:
+  // leaving the business name, or a person's last name (or their first name,
+  // once the last is there). Not at Save, after the whole form is filled in.
+  SAME_OK='';
+  if(isNew){
+    const checkName=async()=>{
+      const d={is_organisation:f.elements['is_organisation'].checked,
+        company:f.elements['company'].value, first_name:f.elements['first_name'].value,
+        last_name:f.elements['last_name'].value};
+      if(!d.is_organisation&&!d.last_name.trim()) return;
+      const key=sameKey(d);
+      if(!key||key===SAME_OK||$('sameName')) return;
+      const same=sameNameAs(d); if(!same.length) return;
+      const v=await askSameName(fullName(d),same);
+      if(v==='keep') SAME_OK=key;
+      else if(v!==undefined) useExistingContact(v);
+    };
+    ['company','last_name','first_name'].forEach(k=>
+      f.elements[k].addEventListener('change',checkName));
+  }
 }
 
 async function saveContact(existing){
@@ -3262,21 +3287,16 @@ async function saveContact(existing){
   const chosen=[...f.querySelectorAll('input[name="grp"]:checked')].map(b=>Number(b.value));
   if(!chosen.length){toast('Pick at least one group, or only you will see them');return;}
 
-  if(!existing){
+  // Usually asked already, as the name was typed; this catches the rest
+  // (a person with no surname, a name filled in for them).
+  if(!existing && $('sameName')) return;
+  if(!existing && sameKey(data)!==SAME_OK){
     const same=sameNameAs(data);
     if(same.length){
       const v=await askSameName(fullName(data),same);
       if(v===undefined) return;
-      if(v!=='keep'){
-        // The one already there stands in for the new one wherever it was wanted.
-        const handBack=AFTER_NEW_CONTACT, link=PENDING; PENDING=null;
-        if(link) await sb.from('relationships').insert({from_contact:link.from,to_contact:v,
-          kind:link.kind, pinned:PIN_BY_DEFAULT.test(link.kind)});
-        killMaps();$('editor').classList.add('hidden');lockBackground();
-        await loadAll();toast('Using the one already in Contacts');
-        if(handBack) handBack(v); else openDetail(link?link.from:v);
-        return;
-      }
+      if(v!=='keep') return useExistingContact(v);
+      SAME_OK=sameKey(data);
     }
   }
 
@@ -3319,6 +3339,16 @@ async function saveContact(existing){
   $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');lockBackground();
   await loadAll();toast('Saved');
   if(handBack) handBack(id); else openDetail(back);
+}
+
+// The one already there stands in for the new one wherever it was wanted.
+async function useExistingContact(v){
+  const handBack=AFTER_NEW_CONTACT, link=PENDING; PENDING=null;
+  if(link) await sb.from('relationships').insert({from_contact:link.from,to_contact:v,
+    kind:link.kind, pinned:PIN_BY_DEFAULT.test(link.kind)});
+  killMaps();$('editor').classList.add('hidden');lockBackground();
+  await loadAll();toast('Using the one already in Contacts');
+  if(handBack) handBack(v); else openDetail(link?link.from:v);
 }
 
 async function deleteContact(c){
@@ -4598,7 +4628,8 @@ function openHelp(where){
   linking people, a supplier, a guest), puts the ones whose name it is first,
   above people it is only in the address or notes of. Adding a new one
   with a name that is already in Contacts asks whether to use the one that is
-  there or keep the new one as well.</p>
+  there or keep the new one as well. It asks as soon as you leave the business
+  name, or a person's last name, before the rest of the form is filled in.</p>
   <p>Every one can have photos (<em>Camera</em> or <em>Choose</em>) and PDFs
   (<em>Add a PDF</em>, up to 20 MB each). The first photo shows small on the list
   and large at the top of the thing's own screen; tap it to see it full size.

@@ -86,17 +86,19 @@ const ok = (what, cond, extra='') => {
   await page.waitForTimeout(400);
   const one = await page.evaluate(() => navigator.clipboard.readText());
   ok('query 1 reaches the clipboard', /QUERY 1/.test(one), one.slice(0, 60));
-  // 41 union alls = 42 selects: the 37 rows it returned when it was run in
+  // 43 union alls = 44 selects: the 37 rows it returned when it was run in
   // Supabase, plus log_shares (step 39), the two URL Links tables (step 42),
-  // recipes (step 43) and shopping_aisle_memory (step 48), matching
-  // backup.sql. One row per table, so a missing table shows up here.
-  ok('all 42 tables are in it', one.split('union all').length - 1 === 41,
+  // recipes (step 43), shopping_aisle_memory (step 48) and the two My Stuff
+  // tables (step 50), matching backup.sql. One row per table, so a missing
+  // table shows up here.
+  ok('all 44 tables are in it', one.split('union all').length - 1 === 43,
      String(one.split('union all').length - 1) + ' union alls');
   ok('it ends at the photographs',
      /bucket_id = 'photos';$/.test(one.trim()), one.trim().slice(-50));
   ok('and the cashbook is in it', /transactions/.test(one) && /bank_files/.test(one));
   ok('and the recipes', /from recipes t/.test(one));
   ok('and where shopping goes in the shop', /from shopping_aisle_memory t/.test(one));
+  ok('and My Stuff with its service records', /from stuff t/.test(one) && /from stuff_service t/.test(one));
   ok('the table that no longer exists is not', !/group_members/.test(one));
 
   await page.click('#bkCopy2');

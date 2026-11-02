@@ -1133,6 +1133,13 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .aislerow button.ax{color:var(--red)}
 .sthumb{flex:0 0 44px;width:44px;height:44px;object-fit:cover;border-radius:6px;background:#F0EEE7;
   margin-right:6px;align-self:center}
+.sthumb.right{flex-basis:52px;width:52px;height:52px;margin:0 0 0 6px}
+.stfhero{display:block;width:100%;height:auto;max-height:55vh;object-fit:contain;
+  border-radius:10px;background:#F0EEE7;margin-bottom:12px}
+.stfwho{display:block;width:100%;margin-top:6px;padding:12px;text-align:left;font-size:16px;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff;color:var(--hull)}
+.stfwho.none{color:var(--muted)}
+.stflink{color:var(--hull);text-decoration:underline;font:inherit;padding:0;text-align:left}
 #reBody .ulrow{display:flex;gap:8px;margin-top:4px}
 #reBody .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff;font-size:16px}
@@ -2949,6 +2956,9 @@ function drawMulti(key){
 }
 
 async function openEditor(c){
+  // A new contact asked for from My Stuff and then left some other way
+  // than Save or Cancel: its form has gone, so nothing waits for it now.
+  if(AFTER_NEW_CONTACT) AFTER_NEW_CONTACT(undefined,true);
   killMaps();
   if(c){
     const {data,error}=await sb.from('contacts')
@@ -3235,8 +3245,10 @@ async function saveContact(existing){
   }
   const back = PENDING&&!existing ? PENDING.from : id;
   PENDING=null;
+  const handBack = !existing && AFTER_NEW_CONTACT;
   $('edSave').disabled=false;killMaps();$('editor').classList.add('hidden');lockBackground();
-  await loadAll();toast('Saved');openDetail(back);
+  await loadAll();toast('Saved');
+  if(handBack) handBack(id); else openDetail(back);
 }
 
 async function deleteContact(c){
@@ -3687,7 +3699,7 @@ function setHead(key,i,total){
 }
 
 // Scrolling a dropdown of 258 names is no way to find anybody.
-function pickContact(title, currentId){
+function pickContact(title, currentId, canAdd){
   return new Promise(resolve=>{
     const box=document.createElement('div');
     box.className='daypick';
@@ -3697,6 +3709,7 @@ function pickContact(title, currentId){
         style="width:100%;padding:12px;border:1.5px solid var(--rule);border-radius:8px">
       <div class="results" id="pkHits" style="max-height:46vh;margin-top:10px"></div>
       <div class="setadd" style="display:flex;gap:8px;padding:12px 0 0">
+        ${canAdd?'<button class="btn primary" id="pkNew">+ New contact</button>':''}
         <button class="btn" id="pkNone" style="border:1.5px solid var(--rule)">Nobody</button>
         <button class="btn" id="pkCancel" style="border:1.5px solid var(--rule)">Cancel</button>
       </div></div>`;
@@ -3708,6 +3721,7 @@ function pickContact(title, currentId){
     // lookup by name finds whichever was put on the page first.
     box.querySelector('#pkCancel').onclick=()=>done(undefined);
     box.querySelector('#pkNone').onclick=()=>done(null);
+    if(canAdd) box.querySelector('#pkNew').onclick=()=>done('new');
 
     const paint=()=>{
       const q=$('pkQ').value.trim();
@@ -4505,8 +4519,15 @@ function openHelp(where){
   laptop, jewellery, lawn mower), <strong>property</strong> (house, mooring), a
   <strong>document</strong> (will, shares, birth certificate) or an
   <strong>insurance policy</strong>. Each one asks only for the boxes that fit it.</p>
+  <p><em>Bought from</em>, the <em>Insurer</em> and where a service was done come
+  from your Contacts, so the shop's phone and address are kept there. Tap the box,
+  find them, or press <em>+ New contact</em> to fill in the full contact form;
+  saving it brings you back. On the thing's own screen, tap the name to open
+  the contact.</p>
   <p>Every one can have photos (<em>Camera</em> or <em>Choose</em>) and PDFs
-  (<em>Add a PDF</em>, up to 20 MB each). Tap a PDF to open it.</p>
+  (<em>Add a PDF</em>, up to 20 MB each). The first photo shows small on the list
+  and large at the top of the thing's own screen; tap it to see it full size.
+  Tap a PDF to open it.</p>
   <p>Vehicles, items and property have a <strong>service record</strong>: open the
   thing and press <em>+ Add a service</em> for the date, where, the price, the parts
   and work done and when it is next due. Tap one to change it, &times; to remove it.</p>
@@ -10964,9 +10985,10 @@ $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
 const STF_TYPES={
   vehicle:{one:'Vehicle', many:'Vehicles', service:true,
     eg:'The car, the boat, the motorbike', fields:[
-    {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'reg',l:'Registration'},
+    {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'year',l:'Year built',t:'year'},
+    {k:'reg',l:'Registration'},
     {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
-    {k:'bought_from',l:'Bought from'},{k:'value',l:'Value now',t:'money'},
+    {k:'bought_from',l:'Bought from',t:'who'},{k:'value',l:'Value now',t:'money'},
     {k:'mot_due',l:'MOT due',t:'date',due:'MOT due'},{k:'mot_number',l:'MOT test number'},
     {k:'mot_price',l:'MOT price',t:'money'},
     {k:'insurance_due',l:'Insurance renews',t:'date',due:'Insurance renewal'},
@@ -10977,7 +10999,7 @@ const STF_TYPES={
     eg:'The TV, a laptop, a ring, the lawn mower', fields:[
     {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'serial',l:'Serial number'},
     {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
-    {k:'bought_from',l:'Bought from'},{k:'value',l:'Value now',t:'money'},
+    {k:'bought_from',l:'Bought from',t:'who'},{k:'value',l:'Value now',t:'money'},
     {k:'warranty_due',l:'Warranty until',t:'date',due:'Warranty ends'}]},
   property:{one:'Property', many:'Property', service:true,
     eg:'The house, a mooring', fields:[
@@ -10992,7 +11014,7 @@ const STF_TYPES={
     {k:'renew_due',l:'Renew or expiry date',t:'date',due:'Renewal due'}]},
   policy:{one:'Insurance policy', many:'Insurance policies', service:false,
     eg:'Home, boat, travel, pet', fields:[
-    {k:'insurer',l:'Insurer'},{k:'policy_no',l:'Policy number'},
+    {k:'insurer',l:'Insurer',t:'who'},{k:'policy_no',l:'Policy number'},
     {k:'covers',l:'What it covers',t:'long'},
     {k:'renew_due',l:'Renews',t:'date',due:'Policy renewal'},
     {k:'renew_price',l:'Renewal price',t:'money'}]}
@@ -11036,6 +11058,54 @@ function stfDues(t){
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
+/* Bought from, the insurer and where a service was done can be a contact,
+   so the shop's phone and address live in Contacts. The name is kept too,
+   for someone it is shared with who cannot see that contact, and for one
+   typed before the link was there. */
+let AFTER_NEW_CONTACT=null;
+const stfWhoName = (name,id) => (id && nameOfContact(Number(id))) || name || '';
+function stfWhoHtml(name,id){
+  const n=stfWhoName(name,id); if(!n) return '';
+  return id && CONTACTS.some(c=>c.id===Number(id))
+    ? `<button class="stflink" data-stfcontact="${Number(id)}">${esc(n)}</button>` : esc(n);
+}
+// The full contact form, on top of everything; hide is an overlay that
+// would otherwise sit over it. Gives back the new contact's id, or nothing.
+function stfNewContact(hide){
+  return new Promise(resolve=>{
+    if(hide) hide.style.display='none';
+    PENDING=null; openEditor(null);
+    AFTER_NEW_CONTACT=(id,stale)=>{ AFTER_NEW_CONTACT=null;
+      if(hide){ if(stale) hide.remove(); else hide.style.display=''; }
+      resolve(stale?undefined:id); };
+  });
+}
+// A box that holds a contact: two hidden inputs, <name> and <name>_id, and
+// a button that shows who it is and opens the picker.
+function stfWhoBox(name,label,v,id){
+  return `<label>${esc(label)}<input type="hidden" name="${name}" value="${esc(v||'')}">
+    <input type="hidden" name="${name}_id" value="${esc(id||'')}">
+    <button type="button" class="stfwho${stfWhoName(v,id)?'':' none'}" data-stfwho="${name}">${
+      esc(stfWhoName(v,id)||'Choose from Contacts')}</button></label>`;
+}
+function stfWireWho(root,hide){
+  root.querySelectorAll('[data-stfwho]').forEach(b=>b.onclick=async()=>{
+    const n=b.dataset.stfwho, f=b.closest('form');
+    const nm=f.elements[n], idb=f.elements[n+'_id'];
+    let v=await pickContact(b.closest('label').firstChild.textContent.trim()+'?',
+      Number(idb.value)||null, true);
+    if(v==='new') v=await stfNewContact(hide);
+    if(v===undefined) return;
+    nm.value=v?nameOfContact(v)||'':''; idb.value=v||'';
+    b.textContent=nm.value||'Choose from Contacts';
+    b.classList.toggle('none',!nm.value);
+  });
+}
+function stfWireContacts(root){
+  root.querySelectorAll('[data-stfcontact]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation(); openDetail(Number(b.dataset.stfcontact)); });
+}
+
 async function openStuff(){
   showSheet('stuff'); lockBackground();
   if(!STF_LOADED) $('stfBody').innerHTML='<p class="empty">Fetching your things…</p>';
@@ -11071,7 +11141,9 @@ function renderStuff(){
 
 function stfRow(t){
   const d=t.details||{};
-  const sub=[d.make,d.model,d.reg,d.insurer,d.policy_no].filter(Boolean).join(' · ');
+  const sub=[d.make,d.model,d.year,d.reg,stfWhoName(d.insurer,d.insurer_id),d.policy_no]
+    .filter(Boolean).join(' · ');
+  const pic=arr(t.photos).find(x=>x&&x.path);
   // Due within 30 days, or missed in the last month; older ones have had their say.
   const soon=stfDues(t).find(x=>{ const n=stfDaysTo(x.date); return n<=30 && n>=-31; });
   return `<button class="item" data-stf="${t.id}"><span class="mid">
@@ -11080,7 +11152,7 @@ function stfRow(t){
     ${soon?`<span class="w late">${esc(soon.label)} ${esc(stfDay(soon.date))}</span>`:''}
     ${t.created_by!==ME.id?`<span class="w">from ${esc(whoWrote(t.created_by))}</span>`:''}
     ${photoCount(t)?`<span class="w">${esc(photoCount(t))}</span>`:''}
-  </span></button>`;
+  </span>${pic?`<img class="sthumb right" src="${esc(SIGNED[pic.path]||'')}" alt="">`:''}</button>`;
 }
 
 // What sort of thing it is decides which boxes come up.
@@ -11117,6 +11189,7 @@ function renderStuffThing(){
   const val=f=>{
     const v=d[f.k]; if(v==null||v==='') return '';
     if(f.t==='money') return esc(stfMoney(v));
+    if(f.t==='who') return stfWhoHtml(v,d[f.k+'_id']);
     if(f.t!=='date') return esc(v);
     const n=stfDaysTo(v);
     return esc(stfDay(v))+(f.due&&n<=30?` <strong style="color:var(--red)">${
@@ -11125,12 +11198,14 @@ function renderStuffThing(){
   const photos=arr(t.photos).filter(x=>x&&x.path), files=arr(t.files).filter(x=>x&&x.path);
   const services=stfServices(t.id);
   $('stfView').innerHTML=`
+    ${photos.length?`<img class="stfhero" src="${esc(SIGNED[photos[0].path]||'')}"
+      alt="Photo 1" data-stfpic="0">`:''}
     <div class="card">${R('Type',esc(ty.one))}${ty.fields.map(f=>R(f.l,val(f))).join('')}
       ${R('Where the login is kept',esc(t.login_where||''))}${R('Notes',esc(t.notes||''))}
       ${mine?R('Shared with',esc(namesOf(arr(t.shared_with)).join(', ')))
             :R('Shared by',esc(whoWrote(t.created_by)))}</div>
-    ${photos.length?`<p class="dsec">Photos</p><div class="rcpthumbs">${photos.map((x,i)=>
-      `<img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-stfpic="${i}">`).join('')}</div>`:''}
+    ${photos.length>1?`<p class="dsec">More photos</p><div class="rcpthumbs">${photos.map((x,i)=>
+      i?`<img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-stfpic="${i}">`:'').join('')}</div>`:''}
     ${files.length?`<p class="dsec">Documents (PDF)</p><div class="card">${files.map((x,i)=>
       `<button class="item" data-stfpdf="${i}"><span class="mid"><span class="t">&#128196; ${
       esc(x.name||'Document')}</span><span class="w">Tap to open</span></span></button>`).join('')}</div>`:''}
@@ -11143,6 +11218,7 @@ function renderStuffThing(){
   v.querySelectorAll('[data-stfpic]').forEach(i=>i.onclick=()=>
     lightbox(SIGNED[photos[Number(i.dataset.stfpic)].path]));
   v.querySelectorAll('[data-stfpdf]').forEach(b=>b.onclick=()=>stfOpenPdf(files[Number(b.dataset.stfpdf)]));
+  stfWireContacts(v);
   const add=$('stfSvAdd'); if(add) add.onclick=()=>stfServiceForm(t,null);
   v.querySelectorAll('[data-stfsv]').forEach(b=>b.onclick=()=>
     stfServiceForm(t,STF_SERV.find(x=>x.id===Number(b.dataset.stfsv))));
@@ -11157,7 +11233,7 @@ function renderStuffThing(){
 $('stfBack').onclick=()=>{ STF_VIEW=null; $('stuffView').classList.add('hidden'); lockBackground(); };
 
 function stfServiceRow(x,mine){
-  const bits=[x.where_done, stfMoney(x.price)].filter(Boolean).join(' · ');
+  const bits=[stfWhoName(x.where_done,x.where_contact), stfMoney(x.price)].filter(Boolean).join(' · ');
   return `<div class="item"><button class="mid" ${mine?`data-stfsv="${x.id}"`:''} style="text-align:left">
     <span class="t">${esc(x.done_on?stfDay(x.done_on):'No date')}</span>
     ${bits?`<span class="w">${esc(bits)}</span>`:''}
@@ -11174,8 +11250,9 @@ function stfServiceForm(t,x){
     <p class="dsec" style="padding-top:0">${x?'Change this service':'Add a service'}</p>
     <form id="stfSvForm" onsubmit="return false" style="max-height:60vh;overflow-y:auto">
       <label>Date<input name="done_on" value="${esc(x?x.done_on||'':isoDay(new Date()))}"></label>
-      <label>Where<input name="where_done" value="${esc(x&&x.where_done||'')}"
-        placeholder="The garage, the boatyard, done myself"></label>
+      ${stfWhoBox('where_done','Where',x&&x.where_done,x&&x.where_contact)}
+      <p class="coords" style="margin-top:4px">The garage or boatyard, from Contacts.
+        Done it yourself? Leave it empty and say so under the work done.</p>
       <label>Price<input name="price" inputmode="decimal" placeholder="0.00"
         value="${esc(x&&x.price!=null?x.price:'')}"></label>
       <label>Parts and work done<textarea name="work" rows="3">${esc(x&&x.work||'')}</textarea></label>
@@ -11186,6 +11263,7 @@ function stfServiceForm(t,x){
   document.body.appendChild(box);
   const f=box.querySelector('form');
   useWhenPicker(f,['done_on','next_due'],{dateOnly:['done_on','next_due']});
+  stfWireWho(f,box);
   const close=()=>box.remove();
   box.querySelector('#stfSvNo').onclick=close;
   box.querySelector('#stfSvGo').onclick=async()=>{
@@ -11194,9 +11272,15 @@ function stfServiceForm(t,x){
     if(price&&!isFinite(Number(price))){ toast('The price needs to be a number'); return; }
     const row={done_on:v('done_on')||null, where_done:v('where_done')||null,
       price:price===''?null:Number(price), work:v('work')||null, next_due:v('next_due')||null};
+    // Only sent when there is a contact to say, so a service still saves on a
+    // database that has not had step 51 yet.
+    const wc=Number(v('where_done_id'))||null;
+    if(wc||(x&&x.where_contact)) row.where_contact=wc;
     const {error}=x ? await sb.from('stuff_service').update(row).eq('id',x.id)
                     : await sb.from('stuff_service').insert({...row, stuff_id:t.id, created_by:ME.id});
-    if(error){ toast('Could not save the service'); console.error(error); return; }
+    if(error){ toast(/where_contact/.test(error.message||'')
+        ? 'Could not save: linking a contact needs step 51 run in Supabase first'
+        : 'Could not save the service'); console.error(error); return; }
     close();
     await stfAfterChange(t.id);
     toast('Service saved');
@@ -11211,8 +11295,10 @@ function openStuffEd(t,kind){
   const box=f=>{
     const v=d[f.k]??'';
     if(f.t==='long') return `<label>${esc(f.l)}<textarea name="d_${f.k}" rows="3">${esc(v)}</textarea></label>`;
+    if(f.t==='who') return stfWhoBox('d_'+f.k,f.l,v,d[f.k+'_id']);
     return `<label>${esc(f.l)}<input name="d_${f.k}" value="${esc(v)}"${
-      f.t==='money'?' inputmode="decimal" placeholder="0.00"':''}></label>`;
+      f.t==='money'?' inputmode="decimal" placeholder="0.00"'
+      :f.t==='year'?' inputmode="numeric" maxlength="4" placeholder="e.g. 1998"':''}></label>`;
   };
   $('stfEdBody').innerHTML=`<form id="stfForm" onsubmit="return false">
     <fieldset><legend>${esc(ty.one)}</legend>
@@ -11242,6 +11328,7 @@ function openStuffEd(t,kind){
   const f=$('stfForm');
   const dates=ty.fields.filter(x=>x.t==='date').map(x=>'d_'+x.k);
   useWhenPicker(f,dates,{dateOnly:dates});
+  stfWireWho(f,null);
   dphStart('stfPics', t&&t.photos, 'stf', 50);
   STF_FILES={list:arr(t&&t.files).filter(x=>x&&x.path).map(x=>({path:x.path,name:x.name})),
     fresh:[], gone:[]};
@@ -11316,7 +11403,10 @@ async function saveStuff(){
     let v=String(f.elements['d_'+x.k].value||'').trim();
     if(x.t==='money'&&v){ v=v.replace(/[£,\s]/g,'');
       if(!isFinite(Number(v))){ toast(x.l+' needs to be a number'); return; } }
+    if(x.t==='year'&&v&&!/^\d{4}$/.test(v)){ toast(x.l+' needs to be a year, like 1998'); return; }
     if(v) details[x.k]=v; else delete details[x.k];
+    if(x.t==='who'){ const id=Number(f.elements['d_'+x.k+'_id'].value)||null;
+      if(id&&v) details[x.k+'_id']=id; else delete details[x.k+'_id']; }
   }
   const d={name, kind:STF_KIND, details,
     notes:f.elements.notes.value.trim()||null,
@@ -13286,7 +13376,8 @@ $('search').oninput=render;
 $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBackground();};
 $('detEdit').onclick=()=>openEditor(CURRENT);
-$('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();};
+$('edCancel').onclick=()=>{PENDING=null;killMaps();$('editor').classList.add('hidden');lockBackground();
+  if(AFTER_NEW_CONTACT) AFTER_NEW_CONTACT(undefined);};
 
 $('logPrev').onclick=()=>stepDay(-1);
 $('logNext').onclick=()=>stepDay(1);

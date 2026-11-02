@@ -3,6 +3,7 @@
 // under Bought from and got the boaters moored there, but not the marina, so
 // added it again. A name now comes first in every contact search, and a new
 // contact with a name already in Contacts asks: use that one, or keep both?
+// Since ML147 it asks on leaving the name box, not at Save.
 const { chromium } = require('playwright');
 const path = require('path');
 const errors = []; let pass = 0, fail = 0;
@@ -152,6 +153,63 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_FAILED|Se
     ok('the link goes to the one already there', rel && rel.rows.from_contact === 2 && rel.rows.to_contact === 1
       && (await writes('insert', 'contacts')).length === 0, JSON.stringify(rel));
   } else ok('the link goes to the one already there (no link kinds to test with)', true);
+  await closeAll();
+
+  console.log('\nAsked as soon as the name is in, not at Save (ML147)');
+  // Typing in a box and moving on: the value, then the change a phone sends on leaving it.
+  const leave = (k, v) => ev(([k, v]) => { const el = $('edForm').elements[k]; el.value = v;
+    el.dispatchEvent(new Event('change')); }, [k, v]);
+  await clearWrites();
+  await ev(() => openEditor(null)); await settle(400);
+  await ev(() => { const o = $('edForm').elements.is_organisation; o.checked = true; o.dispatchEvent(new Event('change')); });
+  await leave('company', 'Tattenhall Marina'); await settle(200);
+  ok('leaving the business name asks straight away', await ev(() => !!document.querySelector('#sameName [data-same="60"]')));
+  await p.click('[data-same="60"]'); await settle(600);
+  ok('and using the one there opens it, nothing added', !(await shown('editor')) && await shown('detail')
+    && await ev(() => CURRENT.id === 60) && (await writes('insert', 'contacts')).length === 0);
+  await closeAll();
+
+  await clearWrites();
+  await ev(() => openEditor(null)); await settle(400);
+  await leave('first_name', 'Dickie'); await settle(200);
+  ok('a first name on its own does not ask yet', await ev(() => !$('sameName')));
+  await leave('last_name', 'Deal'); await settle(200);
+  ok('leaving the last name asks', await ev(() => !!document.querySelector('#sameName [data-same="1"]')));
+  await p.click('#sameKeep'); await settle(200);
+  await leave('last_name', 'Deal'); await settle(200);
+  ok('once kept, it does not ask again for that name', await ev(() => !$('sameName')));
+  await ev(() => { const f = $('edForm'); f.elements.notes.value = 'a second Dickie';
+    f.querySelector('input[name="grp"][value="1"]').checked = true; });
+  await p.click('#edSave'); await settle(600);
+  ok('nor at Save: it just saves', await ev(() => !$('sameName')) && (await writes('insert', 'contacts')).length === 1);
+  await closeAll();
+
+  await clearWrites();
+  await ev(() => openEditor(null)); await settle(400);
+  await leave('first_name', 'Dickie'); await leave('last_name', 'Deal'); await settle(200);
+  await p.click('#sameBack'); await settle(200);
+  ok('Go back leaves the form as it was', await shown('editor') && await ev(() =>
+    !$('sameName') && $('edForm').elements.last_name.value === 'Deal'));
+  await ev(() => { $('edForm').querySelector('input[name="grp"][value="1"]').checked = true; });
+  await p.click('#edSave'); await settle(400);
+  ok('and Save still asks, as it was not settled', await ev(() => !!$('sameName')));
+  await closeAll();
+
+  await clearWrites();
+  await ev(() => openStuffEd(null, 'item')); await settle(200);
+  await p.click('[data-stfwho="d_bought_from"]'); await settle(200);
+  await p.click('#pkNew'); await settle(500);
+  await ev(() => { const o = $('edForm').elements.is_organisation; o.checked = true; o.dispatchEvent(new Event('change')); });
+  await leave('company', 'tattenhall marina'); await settle(200);
+  await p.click('[data-same="60"]'); await settle(600);
+  ok('from My Stuff, using the one there goes straight back with it filled in', await shown('stuffEd')
+    && !(await shown('editor')) && await ev(() => $('stfForm').elements.d_bought_from_id.value === '60')
+    && (await writes('insert', 'contacts')).length === 0);
+  await closeAll();
+
+  await ev(() => openEditor(CONTACTS.find(c => c.id === 2))); await settle(500);
+  await leave('first_name', 'Dickie'); await leave('last_name', 'Deal'); await settle(200);
+  ok('changing a contact already there never asks', await ev(() => !$('sameName')));
   await closeAll();
 
   console.log('\nA supplier typed in');

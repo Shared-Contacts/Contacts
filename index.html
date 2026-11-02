@@ -1815,6 +1815,57 @@ const byName=(a,b)=>{
   return ka.then.localeCompare(kb.then,'en-GB',{sensitivity:'base'});
 };
 
+/* In a search, the one whose name it is comes first: a name that starts
+   with what was typed, then a name with every word of it in, then everyone
+   it is only in the notes or address of. Without this Tattenhall Marina,
+   having no surname, came below every boater moored there, and below the
+   first 40 that the picker shows at all. */
+const normName = v => String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function nameRank(c,q){
+  const w=normName(q); if(!w) return 2;
+  const name=normName(fullName(c));
+  if(name.startsWith(w)) return 0;
+  const also=normName([fullName(c),c.company,c.nickname,c.boat_name].filter(Boolean).join(' '));
+  return w.split(' ').every(x=>also.includes(x)) ? 1 : 2;
+}
+const bestFirst = q => (a,b) => nameRank(a,q)-nameRank(b,q) || byName(a,b);
+
+// Anyone already in Contacts under this name: a business by its name, a
+// person by first and last name, whatever the capitals and punctuation.
+function sameNameAs(d){
+  const key=normName(d.is_organisation ? d.company
+    : [d.first_name,d.last_name].filter(Boolean).join(' '));
+  return key ? CONTACTS.filter(c=>normName(fullName(c))===key) : [];
+}
+// Gives back the id of the one to use instead, 'keep' to add the new one
+// anyway, or nothing to go back and look again.
+function askSameName(name,list){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='sameName';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Already in Contacts</p>
+      <p style="margin:0 0 10px">${esc(name)} is already in your contacts${
+        list.length>1?' '+list.length+' times':''}. Use the one that is there, or keep
+        this new one as well?</p>
+      ${list.map(c=>`<button class="item" data-same="${c.id}"
+        style="border:1px solid var(--rule);border-radius:10px;margin-bottom:8px">
+        <span class="mid"><span class="t">Use ${esc(fullName(c))}</span>
+        <span class="w">${esc([c.town,c.postcode,arr(c.phones)[0]&&arr(c.phones)[0].value]
+          .filter(Boolean).join(' · ')||'Already in Contacts')}</span></span></button>`).join('')}
+      <p class="coords">Using the one that is there leaves it as it is; what you
+        typed for the new one is not saved.</p>
+      <div class="pfoot"><button id="sameBack">Go back</button>
+        <button id="sameKeep" class="go">Keep the new one</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(undefined); };
+    box.querySelector('#sameBack').onclick=()=>done(undefined);
+    box.querySelector('#sameKeep').onclick=()=>done('keep');
+    box.querySelectorAll('[data-same]').forEach(b=>b.onclick=()=>done(Number(b.dataset.same)));
+  });
+}
+
 function dayMonth(d){
   if(!d) return '';
   const [y,m,day]=d.split('-').map(Number);
@@ -2031,7 +2082,8 @@ function render(){
     }
     if(MODE==='birthdays'&&!q)
       rows=rows.filter(c=>c.birth_date&&!isGone(c)).sort((a,b)=>daysToBirthday(a)-daysToBirthday(b));
-    else rows.sort(byName);
+    // A search puts the ones whose name it is first, as the pickers do.
+    else rows.sort(q?bestFirst(q):byName);
     const bd = MODE==='birthdays'&&!q;
     $('count').textContent=rows.length+(rows.length===1?' contact':' contacts')
       +(bd?', by next birthday':'');
@@ -2887,7 +2939,7 @@ function wireLinkSearch(){
   box.oninput=()=>{
     const q=box.value.trim();
     if(q.length<2){res.classList.add('hidden');return;}
-    const hits=CONTACTS.filter(c=>c.id!==CURRENT.id&&matches(c,q)).sort(byName).slice(0,12);
+    const hits=CONTACTS.filter(c=>c.id!==CURRENT.id&&matches(c,q)).sort(bestFirst(q)).slice(0,12);
     res.innerHTML=hits.map(c=>`<button data-pick="${c.id}">${esc(fullName(c))}</button>`).join('')
       + `<button data-new-link style="color:var(--hull);font-weight:700">
            + Add &ldquo;${esc(q)}&rdquo; as a new contact</button>`;
@@ -3209,6 +3261,24 @@ async function saveContact(existing){
     toast(data.is_organisation?'Give the business a name':'Give them a name, or tick "business"');return;}
   const chosen=[...f.querySelectorAll('input[name="grp"]:checked')].map(b=>Number(b.value));
   if(!chosen.length){toast('Pick at least one group, or only you will see them');return;}
+
+  if(!existing){
+    const same=sameNameAs(data);
+    if(same.length){
+      const v=await askSameName(fullName(data),same);
+      if(v===undefined) return;
+      if(v!=='keep'){
+        // The one already there stands in for the new one wherever it was wanted.
+        const handBack=AFTER_NEW_CONTACT, link=PENDING; PENDING=null;
+        if(link) await sb.from('relationships').insert({from_contact:link.from,to_contact:v,
+          kind:link.kind, pinned:PIN_BY_DEFAULT.test(link.kind)});
+        killMaps();$('editor').classList.add('hidden');lockBackground();
+        await loadAll();toast('Using the one already in Contacts');
+        if(handBack) handBack(v); else openDetail(link?link.from:v);
+        return;
+      }
+    }
+  }
 
   $('edSave').disabled=true;let id;
   if(existing){
@@ -3726,7 +3796,7 @@ function pickContact(title, currentId, canAdd){
     const paint=()=>{
       const q=$('pkQ').value.trim();
       const hits=(q?CONTACTS.filter(c=>matches(c,q)):CONTACTS.slice()).filter(pickable)
-        .sort(byName).slice(0,40);
+        .sort(bestFirst(q)).slice(0,40);
       $('pkHits').innerHTML=hits.length
         ? hits.map(c=>`<button data-pk="${c.id}"
             ${c.id===currentId?'style="font-weight:700;color:var(--hull)"':''}>
@@ -4524,6 +4594,11 @@ function openHelp(where){
   find them, or press <em>+ New contact</em> to fill in the full contact form;
   saving it brings you back. On the thing's own screen, tap the name to open
   the contact.</p>
+  <p>Searching for a contact, on the Contacts screen or to pick one (Bought from,
+  linking people, a supplier, a guest), puts the ones whose name it is first,
+  above people it is only in the address or notes of. Adding a new one
+  with a name that is already in Contacts asks whether to use the one that is
+  there or keep the new one as well.</p>
   <p>Every one can have photos (<em>Camera</em> or <em>Choose</em>) and PDFs
   (<em>Add a PDF</em>, up to 20 MB each). The first photo shows small on the list
   and large at the top of the thing's own screen; tap it to see it full size.
@@ -6747,6 +6822,12 @@ function readBuy(f, kind){
 // A supplier who is not in your contacts yet goes in as a business, in your
 // Professional/Business group, so everyone in that group sees them too.
 async function addSupplier(name){
+  const same=sameNameAs({is_organisation:true, company:name});
+  if(same.length){
+    const v=await askSameName(name,same);
+    if(v===undefined) return null;
+    if(v!=='keep') return CONTACTS.find(c=>c.id===v)||null;
+  }
   const g=GROUPS.find(x=>/professional|business/i.test(x.name||''));
   if(!confirm('Add "'+name+'" to your contacts as a business'
     +(g?', in '+g.name:'')+'?')) return null;
@@ -6858,7 +6939,7 @@ function wireBuys(f, iso){
       inp.dataset.cid='';
       const q=inp.value.trim();
       if(q.length<2){ box.classList.add('hidden'); return; }
-      const hits=CONTACTS.filter(c=>pickable(c)&&matches(c,q)).sort(byName).slice(0,8);
+      const hits=CONTACTS.filter(c=>pickable(c)&&matches(c,q)).sort(bestFirst(q)).slice(0,8);
       box.innerHTML=hits.map(c=>`<button type="button" data-bpick="${esc(String(c.id))}">${
           esc(fullName(c))}${c.town?' <span class="coords">'+esc(c.town)+'</span>':''}</button>`).join('')
         +`<button type="button" data-bnew style="color:var(--hull);font-weight:700">+ Add "${
@@ -7668,7 +7749,7 @@ function editLog(iso){
   $('guestSearch').oninput=()=>{
     const q=$('guestSearch').value.trim(), box=$('guestHits');
     if(q.length<2){ box.classList.add('hidden'); return; }
-    const hits=CONTACTS.filter(c=>pickable(c)&&matches(c,q)).sort(byName).slice(0,10);
+    const hits=CONTACTS.filter(c=>pickable(c)&&matches(c,q)).sort(bestFirst(q)).slice(0,10);
     box.innerHTML=(hits.map(c=>`<button type="button" data-gp="${esc(fullName(c))}">${esc(fullName(c))}</button>`).join(''))
       +`<button type="button" data-gp="${esc(q)}" style="color:var(--hull);font-weight:700">Add "${esc(q)}" anyway</button>`;
     box.classList.remove('hidden');

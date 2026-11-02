@@ -1300,6 +1300,24 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbody" id="jigPlayBody" style="padding:0"></div>
 </div>
 
+<div id="stuff" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="stuff" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="stuffMenu" data-menu="stuff" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">My Stuff</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="stfBody"></div>
+</div>
+
+<div id="stuffView" class="sheet hidden">
+  <div class="sheetbar"><button id="stfBack">Back</button>
+    <span class="title" id="stfViewTitle">My Stuff</span><span id="stfViewBar" style="min-width:56px;text-align:right"></span></div>
+  <div class="sheetbody" id="stfView"></div>
+</div>
+
+<div id="stuffEd" class="sheet hidden">
+  <div class="sheetbar"><button id="stfEdCancel">Cancel</button>
+    <span class="title" id="stfEdTitle">New</span><button id="stfSave">Save</button></div>
+  <div class="sheetbody" id="stfEdBody"></div>
+</div>
+
 <div id="shop" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="shop" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1543,7 +1561,7 @@ const arr = v => Array.isArray(v) ? v : [];
 const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','rtEd','log',
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook',
   'shop','io','offers','chats','chat',
-  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay'];
+  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','stuff','stuffView','stuffEd'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2161,6 +2179,8 @@ async function refreshAll(){
   if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
     if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
   if(!$('reports').classList.contains('hidden')) await repLoad();
+  if(!$('stuff').classList.contains('hidden')){ await loadStuff(); renderStuff();
+    if(!$('stuffView').classList.contains('hidden')) renderStuffThing(); }
   toast('Up to date');
 }
 
@@ -4058,7 +4078,8 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['recipe','recipes'],
-  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],
+  ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   for(const [id,scr] of SCREEN_ORDER)
     if($(id) && !$(id).classList.contains('hidden')) return scr;
@@ -4068,7 +4089,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
-  brief:'h-brief', invite:'h-invite', jig:'h-jig', recipes:'h-recipes'};
+  brief:'h-brief', invite:'h-invite', jig:'h-jig', recipes:'h-recipes', stuff:'h-stuff'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -4476,6 +4497,30 @@ function openHelp(where){
   your own level, or stop seeing it.</p>
   <p>Your levels and subjects are under <strong>Settings &rsaquo; URL
   Links</strong>, to rename, reorder, add or remove.</p>
+
+  <h4 id="h-stuff">My Stuff</h4>
+  <p><strong>My Stuff</strong> keeps track of the things you own and the papers
+  that go with them. Press <em>+ Add something</em> and choose what it is: a
+  <strong>vehicle</strong> (car, boat, motorbike), an <strong>item</strong> (TV,
+  laptop, jewellery, lawn mower), <strong>property</strong> (house, mooring), a
+  <strong>document</strong> (will, shares, birth certificate) or an
+  <strong>insurance policy</strong>. Each one asks only for the boxes that fit it.</p>
+  <p>Every one can have photos (<em>Camera</em> or <em>Choose</em>) and PDFs
+  (<em>Add a PDF</em>, up to 20 MB each). Tap a PDF to open it.</p>
+  <p>Vehicles, items and property have a <strong>service record</strong>: open the
+  thing and press <em>+ Add a service</em> for the date, where, the price, the parts
+  and work done and when it is next due. Tap one to change it, &times; to remove it.</p>
+  <p><strong>Due dates.</strong> An MOT, insurance, tax or licence, warranty or
+  renewal date, or a service's next due date, puts a to-do in your Diary with a
+  reminder a week before, so it shows on Today and reaches your phone. Change the
+  date in My Stuff and the to-do moves with it. Anything due in the next 30 days
+  shows in red on the list.</p>
+  <p><strong>Who sees it.</strong> Your things are yours alone unless you tick
+  people under <em>Share with</em>. They can look at it, its photos, PDFs and
+  service record, but only you can change it.</p>
+  <p><strong>Passwords</strong> are never kept here. <em>Where the login is kept</em>
+  says where to find one (for example "Google Password Manager, under DVLA"); the
+  password itself stays in your password manager.</p>
 
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
@@ -5549,7 +5594,7 @@ function dphWire(el){
     const files=[...ev.target.files]; ev.target.value=''; dphAdd(files);
   });
 }
-['itBody','rtBody','wishBody'].forEach(id=>dphWire($(id)));
+['itBody','rtBody','wishBody','stfEdBody'].forEach(id=>dphWire($(id)));
 
 /* ---------- list ---------- */
 function diaryList(){
@@ -10908,6 +10953,479 @@ $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
 
 
 /* ============================================================
+   My Stuff — the things you own and the papers that go with them
+   ============================================================
+   Vehicles, items, property, documents and insurance policies, each with the
+   boxes its type needs (kept together in details), photos, PDFs and, for the
+   first three, a service record. Yours only unless you tick people under
+   Share with: they can look but not change. Every due date becomes a Diary
+   to-do with a push a week before, so the reminders that already exist do the
+   telling. No passwords, only where the login is kept. Needs step 50. */
+const STF_TYPES={
+  vehicle:{one:'Vehicle', many:'Vehicles', service:true,
+    eg:'The car, the boat, the motorbike', fields:[
+    {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'reg',l:'Registration'},
+    {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
+    {k:'bought_from',l:'Bought from'},{k:'value',l:'Value now',t:'money'},
+    {k:'mot_due',l:'MOT due',t:'date',due:'MOT due'},{k:'mot_number',l:'MOT test number'},
+    {k:'mot_price',l:'MOT price',t:'money'},
+    {k:'insurance_due',l:'Insurance renews',t:'date',due:'Insurance renewal'},
+    {k:'insurance_price',l:'Insurance price',t:'money'},
+    {k:'tax_due',l:'Road tax or licence renews',t:'date',due:'Tax or licence renewal'},
+    {k:'tax_price',l:'Road tax or licence price',t:'money'}]},
+  item:{one:'Item', many:'Items', service:true,
+    eg:'The TV, a laptop, a ring, the lawn mower', fields:[
+    {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'serial',l:'Serial number'},
+    {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
+    {k:'bought_from',l:'Bought from'},{k:'value',l:'Value now',t:'money'},
+    {k:'warranty_due',l:'Warranty until',t:'date',due:'Warranty ends'}]},
+  property:{one:'Property', many:'Property', service:true,
+    eg:'The house, a mooring', fields:[
+    {k:'address',l:'Address',t:'long'},
+    {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
+    {k:'value',l:'Value now',t:'money'},
+    {k:'insurance_due',l:'Insurance renews',t:'date',due:'Insurance renewal'},
+    {k:'insurance_price',l:'Insurance price',t:'money'}]},
+  document:{one:'Document', many:'Documents', service:false,
+    eg:'A will, share certificates, a birth certificate', fields:[
+    {k:'doc_date',l:'Dated',t:'date'},{k:'kept_where',l:'Where the original is kept'},
+    {k:'renew_due',l:'Renew or expiry date',t:'date',due:'Renewal due'}]},
+  policy:{one:'Insurance policy', many:'Insurance policies', service:false,
+    eg:'Home, boat, travel, pet', fields:[
+    {k:'insurer',l:'Insurer'},{k:'policy_no',l:'Policy number'},
+    {k:'covers',l:'What it covers',t:'long'},
+    {k:'renew_due',l:'Renews',t:'date',due:'Policy renewal'},
+    {k:'renew_price',l:'Renewal price',t:'money'}]}
+};
+const STF_ORDER=['vehicle','item','property','document','policy'];
+const STF_REMIND_MINS=10080;          // a week, one of the Diary's own choices
+const STF_PDF_MAX=20*1024*1024;       // the photo store's limit from step 50
+let STUFF=[], STF_SERV=[], STF_LOADED=false, STF_WHY='';
+let STF_EDIT=null, STF_KIND='item', STF_VIEW=null, STF_FILES=null;
+
+async function loadStuff(){
+  const [s,v]=await Promise.all([
+    sb.from('stuff').select('*').order('name'),
+    sb.from('stuff_service').select('*').order('done_on',{ascending:false})]);
+  STF_LOADED=true;
+  const err=s.error||v.error;
+  if(err){
+    STF_WHY=/relation|does not exist|schema cache/i.test(err.message||'') ? 'notset' : 'error';
+    console.error(err); return false;
+  }
+  STF_WHY=''; STUFF=s.data||[]; STF_SERV=v.data||[];
+  await signPaths(STUFF.flatMap(t=>arr(t.photos).map(p=>p&&p.path)).filter(Boolean));
+  return true;
+}
+
+// Newest first. The next due date that counts is the newest one given.
+const stfServices = id => STF_SERV.filter(x=>x.stuff_id===id)
+  .sort((a,b)=>String(b.done_on||'').localeCompare(String(a.done_on||''))||b.id-a.id);
+const stfDaysTo = date => Math.round((new Date(date+'T12:00')-new Date(isoDay(new Date())+'T12:00'))/864e5);
+const stfDay = date => new Date(date+'T12:00').toLocaleDateString('en-GB',
+  {day:'numeric',month:'short',year:'numeric'});
+const stfMoney = v => { const n=Number(v);
+  return v===''||v==null||!isFinite(n) ? '' : n.toLocaleString('en-GB',{style:'currency',currency:'GBP'}); };
+
+function stfDues(t){
+  const ty=STF_TYPES[t.kind]; if(!ty) return [];
+  const d=t.details||{};
+  const out=ty.fields.filter(f=>f.due&&d[f.k]).map(f=>({key:f.k, label:f.due, date:d[f.k]}));
+  const sv=ty.service && stfServices(t.id).find(x=>x.next_due);
+  if(sv) out.push({key:'service', label:'Service due', date:sv.next_due});
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+async function openStuff(){
+  showSheet('stuff'); lockBackground();
+  if(!STF_LOADED) $('stfBody').innerHTML='<p class="empty">Fetching your things…</p>';
+  await loadStuff(); renderStuff(); $('stfBody').scrollTop=0;
+}
+
+function stfWhyHtml(){
+  return `<div class="card"><div class="field"><dd style="color:${
+    STF_WHY==='notset'?'var(--muted)':'var(--red)'}">${STF_WHY==='notset'
+    ? 'My Stuff needs its place in the database first. Run the step 50 file in '
+      +'Supabase, then press refresh at the top.'
+    : 'Could not load your things just now. Nothing has been lost &mdash; check '
+      +'your signal and press refresh at the top.'}</dd></div></div>`;
+}
+
+function renderStuff(){
+  const body=$('stfBody'); if(!body) return;
+  // A failed load says so, rather than an empty list that looks like nothing is kept.
+  if(STF_WHY){ body.innerHTML=stfWhyHtml(); return; }
+  let html='<button class="btn primary" id="stfAdd">+ Add something</button>';
+  if(!STUFF.length) html+=`<div class="card" style="margin-top:12px"><div class="field"><dd>
+    Nothing here yet. Add the car, the boat, the TV, your will &mdash; anything
+    you want to keep track of.</dd></div></div>`;
+  STF_ORDER.forEach(k=>{
+    const rows=STUFF.filter(t=>t.kind===k);
+    if(rows.length) html+=`<p class="dsec">${esc(STF_TYPES[k].many)}</p>
+      <div class="card">${rows.map(stfRow).join('')}</div>`;
+  });
+  body.innerHTML=html;
+  $('stfAdd').onclick=stfPickKind;
+  body.querySelectorAll('[data-stf]').forEach(b=>b.onclick=()=>openStuffThing(Number(b.dataset.stf)));
+}
+
+function stfRow(t){
+  const d=t.details||{};
+  const sub=[d.make,d.model,d.reg,d.insurer,d.policy_no].filter(Boolean).join(' · ');
+  // Due within 30 days, or missed in the last month; older ones have had their say.
+  const soon=stfDues(t).find(x=>{ const n=stfDaysTo(x.date); return n<=30 && n>=-31; });
+  return `<button class="item" data-stf="${t.id}"><span class="mid">
+    <span class="t">${esc(t.name)}</span>
+    ${sub?`<span class="w">${esc(sub)}</span>`:''}
+    ${soon?`<span class="w late">${esc(soon.label)} ${esc(stfDay(soon.date))}</span>`:''}
+    ${t.created_by!==ME.id?`<span class="w">from ${esc(whoWrote(t.created_by))}</span>`:''}
+    ${photoCount(t)?`<span class="w">${esc(photoCount(t))}</span>`:''}
+  </span></button>`;
+}
+
+// What sort of thing it is decides which boxes come up.
+function stfPickKind(){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='stfKinds';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">What is it?</p>
+    ${STF_ORDER.map(k=>`<button class="item" data-stfkind="${k}"
+      style="border:1px solid var(--rule);border-radius:10px;margin-bottom:8px">
+      <span class="mid"><span class="t">${esc(STF_TYPES[k].one)}</span>
+      <span class="w">${esc(STF_TYPES[k].eg)}</span></span></button>`).join('')}
+    <div class="pfoot"><button id="stfKindNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#stfKindNo').onclick=close;
+  box.querySelectorAll('[data-stfkind]').forEach(b=>b.onclick=()=>{
+    close(); openStuffEd(null,b.dataset.stfkind); });
+}
+
+/* ---------- one thing, to look at ---------- */
+function openStuffThing(id){
+  if(!STUFF.some(x=>x.id===id)) return;
+  STF_VIEW=id; renderStuffThing();
+  showSheet('stuffView'); $('stfView').scrollTop=0; lockBackground();
+}
+function renderStuffThing(){
+  const t=STUFF.find(x=>x.id===STF_VIEW); if(!t) return;
+  const ty=STF_TYPES[t.kind]||STF_TYPES.item, d=t.details||{}, mine=t.created_by===ME.id;
+  $('stfViewTitle').textContent=t.name;
+  $('stfViewBar').innerHTML=mine?'<button id="stfEditBtn">Edit</button>':'';
+  const R=(l,v)=>v?`<div class="field"><dt>${esc(l)}</dt><dd style="white-space:pre-wrap">${v}</dd></div>`:'';
+  const val=f=>{
+    const v=d[f.k]; if(v==null||v==='') return '';
+    if(f.t==='money') return esc(stfMoney(v));
+    if(f.t!=='date') return esc(v);
+    const n=stfDaysTo(v);
+    return esc(stfDay(v))+(f.due&&n<=30?` <strong style="color:var(--red)">${
+      n<0?'overdue':n===0?'today':'in '+n+' day'+(n===1?'':'s')}</strong>`:'');
+  };
+  const photos=arr(t.photos).filter(x=>x&&x.path), files=arr(t.files).filter(x=>x&&x.path);
+  const services=stfServices(t.id);
+  $('stfView').innerHTML=`
+    <div class="card">${R('Type',esc(ty.one))}${ty.fields.map(f=>R(f.l,val(f))).join('')}
+      ${R('Where the login is kept',esc(t.login_where||''))}${R('Notes',esc(t.notes||''))}
+      ${mine?R('Shared with',esc(namesOf(arr(t.shared_with)).join(', ')))
+            :R('Shared by',esc(whoWrote(t.created_by)))}</div>
+    ${photos.length?`<p class="dsec">Photos</p><div class="rcpthumbs">${photos.map((x,i)=>
+      `<img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-stfpic="${i}">`).join('')}</div>`:''}
+    ${files.length?`<p class="dsec">Documents (PDF)</p><div class="card">${files.map((x,i)=>
+      `<button class="item" data-stfpdf="${i}"><span class="mid"><span class="t">&#128196; ${
+      esc(x.name||'Document')}</span><span class="w">Tap to open</span></span></button>`).join('')}</div>`:''}
+    ${ty.service?`<p class="dsec">Service record</p>
+      ${mine?`<button class="btn" id="stfSvAdd" style="border:1.5px solid var(--rule);margin-bottom:8px">
+        + Add a service</button>`:''}
+      <div class="card">${services.length?services.map(x=>stfServiceRow(x,mine)).join('')
+        :'<div class="field"><dd style="color:var(--muted)">Nothing recorded yet.</dd></div>'}</div>`:''}`;
+  const v=$('stfView');
+  v.querySelectorAll('[data-stfpic]').forEach(i=>i.onclick=()=>
+    lightbox(SIGNED[photos[Number(i.dataset.stfpic)].path]));
+  v.querySelectorAll('[data-stfpdf]').forEach(b=>b.onclick=()=>stfOpenPdf(files[Number(b.dataset.stfpdf)]));
+  const add=$('stfSvAdd'); if(add) add.onclick=()=>stfServiceForm(t,null);
+  v.querySelectorAll('[data-stfsv]').forEach(b=>b.onclick=()=>
+    stfServiceForm(t,STF_SERV.find(x=>x.id===Number(b.dataset.stfsv))));
+  v.querySelectorAll('[data-stfsvx]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Remove this service from the record?')) return;
+    const {error}=await sb.from('stuff_service').delete().eq('id',Number(b.dataset.stfsvx));
+    if(error){ toast('Could not remove it'); console.error(error); return; }
+    await stfAfterChange(t.id); toast('Removed');
+  });
+  const e=$('stfEditBtn'); if(e) e.onclick=()=>openStuffEd(t);
+}
+$('stfBack').onclick=()=>{ STF_VIEW=null; $('stuffView').classList.add('hidden'); lockBackground(); };
+
+function stfServiceRow(x,mine){
+  const bits=[x.where_done, stfMoney(x.price)].filter(Boolean).join(' · ');
+  return `<div class="item"><button class="mid" ${mine?`data-stfsv="${x.id}"`:''} style="text-align:left">
+    <span class="t">${esc(x.done_on?stfDay(x.done_on):'No date')}</span>
+    ${bits?`<span class="w">${esc(bits)}</span>`:''}
+    ${x.work?`<span class="w" style="white-space:pre-wrap">${esc(x.work)}</span>`:''}
+    ${x.next_due?`<span class="w${stfDaysTo(x.next_due)<=30?' late':''}">Next due ${
+      esc(stfDay(x.next_due))}</span>`:''}
+  </button>${mine?`<button class="del" data-stfsvx="${x.id}" aria-label="Remove">&times;</button>`:''}</div>`;
+}
+
+function stfServiceForm(t,x){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='stfSvBox';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${x?'Change this service':'Add a service'}</p>
+    <form id="stfSvForm" onsubmit="return false" style="max-height:60vh;overflow-y:auto">
+      <label>Date<input name="done_on" value="${esc(x?x.done_on||'':isoDay(new Date()))}"></label>
+      <label>Where<input name="where_done" value="${esc(x&&x.where_done||'')}"
+        placeholder="The garage, the boatyard, done myself"></label>
+      <label>Price<input name="price" inputmode="decimal" placeholder="0.00"
+        value="${esc(x&&x.price!=null?x.price:'')}"></label>
+      <label>Parts and work done<textarea name="work" rows="3">${esc(x&&x.work||'')}</textarea></label>
+      <label>Next due<input name="next_due" value="${esc(x&&x.next_due||'')}"></label>
+    </form>
+    <div class="pfoot"><button id="stfSvNo">Cancel</button>
+      <button id="stfSvGo" class="go">Save</button></div></div>`;
+  document.body.appendChild(box);
+  const f=box.querySelector('form');
+  useWhenPicker(f,['done_on','next_due'],{dateOnly:['done_on','next_due']});
+  const close=()=>box.remove();
+  box.querySelector('#stfSvNo').onclick=close;
+  box.querySelector('#stfSvGo').onclick=async()=>{
+    const v=n=>f.elements[n].value.trim();
+    const price=v('price').replace(/[£,\s]/g,'');
+    if(price&&!isFinite(Number(price))){ toast('The price needs to be a number'); return; }
+    const row={done_on:v('done_on')||null, where_done:v('where_done')||null,
+      price:price===''?null:Number(price), work:v('work')||null, next_due:v('next_due')||null};
+    const {error}=x ? await sb.from('stuff_service').update(row).eq('id',x.id)
+                    : await sb.from('stuff_service').insert({...row, stuff_id:t.id, created_by:ME.id});
+    if(error){ toast('Could not save the service'); console.error(error); return; }
+    close();
+    await stfAfterChange(t.id);
+    toast('Service saved');
+  };
+}
+
+/* ---------- adding and changing ---------- */
+function openStuffEd(t,kind){
+  STF_EDIT=t||null; STF_KIND=t?t.kind:(STF_TYPES[kind]?kind:'item');
+  const ty=STF_TYPES[STF_KIND], d=(t&&t.details)||{};
+  $('stfEdTitle').textContent=(t?'Change ':'New ')+ty.one.toLowerCase();
+  const box=f=>{
+    const v=d[f.k]??'';
+    if(f.t==='long') return `<label>${esc(f.l)}<textarea name="d_${f.k}" rows="3">${esc(v)}</textarea></label>`;
+    return `<label>${esc(f.l)}<input name="d_${f.k}" value="${esc(v)}"${
+      f.t==='money'?' inputmode="decimal" placeholder="0.00"':''}></label>`;
+  };
+  $('stfEdBody').innerHTML=`<form id="stfForm" onsubmit="return false">
+    <fieldset><legend>${esc(ty.one)}</legend>
+      <label>Name<input name="name" value="${esc(t?t.name:'')}"
+        placeholder="${esc(ty.eg.split(',')[0])}"></label>
+      ${ty.fields.map(box).join('')}
+      ${ty.fields.some(f=>f.due)?`<p class="coords">Each date that comes due puts a to-do
+        in your Diary, with a reminder a week before.</p>`:''}
+    </fieldset>
+    <fieldset><legend>Notes</legend>
+      <label>Notes<textarea name="notes" rows="3">${esc(t&&t.notes||'')}</textarea></label>
+      <label>Where the login is kept<input name="login_where" value="${esc(t&&t.login_where||'')}"
+        placeholder="e.g. Google Password Manager, under DVLA"></label>
+      <p class="coords">Never the password itself: that stays in your password manager.</p>
+    </fieldset>
+    <fieldset><legend>Photos</legend>${dphHtml('stfPics')}</fieldset>
+    <fieldset><legend>Documents (PDF)</legend><div id="stfPdfs"></div>
+      <div class="rcppicbtns"><label class="btn">Add a PDF<input type="file" id="stfPdfAdd"
+        accept="application/pdf,.pdf" multiple></label></div></fieldset>
+    ${USERS.length?`<fieldset><legend>Share with</legend><div class="checks">${USERS.map(u=>
+      `<label><input type="checkbox" name="share" value="${esc(u.id)}" ${
+      arr(t&&t.shared_with).includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+      <p class="coords">They can look at it, its photos, PDFs and service record.
+      Only you can change it.</p></fieldset>`:''}
+    ${t?'<button type="button" class="btn danger" id="stfDelete">Delete this</button>':''}
+  </form>`;
+  const f=$('stfForm');
+  const dates=ty.fields.filter(x=>x.t==='date').map(x=>'d_'+x.k);
+  useWhenPicker(f,dates,{dateOnly:dates});
+  dphStart('stfPics', t&&t.photos, 'stf', 50);
+  STF_FILES={list:arr(t&&t.files).filter(x=>x&&x.path).map(x=>({path:x.path,name:x.name})),
+    fresh:[], gone:[]};
+  stfPaintPdfs();
+  $('stfPdfAdd').onchange=ev=>{ const fs=[...ev.target.files]; ev.target.value=''; stfAddPdfs(fs); };
+  if(t) $('stfDelete').onclick=()=>stfDelete(t);
+  showSheet('stuffEd'); $('stfEdBody').scrollTop=0; lockBackground();
+}
+
+/* PDFs sit beside the photos (stf/<you>/<random>.pdf) and are handled the
+   same way: one added and then cancelled goes at once, one taken off a saved
+   thing only leaves the store when the thing is saved. */
+function stfPaintPdfs(){
+  const box=$('stfPdfs'); if(!box||!STF_FILES) return;
+  box.innerHTML=STF_FILES.list.length ? STF_FILES.list.map((x,i)=>`<div class="item" style="padding:6px 0">
+      <button type="button" class="mid" data-stfpdfopen="${i}" style="text-align:left">
+        <span class="t">&#128196; ${esc(x.name||'Document')}</span></button>
+      <button type="button" class="del" data-stfpdfx="${i}" aria-label="Remove this PDF">&times;</button></div>`).join('')
+    : '<span class="coords" style="margin:0">None yet.</span>';
+  box.querySelectorAll('[data-stfpdfopen]').forEach(b=>b.onclick=()=>
+    stfOpenPdf(STF_FILES.list[Number(b.dataset.stfpdfopen)]));
+  box.querySelectorAll('[data-stfpdfx]').forEach(b=>b.onclick=()=>stfDropPdf(Number(b.dataset.stfpdfx)));
+}
+async function stfAddPdfs(files){
+  const into=STF_FILES; if(!into) return;
+  for(const file of files){
+    if(!/pdf$/i.test(file.type||'') && !/\.pdf$/i.test(file.name||'')){
+      toast('Only PDFs here; pictures go under Photos'); continue; }
+    if(file.size>STF_PDF_MAX){ toast(file.name+' is over 20 MB'); continue; }
+    toast('Adding '+file.name+'…');
+    const path=`stf/${ME.id}/${crypto.randomUUID()}.pdf`;
+    const {error}=await sb.storage.from('photos').upload(path,file,{contentType:'application/pdf',upsert:false});
+    if(error){ toast('Could not upload '+file.name); console.error(error); continue; }
+    // Closed while it was uploading: nothing will save it, so tidy it away.
+    if(STF_FILES!==into){ await sb.storage.from('photos').remove([path]); return; }
+    into.fresh.push(path);
+    into.list.push({path, name:String(file.name||'Document').replace(/\.pdf$/i,'')});
+  }
+  stfPaintPdfs();
+}
+async function stfDropPdf(i){
+  const x=STF_FILES&&STF_FILES.list.splice(i,1)[0]; if(!x) return;
+  if(STF_FILES.fresh.includes(x.path)){
+    STF_FILES.fresh=STF_FILES.fresh.filter(q=>q!==x.path);
+    await sb.storage.from('photos').remove([x.path]);
+  } else if(dphMine(x.path,'stf')) STF_FILES.gone.push(x.path);
+  stfPaintPdfs();
+}
+async function stfCancelPdfs(){
+  const was=STF_FILES; STF_FILES=null;
+  if(was&&was.fresh.length) await sb.storage.from('photos').remove(was.fresh);
+}
+async function stfOpenPdf(x){
+  if(!x) return;
+  // The window opens straight away, before the link is fetched, so the
+  // phone does not take it for a pop-up.
+  const w=window.open('','_blank');
+  await signPaths([x.path],true);
+  const url=SIGNED[x.path];
+  if(!url){ if(w) w.close(); toast('Could not open it'); return; }
+  if(w) w.location.href=url; else location.href=url;
+}
+
+async function saveStuff(){
+  const f=$('stfForm'); if(!f||!STF_FILES) return;
+  const name=f.elements.name.value.trim();
+  if(!name){ toast('Give it a name'); return; }
+  const ty=STF_TYPES[STF_KIND];
+  // Anything kept that this screen does not show is left as it was.
+  const details=Object.assign({},(STF_EDIT&&STF_EDIT.details)||{});
+  for(const x of ty.fields){
+    let v=String(f.elements['d_'+x.k].value||'').trim();
+    if(x.t==='money'&&v){ v=v.replace(/[£,\s]/g,'');
+      if(!isFinite(Number(v))){ toast(x.l+' needs to be a number'); return; } }
+    if(v) details[x.k]=v; else delete details[x.k];
+  }
+  const d={name, kind:STF_KIND, details,
+    notes:f.elements.notes.value.trim()||null,
+    login_where:f.elements.login_where.value.trim()||null,
+    photos:dphNow(), files:STF_FILES.list.map(x=>({path:x.path, name:x.name})),
+    shared_with:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
+    updated_at:new Date().toISOString()};
+  $('stfSave').disabled=true;
+  let id=STF_EDIT&&STF_EDIT.id, error;
+  if(id) ({error}=await sb.from('stuff').update(d).eq('id',id));
+  else{
+    const r=await sb.from('stuff').insert({...d, created_by:ME.id}).select().single();
+    error=r.error; id=r.data&&r.data.id;
+  }
+  $('stfSave').disabled=false;
+  if(error){ toast(/relation|does not exist|schema cache/i.test(error.message||'')
+      ? 'Could not save: My Stuff needs step 50 run in Supabase first' : 'Could not save');
+    console.error(error); return; }
+  await dphSaved();
+  const gone=STF_FILES.gone; STF_FILES=null;
+  if(gone.length) await sb.storage.from('photos').remove(gone);
+  STF_EDIT=null;
+  $('stuffEd').classList.add('hidden'); lockBackground();
+  await stfAfterChange(id);
+  if(id && STUFF.some(x=>x.id===id) && $('stuffView').classList.contains('hidden')) openStuffThing(id);
+  toast('Saved');
+}
+$('stfSave').onclick=saveStuff;
+$('stfEdCancel').onclick=async()=>{
+  STF_EDIT=null; $('stuffEd').classList.add('hidden'); lockBackground();
+  await dphCancel(); await stfCancelPdfs();
+};
+
+async function stfDelete(t){
+  if(!confirm('Delete "'+t.name+'" and its service record for good?')) return;
+  const {error}=await sb.from('stuff').delete().eq('id',t.id);
+  if(error){ toast('Could not delete it'); console.error(error); return; }
+  // Its to-dos still waiting in the Diary, and your files, go with it.
+  const open=Object.values(t.reminders||{}).filter(id=>{
+    const it=ITEMS.find(i=>i.id===id); return it&&!it.done_at; });
+  if(open.length) await sb.from('items').delete().in('id',open);
+  const mine=[...arr(t.photos),...arr(t.files)].map(x=>x&&x.path).filter(x=>dphMine(x,'stf'));
+  if(mine.length) await sb.storage.from('photos').remove(mine);
+  await dphCancel(); await stfCancelPdfs();
+  STF_EDIT=null; STF_VIEW=null;
+  ['stuffEd','stuffView'].forEach(id=>$(id).classList.add('hidden')); lockBackground();
+  await Promise.all([loadAll(), loadStuff()]); renderStuff(); toast('Deleted');
+}
+
+/* ---------- due dates into the Diary ----------
+   Each due date has one Diary to-do, remembered in the thing's reminders
+   ({mot_due: item id, ...}). A new date moves the to-do, puts it back as
+   needing doing and lets the reminder go again; a date taken away removes a
+   to-do that has not been ticked; one deleted from the Diary comes back the
+   next time the thing is saved. Dates more than a month gone (an old
+   warranty, say) are left out rather than turning up overdue. Only the
+   owner's Diary gets them. */
+async function stfSyncReminders(t){
+  if(!t||t.created_by!==ME.id) return false;
+  const want={};
+  stfDues(t).filter(x=>stfDaysTo(x.date)>=-31).forEach(x=>{ want[x.key]=x; });
+  const had=Object.assign({},t.reminders||{}), now={};
+  let touched=false;
+  for(const key of new Set([...Object.keys(want),...Object.keys(had)])){
+    const id=had[key], w=want[key], it=id?ITEMS.find(i=>i.id===id):null;
+    if(!w){
+      if(it&&!it.done_at){ const {error}=await sb.from('items').delete().eq('id',id);
+        if(error) console.error(error); }
+      touched=true; continue;
+    }
+    const due=new Date(w.date+'T09:00:00');
+    const row={title:w.label+': '+t.name, due_at:due.toISOString(), all_day:true,
+      remind_mins:STF_REMIND_MINS,
+      remind_at:new Date(due.getTime()-STF_REMIND_MINS*60000).toISOString()};
+    if(it){
+      now[key]=id;
+      const sameDay=isoDay(new Date(it.due_at))===w.date;
+      if(sameDay && it.title===row.title) continue;
+      const patch=sameDay ? {title:row.title} : {...row, done_at:null, pushed_at:null};
+      const {error}=await sb.from('items').update(patch).eq('id',id);
+      if(error) console.error(error);
+      touched=true;
+    }else{
+      const {data,error}=await sb.from('items').insert({...row, kind:'todo', created_by:ME.id,
+        repeat_every:'none', notes:'From My Stuff. Change the date there and this moves with it.'})
+        .select().single();
+      if(error||!data){ console.error(error); continue; }
+      now[key]=data.id; touched=true;
+    }
+  }
+  if(JSON.stringify(now)!==JSON.stringify(had)){
+    const {error}=await sb.from('stuff').update({reminders:now}).eq('id',t.id);
+    if(error) console.error(error);
+    t.reminders=now;
+  }
+  return touched;
+}
+
+// After any change: fresh lists, the Diary brought into line, screens redrawn.
+async function stfAfterChange(id){
+  await Promise.all([loadStuff(), loadAll()]);
+  const t=STUFF.find(x=>x.id===id);
+  if(t && await stfSyncReminders(t)) await loadAll();
+  renderStuff();
+  if(STF_VIEW===id && !$('stuffView').classList.contains('hidden')) renderStuffThing();
+}
+
+
+/* ============================================================
    The home screen — a tile for every part of the app
    ============================================================ */
 const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect x="48.8" y="286" width="414.5" height="26" fill="#D7A82E"/><path d="M 336.7,286 L 394.7,286 L 394.7,422 L 365.7,388 L 336.7,422 Z" fill="#D7A82E"/><path d="M92.91666666666667 286.0V98.30303030303028H140.12878787878788L170.0681818181818 181.78787878787878Q172.9469696969697 190.13636363636363 175.39393939393938 198.62878787878788Q177.8409090909091 207.12121212121212 180.4318181818182 216.33333333333331H181.58333333333334Q184.17424242424244 207.12121212121212 186.47727272727275 198.62878787878788Q188.78030303030306 190.13636363636363 191.65909090909093 181.78787878787878L221.02272727272728 98.30303030303028H268.2348484848485V286.0H229.37121212121212V217.1969696969697Q229.37121212121212 207.9848484848485 230.37878787878788 195.46212121212122Q231.38636363636365 182.93939393939394 232.6818181818182 170.41666666666666Q233.97727272727275 157.89393939393938 235.1287878787879 148.68181818181816H233.97727272727275L218.71969696969697 198.1969696969697L192.2348484848485 269.8787878787879H167.47727272727275L141.28030303030303 198.1969696969697L126.59848484848484 148.68181818181816H125.4469696969697Q126.59848484848484 157.89393939393938 127.89393939393939 170.41666666666666Q129.18939393939394 182.93939393939394 130.0530303030303 195.46212121212122Q130.91666666666669 207.9848484848485 130.91666666666669 217.1969696969697V286.0Z M344.5227272727273 286.0V219.2121212121212L288.0984848484849 98.30303030303028H333.29545454545456L349.99242424242425 141.48484848484847Q353.7348484848485 152.13636363636363 357.47727272727275 162.0681818181818Q361.219696969697 172.0 365.25 182.93939393939394H366.4015151515152Q370.719696969697 172.0 374.6060606060606 162.0681818181818Q378.49242424242425 152.13636363636363 382.2348484848485 141.48484848484847L398.9318181818182 98.30303030303028H443.2651515151515L386.8409090909091 219.2121212121212V286.0Z" fill="currentColor"/></svg>`;
@@ -10931,6 +11449,7 @@ const TILE_DEST={
   money:   {label:'Finances',   go:openMoney},
   jig:     {label:'Jigsaws',    go:openJig},
   recipes: {label:'Recipes',    go:openRecipes},
+  stuff:   {label:'My Stuff',   go:openStuff},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -10940,9 +11459,10 @@ const TILE_COLOURS=['#2F4858','#1D4A3A','#6B3F2A','#4A5340','#3C4E6B','#5B3A52',
 const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
-  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B'};
+  offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
+  stuff:'#3A4A3C'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','links','settings'];
+  'money','recipes','alarm','jig','links','stuff','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -10962,7 +11482,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'],
-  recipes:['recipes','recipe','recipeEd','ideas','cook']};
+  recipes:['recipes','recipe','recipeEd','ideas','cook'], stuff:['stuff','stuffView','stuffEd']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -12261,6 +12781,9 @@ union all select 'url_links',            count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'url_link_shares',      count(*), coalesce(jsonb_agg(t), '[]') from url_link_shares t
 -- Recipes
 union all select 'recipes',              count(*), coalesce(jsonb_agg(t), '[]') from recipes t
+-- My Stuff
+union all select 'stuff',                count(*), coalesce(jsonb_agg(t), '[]') from stuff t
+union all select 'stuff_service',        count(*), coalesce(jsonb_agg(t), '[]') from stuff_service t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -16422,6 +16945,7 @@ const AREAS={
   links:   {title:'URL Links',    set:'URL Links', help:'links'},
   recipes: {title:'Recipes',      set:'Recipes',   help:'recipes'},
   jig:     {title:'Jigsaws',      set:null,        help:'jig'},
+  stuff:   {title:'My Stuff',     set:null,        help:'stuff'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
   home:    {title:'Menu',         set:null,        help:'home'}
@@ -16443,12 +16967,14 @@ const AREA_SHUT={
   recipes:()=>{ if(COOK&&!shutCook()) return;
     ['recipes','recipe','recipeEd','ideas'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
+  stuff:()=>{ if(!$('stuffEd').classList.contains('hidden')){ dphCancel(); stfCancelPdfs(); }
+              ['stuff','stuffView','stuffEd'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, stuff:openStuff, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -16470,6 +16996,8 @@ function areaItems(area){
     it('Add an entry',            ()=>{ shutMenu(); openItem(null); })];
   if(area==='links') return [
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
+  if(area==='stuff') return [
+    it('Add something',           ()=>{ shutMenu(); stfPickKind(); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

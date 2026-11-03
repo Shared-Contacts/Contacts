@@ -156,7 +156,11 @@ function builder(table){
   // The filters that follow are kept with the write (the same list, filled in
   // as the page adds them), so a test can see WHOSE row was changed.
   api.update=patch=>{ window.__writes.push({op:'update',table,patch,where}); return api; };
-  api.delete=()=>{ window.__writes.push({op:'delete',table,where}); return api; };
+  // A suite can make the database refuse a delete by setting window.__failDelete.
+  api.delete=()=>{ window.__writes.push({op:'delete',table,where});
+    const e=window.__failDelete&&window.__failDelete(table);
+    if(e) api.then=(f,r)=>Promise.resolve({data:null,error:e}).then(f,r);
+    return api; };
   api.upsert=rows=>{ window.__writes.push({op:'upsert',table,rows}); return done(); };
   api.then=(f,r)=>done().then(f,r);
   return api;
@@ -182,6 +186,11 @@ window.supabase={createClient:()=>({
       return Promise.resolve({}); },
     copy:(from,to)=>{ window.__writes.push({op:'copyfile',bucket,from,to});
       return Promise.resolve({data:{path:to},error:null}); }})},
+  // Database functions. Until a suite sets window.__rpc they are missing, as
+  // on a database that has not had the step that adds them.
+  rpc:(name,args)=>{ window.__writes.push({op:'rpc',name,args});
+    return Promise.resolve(window.__rpc ? window.__rpc(name,args)
+      : {data:null, error:{code:'PGRST202', message:'Could not find the function public.'+name}}); },
   // A suite can stand in for an edge function by setting window.__invoke.
   functions:{invoke:(name,opts)=>{ window.__writes.push({op:'invoke',name,body:opts&&opts.body});
     return window.__invoke ? Promise.resolve(window.__invoke(name,opts)) : Promise.resolve({}); }}

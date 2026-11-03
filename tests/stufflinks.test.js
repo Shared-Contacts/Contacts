@@ -58,7 +58,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_FAILED|Se
   ok('the year is on the row', /The car Ford · Focus · 2015 · AB12 CDE/.test(list), list.slice(0, 200));
   ok('the first photo is a small picture on the right of the row', await ev(() => {
     const row = document.querySelector('[data-stf="1"]'), img = row.querySelector('img.sthumb.right');
-    return img && row.lastElementChild === img && /car\.jpg/.test(img.src); }));
+    return img && row.lastElementChild === img.closest('.stfpic') && /car\.jpg/.test(img.src); }));
   ok('a thing with no photo has none', await ev(() => !document.querySelector('[data-stf="2"] img')));
   ok('the insurer on a policy row comes from Contacts by name', /Boat insurance Navigators/.test(list));
 

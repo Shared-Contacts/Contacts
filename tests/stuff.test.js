@@ -145,7 +145,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   await ev(() => openStuff()); await settle(300);
   await p.click('#stfAdd'); await settle(200);
   ok('first it asks what it is', await ev(() =>
-    [...document.querySelectorAll('[data-stfkind]')].map(b => b.dataset.stfkind).join()) === 'vehicle,item,property,document,policy');
+    [...document.querySelectorAll('[data-stfkind]')].map(b => b.dataset.stfkind).join()) === 'vehicle,boat,item,property,document,policy,loyalty');
   const boxesFor = k => ev(k => { document.querySelectorAll('.daypick').forEach(d => d.remove());
     openStuffEd(null, k);
     return [...$('stfForm').querySelectorAll('label')].map(l => l.firstChild.textContent.trim()).join('|'); }, k);

@@ -136,6 +136,7 @@ ul.list li.chosen{background:#FBE9E7}
   .mpbtns{flex:0 0 auto;margin-top:0}
 }
 .sharedot{color:#0F6E8C;font-size:22px;line-height:0;vertical-align:middle}
+.linkmark{font-size:12px;opacity:.75;vertical-align:middle}
 .row .rel{color:#37564A;font-size:15px;line-height:1.3;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .sub{color:var(--muted);font-size:15px;line-height:1.3;
@@ -1737,6 +1738,7 @@ async function loadAll(){
     clearTrouble();
   }
   PETS=pt.data||[]; FAVS=(fv.data||[]).map(x=>x.contact_id);
+  await loadLinked();
   if(!sp.error) SHOP=sp.data||[];
   OFFERS = of.error ? [] : (of.data||[]);
   OFFERS_READY = !of.error;
@@ -2028,7 +2030,8 @@ function rowHtml(c,nested,birthdayView,alt){
     <button class="row ${nested?'nested':''}" data-id="${c.id}">
     ${box}${pic}
     <span class="who">
-      <span class="name">${c.created_by!==ME.id?'<span class="sharedot" title="Shared with you">&bull;</span> ':''}${esc(listName(c))}</span>
+      <span class="name">${c.created_by!==ME.id?'<span class="sharedot" title="Shared with you">&bull;</span> ':''}${esc(listName(c))}${
+        LINKED&&LINKED.has(c.id)?' <span class="linkmark" title="Used elsewhere in the app" aria-label="Used elsewhere in the app">&#128279;</span>':''}</span>
       ${pins.length?`<span class="rel">${esc(pins.join(' \u00b7 '))}</span>`:''}
       ${sub?`<span class="sub">${esc(sub)}</span>`:''}
     </span>
@@ -2168,15 +2171,31 @@ function stopPicking(){
 }
 
 async function deletePicked(){
-  const mine=[...PICKED].filter(id=>{
+  let mine=[...PICKED].filter(id=>{
     const c=CONTACTS.find(x=>x.id===id); return c&&c.created_by===ME.id; });
+  // Any used elsewhere in the app stay (step 52); the rest can go.
+  const used=LINKED?mine.filter(id=>LINKED.has(id)):[];
+  mine=mine.filter(id=>!used.includes(id));
+  if(!mine.length){
+    if(used.length) alert((used.length===1?'That one is':'Those are all')+' used elsewhere in the app'
+      +' (the Diary, Finances, My Stuff or the Daily Log), so can\'t be deleted.'
+      +'\n\nOpen one to see where it is used.');
+    return;
+  }
   const names=mine.slice(0,5).map(id=>fullName(CONTACTS.find(c=>c.id===id)));
+  const left=used.map(id=>fullName(CONTACTS.find(c=>c.id===id)));
   if(!confirm('Delete '+mine.length+' contact'+(mine.length===1?'':'s')+' for good?\n\n'
       +names.join('\n')+(mine.length>5?'\nand '+(mine.length-5)+' more':'')
-      +'\n\nTheir photos, links and diary entries go too. This cannot be undone.'))
+      +'\n\nTheir photos and connections go too. This cannot be undone.'
+      +(used.length?'\n\nLeft alone, because they are used elsewhere in the app: '
+        +left.slice(0,5).join(', ')+(left.length>5?' and '+(left.length-5)+' more':''):'')))
     return;
   const {error}=await sb.from('contacts').delete().in('id',mine);
-  if(error){ toast('Could not delete them'); console.error(error); return; }
+  if(error){
+    toast(inUseFrom(error)?'One of them is used elsewhere in the app, so none were deleted'
+      :'Could not delete them');
+    console.error(error); return;
+  }
   const n=mine.length;
   stopPicking();
   await loadAll();
@@ -2771,6 +2790,7 @@ async function openDetail(id, keepPlace){
     ${c.job_title||c.company?`<p class="detsub">${esc([c.job_title,c.company].filter(Boolean).join(', '))}</p>`:''}
     ${pinned?`<div class="pins">${pinned}</div>`:''}
     <div class="tags">${tagNames.map(g=>`<span class="tag">${esc(g.name)}</span>`).join('')}</div>
+    ${LINKED&&LINKED.has(c.id)?'<p class="detsub" id="detUsed">&#128279; Used elsewhere in the app</p>':''}
     ${personal?`<div class="card"><h3>Personal</h3>${personal}</div>`:''}
     ${c.notes?`<div class="card"><h3>Notes</h3><div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div></div>`:''}
     ${touch?`<div class="card"><h3>Getting in touch</h3>${touch}</div>`:''}
@@ -2842,6 +2862,10 @@ async function openDetail(id, keepPlace){
   if(c.latitude&&c.longitude)showMap('detMap',c.latitude,c.longitude,null);
   if(c.met_latitude&&c.met_longitude)showMap('metMap',c.met_latitude,c.met_longitude,null);
   showSheet('detail');$('detBody').scrollTop=wasAt;lockBackground();
+  if(LINKED&&LINKED.has(c.id)) contactUses(c.id).then(u=>{
+    const el=$('detUsed'), w=useWords(u);
+    if(el&&CURRENT&&CURRENT.id===c.id&&w.length) el.textContent='\u{1F517} Used in: '+w.join(', ');
+  });
 }
 
 async function toggleFav(id){
@@ -2997,11 +3021,17 @@ function multiBlock(key,word){
   return `<div class="multi"><div class="mrows" id="rows_${key}"></div>
     <button type="button" class="addmore" data-add="${key}">+ Add ${word}</button></div>`;
 }
+// Boxes where capitals and spaces matter (merciamarina.co.uk, an email, a
+// what3words, a policy number): the phone's keyboard must leave them alone,
+// or it turns merciamarina into "Mercia Marina".
+const NOFIX=' autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"';
+const MULTI_KEYS={websites:' inputmode="url"'+NOFIX, emails:' inputmode="email"'+NOFIX,
+  phones:' inputmode="tel"'+NOFIX, socials:NOFIX};
 function drawMulti(key){
   const box=$('rows_'+key);if(!box)return;
   box.innerHTML=DRAFT[key].map((e,i)=>`<div class="mrow">
     <select data-lab="${key}:${i}">${LAB[key].map(l=>`<option ${l===e.label?'selected':''}>${esc(l)}</option>`).join('')}</select>
-    <input data-val="${key}:${i}" value="${esc(e.value||'')}">
+    <input data-val="${key}:${i}" value="${esc(e.value||'')}"${MULTI_KEYS[key]||''}>
     <button type="button" class="x" data-rm="${key}:${i}" aria-label="Remove">&times;</button></div>`).join('');
   box.querySelectorAll('[data-lab]').forEach(s=>s.onchange=()=>{
     DRAFT[key][Number(s.dataset.lab.split(':')[1])].label=s.value;});
@@ -3081,7 +3111,7 @@ async function openEditor(c){
         <label>Country<input name="country" list="dlCountry" autocomplete="off"></label>
       </div>
       ${datalist('dlTown','town')}${datalist('dlCounty','county')}${datalist('dlCountry','country')}
-      <label>what3words<input name="what3words" placeholder="///filled.count.soap"></label>
+      <label>what3words<input name="what3words" placeholder="///filled.count.soap"${NOFIX}></label>
       <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
       <p class="coords">Fills itself from the address above &mdash; edit it if the pin lands wide.</p>
       <div id="homeMap" class="map"></div>
@@ -3094,7 +3124,7 @@ async function openEditor(c){
     </fieldset>
     <fieldset><legend>Where we met</legend>
       ${F('Where we met','met_where')}${F('When we met','met_date','date')}
-      <label>what3words<input name="met_what3words" placeholder="///filled.count.soap"></label>
+      <label>what3words<input name="met_what3words" placeholder="///filled.count.soap"${NOFIX}></label>
       <div class="geo"><input id="metQ" placeholder="Find the spot"><button type="button" id="metGo">Find</button></div>
       <div id="metEditMap" class="map"></div>
       <p class="coords" id="metCoords"></p>
@@ -3351,12 +3381,336 @@ async function useExistingContact(v){
   if(handBack) handBack(v); else openDetail(link?link.from:v);
 }
 
+// A contact used elsewhere in the app cannot be deleted (step 52): asked
+// first, so it is never offered for deleting, and the database refuses too.
 async function deleteContact(c){
-  if(!confirm('Delete '+fullName(c)+'? This cannot be undone.'))return;
+  const u=await contactUses(c.id);
+  const words=useWords(u);
+  if(words.length){ inUseBox(c,words); return; }
+  const conn=u&&u.links ? '\n\n'+(u.links===1?'Its connection':'Its '+u.links+' connections')
+    +' to other contacts '+(u.links===1?'goes':'go')+' with it.' : '';
+  if(!confirm('Delete '+fullName(c)+'?'+conn+' This cannot be undone.'))return;
   const {error}=await sb.from('contacts').delete().eq('id',c.id);
-  if(error){toast('Could not delete');return;}
+  if(error){ const w=inUseFrom(error); if(w) inUseBox(c,w); else toast('Could not delete'); return; }
   killMaps();$('editor').classList.add('hidden');$('detail').classList.add('hidden');
   await loadAll();toast('Deleted');
+}
+
+/* ---------- Contacts used elsewhere, and blending two into one ----------
+   Step 52. Something that points at a contact (an appointment, a Finances
+   payee, My Stuff, a Daily Log purchase, "which contact is you") keeps it
+   from being deleted, and a link mark shows on the list. Two contacts that
+   are the same one can be blended: you choose what to keep, and everything
+   linked to the one that goes moves to the one that stays. Before step 52
+   is run none of this shows, and deleting works as it did. */
+let LINKED=null;           // ids used elsewhere; null until step 52 is run
+let NOT_SAME=[];           // pairs you said are not double-ups, as "3-17"
+
+async function loadLinked(){
+  try{
+    const {data,error}=await sb.rpc('linked_contacts');
+    LINKED = error ? null : new Set(arr(data).map(x=>
+      Number(x&&typeof x==='object' ? Object.values(x)[0] : x)));
+  }catch(e){ LINKED=null; }
+}
+// How many of each thing use it, or null when that can't be asked.
+async function contactUses(id){
+  try{
+    const {data,error}=await sb.rpc('contact_uses',{cid:id});
+    return error ? null : (data||{});
+  }catch(e){ return null; }
+}
+const howMany=(n,one,many)=>n+' '+(n===1?one:many);
+// Connections are left out: they belong to the contact and go with it.
+function useWords(u){
+  if(!u) return [];
+  const out=[];
+  if(u.diary) out.push(howMany(u.diary,'appointment or to-do in the Diary','appointments or to-dos in the Diary'));
+  if(u.payees) out.push(howMany(u.payees,'payee in Finances','payees in Finances'));
+  if(u.stuff) out.push(howMany(u.stuff,'thing in My Stuff (Bought from or Insurer)','things in My Stuff (Bought from or Insurer)'));
+  if(u.services) out.push(howMany(u.services,'service in My Stuff (Where)','services in My Stuff (Where)'));
+  if(u.log) out.push(howMany(u.log,'day in the Daily Log (Purchased from)','days in the Daily Log (Purchased from)'));
+  if(u.me) out.push('Settings, as who you are or who is with you');
+  return out;
+}
+// The database's own refusal, turned into the same words.
+function inUseFrom(error){
+  const m=/CONTACT IN USE (\{.*\})/.exec((error&&error.message)||'');
+  if(!m) return null;
+  try{ const w=useWords(JSON.parse(m[1])); return w.length?w:['somewhere else in the app']; }
+  catch(e){ return ['somewhere else in the app']; }
+}
+
+function inUseBox(c,words){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='inUse';
+  const canBlend=c.created_by===ME.id;
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(fullName(c))} is in use</p>
+    <p style="margin:0 0 8px">It can't be deleted while it is used in:</p>
+    <ul style="margin:0 0 10px;padding-left:20px">${words.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>
+    <p class="coords">Some of these may be other people's. Change them to someone else
+      first or, if this is a double-up, blend it into the other one and everything
+      moves across.</p>
+    <div class="pfoot"><button id="iuOk">OK</button>
+      ${canBlend?'<button id="iuBlend" class="go">Blend into another</button>':''}</div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#iuOk').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  if(canBlend) box.querySelector('#iuBlend').onclick=async()=>{
+    close();
+    const other=await pickContact('Blend '+fullName(c)+' into which contact?');
+    if(other===undefined||other===null) return;
+    const o=CONTACTS.find(x=>x.id===Number(other));
+    if(!o||o.id===c.id){ toast('Choose a different contact'); return; }
+    openBlend(o,c,c.id);
+  };
+}
+
+/* ---------- Finding double-ups ----------
+   The same name (whatever the capitals and punctuation), the same phone
+   number (its last nine figures, so 07... and +447... match) or the same
+   email. "Not the same" is remembered, so a pair is only shown once. */
+function findDoubles(){
+  const pairs=new Map();
+  const add=(list,why)=>{
+    if(list.length<2||list.length>6) return;      // a shared office number, say
+    for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++){
+      const [a,b]=list[i].id<list[j].id?[list[i],list[j]]:[list[j],list[i]];
+      if(a.created_by!==ME.id&&b.created_by!==ME.id) continue;   // neither can be blended away
+      const key=a.id+'-'+b.id;
+      if(NOT_SAME.includes(key)) continue;
+      const p=pairs.get(key)||{key,a,b,why:[]};
+      if(!p.why.includes(why)) p.why.push(why);
+      pairs.set(key,p);
+    }
+  };
+  const by=keysOf=>{
+    const m=new Map();
+    CONTACTS.forEach(c=>keysOf(c).forEach(k=>{
+      if(!k) return;
+      const l=m.get(k)||[]; if(!l.includes(c)) l.push(c); m.set(k,l);
+    }));
+    return m;
+  };
+  by(c=>[fullName(c)==='(no name)'?'':normName(fullName(c))]).forEach(l=>add(l,'Same name'));
+  by(c=>arr(c.phones).map(p=>{ const d=String(p.value||'').replace(/\D/g,'');
+    return d.length>=9?d.slice(-9):''; })).forEach(l=>add(l,'Same phone'));
+  by(c=>arr(c.emails).map(e=>String(e.value||'').trim().toLowerCase())).forEach(l=>add(l,'Same email'));
+  return [...pairs.values()].sort((x,y)=>byName(x.a,y.a)||x.key.localeCompare(y.key));
+}
+
+function openDoubles(){
+  const list=findDoubles();
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='doubles';
+  const line=c=>esc([c.town, (arr(c.phones)[0]||{}).value,
+    c.created_by!==ME.id?'shared with you':''].filter(Boolean).join(' · ')||'No town or phone');
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Double-ups</p>
+    ${LINKED===null?`<div class="field"><dd style="color:var(--red);font-size:15px">Blending
+      needs its database step first. In Supabase, open the SQL Editor and run
+      <strong>contacts-step52.sql</strong>, then come back here.</dd></div>`:''}
+    <div style="max-height:58vh;overflow-y:auto">
+    ${list.length?list.map(p=>`<div class="setrow cmprow" data-dbl="${p.key}" style="display:block">
+        <span class="coords" style="display:block">${esc(p.why.join(' · '))}</span>
+        ${[p.a,p.b].map(c=>`<span style="display:block;margin-top:4px"><strong>${esc(fullName(c))}</strong>
+          <span class="coords" style="display:block">${line(c)}</span></span>`).join('')}
+        <span class="pickrow" style="margin-top:8px">
+          <button type="button" data-dblgo="${p.key}" style="padding:5px 11px;font-size:14px">Blend</button>
+          <button type="button" data-dblno="${p.key}" style="padding:5px 11px;font-size:14px">Not the same</button>
+        </span></div>`).join('')
+      :`<div class="field"><dd>No double-ups found. Contacts with the same name, phone
+        number or email would show here.</dd></div>`}
+    </div>
+    <div class="pfoot"><button id="dblShut">Close</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#dblShut').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelectorAll('[data-dblgo]').forEach(b=>b.onclick=()=>{
+    const p=list.find(x=>x.key===b.dataset.dblgo); if(!p) return;
+    close(); openBlend(p.a,p.b);
+  });
+  box.querySelectorAll('[data-dblno]').forEach(b=>b.onclick=async()=>{
+    NOT_SAME=[...NOT_SAME, b.dataset.dblno];
+    box.querySelector(`[data-dbl="${b.dataset.dblno}"]`).remove();
+    await saveTiles(); toast('Left as two');
+  });
+}
+
+/* ---------- Blending two into one ----------
+   The one that goes must be yours (only the person who added a contact can
+   delete it); the one that stays must be one you can change. Where both
+   have something different in the same box you choose; anything only one
+   of them has is kept, and so are all the phones, emails, websites, social
+   accounts, pets, other names and photos of both. An address is chosen
+   whole, so lines from two addresses never get mixed. */
+const BLEND_SKIP=['id','created_by','created_at','updated_at','contact_groups','came_from',
+  'came_at','photos','avatar_path'];
+const BLEND_WHOLE=[
+  {id:'home', label:'Address', keys:['address','address_2','town','county','postcode',
+    'country','what3words','latitude','longitude']},
+  {id:'met', label:'Where we met', keys:['met_where','met_what3words','met_latitude','met_longitude']}];
+const BLEND_LABEL={status_id:'Status', mobile:'Mobile (old box)', phone:'Phone (old box)',
+  email:'Email (old box)', website:'Website (old box)', employer:'Employer (old box)'};
+const blendLabel=k=>FIELD_NAME[k]||BLEND_LABEL[k]||(k.charAt(0).toUpperCase()+k.slice(1).replace(/_/g,' '));
+function blendText(k,c){
+  const v=c[k];
+  if(k==='is_organisation') return v?'A business':'A person';
+  if(v===null||v===undefined||v==='') return '';
+  if(k==='status_id'){ const st=STATUSES.find(s=>s.id===v); return st?st.name:''; }
+  if(/_date$/.test(k)) return fmtDate(String(v));
+  if(/latitude|longitude/.test(k)) return '';       // shown by the address they go with
+  return typeof v==='object' ? '' : String(v);
+}
+// One row per thing to decide, or to take without asking.
+function blendRows(keep,gone){
+  const rows=[];
+  BLEND_WHOLE.forEach(g=>{
+    const t=c=>g.keys.map(k=>blendText(k,c)).filter(Boolean).join(', ');
+    const has=c=>g.keys.some(k=>c[k]!==null&&c[k]!==undefined&&c[k]!=='');
+    if(!has(gone)) return;
+    if(!has(keep)) rows.push({id:g.id, keys:g.keys, auto:true});
+    else if(t(keep)!==t(gone)) rows.push({id:g.id, label:g.label, keys:g.keys, a:t(keep), b:t(gone)});
+  });
+  const taken=BLEND_WHOLE.flatMap(g=>g.keys);
+  const keys=[...new Set([...Object.keys(keep),...Object.keys(gone)])]
+    .filter(k=>!BLEND_SKIP.includes(k)&&!LISTY.includes(k)&&!taken.includes(k));
+  keys.forEach(k=>{
+    const a=blendText(k,keep), b=blendText(k,gone);
+    if(k==='is_organisation'){ if(!!keep[k]!==!!gone[k]) rows.push({id:k, label:'Is it', keys:[k], a, b}); return; }
+    if(!b||a===b) return;
+    if(!a){ rows.push({id:k, keys:[k], auto:true}); return; }
+    rows.push({id:k, label:blendLabel(k), keys:[k], a, b, both:k==='notes'});
+  });
+  if(gone.avatar_path&&keep.avatar_path)
+    rows.push({id:'avatar', label:'Profile photo', keys:[], a:'This one’s', b:'The other’s', pic:true});
+  return rows;
+}
+
+async function openBlend(a,b,goneId){
+  if(LINKED===null){ toast('Blending needs contacts-step52.sql run in Supabase first'); return; }
+  const mine=c=>c.created_by===ME.id;
+  const canChange=c=>mine(c)||SHARES.some(s=>s.contact_id===c.id&&s.user_id===ME.id&&s.can_edit);
+  let keep, gone;
+  if(goneId===b.id&&mine(b)&&canChange(a)) [keep,gone]=[a,b];
+  else if(mine(a)&&mine(b)){
+    // The one other things already point at stays, or else the older one.
+    const la=LINKED.has(a.id), lb=LINKED.has(b.id);
+    [keep,gone] = la!==lb ? (la?[a,b]:[b,a]) : (a.id<b.id?[a,b]:[b,a]);
+  }
+  else if(mine(b)&&canChange(a)) [keep,gone]=[a,b];
+  else if(mine(a)&&canChange(b)) [keep,gone]=[b,a];
+  else { toast('Only the person who added one of these can blend them'); return; }
+  await signPaths([keep.avatar_path,gone.avatar_path].filter(Boolean));
+
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='blend';
+  document.body.appendChild(box);
+  let rows=[], choice={};
+  const who=c=>`<strong>${esc(fullName(c))}</strong><span class="coords" style="display:block">${
+    esc([c.town,(arr(c.phones)[0]||{}).value,mine(c)?'added by you':'shared with you']
+      .filter(Boolean).join(' · '))}</span>`;
+  const pic=c=>c.avatar_path&&SIGNED[c.avatar_path]
+    ?`<img src="${esc(SIGNED[c.avatar_path])}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;display:block">`:'';
+  const paint=()=>{
+    rows=blendRows(keep,gone); choice={};
+    const ask=rows.filter(r=>!r.auto);
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Blend two contacts</p>
+      <div style="max-height:60vh;overflow-y:auto">
+      <div class="setrow cmprow" style="display:block">
+        <span class="coords" style="display:block">Stays</span>${who(keep)}
+        <span class="coords" style="display:block;margin-top:6px">Goes, after its details are moved across</span>${who(gone)}
+        ${mine(keep)?'<button type="button" class="addmore" id="blSwap" style="padding:6px 0 0">Swap them over</button>':''}
+      </div>
+      ${ask.length?'<p class="coords" style="margin:10px 0 4px">Where they differ, tap the one to keep.</p>':''}
+      ${ask.map(r=>`<div class="setrow cmprow" style="display:block">
+        <span class="coords" style="display:block">${esc(r.label)}</span>
+        <span class="pickrow" style="margin-top:4px;flex-wrap:wrap">
+          <button type="button" data-blch="${r.id}:keep" aria-pressed="true" style="text-align:left;padding:6px 10px;font-size:15px">${r.pic?pic(keep):''}${esc(r.a)}</button>
+          <button type="button" data-blch="${r.id}:gone" aria-pressed="false" style="text-align:left;padding:6px 10px;font-size:15px">${r.pic?pic(gone):''}${esc(r.b)}</button>
+          ${r.both?`<button type="button" data-blch="${r.id}:both" aria-pressed="false" style="padding:6px 10px;font-size:15px">Both</button>`:''}
+        </span></div>`).join('')}
+      <p class="coords" style="margin-top:10px">Anything only one of them has is kept. So are
+        the phone numbers, emails, websites, social accounts, pets, other names, photos,
+        groups and connections of both. Everything that uses the one that goes (the
+        Diary, Finances, My Stuff, the Daily Log) moves to the one that stays.</p>
+      </div>
+      <div class="pfoot"><button id="blCancel">Cancel</button>
+        <button id="blGo" class="go">Blend them</button></div></div>`;
+    box.querySelectorAll('[data-blch]').forEach(btn=>btn.onclick=()=>{
+      const [id,ch]=btn.dataset.blch.split(':');
+      choice[id]=ch;
+      box.querySelectorAll(`[data-blch^="${id}:"]`).forEach(o=>
+        o.setAttribute('aria-pressed',String(o===btn)));
+    });
+    const sw=box.querySelector('#blSwap');
+    if(sw) sw.onclick=()=>{ [keep,gone]=[gone,keep]; paint(); };
+    box.querySelector('#blCancel').onclick=()=>box.remove();
+    box.querySelector('#blGo').onclick=async()=>{
+      if(!confirm('Blend '+fullName(gone)+' into '+fullName(keep)+'?\n\n'
+        +fullName(gone)+' goes, and everything linked to it moves across. This cannot be undone.')) return;
+      box.remove();
+      await blendNow(keep,gone,rows,choice);
+    };
+  };
+  box.onclick=ev=>{ if(ev.target===box) box.remove(); };
+  paint();
+}
+
+async function blendNow(keep,gone,rows,choice){
+  const patch={};
+  rows.forEach(r=>{
+    const ch=r.auto?'gone':(choice[r.id]||'keep');
+    if(ch==='gone') r.keys.forEach(k=>{ patch[k]=gone[k]??null; });
+    if(ch==='both') patch.notes=[keep.notes,gone.notes].filter(Boolean).join('\n\n');
+  });
+  LISTY.forEach(k=>{
+    const have=arr(keep[k]);
+    const seen=new Set(have.map(x=>String(x.value||'').trim().toLowerCase()));
+    const extra=arr(gone[k]).filter(x=>x&&x.value&&!seen.has(String(x.value).trim().toLowerCase()));
+    if(extra.length) patch[k]=[...have,...extra];
+  });
+  // A photo lives in a folder named after its contact, and the folder of the
+  // one that goes can't be seen once it has gone. So its photos are copied
+  // into the folder of the one that stays.
+  const moved={};
+  const copyOne=async from=>{
+    if(!from) return null;
+    if(moved[from]) return moved[from];
+    const parts=String(from).split('/');
+    const to=keep.id+'/'+(parts.length>1?parts.slice(1).join('/'):from);
+    const {error}=await sb.storage.from('photos').copy(from,to);
+    if(error){ console.error(error); return null; }
+    return moved[from]=to;
+  };
+  if(arr(gone.photos).length){
+    const out=[...arr(keep.photos)];
+    for(const ph of arr(gone.photos)){ const to=await copyOne(ph.path); if(to) out.push({...ph, path:to}); }
+    patch.photos=out;
+  }
+  if(gone.avatar_path&&(!keep.avatar_path||choice.avatar==='gone')){
+    const to=await copyOne(gone.avatar_path); if(to) patch.avatar_path=to;
+  }
+  if(Object.keys(patch).length){
+    const {error}=await sb.from('contacts').update(patch).eq('id',keep.id);
+    if(error){ toast('Could not save the one that stays, so nothing was blended'); console.error(error); return; }
+  }
+  const {error}=await sb.rpc('merge_contacts',{keep:keep.id, gone:gone.id});
+  if(error){
+    console.error(error);
+    toast(/merge_contacts/.test(error.message||'')&&/find|exist/i.test(error.message||'')
+      ? 'Blending needs contacts-step52.sql run in Supabase first'
+      : 'Could not blend them: '+(error.message||'try again'));
+    return;
+  }
+  ['editor','detail'].forEach(id=>$(id).classList.add('hidden'));
+  await loadAll(); render();
+  await openDetail(keep.id);
+  toast('Blended into '+fullName(CONTACTS.find(c=>c.id===keep.id)||keep));
 }
 
 /* ---------- settings ---------- */
@@ -4683,7 +5037,9 @@ function openHelp(where){
   <p><strong>Cook mode</strong> shows one step at a time in big writing and keeps the
   screen on. <strong>Read aloud</strong> reads each step as you move to it; press it
   again to stop. A step that says how long gets a timer button, which rings and
-  vibrates when the time is up, as long as the app is open. <strong>I cooked
+  vibrates when the time is up, as long as the app is open. An up-to-date iPhone
+  rings even on Silent but cannot vibrate, and its sound follows the volume buttons pressed
+  while the app is open. <strong>I cooked
   this</strong>, under Cook mode, keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
   from the ones you have not cooked lately (&#8635; for another).</p>
   <p>The &#9734; beside a recipe&rsquo;s title makes it one of <strong>My
@@ -4721,6 +5077,20 @@ function openHelp(where){
   <p>You can only delete contacts you created. If you have picked any that someone
   shared with you, the bar says so and leaves them alone; ask whoever owns them,
   or simply untick them.</p>
+  <p>A &#128279; beside a name on the list means something else in the app uses that
+  contact: an appointment or to-do, a Finances payee, My Stuff, a Daily Log
+  purchase, or Settings. Their page says where. A contact in use can&rsquo;t be
+  deleted, so nothing is left pointing at nobody. Change those first, or blend it
+  into another contact.</p>
+
+  <h4 id="h-doubles">Double-ups</h4>
+  <p>Menu &rsaquo; <strong>Find double-ups</strong> lists contacts with the same
+  name, phone number or email. <strong>Blend</strong> makes the two into one: where
+  they have something different in the same box you tap which to keep, and anything
+  only one of them has is kept. Phone numbers, emails, photos, groups and
+  connections from both are all kept, and everything that used the one that goes
+  moves to the one that stays. <strong>Not the same</strong> takes a pair off the
+  list for good. The one that goes must be one you added.</p>
 
   <h4 id="h-io">Bringing contacts in, and saving a copy</h4>
   <p>Menu &rsaquo; <strong>Import and export contacts</strong>. Download a copy of
@@ -8295,8 +8665,14 @@ function editWish(id){
   setTimeout(()=>box.querySelector('#weTitle').focus(),50);
 }
 
+// Under each heading the ideas go A to Z by what would be good, so all the
+// "Diary:" ones sit together, and the oldest first where they start the same.
+const wishOrder=(a,b)=>
+  String(a.title||'').localeCompare(String(b.title||''),'en-GB',{sensitivity:'base',numeric:true})
+  || String(a.created_at||'').localeCompare(String(b.created_at||''));
+
 function renderWish(){
-  const live=WISHES.filter(w=>w.app===WISH_APP);
+  const live=WISHES.filter(w=>w.app===WISH_APP).sort(wishOrder);
   const byStatus={};
   live.forEach(w=>{ (byStatus[w.status]=byStatus[w.status]||[]).push(w); });
 
@@ -8355,6 +8731,20 @@ function renderWish(){
   });
   $('wishBody').querySelectorAll('[data-wapp]').forEach(b=>b.onclick=()=>{
     WISH_APP=b.dataset.wapp; renderWish(); });
+  // The keyboard covers the bottom half of the phone, and Add it with it.
+  // While typing in either box, keep the button just above the keyboard.
+  const wishKeep=()=>{
+    const a=document.activeElement;
+    if(a&&(a.id==='wTitle'||a.id==='wNotes'))
+      try{ $('wAdd').scrollIntoView({block:'nearest'}); }catch(e){}
+  };
+  ['wTitle','wNotes'].forEach(id=>$(id).addEventListener('focus',()=>{
+    setTimeout(wishKeep,300); setTimeout(wishKeep,700); }));
+  if(window.visualViewport && !renderWish.kept){
+    renderWish.kept=true;
+    window.visualViewport.addEventListener('resize',()=>{
+      if(document.activeElement&&$('wishBody').contains(document.activeElement)) wishKeep(); });
+  }
   $('wAdd').onclick=async()=>{
     const t=$('wTitle').value.trim();
     if(!t){ toast('Say what the idea is'); return; }
@@ -10364,10 +10754,32 @@ function paintCookTimers(){
   }).join('');
 }
 
+// An iPhone only lets a page make a sound that was started by a tap, so a
+// beep first made when the time runs out stays silent there. The sound is
+// got ready when Start the timer is tapped, and kept for the ring. Asking
+// for "playback" lets it ring with the iPhone on Silent (Safari 17 and on).
+let COOK_AUDIO=null;
+function cookAudioReady(){
+  try{
+    if(navigator.audioSession) navigator.audioSession.type='playback';
+  }catch(e){}
+  try{
+    const C=window.AudioContext||window.webkitAudioContext; if(!C) return null;
+    if(!COOK_AUDIO||COOK_AUDIO.state==='closed') COOK_AUDIO=new C();
+    if(COOK_AUDIO.state==='suspended') COOK_AUDIO.resume().catch(()=>{});
+    // A moment of silence, played inside the tap, is what unlocks it.
+    const o=COOK_AUDIO.createOscillator(), g=COOK_AUDIO.createGain();
+    g.gain.value=0; o.connect(g); g.connect(COOK_AUDIO.destination);
+    o.start(); o.stop(COOK_AUDIO.currentTime+.05);
+  }catch(e){}
+  return COOK_AUDIO;
+}
+
 function cookBeep(){
   try{
-    const C=window.AudioContext||window.webkitAudioContext; if(!C) return;
-    const ctx=new C();
+    const ctx=COOK_AUDIO&&COOK_AUDIO.state!=='closed' ? COOK_AUDIO : cookAudioReady();
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume().catch(()=>{});
     [0,.35,.7].forEach(at=>{
       const o=ctx.createOscillator(), g=ctx.createGain();
       o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
@@ -10375,7 +10787,6 @@ function cookBeep(){
       g.gain.setValueAtTime(0,ctx.currentTime+at+.22);
       o.start(ctx.currentTime+at); o.stop(ctx.currentTime+at+.25);
     });
-    setTimeout(()=>ctx.close(),1500);
   }catch(e){}
 }
 
@@ -10412,6 +10823,7 @@ $('cookBody').addEventListener('click',async ev=>{
     const mins=Number(tm.dataset.cooktimer), p=COOK.pages[COOK.i];
     COOK.timers.push({id:Date.now(), label:minsText(mins)+' ('+p.label.split(' · ').slice(0,2).join(' ')+')',
       ends:Date.now()+mins*60000});
+    cookAudioReady();
     if(!COOK_TICK) COOK_TICK=setInterval(cookTick,1000);
     paintCookTimers(); toast('Timer started'); return;
   }
@@ -10432,6 +10844,7 @@ function shutCook(){
   if(COOK_TICK){ clearInterval(COOK_TICK); COOK_TICK=null; }
   if('speechSynthesis' in window) speechSynthesis.cancel();
   if(COOK_LOCK){ COOK_LOCK.release().catch(()=>{}); COOK_LOCK=null; }
+  if(COOK_AUDIO){ COOK_AUDIO.close().catch(()=>{}); COOK_AUDIO=null; }
   $('cook').classList.add('hidden'); lockBackground();
   return true;
 }
@@ -11098,10 +11511,10 @@ const STF_TYPES={
   vehicle:{one:'Vehicle', many:'Vehicles', service:true,
     eg:'The car, the boat, the motorbike', fields:[
     {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'year',l:'Year built',t:'year'},
-    {k:'reg',l:'Registration'},
+    {k:'reg',l:'Registration',t:'code'},
     {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
     {k:'bought_from',l:'Bought from',t:'who'},{k:'value',l:'Value now',t:'money'},
-    {k:'mot_due',l:'MOT due',t:'date',due:'MOT due'},{k:'mot_number',l:'MOT test number'},
+    {k:'mot_due',l:'MOT due',t:'date',due:'MOT due'},{k:'mot_number',l:'MOT test number',t:'code'},
     {k:'mot_price',l:'MOT price',t:'money'},
     {k:'insurance_due',l:'Insurance renews',t:'date',due:'Insurance renewal'},
     {k:'insurance_price',l:'Insurance price',t:'money'},
@@ -11109,7 +11522,7 @@ const STF_TYPES={
     {k:'tax_price',l:'Road tax or licence price',t:'money'}]},
   item:{one:'Item', many:'Items', service:true,
     eg:'The TV, a laptop, a ring, the lawn mower', fields:[
-    {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'serial',l:'Serial number'},
+    {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'serial',l:'Serial number',t:'code'},
     {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
     {k:'bought_from',l:'Bought from',t:'who'},{k:'value',l:'Value now',t:'money'},
     {k:'warranty_due',l:'Warranty until',t:'date',due:'Warranty ends'}]},
@@ -11126,7 +11539,7 @@ const STF_TYPES={
     {k:'renew_due',l:'Renew or expiry date',t:'date',due:'Renewal due'}]},
   policy:{one:'Insurance policy', many:'Insurance policies', service:false,
     eg:'Home, boat, travel, pet', fields:[
-    {k:'insurer',l:'Insurer',t:'who'},{k:'policy_no',l:'Policy number'},
+    {k:'insurer',l:'Insurer',t:'who'},{k:'policy_no',l:'Policy number',t:'code'},
     {k:'covers',l:'What it covers',t:'long'},
     {k:'renew_due',l:'Renews',t:'date',due:'Policy renewal'},
     {k:'renew_price',l:'Renewal price',t:'money'}]}
@@ -11410,7 +11823,8 @@ function openStuffEd(t,kind){
     if(f.t==='who') return stfWhoBox('d_'+f.k,f.l,v,d[f.k+'_id']);
     return `<label>${esc(f.l)}<input name="d_${f.k}" value="${esc(v)}"${
       f.t==='money'?' inputmode="decimal" placeholder="0.00"'
-      :f.t==='year'?' inputmode="numeric" maxlength="4" placeholder="e.g. 1998"':''}></label>`;
+      :f.t==='year'?' inputmode="numeric" maxlength="4" placeholder="e.g. 1998"'
+      :f.t==='code'?NOFIX:''}></label>`;
   };
   $('stfEdBody').innerHTML=`<form id="stfForm" onsubmit="return false">
     <fieldset><legend>${esc(ty.one)}</legend>
@@ -11789,6 +12203,7 @@ function loadTiles(){
   BACKUP_DONE = (saved&&typeof saved.backup==='string')?saved.backup:'';
   LINK_PREFS = linkPrefsFrom(saved);
   RCP_PREFS = rcpPrefsFrom(saved);
+  NOT_SAME = arr(saved&&saved.notsame).filter(x=>typeof x==='string');
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -11806,7 +12221,7 @@ function loadTiles(){
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, links:LINK_PREFS,
-              recipes:RCP_PREFS,
+              recipes:RCP_PREFS, notsame:NOT_SAME,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
@@ -17186,6 +17601,7 @@ function areaItems(area){
   const it=(label,fn)=>({label,fn});
   if(area==='contacts') return [
     it('Delete several contacts', ()=>{ shutMenu(); startPicking(); }),
+    it('Find double-ups',         ()=>{ shutMenu(); openDoubles(); }),
     it('Contacts sent to you',    ()=>{ shutMenu(); openOffers(); }),
     it('Messages',                ()=>{ shutMenu(); openChats(); }),
     it('Import and export contacts', ()=>{ shutMenu(); openIO(); })];

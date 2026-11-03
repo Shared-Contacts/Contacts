@@ -11949,6 +11949,10 @@ function stfPickKind(onPick,was){
 /* A boat kept as a vehicle, say. Its photos, PDFs, notes and service record
    stay with it; boxes carry across by name (or by STF_MOVE); the rest are
    kept and shown under Also kept, so changing back loses nothing. */
+// Boats and loyalty cards came after step 50, whose rule allows only the
+// first five types. Step 53 lets them in; before it, say so.
+const stfKindRefused = err => /stuff_kind_check|violates check constraint/i.test((err&&err.message)||'')
+  ? 'Could not save: boats and loyalty cards need step 53 run in Supabase first' : '';
 async function stfChangeKind(t,kind){
   const ty=STF_TYPES[kind]; if(!ty||kind===t.kind) return;
   const d=Object.assign({},t.details||{}), have=new Set(ty.fields.map(f=>f.k));
@@ -11960,7 +11964,7 @@ async function stfChangeKind(t,kind){
   if(n && !ty.service && !confirm('A '+ty.one.toLowerCase()+' has no service record. The '+n
       +' service'+(n===1?' is':'s are')+' kept, but will only show if you change it back.')) return;
   const {error}=await sb.from('stuff').update({kind, details:d, updated_at:new Date().toISOString()}).eq('id',t.id);
-  if(error){ toast('Could not change it'); console.error(error); return; }
+  if(error){ toast(stfKindRefused(error)||'Could not change it'); console.error(error); return; }
   await stfAfterChange(t.id);
   toast('Now a '+ty.one.toLowerCase());
 }
@@ -12237,8 +12241,9 @@ async function saveStuff(){
     error=r.error; id=r.data&&r.data.id;
   }
   $('stfSave').disabled=false;
-  if(error){ toast(/relation|does not exist|schema cache/i.test(error.message||'')
-      ? 'Could not save: My Stuff needs step 50 run in Supabase first' : 'Could not save');
+  // The refused type first: its message names the relation too.
+  if(error){ toast(stfKindRefused(error) || (/relation|does not exist|schema cache/i.test(error.message||'')
+      ? 'Could not save: My Stuff needs step 50 run in Supabase first' : 'Could not save'));
     console.error(error); return; }
   await dphSaved();
   const gone=STF_FILES.gone; STF_FILES=null;

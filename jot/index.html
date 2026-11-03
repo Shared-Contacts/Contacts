@@ -508,7 +508,11 @@ async function dropJot(n){
   if(x.cid){
     if(!ME){ toast('Sign in through the main app first'); return; }
     const {error}=await sb.from('contacts').delete().eq('id',x.cid);
-    if(error){ console.error(error); toast('Could not remove them'); return; }
+    // The book refuses a contact that something else in the app uses (step 52).
+    if(error){ console.error(error);
+      toast(/CONTACT IN USE/.test(error.message||'')
+        ? 'They are used elsewhere in the app, so they stay. Open them in the main app to see where.'
+        : 'Could not remove them'); return; }
   }
   if(x.qid) store(QKEY, recall(QKEY,[]).filter(q=>q.id!==x.qid));
 

@@ -227,6 +227,21 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('its service record goes with it', /Blacking/.test(bv));
   await closeAll();
 
+  console.log('\nBefore step 53');
+  await clearWrites();
+  const refused = await ev(async () => {
+    const real = sb.from, e0 = console.error; console.error = () => {};
+    const no = { error: { message: 'new row for relation "stuff" violates check constraint "stuff_kind_check"' } };
+    sb.from = t => t === 'stuff' ? { update: () => ({ eq: () => Promise.resolve(no) }),
+      insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, ...no }) }) }) } : real(t);
+    await stfChangeKind(STUFF.find(x => x.id === 3), 'loyalty');
+    openStuffEd(null, 'boat'); $('stfForm').elements.name.value = 'Heron'; await saveStuff();
+    sb.from = real; console.error = e0; return window.__said.join(' | ');
+  });
+  ok('a refused change of type says to run step 53', /Could not save: boats and loyalty cards need step 53/.test(refused.split(' | ')[0]), refused);
+  ok('and so does a new boat', /step 53/.test(refused.split(' | ')[1] || ''), refused);
+  await closeAll();
+
   console.log('\nThe date picker');
   const pick = (value, withTime) => ev(([value, withTime]) => {
     window.__picked = 'waiting'; whenPicker({ value, withTime, title: 'Bought on' }).then(v => { window.__picked = v; }); },

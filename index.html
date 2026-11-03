@@ -677,6 +677,15 @@ body.jobdrag{cursor:grabbing}
 .kindpick button{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--rule);
   background:#fff;font-weight:600;color:var(--muted)}
 .kindpick button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:#F2EFE4}
+/* The first question for a new entry: which is it? */
+.itkinds{display:flex;flex-direction:column;gap:10px}
+.itkinds button{border-radius:12px;padding:16px;color:#F2EFE4;font-size:19px;font-weight:700;text-align:left}
+.itkinds button em{display:block;font-style:normal;font-size:14px;font-weight:400;opacity:.85;margin-top:3px}
+.mcell .dots .bd{font-size:10px;line-height:7px}
+.mnav .mlabel.mpick{font:inherit;font-weight:700;color:var(--ink);border-bottom:2px dotted var(--rule);border-radius:0;
+  padding:4px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpicktoday{outline:2px solid var(--hull);outline-offset:-4px}
+.ststat{font-weight:700}
 .shoptabs{flex-wrap:wrap}
 .shoptabs button{flex:0 1 auto;min-width:0;line-height:1.25}
 .shoptabs .ln{display:inline-block;background:var(--red);color:#fff;border-radius:999px;
@@ -2838,7 +2847,7 @@ async function openDetail(id, keepPlace){
   $('detBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>removeLink(Number(b.dataset.del)));
   const fb=$('favBtn'); if(fb) fb.onclick=()=>toggleFav(c.id);
   const dd=$('detDelete'); if(dd) dd.onclick=()=>deleteContact(c);
-  const ai=$('addItemHere'); if(ai)ai.onclick=()=>openItem(null,c.id);
+  const ai=$('addItemHere'); if(ai)ai.onclick=()=>newItem(c.id);
   $('detBody').querySelectorAll('[data-done2]').forEach(b=>
     b.onclick=()=>toggleDone(Number(b.dataset.done2)));
   $('detBody').querySelectorAll('[data-item2]').forEach(b=>
@@ -5408,6 +5417,17 @@ function openHelp(where){
   Tomorrow, then each weekday by name with its date, so booking something for
   next Monday needs no counting. Underneath, common times and &minus;15 / +15
   buttons.</p>
+  <p><strong>Adding.</strong> Press + and first choose <em>Appointment</em> or
+  <em>To-do</em>; the switch at the top of the form is still there if you change
+  your mind. An appointment added on a day picked on the month calendar starts at
+  8:00 that day, otherwise at the next whole hour, and ends half an hour later.
+  Change the start and the end moves with it, unless you have set the end
+  yourself.</p>
+  <p><strong>Status.</strong> An appointment is <em>Booked</em> until you say
+  otherwise: <em>Completed</em>, <em>Missed</em>, <em>Delayed</em>, <em>On
+  hold</em> or <em>Cancelled</em>. The status shows on the list. Any of them stops
+  it showing as overdue and its reminder going; <em>Completed</em> ticks it off as
+  well, and unticking it makes it Booked again.</p>
   <p><em>About which contact</em> ties an entry to a person, so it appears on
   their page too. Leave it blank for anything that is not about anybody.</p>
   <p>A <strong>to-do</strong> is due by a time, and can have a "not before" date
@@ -5435,7 +5455,11 @@ function openHelp(where){
   overdue, today, tomorrow and so on. <strong>Week</strong> shows the current
   week day by day. <strong>Month</strong> shows a calendar with a dot on each day
   &mdash; blue for an appointment, brass for a to-do, red if it is overdue.
-  Tap a day to see what is on, then + to add something on that day.
+  An away appointment (holiday, work, hospital, visiting, other) shades the days
+  instead of a dot. A &#127874; marks a birthday: the day's list names them and
+  the age they turn; tap one to open the contact. Tap a day to see what is on,
+  then + to add something on that day. Tap the month's name to choose another
+  month: the arrows go a year at a time, as far as you like.
   <strong>Today</strong> at the top jumps back to this month with today picked.
   An appointment with an end date shows on every day it covers, so a fortnight
   away blocks out the whole fortnight. Set <em>Away from home</em> on it
@@ -5539,6 +5563,11 @@ const AWAY_WHY=[['holiday','Holiday','#F4D35E'],['work','Work','#8FB8DE'],
   ['hospital','Hospital','#E8A0A0'],['visiting','Visiting','#A8D5A2'],
   ['other','Other','#C9B6E4']];
 const awayColour = w => (AWAY_WHY.find(x=>x[0]===w)||[])[2]||null;
+// What became of an appointment. None is Booked. Any of them stops it being
+// overdue and its reminder going; Completed ticks it off as well. Step 54.
+const APPT_STATUS=[['done','Completed','#2E7D4F'],['missed','Missed','#B23A2E'],
+  ['delayed','Delayed','#A86B12'],['onhold','On hold','#5F6B73'],['cancelled','Cancelled','#5F6B73']];
+const apptStatus = k => APPT_STATUS.find(x=>x[0]===k)||null;
 const dayKeyOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
 const REPEATS=[['none','Does not repeat'],['daily','Every day'],['weekly','Every week'],
@@ -5586,7 +5615,7 @@ function whenText(it){
     txt='from '+new Date(it.due_from).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' until '+txt;
   return txt;
 }
-const isLate = it => !it.done_at && whenOf(it) && new Date(whenOf(it)) < new Date();
+const isLate = it => !it.done_at && !apptStatus(it.status) && whenOf(it) && new Date(whenOf(it)) < new Date();
 
 function dueSoonCount(){
   const end=new Date(); end.setHours(23,59,59,999);
@@ -5638,7 +5667,8 @@ function itemRow(it){
       aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
     <button class="mid" data-item="${it.id}">
       <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
-      <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}${photoCount(it)?' &middot; '+esc(photoCount(it)):''}</span>
+      <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}${photoCount(it)?' &middot; '+esc(photoCount(it)):''}${
+        apptStatus(it.status)&&it.kind==='appointment'?` &middot; <span class="ststat" style="color:${apptStatus(it.status)[2]}">${esc(apptStatus(it.status)[1])}</span>`:''}</span>
       ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
     </button>
     ${it.done_at?'':`<span class="pickrow dly">
@@ -5724,6 +5754,8 @@ function renderDiary(){
     d.setMonth(d.getMonth()+Number(b.dataset.mshift));
     DIARY_MONTH=d.toISOString().slice(0,7);
     DIARY_DAY=null; renderDiary(); });
+  const mp=$('mPick'); if(mp) mp.onclick=diaryMonthPick;
+  $('diaryBody').querySelectorAll('[data-bdc]').forEach(b=>b.onclick=()=>openDetail(Number(b.dataset.bdc)));
   const mt=$('mToday');
   if(mt) mt.onclick=()=>{
     const t=new Date();
@@ -6211,12 +6243,15 @@ function diaryMonth(){
 
   let cells='';
   const usedAway=new Set();
+  const bdays=monthBirthdays(yy,mm);
   for(let i=0;i<lead;i++) cells+='<span class="mcell blank"></span>';
   for(let n=1;n<=days;n++){
     const d=new Date(yy,mm-1,n);
     const on=itemsOn(d);
     const key=`${yy}-${String(mm).padStart(2,'0')}-${String(n).padStart(2,'0')}`;
-    const appt=on.some(x=>x.kind==='appointment'), todo=on.some(x=>x.kind==='todo');
+    // An away appointment shades the day instead, so only ordinary ones get a dot.
+    const appt=on.some(x=>x.kind==='appointment'&&!awayColour(x.away)), todo=on.some(x=>x.kind==='todo');
+    const cake=(bdays[n]||[]).length;
     const late=on.some(isLate);
     const away=[...new Set(on.map(x=>x.kind==='appointment'&&awayColour(x.away)).filter(Boolean))];
     away.forEach(c=>usedAway.add(c));
@@ -6227,7 +6262,7 @@ function diaryMonth(){
     cells+=`<button class="mcell${d.getTime()===today.getTime()?' today':''}${DIARY_DAY===key?' picked':''}${away.length?' away':''}"
         data-day="${key}"${shade&&DIARY_DAY!==key?` style="${shade}"`:''}>
         <span class="n">${n}</span>
-        <span class="dots">${appt?'<i class="a"></i>':''}${todo?`<i class="${late?'l':'t'}"></i>`:''}</span>
+        <span class="dots">${appt?'<i class="a"></i>':''}${todo?`<i class="${late?'l':'t'}"></i>`:''}${cake?'<span class="bd" aria-label="Birthday">&#127874;</span>':''}</span>
       </button>`;
   }
 
@@ -6236,14 +6271,14 @@ function diaryMonth(){
 
   let html=`<div class="mnav">
       <button data-mshift="-1" aria-label="Previous month">&#9664;</button>
-      <span class="mlabel">${esc(label)}</span>
+      <button class="mlabel mpick" id="mPick" aria-label="Choose a month">${esc(label)} &#9662;</button>
       <button class="mtoday" id="mToday">Today</button>
       <button data-mshift="1" aria-label="Next month">&#9654;</button>
     </div>
     <div class="mgrid">${names}${cells}</div>
     <p class="coords" style="text-align:center">
       <i class="key a"></i> appointment &nbsp; <i class="key t"></i> to-do &nbsp;
-      <i class="key l"></i> overdue</p>
+      <i class="key l"></i> overdue${Object.keys(bdays).length?' &nbsp; &#127874; birthday':''}</p>
     ${usedAway.size?`<p class="coords awaykey">Away: ${AWAY_WHY.filter(x=>usedAway.has(x[2]))
       .map(x=>`<span><i class="key" style="background:${x[2]}"></i> ${esc(x[1])}</span>`).join(' ')}</p>`:''}`;
 
@@ -6251,17 +6286,83 @@ function diaryMonth(){
     const [y,m,dd]=DIARY_DAY.split('-').map(Number);
     const d=new Date(y,m-1,dd);
     const rows=itemsOn(d).sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
+    const cakes=(bdays[dd]||[]).map(c=>{ const age=y-Number(String(c.birth_date).slice(0,4));
+      return `<button class="item" data-bdc="${c.id}"><span class="mid">
+        <span class="t">&#127874; ${esc(fullName(c))}</span>
+        <span class="w">Birthday${age>0&&age<130?' &middot; '+age:''}</span></span></button>`; }).join('');
     html+=`<p class="dsec">${esc(d.toLocaleDateString('en-GB',
       {weekday:'long',day:'numeric',month:'long'}))}</p>
-      <div class="card">${rows.length?rows.map(itemRow).join('')
-        :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing that day.</dd></div>'}</div>`;
+      <div class="card">${cakes}${rows.length?rows.map(itemRow).join('')
+        :cakes?'':'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing that day.</dd></div>'}</div>`;
   }else{
     html+='<p class="coords" style="text-align:center">Tap a day to see what is on.</p>';
   }
   return html;
 }
 
+/* Birthdays in a month, by day: {17:[contact, ...]}. The same people as the
+   Today screen's list: anyone with a birth date who has not died. Born on
+   29 February, it is kept on the 28th in other years. */
+function monthBirthdays(yy,mm){
+  const out={}, last=new Date(yy,mm,0).getDate();
+  CONTACTS.forEach(c=>{
+    if(!c.birth_date||isGone(c)) return;
+    const [,bm,bd]=String(c.birth_date).slice(0,10).split('-').map(Number);
+    if(bm!==mm||!bd) return;
+    const day=Math.min(bd,last);
+    (out[day]=out[day]||[]).push(c);
+  });
+  Object.values(out).forEach(l=>l.sort((a,b)=>fullName(a).localeCompare(fullName(b))));
+  return out;
+}
+
+/* Tapping the month's name: a year of months, with arrows for the years
+   either side, as far as you like. A month takes you back to the calendar. */
+function diaryMonthPick(){
+  let year=Number(DIARY_MONTH.slice(0,4));
+  const thisKey=dayKeyOf(new Date()).slice(0,7);
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='mPickBox';
+  const draw=()=>{
+    box.innerHTML=`<div class="inner">
+      <div class="pnav"><button data-myr="-1" aria-label="Last year">&#9664;</button>
+        <span>${year}</span><button data-myr="1" aria-label="Next year">&#9654;</button></div>
+      <div class="pyears">${Array.from({length:12},(_,i)=>{
+        const key=`${year}-${String(i+1).padStart(2,'0')}`;
+        return `<button data-mpk="${key}" ${key===DIARY_MONTH?'aria-pressed="true"':''}
+          class="${key===thisKey?'mpicktoday':''}">${esc(new Date(2000,i,1)
+          .toLocaleDateString('en-GB',{month:'short'}))}</button>`; }).join('')}</div>
+      <div class="pfoot"><button id="mPickNo">Cancel</button></div></div>`;
+    box.querySelectorAll('[data-myr]').forEach(b=>b.onclick=()=>{ year+=Number(b.dataset.myr); draw(); });
+    box.querySelectorAll('[data-mpk]').forEach(b=>b.onclick=()=>{
+      box.remove(); DIARY_MONTH=b.dataset.mpk; DIARY_DAY=null; renderDiary(); });
+    box.querySelector('#mPickNo').onclick=()=>box.remove();
+  };
+  box.onclick=ev=>{ if(ev.target===box) box.remove(); };
+  document.body.appendChild(box); draw();
+}
+
 /* ---------- adding and editing ---------- */
+
+/* A new entry asks first which it is: the switch at the top of the form was
+   easy to miss. The switch stays, for changing your mind. */
+function newItem(presetContact, presetDay){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='itKinds';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">What are you adding?</p>
+    <div class="itkinds">
+      <button data-newkind="appointment" style="background:#6B3F2A">&#128197; Appointment
+        <em>Somewhere to be, with a start and an end</em></button>
+      <button data-newkind="todo" style="background:#4A5340">&#10003; To-do
+        <em>Something to get done, by a time</em></button></div>
+    <div class="pfoot"><button id="itKindNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  box.onclick=ev=>{ if(ev.target===box) box.remove(); };
+  box.querySelector('#itKindNo').onclick=()=>box.remove();
+  box.querySelectorAll('[data-newkind]').forEach(b=>b.onclick=()=>{
+    box.remove(); openItem(null,presetContact,presetDay,b.dataset.newkind); });
+}
 
 /* ============================================================
    A date and time picker that shows a whole month at a time,
@@ -6524,6 +6625,7 @@ function useWhenPicker(form, names, opts){
 
     el.parentNode.insertBefore(btn, el.nextSibling);
     btn.parentNode.insertBefore(hint, btn.nextSibling);
+    el.addEventListener('change',paint);   // set by the page, not by the picker
     paint();
   });
 }
@@ -6547,9 +6649,9 @@ function showWeekday(form, names){
   });
 }
 
-function openItem(it, presetContact, presetDay){
+function openItem(it, presetContact, presetDay, presetKind){
   EDIT_ITEM = it || null;
-  ITEM_KIND = it ? it.kind : 'todo';
+  ITEM_KIND = it ? it.kind : (presetKind==='appointment' ? 'appointment' : 'todo');
   const meProfile = (typeof MY_PROFILE!=='undefined' && MY_PROFILE) ? MY_PROFILE : null;
   const cid = it ? it.contact_id
                  : (presetContact || (meProfile && meProfile.my_contact_id) || null);
@@ -6579,6 +6681,12 @@ function openItem(it, presetContact, presetDay){
       </select></label>
       <p class="coords">Away shades every day from the start to the end on the
       month calendar. Use "About which contact" for who is away.</p>
+      <label>Status<select name="status">
+        <option value="">Booked</option>
+        ${APPT_STATUS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+      </select></label>
+      <p class="coords">Any status other than Booked stops it showing as overdue and
+      its reminder going. Completed ticks it off too.</p>
     </fieldset>
     <fieldset id="fsTodo"><legend>When it needs doing</legend>
       <label>Due by<input type="datetime-local" name="due_at"></label>
@@ -6621,6 +6729,7 @@ function openItem(it, presetContact, presetDay){
     f.elements['due_from'].value=localValue(it.due_from);
     f.elements['all_day'].checked=!!it.all_day;
     f.elements['away'].value=it.away||'';
+    f.elements['status'].value=apptStatus(it.status)?it.status:'';
     f.elements['remind_mins'].value=it.remind_mins==null?'':String(it.remind_mins);
     f.elements['repeat_every'].value=it.repeat_every||'none';
     $('itDelete').onclick=()=>deleteItem(it);
@@ -6633,9 +6742,25 @@ function openItem(it, presetContact, presetDay){
       soon.setFullYear(y,m-1,dd);
     }
     f.elements['due_at'].value=localValue(soon);
-    f.elements['starts_at'].value=localValue(soon);
+    // An appointment on a day picked on the month calendar starts at 8:00;
+    // otherwise at the next whole hour. Either way it ends half an hour later.
+    const start=new Date(soon);
+    if(presetDay && /^\d{4}-\d{2}-\d{2}$/.test(presetDay)) start.setHours(8,0,0,0);
+    f.elements['starts_at'].value=localValue(start);
+    f.elements['ends_at'].value=localValue(new Date(start.getTime()+30*60000));
     f.elements['remind_mins'].value='60';
   }
+  // A new start moves the end with it: half an hour on, or the same length
+  // as before when changing one already booked. An end chosen by hand here
+  // is left where it was put.
+  let endByHand=false;
+  const len=it&&it.starts_at&&it.ends_at ? new Date(it.ends_at)-new Date(it.starts_at) : 30*60000;
+  f.elements['ends_at'].addEventListener('input',()=>{ endByHand=true; });
+  f.elements['starts_at'].addEventListener('input',()=>{
+    const v=f.elements['starts_at'].value; if(endByHand||!v) return;
+    f.elements['ends_at'].value=localValue(new Date(new Date(v).getTime()+(len>0?len:30*60000)));
+    f.elements['ends_at'].dispatchEvent(new Event('change'));
+  });
   const paintWho=()=>{
     const v=f.elements['contact_id'].value;
     const c=v?CONTACTS.find(x=>x.id===Number(v)):null;
@@ -6693,6 +6818,12 @@ async function saveItem(){
   // database that has not had step 38 yet.
   const away=ITEM_KIND==='appointment'?f.elements['away'].value:'';
   if(away || (EDIT_ITEM && EDIT_ITEM.away)) d.away=away||null;
+  // And for the status and step 54. Completed ticks it off; taking
+  // Completed away again unticks it.
+  const status=ITEM_KIND==='appointment'?f.elements['status'].value:'';
+  if(status || (EDIT_ITEM && EDIT_ITEM.status)) d.status=status||null;
+  if(status==='done' && !(EDIT_ITEM&&EDIT_ITEM.done_at)) d.done_at=new Date().toISOString();
+  if(status!=='done' && EDIT_ITEM && EDIT_ITEM.status==='done') d.done_at=null;
   // The same for photos and step 46.
   const photos=dphNow();
   if(photos.length || arr(EDIT_ITEM&&EDIT_ITEM.photos).length) d.photos=photos;
@@ -6708,7 +6839,7 @@ async function saveItem(){
   const mins=f.elements['remind_mins'].value;
   d.remind_mins = mins===''?null:Number(mins);
   const anchor = whenOf(d);
-  d.remind_at = (d.remind_mins!=null && anchor)
+  d.remind_at = (d.remind_mins!=null && anchor && !status)
     ? new Date(new Date(anchor).getTime() - d.remind_mins*60000).toISOString()
     : null;
 
@@ -6730,7 +6861,9 @@ async function saveItem(){
     err=(await sb.from('items').insert(d)).error;
   }
   if(err){ $('itSave').disabled=false;
-    toast('away' in d && /away/i.test(err.message||'')
+    toast('status' in d && /status/i.test(err.message||'')
+      ? 'Could not save: the appointment status needs step 54 run in Supabase first'
+      : 'away' in d && /away/i.test(err.message||'')
       ? 'Could not save: the away colours need step 38 run in Supabase first'
       : dphStepMissing(d,err)||'Could not save'); console.error(err); return; }
   await dphSaved();
@@ -6785,7 +6918,7 @@ async function toggleDone(id){
   const it=ITEMS.find(x=>x.id===id);
   if(!it) return;
   if(it.done_at){
-    const {error}=await sb.from('items').update({done_at:null}).eq('id',id);
+    const {error}=await sb.from('items').update(it.status==='done'?{done_at:null,status:null}:{done_at:null}).eq('id',id);
     if(error){ toast('Could not change that'); return; }
   }else if(it.repeat_every&&it.repeat_every!=='none'&&whenOf(it)){
     // A repeating item rolls forward instead of disappearing
@@ -14237,7 +14370,7 @@ async function newShopList(){
   await loadShopping(); renderShop(); toast('List added');
 }
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
-$('diaryAdd').onclick=()=>openItem(null,null,DIARY_VIEW==='month'?DIARY_DAY:null);
+$('diaryAdd').onclick=()=>newItem(null,DIARY_VIEW==='month'?DIARY_DAY:null);
 $('itCancel').onclick=()=>{dphCancel();$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
 $('rtCancel').onclick=()=>{dphCancel();shutRoutine();};
@@ -17906,7 +18039,7 @@ function areaItems(area){
     it('Find transfers between my accounts', ()=>{ shutMenu(); openPairs(); }),
     it('Choose several to delete',()=>{ shutMenu(); startMoneyPicking(); })];
   if(area==='diary') return [
-    it('Add an entry',            ()=>{ shutMenu(); openItem(null); })];
+    it('Add an entry',            ()=>{ shutMenu(); newItem(); })];
   if(area==='links') return [
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
   if(area==='stuff') return [

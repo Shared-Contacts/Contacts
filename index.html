@@ -1135,6 +1135,20 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .sthumb{flex:0 0 44px;width:44px;height:44px;object-fit:cover;border-radius:6px;background:#F0EEE7;
   margin-right:6px;align-self:center}
 .sthumb.right{flex-basis:52px;width:52px;height:52px;margin:0 0 0 6px}
+/* How many photos, on the photo itself */
+.stfpic{position:relative;flex:0 0 52px;margin-left:6px;align-self:center}
+.stfpic .sthumb.right{margin:0;display:block}
+.stfpic b{position:absolute;right:-5px;top:-5px;min-width:21px;height:21px;padding:0 5px;
+  border-radius:11px;background:var(--hull);color:#fff;font-size:12px;font-weight:700;
+  line-height:21px;text-align:center;box-shadow:0 0 0 2px #fff}
+.stflock{flex:0 0 40px;align-self:center;text-align:center;font-size:24px}
+.pnav .pmy{color:var(--ink);font-size:16px;font-weight:700;padding:7px 10px;
+  border-bottom:2px dotted var(--rule);border-radius:0}
+.pyears{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 12px 10px}
+.pyears button{border:1.5px solid var(--rule);border-radius:10px;background:#fff;
+  padding:12px 0;font-size:16px;font-weight:600;color:var(--ink)}
+.pyears button[aria-pressed="true"]{background:var(--hull);border-color:var(--hull);color:var(--paper)}
+.pickinner .godate{padding:9px 12px 0}
 .stfhero{display:block;width:100%;height:auto;max-height:55vh;object-fit:contain;
   border-radius:10px;background:#F0EEE7;margin-bottom:12px}
 .stfwho{display:block;width:100%;margin-top:6px;padding:12px;text-align:left;font-size:16px;
@@ -1312,6 +1326,7 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbar"><button class="bt" data-home="stuff" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="stuffMenu" data-menu="stuff" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">My Stuff</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
   <div class="sheetbody" id="stfBody"></div>
+  <button class="fab sheetfab" id="stfAdd" aria-label="Add something">+</button>
 </div>
 
 <div id="stuffView" class="sheet hidden">
@@ -4968,11 +4983,12 @@ function openHelp(where){
 
   <h4 id="h-stuff">My Stuff</h4>
   <p><strong>My Stuff</strong> keeps track of the things you own and the papers
-  that go with them. Press <em>+ Add something</em> and choose what it is: a
-  <strong>vehicle</strong> (car, boat, motorbike), an <strong>item</strong> (TV,
-  laptop, jewellery, lawn mower), <strong>property</strong> (house, mooring), a
-  <strong>document</strong> (will, shares, birth certificate) or an
-  <strong>insurance policy</strong>. Each one asks only for the boxes that fit it.</p>
+  that go with them. Press the round red <em>+</em> and choose what it is: a
+  <strong>vehicle</strong> (car, motorbike, van), a <strong>boat</strong>, an
+  <strong>item</strong> (TV, laptop, jewellery, lawn mower), <strong>property</strong>
+  (house, mooring), a <strong>document</strong> (will, passport, driving licence,
+  birth certificate), an <strong>insurance policy</strong> or a <strong>loyalty or
+  membership card</strong>. Each one asks only for the boxes that fit it.</p>
   <p><em>Bought from</em>, the <em>Insurer</em> and where a service was done come
   from your Contacts, so the shop's phone and address are kept there. Tap the box,
   find them, or press <em>+ New contact</em> to fill in the full contact form;
@@ -4985,23 +5001,48 @@ function openHelp(where){
   there or keep the new one as well. It asks as soon as you leave the business
   name, or a person's last name, before the rest of the form is filled in.</p>
   <p>Every one can have photos (<em>Camera</em> or <em>Choose</em>) and PDFs
-  (<em>Add a PDF</em>, up to 20 MB each). The first photo shows small on the list
-  and large at the top of the thing's own screen; tap it to see it full size.
+  (<em>Add a PDF</em>, up to 20 MB each). The first photo shows small on the list,
+  with the number of photos on its corner, and large at the top of the thing's own
+  screen; tap it to see it full size.
   Tap a PDF to open it.</p>
-  <p>Vehicles, items and property have a <strong>service record</strong>: open the
+  <p>Vehicles, boats, items and property have a <strong>service record</strong>: open the
   thing and press <em>+ Add a service</em> for the date, where, the price, the parts
   and work done and when it is next due. Tap one to change it, &times; to remove it.</p>
-  <p><strong>Due dates.</strong> An MOT, insurance, tax or licence, warranty or
-  renewal date, or a service's next due date, puts a to-do in your Diary with a
-  reminder a week before, so it shows on Today and reaches your phone. Change the
-  date in My Stuff and the to-do moves with it. Anything due in the next 30 days
-  shows in red on the list.</p>
+  <p><strong>Due dates.</strong> An MOT, insurance, tax or licence, BSS, warranty,
+  renewal or expiry date, or a service's next due date, puts a to-do in your Diary
+  with a reminder a week before, so it shows on Today and reaches your phone. Change
+  the date in My Stuff and the to-do moves with it. Each one shows under the thing's
+  name on the list, in red once it is 30 days away or less.</p>
   <p><strong>Who sees it.</strong> Your things are yours alone unless you tick
   people under <em>Share with</em>. They can look at it, its photos, PDFs and
   service record, but only you can change it.</p>
   <p><strong>Passwords</strong> are never kept here. <em>Where the login is kept</em>
   says where to find one (for example "Google Password Manager, under DVLA"); the
   password itself stays in your password manager.</p>
+  <p><strong>Locked things.</strong> Tick <em>Keep it locked</em> on anything private
+  (a will, a passport, a driving licence). The first time, you choose a password
+  for locked things; Chrome should offer to save it in Google Password Manager under
+  &ldquo;My Stuff lock&rdquo;, and fill it in next time. A locked thing shows on the
+  list with a padlock, its name and its dates, and asks for the password before it
+  opens. Once given, everything locked stays open until you leave My Stuff, put the
+  app in the background, or press <em>Lock them again</em>. A locked thing is yours
+  alone, so it can't be shared. Forgotten the password? Press <em>Forgotten it?</em>,
+  type the password you sign in to the app with, and choose a new one.
+  <em>Menu &rsaquo; Change the lock password</em> changes it. This is a lock, not a
+  safe: it keeps them off the screen for anyone who picks up your phone, but they are
+  stored like everything else.</p>
+  <p><strong>Boats</strong> have their own boxes: CRT registration number, length,
+  width and draught, the BSS and the CRT licence (type, last and next dates, cost),
+  and the insurance company, cost and renewal. A boat kept as a vehicle can be moved:
+  open it and press <em>Change the type</em> at the bottom. Its photos, PDFs and
+  service record go with it, and anything with no box on a boat is shown under
+  <em>Also kept</em>.</p>
+  <p><strong>Loyalty and membership cards</strong> have a description, the card or
+  member number, where the card is kept, the date joined, the expiry date and the
+  annual cost. Add a photo of each side of the card.</p>
+  <p><strong>Choosing a date.</strong> Type it in the box at the top (just the
+  numbers: 15062024 becomes 15/06/2024) and press <em>Go</em>, or tap the month's
+  name to choose the year, then the month. The same works in the Calendar.</p>
 
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
@@ -6237,6 +6278,9 @@ function whenPicker(opts){
     if(sel && isNaN(sel)) sel=null;
     let month = new Date((sel||now).getFullYear(), (sel||now).getMonth(), 1);
     let hh = sel?sel.getHours():9, mm = sel?sel.getMinutes():0;
+    // Tapping the month's name gives the years, then the months, so a date
+    // bought two years ago is three taps rather than twenty-four.
+    let mode='days', yearsFrom=0;
 
     const box=document.createElement('div');
     box.className='daypick pickwrap';
@@ -6314,18 +6358,38 @@ function whenPicker(opts){
             : 'Nothing chosen'}</span>
         </div>
 
+        <div class="godate">
+          <input id="pkType" placeholder="dd/mm/yyyy" inputmode="numeric"
+            aria-label="Type a date" autocomplete="off">
+          <button class="btn" id="pkTypeGo">Go</button>
+        </div>
+
         <div class="pquick">${quick().map(([label,d])=>
           `<button data-jump="${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}"
             ${sameDay(d,sel)?'aria-pressed="true"':''}>
             ${esc(label)}<em>${d.getDate()} ${d.toLocaleDateString('en-GB',{month:'short'})}</em>
           </button>`).join('')}</div>
 
-        <div class="pnav">
+        ${mode==='years'?`<div class="pnav">
+          <button data-yv="-12" aria-label="Earlier years">&#9664;</button>
+          <span>${yearsFrom} &ndash; ${yearsFrom+11}</span>
+          <button data-yv="12" aria-label="Later years">&#9654;</button>
+        </div>
+        <div class="pyears">${Array.from({length:12},(_,i)=>yearsFrom+i).map(y=>
+          `<button data-yr="${y}" ${y===month.getFullYear()?'aria-pressed="true"':''}>${y}</button>`).join('')}</div>`
+        :mode==='months'?`<div class="pnav">
+          <button class="pmy" id="pkMY">${month.getFullYear()} &#9662;</button>
+        </div>
+        <div class="pyears">${Array.from({length:12},(_,i)=>
+          `<button data-mo="${i}" ${i===month.getMonth()?'aria-pressed="true"':''}>${
+          esc(new Date(2000,i,1).toLocaleDateString('en-GB',{month:'short'}))}</button>`).join('')}</div>`
+        :`<div class="pnav">
           <button data-mv="-1" aria-label="Previous month">&#9664;</button>
-          <span>${esc(month.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))}</span>
+          <button class="pmy" id="pkMY" aria-label="Choose the year and month">${
+            esc(month.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))} &#9662;</button>
           <button data-mv="1" aria-label="Next month">&#9654;</button>
         </div>
-        <div class="pgrid">${heads}${cells}</div>
+        <div class="pgrid">${heads}${cells}</div>`}
 
         ${withTime?`<div class="ptime">
           <div class="pquick">${['08:00','09:00','10:00','12:00','14:00','16:00','18:00','19:30']
@@ -6361,6 +6425,40 @@ function whenPicker(opts){
       box.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{
         month=new Date(month.getFullYear(),month.getMonth()+Number(b.dataset.mv),1); draw();
       });
+      const my=box.querySelector('#pkMY');
+      if(my) my.onclick=()=>{
+        // Mostly it is a year gone by that is wanted, so more back than forward.
+        if(mode==='days'){ mode='years'; yearsFrom=month.getFullYear()-8; }
+        else mode='years';
+        draw();
+      };
+      box.querySelectorAll('[data-yv]').forEach(b=>b.onclick=()=>{
+        yearsFrom+=Number(b.dataset.yv); draw(); });
+      box.querySelectorAll('[data-yr]').forEach(b=>b.onclick=()=>{
+        month=new Date(Number(b.dataset.yr),month.getMonth(),1); mode='months'; draw(); });
+      box.querySelectorAll('[data-mo]').forEach(b=>b.onclick=()=>{
+        month=new Date(month.getFullYear(),Number(b.dataset.mo),1); mode='days'; draw(); });
+
+      // Typed, as on the Daily Log's own calendar. Just a date: it is used
+      // at once. With a time to pick as well, it is chosen and waits.
+      const ty=box.querySelector('#pkType');
+      const typed=()=>{
+        const iso=readTypedDate(ty.value);
+        if(!iso){ toast('Try 4/7/19, or 4 Jul 2019'); ty.select(); return; }
+        const [y,m,d]=iso.split('-').map(Number);
+        sel=new Date(y,m-1,d,hh,mm); month=new Date(y,m-1,1); mode='days';
+        if(!withTime){ done(out()); return; }
+        draw();
+      };
+      const tg=box.querySelector('#pkTypeGo');
+      tg.onclick=typed;
+      // Pressing Go would otherwise shut the keyboard first, and the box
+      // moving back to the middle can take the button from under the finger.
+      tg.addEventListener('mousedown',ev=>ev.preventDefault());
+      ty.onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); typed(); } };
+      autoSlash(ty);
+      ty.addEventListener('focus',()=>box.classList.add('typing'));
+      ty.addEventListener('blur',()=>box.classList.remove('typing'));
       box.querySelectorAll('[data-time]').forEach(b=>b.onclick=()=>{
         const [a,c]=b.dataset.time.split(':').map(Number);
         hh=a; mm=c; if(!sel) sel=new Date(now.getFullYear(),now.getMonth(),now.getDate());
@@ -7815,17 +7913,7 @@ function drawDayPick(){
   box.querySelector('#pickGoBtn').onclick=tryGo;
   go.onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); tryGo(); } };
 
-  // The slashes put themselves in, so it is only the numbers to tap:
-  // 10072026 becomes 10/07/2026. Words are left alone, so "4 Jul 19" and
-  // "today" still work for anyone who would rather write it out.
-  go.addEventListener('input',()=>{
-    if(/[a-z]/i.test(go.value)) return;
-    const d=go.value.replace(/\D/g,'').slice(0,8);
-    let out=d.slice(0,2);
-    if(d.length>2) out+='/'+d.slice(2,4);
-    if(d.length>4) out+='/'+d.slice(4,8);
-    if(out!==go.value) go.value=out;
-  });
+  autoSlash(go);
 
   // A keyboard covers the bottom half of a phone, and a box centred in what
   // is left slides up out of sight. While typing, the box goes to the top.
@@ -7840,6 +7928,19 @@ function drawDayPick(){
 /* A date as somebody would write it. Day first, because this is a British
    boat: 4/7/19 is the fourth of July. Two digits for the year mean this
    century unless that would be in the future. */
+// The slashes put themselves in, so it is only the numbers to tap:
+// 10072026 becomes 10/07/2026. Words are left alone, so "4 Jul 19" and
+// "today" still work for anyone who would rather write it out.
+function autoSlash(el){
+  el.addEventListener('input',()=>{
+    if(/[a-z]/i.test(el.value)) return;
+    const d=el.value.replace(/\D/g,'').slice(0,8);
+    let out=d.slice(0,2);
+    if(d.length>2) out+='/'+d.slice(2,4);
+    if(d.length>4) out+='/'+d.slice(4,8);
+    if(out!==el.value) el.value=out;
+  });
+}
 const MONTH_NAMES=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 function readTypedDate(s){
   s=String(s||'').trim().toLowerCase();
@@ -11509,7 +11610,7 @@ $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
    telling. No passwords, only where the login is kept. Needs step 50. */
 const STF_TYPES={
   vehicle:{one:'Vehicle', many:'Vehicles', service:true,
-    eg:'The car, the boat, the motorbike', fields:[
+    eg:'The car, the motorbike, the van', fields:[
     {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'year',l:'Year built',t:'year'},
     {k:'reg',l:'Registration',t:'code'},
     {k:'bought_on',l:'Bought on',t:'date'},{k:'bought_price',l:'Price paid',t:'money'},
@@ -11520,6 +11621,20 @@ const STF_TYPES={
     {k:'insurance_price',l:'Insurance price',t:'money'},
     {k:'tax_due',l:'Road tax or licence renews',t:'date',due:'Tax or licence renewal'},
     {k:'tax_price',l:'Road tax or licence price',t:'money'}]},
+  boat:{one:'Boat', many:'Boats', service:true,
+    eg:'The narrowboat, a cruiser, a dinghy', fields:[
+    {k:'crt_reg',l:'CRT registration number',t:'code'},
+    {k:'length',l:'Length',ph:'e.g. 57 ft'},{k:'beam',l:'Width (beam)',ph:'e.g. 6 ft 10 in'},
+    {k:'draught',l:'Draught',ph:'e.g. 2 ft 3 in'},
+    {k:'bss_last',l:'BSS last done',t:'date'},
+    {k:'bss_due',l:'BSS renewal due',t:'date',due:'BSS due'},
+    {k:'licence_type',l:'CRT licence type',ph:'e.g. Canal & river, 12 months'},
+    {k:'licence_last',l:'Licence last renewed',t:'date'},
+    {k:'licence_due',l:'Licence next due',t:'date',due:'CRT licence renewal'},
+    {k:'licence_price',l:'Licence cost',t:'money'},
+    {k:'insurer',l:'Insurance company',t:'who'},
+    {k:'insurance_price',l:'Insurance cost',t:'money'},
+    {k:'insurance_due',l:'Insurance renews',t:'date',due:'Insurance renewal'}]},
   item:{one:'Item', many:'Items', service:true,
     eg:'The TV, a laptop, a ring, the lawn mower', fields:[
     {k:'make',l:'Make'},{k:'model',l:'Model'},{k:'serial',l:'Serial number',t:'code'},
@@ -11542,9 +11657,22 @@ const STF_TYPES={
     {k:'insurer',l:'Insurer',t:'who'},{k:'policy_no',l:'Policy number',t:'code'},
     {k:'covers',l:'What it covers',t:'long'},
     {k:'renew_due',l:'Renews',t:'date',due:'Policy renewal'},
-    {k:'renew_price',l:'Renewal price',t:'money'}]}
+    {k:'renew_price',l:'Renewal price',t:'money'}]},
+  loyalty:{one:'Loyalty or membership card', many:'Loyalty and membership cards', service:false,
+    eg:'Tesco Clubcard, the National Trust, the AA', fields:[
+    {k:'about',l:'Description',t:'long'},
+    {k:'card_no',l:'Card or member number',t:'code'},
+    {k:'card_kept',l:'Where the card is kept',ph:'e.g. In my wallet, Google Wallet, the app'},
+    {k:'joined',l:'Date joined or started',t:'date'},
+    {k:'expiry_due',l:'Expiry date',t:'date',due:'Card expires'},
+    {k:'annual_cost',l:'Annual cost',t:'money'}]}
 };
-const STF_ORDER=['vehicle','item','property','document','policy'];
+const STF_ORDER=['vehicle','boat','item','property','document','policy','loyalty'];
+/* Changing a thing's type keeps what it already had. A box with the same
+   name carries straight over; these are the ones a boat calls something
+   else. Anything with nowhere to go is kept and shown under Also kept. */
+const STF_MOVE={reg:'crt_reg', tax_due:'licence_due', tax_price:'licence_price',
+  crt_reg:'reg', licence_due:'tax_due', licence_price:'tax_price'};
 const STF_REMIND_MINS=10080;          // a week, one of the Diary's own choices
 const STF_PDF_MAX=20*1024*1024;       // the photo store's limit from step 50
 let STUFF=[], STF_SERV=[], STF_LOADED=false, STF_WHY='';
@@ -11631,7 +11759,113 @@ function stfWireContacts(root){
     ev.stopPropagation(); openDetail(Number(b.dataset.stfcontact)); });
 }
 
+/* ---------- the lock ----------
+   A will, a passport, a driving licence can be kept locked behind a
+   password of your own, asked for before any of them opens. Only a
+   scrambled copy of it is kept, with your sign-in rather than in a table,
+   so it is in no backup and nobody else can read it. A lock, not a safe:
+   it keeps the details off the screen for anyone who picks up the phone,
+   but they are stored like everything else. Locked things are yours alone,
+   never shared. Forgotten, it is set again after the password you sign in
+   to the app with. It locks again each time you come into My Stuff and
+   whenever the app goes into the background. */
+let STF_OPEN=false;
+const STF_LOCK_NAME='My Stuff lock';      // the name it is saved under in Google Password Manager
+const stfLocked = t => !!(t && t.created_by===ME.id && t.details && t.details.locked);
+const stfLockSaved = () => (ME && ME.user_metadata && ME.user_metadata.stuff_lock) || null;
+async function stfHash(pw,salt){
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',
+    salt:enc.encode(salt),iterations:150000},key,256);
+  return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* Asks for the password (or for a new one, when none is set or change is
+   asked for). Gives true once it is open. A real form with a username, so
+   Chrome offers to save it in Google Password Manager and fills it in
+   next time. */
+function stfLockAsk(change){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='stfLockBox';
+    document.body.appendChild(box);
+    const finish=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) finish(false); };
+    const draw=mode=>{
+      const setting=mode==='set', signin=mode==='signin';
+      box.innerHTML=`<div class="inner"><form id="stfLockForm" action="#" method="post">
+        <p class="dsec" style="padding-top:0">${setting?'&#128274; Choose a password for locked things'
+          :signin?'Forgotten it?':'&#128274; Locked'}</p>
+        <p class="coords" style="margin-top:0">${setting
+          ? 'It is asked for before anything you keep locked will open. Chrome should offer to save it in Google Password Manager, under &ldquo;'+STF_LOCK_NAME+'&rdquo;.'
+          : signin ? 'Type the password you sign in to the app with, then choose a new one for locked things.'
+          : 'Type your My Stuff password.'}</p>
+        <label>${signin?'Signed in as':'Saved as'}<input name="username" autocomplete="username"
+          value="${esc(signin?(ME.email||''):STF_LOCK_NAME)}" readonly tabindex="-1"
+          style="color:var(--muted)"></label>
+        <label>${signin?'Sign-in password':setting?'New password':'Password'}<input type="password" name="pw"
+          autocomplete="${setting?'new-password':'current-password'}"></label>
+        ${setting?'<label>The same again<input type="password" name="pw2" autocomplete="new-password"></label>':''}
+        ${mode==='open'?'<button type="button" class="stflink" id="stfLockForgot" style="margin-top:10px">Forgotten it?</button>':''}
+        <div class="pfoot"><button type="button" id="stfLockNo">Cancel</button>
+          <button type="submit" class="go">${setting?'Save':signin?'Next':'Open'}</button></div>
+      </form></div>`;
+      const f=box.querySelector('form'), pw=f.elements.pw;
+      box.querySelector('#stfLockNo').onclick=()=>finish(false);
+      const fg=box.querySelector('#stfLockForgot'); if(fg) fg.onclick=()=>draw('signin');
+      pw.addEventListener('focus',()=>box.classList.add('typing'));
+      setTimeout(()=>{ try{ pw.focus(); }catch(e){} },50);
+      f.onsubmit=async ev=>{
+        ev.preventDefault();
+        const a=pw.value;
+        if(signin){
+          const {error}=await sb.auth.signInWithPassword({email:ME.email,password:a});
+          if(error){ toast('That is not your sign-in password'); pw.select(); return; }
+          draw('set'); return;
+        }
+        if(setting){
+          if(a.length<6){ toast('Make it at least six characters'); return; }
+          if(a!==f.elements.pw2.value){ toast('The two do not match'); return; }
+          const salt=crypto.randomUUID();
+          const {data,error}=await sb.auth.updateUser({data:{stuff_lock:{salt, hash:await stfHash(a,salt)}}});
+          if(error){ toast('Could not save the password'); console.error(error); return; }
+          if(data&&data.user) ME=data.user;
+          STF_OPEN=true; toast('Password saved'); finish(true); return;
+        }
+        const s=stfLockSaved();
+        if(s && await stfHash(a,s.salt)===s.hash){ STF_OPEN=true; finish(true); return; }
+        toast('That is not it'); pw.value=''; pw.focus();
+      };
+    };
+    draw(!stfLockSaved()||change ? 'set' : 'open');
+  });
+}
+// Ready to see a locked thing: open already, or the password given now.
+async function stfUnlock(){
+  if(STF_OPEN) return true;
+  const ok=await stfLockAsk(false);
+  if(ok) renderStuff();
+  return ok;
+}
+async function stfChangeLock(){
+  if(stfLockSaved() && !await stfUnlock()) return;
+  if(await stfLockAsk(true)) renderStuff();
+}
+function stfLockAgain(){
+  STF_OPEN=false;
+  const t=STUFF.find(x=>x.id===STF_VIEW);
+  // A locked thing being looked at goes; one being changed is left, so
+  // nothing typed is lost.
+  if(stfLocked(t) && $('stuffEd').classList.contains('hidden')){
+    STF_VIEW=null; $('stuffView').classList.add('hidden'); lockBackground(); }
+  renderStuff();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden' && STF_OPEN) stfLockAgain(); });
+
 async function openStuff(){
+  STF_OPEN=false;
   showSheet('stuff'); lockBackground();
   if(!STF_LOADED) $('stfBody').innerHTML='<p class="empty">Fetching your things…</p>';
   await loadStuff(); renderStuff(); $('stfBody').scrollTop=0;
@@ -11650,43 +11884,56 @@ function renderStuff(){
   const body=$('stfBody'); if(!body) return;
   // A failed load says so, rather than an empty list that looks like nothing is kept.
   if(STF_WHY){ body.innerHTML=stfWhyHtml(); return; }
-  let html='<button class="btn primary" id="stfAdd">+ Add something</button>';
-  if(!STUFF.length) html+=`<div class="card" style="margin-top:12px"><div class="field"><dd>
-    Nothing here yet. Add the car, the boat, the TV, your will &mdash; anything
-    you want to keep track of.</dd></div></div>`;
+  let html='';
+  if(!STUFF.length) html+=`<div class="card"><div class="field"><dd>
+    Nothing here yet. Press the red + to add the car, the boat, the TV, your
+    will &mdash; anything you want to keep track of.</dd></div></div>`;
+  if(STF_OPEN && STUFF.some(stfLocked)) html+=`<button class="btn" id="stfRelock"
+    style="border:1.5px solid var(--rule)">&#128274; Lock them again</button>`;
   STF_ORDER.forEach(k=>{
     const rows=STUFF.filter(t=>t.kind===k);
     if(rows.length) html+=`<p class="dsec">${esc(STF_TYPES[k].many)}</p>
       <div class="card">${rows.map(stfRow).join('')}</div>`;
   });
   body.innerHTML=html;
-  $('stfAdd').onclick=stfPickKind;
+  const re=$('stfRelock'); if(re) re.onclick=stfLockAgain;
   body.querySelectorAll('[data-stf]').forEach(b=>b.onclick=()=>openStuffThing(Number(b.dataset.stf)));
+}
+$('stfAdd').onclick=()=>stfPickKind();
+
+// Every date still to come, or missed in the last month, one to a line
+// under the name: red within 30 days. Older ones have had their say.
+function stfDueLines(t){
+  return stfDues(t).filter(x=>stfDaysTo(x.date)>=-31).map(x=>
+    `<span class="w${stfDaysTo(x.date)<=30?' late':''}">${esc(x.label)} ${esc(stfDay(x.date))}</span>`).join('');
 }
 
 function stfRow(t){
-  const d=t.details||{};
-  const sub=[d.make,d.model,d.year,d.reg,stfWhoName(d.insurer,d.insurer_id),d.policy_no]
+  const d=t.details||{}, shut=stfLocked(t)&&!STF_OPEN;
+  const sub=shut?'':[d.make,d.model,d.year,d.reg,d.crt_reg,d.length,
+    t.kind==='policy'?stfWhoName(d.insurer,d.insurer_id):'',d.policy_no]
     .filter(Boolean).join(' · ');
-  const pic=arr(t.photos).find(x=>x&&x.path);
-  // Due within 30 days, or missed in the last month; older ones have had their say.
-  const soon=stfDues(t).find(x=>{ const n=stfDaysTo(x.date); return n<=30 && n>=-31; });
+  const pics=arr(t.photos).filter(x=>x&&x.path);
+  // Locked and not open: the name and its dates, and a padlock where the photo goes.
+  const right=shut ? '<span class="stflock" aria-label="Locked">&#128274;</span>'
+    : pics.length ? `<span class="stfpic"><img class="sthumb right" src="${esc(SIGNED[pics[0].path]||'')}" alt="">
+        <b aria-label="${pics.length} photo${pics.length===1?'':'s'}">${pics.length}</b></span>` : '';
   return `<button class="item" data-stf="${t.id}"><span class="mid">
-    <span class="t">${esc(t.name)}</span>
+    <span class="t">${stfLocked(t)?'&#128274; ':''}${esc(t.name)}</span>
     ${sub?`<span class="w">${esc(sub)}</span>`:''}
-    ${soon?`<span class="w late">${esc(soon.label)} ${esc(stfDay(soon.date))}</span>`:''}
+    ${stfDueLines(t)}
     ${t.created_by!==ME.id?`<span class="w">from ${esc(whoWrote(t.created_by))}</span>`:''}
-    ${photoCount(t)?`<span class="w">${esc(photoCount(t))}</span>`:''}
-  </span>${pic?`<img class="sthumb right" src="${esc(SIGNED[pic.path]||'')}" alt="">`:''}</button>`;
+  </span>${right}</button>`;
 }
 
-// What sort of thing it is decides which boxes come up.
-function stfPickKind(){
+// What sort of thing it is decides which boxes come up. Given onPick, it
+// is a change of type for something already kept.
+function stfPickKind(onPick,was){
   const box=document.createElement('div');
   box.className='daypick'; box.id='stfKinds';
-  box.innerHTML=`<div class="inner">
-    <p class="dsec" style="padding-top:0">What is it?</p>
-    ${STF_ORDER.map(k=>`<button class="item" data-stfkind="${k}"
+  box.innerHTML=`<div class="inner" style="max-height:calc(var(--vh,100dvh) - 40px);overflow-y:auto">
+    <p class="dsec" style="padding-top:0">${onPick?'Change it to':'What is it?'}</p>
+    ${STF_ORDER.filter(k=>k!==was).map(k=>`<button class="item" data-stfkind="${k}"
       style="border:1px solid var(--rule);border-radius:10px;margin-bottom:8px">
       <span class="mid"><span class="t">${esc(STF_TYPES[k].one)}</span>
       <span class="w">${esc(STF_TYPES[k].eg)}</span></span></button>`).join('')}
@@ -11696,12 +11943,32 @@ function stfPickKind(){
   box.onclick=ev=>{ if(ev.target===box) close(); };
   box.querySelector('#stfKindNo').onclick=close;
   box.querySelectorAll('[data-stfkind]').forEach(b=>b.onclick=()=>{
-    close(); openStuffEd(null,b.dataset.stfkind); });
+    close(); (onPick||(k=>openStuffEd(null,k)))(b.dataset.stfkind); });
+}
+
+/* A boat kept as a vehicle, say. Its photos, PDFs, notes and service record
+   stay with it; boxes carry across by name (or by STF_MOVE); the rest are
+   kept and shown under Also kept, so changing back loses nothing. */
+async function stfChangeKind(t,kind){
+  const ty=STF_TYPES[kind]; if(!ty||kind===t.kind) return;
+  const d=Object.assign({},t.details||{}), have=new Set(ty.fields.map(f=>f.k));
+  for(const [from,to] of Object.entries(STF_MOVE)){
+    if(d[from]==null||d[from]===''||have.has(from)||!have.has(to)||(d[to]!=null&&d[to]!=='')) continue;
+    d[to]=d[from]; delete d[from];
+  }
+  const n=stfServices(t.id).length;
+  if(n && !ty.service && !confirm('A '+ty.one.toLowerCase()+' has no service record. The '+n
+      +' service'+(n===1?' is':'s are')+' kept, but will only show if you change it back.')) return;
+  const {error}=await sb.from('stuff').update({kind, details:d, updated_at:new Date().toISOString()}).eq('id',t.id);
+  if(error){ toast('Could not change it'); console.error(error); return; }
+  await stfAfterChange(t.id);
+  toast('Now a '+ty.one.toLowerCase());
 }
 
 /* ---------- one thing, to look at ---------- */
-function openStuffThing(id){
-  if(!STUFF.some(x=>x.id===id)) return;
+async function openStuffThing(id){
+  const t=STUFF.find(x=>x.id===id); if(!t) return;
+  if(stfLocked(t) && !await stfUnlock()) return;
   STF_VIEW=id; renderStuffThing();
   showSheet('stuffView'); $('stfView').scrollTop=0; lockBackground();
 }
@@ -11722,13 +11989,21 @@ function renderStuffThing(){
   };
   const photos=arr(t.photos).filter(x=>x&&x.path), files=arr(t.files).filter(x=>x&&x.path);
   const services=stfServices(t.id);
+  // Kept from another type (a boat that was a vehicle): nothing is lost.
+  const shown=new Set(ty.fields.flatMap(f=>[f.k,f.k+'_id']).concat('locked'));
+  const label=k=>{ for(const o of Object.values(STF_TYPES)){ const f=o.fields.find(x=>x.k===k); if(f) return f; } };
+  const also=Object.keys(d).filter(k=>!shown.has(k)&&!/_id$/.test(k)&&d[k]!==''&&d[k]!=null)
+    .map(k=>{ const f=label(k)||{k,l:k};
+      return R(f.l, f.t==='money'?esc(stfMoney(d[k])):f.t==='date'?esc(stfDay(d[k]))
+        :f.t==='who'?stfWhoHtml(d[k],d[k+'_id']):esc(d[k])); }).join('');
   $('stfView').innerHTML=`
     ${photos.length?`<img class="stfhero" src="${esc(SIGNED[photos[0].path]||'')}"
       alt="Photo 1" data-stfpic="0">`:''}
-    <div class="card">${R('Type',esc(ty.one))}${ty.fields.map(f=>R(f.l,val(f))).join('')}
+    <div class="card">${R('Type',esc(ty.one)+(stfLocked(t)?' &nbsp;&#128274; Locked':''))}${ty.fields.map(f=>R(f.l,val(f))).join('')}
       ${R('Where the login is kept',esc(t.login_where||''))}${R('Notes',esc(t.notes||''))}
       ${mine?R('Shared with',esc(namesOf(arr(t.shared_with)).join(', ')))
             :R('Shared by',esc(whoWrote(t.created_by)))}</div>
+    ${also?`<p class="dsec">Also kept</p><div class="card">${also}</div>`:''}
     ${photos.length>1?`<p class="dsec">More photos</p><div class="rcpthumbs">${photos.map((x,i)=>
       i?`<img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-stfpic="${i}">`:'').join('')}</div>`:''}
     ${files.length?`<p class="dsec">Documents (PDF)</p><div class="card">${files.map((x,i)=>
@@ -11738,8 +12013,11 @@ function renderStuffThing(){
       ${mine?`<button class="btn" id="stfSvAdd" style="border:1.5px solid var(--rule);margin-bottom:8px">
         + Add a service</button>`:''}
       <div class="card">${services.length?services.map(x=>stfServiceRow(x,mine)).join('')
-        :'<div class="field"><dd style="color:var(--muted)">Nothing recorded yet.</dd></div>'}</div>`:''}`;
+        :'<div class="field"><dd style="color:var(--muted)">Nothing recorded yet.</dd></div>'}</div>`:''}
+    ${mine?`<button class="btn" id="stfKindBtn" style="border:1.5px solid var(--rule);margin-top:14px">
+      Change the type</button>`:''}`;
   const v=$('stfView');
+  const kb=$('stfKindBtn'); if(kb) kb.onclick=()=>stfPickKind(k=>stfChangeKind(t,k), t.kind);
   v.querySelectorAll('[data-stfpic]').forEach(i=>i.onclick=()=>
     lightbox(SIGNED[photos[Number(i.dataset.stfpic)].path]));
   v.querySelectorAll('[data-stfpdf]').forEach(b=>b.onclick=()=>stfOpenPdf(files[Number(b.dataset.stfpdf)]));
@@ -11824,8 +12102,9 @@ function openStuffEd(t,kind){
     return `<label>${esc(f.l)}<input name="d_${f.k}" value="${esc(v)}"${
       f.t==='money'?' inputmode="decimal" placeholder="0.00"'
       :f.t==='year'?' inputmode="numeric" maxlength="4" placeholder="e.g. 1998"'
-      :f.t==='code'?NOFIX:''}></label>`;
+      :f.t==='code'?NOFIX:''}${f.ph?` placeholder="${esc(f.ph)}"`:''}></label>`;
   };
+  const locked=!!d.locked;
   $('stfEdBody').innerHTML=`<form id="stfForm" onsubmit="return false">
     <fieldset><legend>${esc(ty.one)}</legend>
       <label>Name<input name="name" value="${esc(t?t.name:'')}"
@@ -11844,7 +12123,11 @@ function openStuffEd(t,kind){
     <fieldset><legend>Documents (PDF)</legend><div id="stfPdfs"></div>
       <div class="rcppicbtns"><label class="btn">Add a PDF<input type="file" id="stfPdfAdd"
         accept="application/pdf,.pdf" multiple></label></div></fieldset>
-    ${USERS.length?`<fieldset><legend>Share with</legend><div class="checks">${USERS.map(u=>
+    <fieldset><legend>Lock</legend><div class="checks" style="margin-top:0">
+      <label><input type="checkbox" name="locked" ${locked?'checked':''}> &#128274; Keep it locked</label></div>
+      <p class="coords">For a will, a passport, a driving licence: it needs your My Stuff
+      password before it opens. A locked thing is yours alone, so it can't be shared.</p></fieldset>
+    ${USERS.length?`<fieldset id="stfShareSet" ${locked?'style="display:none"':''}><legend>Share with</legend><div class="checks">${USERS.map(u=>
       `<label><input type="checkbox" name="share" value="${esc(u.id)}" ${
       arr(t&&t.shared_with).includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
       <p class="coords">They can look at it, its photos, PDFs and service record.
@@ -11852,6 +12135,8 @@ function openStuffEd(t,kind){
     ${t?'<button type="button" class="btn danger" id="stfDelete">Delete this</button>':''}
   </form>`;
   const f=$('stfForm');
+  f.elements.locked.onchange=()=>{ const s=$('stfShareSet');
+    if(s) s.style.display=f.elements.locked.checked?'none':''; };
   const dates=ty.fields.filter(x=>x.t==='date').map(x=>'d_'+x.k);
   useWhenPicker(f,dates,{dateOnly:dates});
   stfWireWho(f,null);
@@ -11934,11 +12219,15 @@ async function saveStuff(){
     if(x.t==='who'){ const id=Number(f.elements['d_'+x.k+'_id'].value)||null;
       if(id&&v) details[x.k+'_id']=id; else delete details[x.k+'_id']; }
   }
+  // Locking the first thing chooses the password; locked is never shared.
+  const locked=f.elements.locked.checked;
+  if(locked && !stfLockSaved() && !await stfLockAsk(false)) return;
+  if(locked) details.locked=true; else delete details.locked;
   const d={name, kind:STF_KIND, details,
     notes:f.elements.notes.value.trim()||null,
     login_where:f.elements.login_where.value.trim()||null,
     photos:dphNow(), files:STF_FILES.list.map(x=>({path:x.path, name:x.name})),
-    shared_with:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
+    shared_with:locked?[]:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
     updated_at:new Date().toISOString()};
   $('stfSave').disabled=true;
   let id=STF_EDIT&&STF_EDIT.id, error;
@@ -17616,7 +17905,8 @@ function areaItems(area){
   if(area==='links') return [
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
   if(area==='stuff') return [
-    it('Add something',           ()=>{ shutMenu(); stfPickKind(); })];
+    it('Add something',           ()=>{ shutMenu(); stfPickKind(); }),
+    it('Change the lock password', ()=>{ shutMenu(); stfChangeLock(); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

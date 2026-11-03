@@ -134,14 +134,14 @@ const ok = (what, cond, extra='') => {
     const t = new Date();
     const k = dayKeyOf(new Date(t.getFullYear(), t.getMonth() + 1, 9));
     DIARY_MONTH = k.slice(0,7); DIARY_DAY = k; renderDiary();
-    $('diaryAdd').click();
+    $('diaryAdd').click(); document.querySelector('[data-newkind="appointment"]').click();
     await new Promise(r => setTimeout(r, 200));
     const f = $('itForm');
     const out = { want: k, starts: f.elements['starts_at'].value,
                   due: f.elements['due_at'].value };
     $('itemEd').classList.add('hidden'); lockBackground();
     DIARY_VIEW = 'list'; renderDiary();
-    $('diaryAdd').click();
+    $('diaryAdd').click(); document.querySelector('[data-newkind="appointment"]').click();
     await new Promise(r => setTimeout(r, 200));
     out.listDue = $('itForm').elements['due_at'].value;
     $('itemEd').classList.add('hidden'); lockBackground();

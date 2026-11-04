@@ -11339,13 +11339,13 @@ function renderWeekMenu(){
 // photo, name, categories and times); words typed in are just the words.
 function menuMealHtml(m,r){
   if(!m) return '<span class="wmnone">&mdash; tap to choose</span>';
-  if(!r) return `<span class="rcpwhat"><b>${esc(m.title)}</b>${m.recipe_id
-    ?'<span>Not in the cookbook any more</span>':''}</span>`;
+  if(!r) return `<span class="rcpwhat"><b>${esc(m.title)}</b>${m.recipe_id&&RCP_LOADED&&!RCP_WHY
+    ?' <span>Not in the cookbook any more</span>':''}</span>`;
   const pic=rcpPic(arr(r.photos)[0]);
   const bits=[arr(r.categories).join(', '), rcpTimes(r)].filter(Boolean).join(' \u00b7 ');
   return `${pic?`<img src="${esc(pic)}" alt="" loading="lazy">`
       :'<span class="rcpnopic" aria-hidden="true">&#127869;</span>'}
-    <span class="rcpwhat"><b>${esc(r.title)}</b>${bits?`<span>${esc(bits)}</span>`:''}</span>`;
+    <span class="rcpwhat"><b>${esc(r.title)}</b>${bits?` <span>${esc(bits)}</span>`:''}</span>`;
 }
 async function menuSave(owner,day,meal,rec,words){
   const title=rec?rec.title:String(words||'').trim();
@@ -11427,11 +11427,12 @@ function briefMenuHtml(){
   const rows=MEALS.map(([k,l])=>[l,mealOf(o,day,k)]).filter(x=>x[1]);
   if(!rows.length) return '';
   return `<p class="dsec">Today&rsquo;s Menu</p>
-    <div class="card">${rows.map(([l,m])=>m.recipe_id
-      ?`<button class="brow" data-briefmeal="${m.recipe_id}"><span class="bwhen">${l}</span>
-         <span class="bwhat"><b>${esc(m.title)}</b></span></button>`
-      :`<div class="brow"><span class="bwhen">${l}</span>
-         <span class="bwhat"><b>${esc(m.title)}</b></span></div>`).join('')}</div>`;
+    <div class="card">${rows.map(([l,m])=>{
+      const r=m.recipe_id?RECIPES.find(x=>x.id===m.recipe_id):null;
+      return `<div class="wmrow"><span class="wmmeal">${l}</span> ${m.recipe_id
+        ?`<button class="wmpick" data-briefmeal="${m.recipe_id}">${menuMealHtml(m,r)}</button>`
+        :`<div class="wmpick">${menuMealHtml(m,null)}</div>`}</div>`;
+    }).join('')}</div>`;
 }
 const menuHasDinner = () => MENU_LOADED && !MENU_WHY && !!mealOf(menuOwner(),briefDay(),'dinner');
 
@@ -18392,9 +18393,11 @@ function renderBrief(){
   // the one kept is from another day or the last look failed.
   if(!WX_OFF && WX.state!=='loading' && (!WX.w || WX.state!=='ok'
       || Date.now()-(WX.at||0)>30*60*1000 || WX.w.day!==briefDay())) loadWeather();
-  if(RCP_PREFS.today&&!RCP_LOADED) loadRecipes().then(paintBriefRecipe);
+  if(!RCP_LOADED&&(RCP_PREFS.today||MENU.some(x=>x.recipe_id))) loadRecipes().then(paintBriefRecipe);
   // Someone sharing the menu may have changed it, so a fresh look each time.
-  if(Date.now()-MENU_AT>60*1000) loadMenu().then(paintBriefRecipe);
+  if(Date.now()-MENU_AT>60*1000) loadMenu().then(async()=>{
+    if(!RCP_LOADED&&MENU.some(x=>x.recipe_id)) await loadRecipes();
+    paintBriefRecipe(); });
   // A fresh look each time Today opens, but not on every redraw.
   if(BSKY_HANDLE && (BSKY.handle!==BSKY_HANDLE || (BSKY.state!=='loading'
       && Date.now()-(BSKY.at||0)>15*60*1000))) loadBsky();

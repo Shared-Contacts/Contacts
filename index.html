@@ -637,6 +637,8 @@ input[name="postcode"]{text-transform:uppercase}
   border-bottom:1px solid #F0EEE7;width:100%;text-align:left}
 .card .item:last-child{border-bottom:none}
 .item.dlywrap{flex-wrap:wrap}
+/* Diary entries about somebody else, so your own stand out */
+.item.forother{background:#E9F1F8}
 .pickrow.dly{flex:1 1 100%;margin:6px 0 0 44px;gap:6px}
 /* Whose Daily Log is on the screen, when somebody has shared theirs */
 .logwho{margin:0 0 10px}
@@ -746,11 +748,17 @@ i.key{vertical-align:middle}
 .helpsec ul{margin:0 0 10px;padding-left:20px}
 .helpsec li{margin-bottom:5px}
 .helpsec .lead{color:var(--muted)}
-.setrow .mv{color:var(--hull);font-size:13px;line-height:1.1;padding:3px 8px}
-.setrow .mv:disabled{opacity:.25}
+/* Hold a row (or the grip) and slide it, instead of up and down arrows */
+.grip{flex:0 0 auto;color:var(--muted);font-size:22px;line-height:1;padding:6px 4px;
+  cursor:grab;touch-action:none}
+.hmrow:not([data-hmgrip]),.hmrow[data-hmgrip]>summary{-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none}
+.hmrow input,.hmrow textarea{-webkit-user-select:text;user-select:text}
+.hmrow.lifted{position:relative;z-index:5;background:var(--panel);
+  border-radius:10px;box-shadow:0 6px 18px rgba(16,35,28,.28)}
 .setrow .scope{flex:0 0 auto;font-size:13px;color:var(--muted)}
 .setmv{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:2px}
-.setmv .mv{font-size:12px;padding:3px 7px}
+.setmv.grip{font-size:20px;padding:6px 4px}
 .setadd{padding:12px 14px}
 .setadd input,.setadd select#sAisle{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
   background:#fff;margin-bottom:8px}
@@ -799,6 +807,15 @@ i.key{vertical-align:middle}
 .bsky .bskytext{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
   overflow:hidden;padding:9px 12px 0;font-size:15px;overflow-wrap:anywhere}
 .bsky small{display:block;padding:4px 12px 9px;color:var(--muted);font-size:13px}
+/* The weather on Today, under the Bluesky photo */
+.wx{display:flex;gap:12px;align-items:center;margin:12px 0 4px;padding:10px 12px;
+  background:var(--panel);border:1px solid var(--rule);border-radius:var(--radius);
+  color:var(--ink);text-decoration:none}
+.wx .wxicon{font-size:34px;line-height:1;flex:0 0 auto}
+.wx .wxwords{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wx .wxwords b{font-size:17px}
+.wx .wxwords span{font-size:15px}
+.wx .wxwords small{color:var(--muted);font-size:13px}
 .bskynote{margin:12px 2px 2px;color:var(--muted);font-size:14px;text-align:center}
 .bskynote .linkbtn{color:var(--hull);font-weight:600;text-decoration:underline;
   padding:6px 4px;font-size:14px}
@@ -1064,6 +1081,13 @@ i.key{vertical-align:middle}
 .rcptwo{display:flex;gap:8px}
 .rcptwo .btn{flex:1;border:1.5px solid var(--rule);font-size:16px;padding:12px 8px;color:var(--hull)}
 .rcptwo .btn.primary{border-color:var(--hull);color:#F2EFE4}
+/* The week's menu: the meal on the left, what it is on the right */
+.wmrow{align-items:center;padding:0}
+.wmrow .mid{display:flex;align-items:baseline;gap:10px;padding:12px 14px;flex:1;min-width:0;text-align:left}
+.wmrow .wmmeal{flex:0 0 84px;color:var(--muted);font-size:14px}
+.wmrow .t{flex:1;min-width:0}
+.wmrow .t.wmnone{color:var(--muted)}
+.wmrow .wmopen{flex:0 0 auto;font-size:26px;color:var(--hull);padding:4px 14px}
 .btn.rcpbookbtn{border:1.5px solid var(--hull);color:var(--hull);font-size:16px;padding:12px;margin-bottom:4px}
 .bookdet{margin:4px 0 8px;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--panel)}
 .bookdet summary{font-weight:600;color:var(--hull);cursor:pointer}
@@ -1085,6 +1109,10 @@ i.key{vertical-align:middle}
 .rcpspin{flex:0 0 auto;font-size:26px;color:var(--hull);padding:8px 16px}
 .rcpcover{display:block;width:100%;max-height:42vh;object-fit:cover;border-radius:var(--radius);background:#F0EEE7}
 .rcpthumbs{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+.stfthumb{position:relative;flex:0 0 72px;display:block}
+.stfthumb .mk1{position:absolute;top:2px;left:2px;background:rgba(16,35,28,.72);color:#fff;
+  width:28px;height:28px;border-radius:50%;font-size:15px;line-height:1;
+  display:flex;align-items:center;justify-content:center;border:0;padding:0}
 .rcpthumbs img{flex:0 0 72px;width:72px;height:72px;object-fit:cover;border-radius:8px;background:#F0EEE7}
 .rcpthumb{position:relative;flex:0 0 auto}
 .rcpthumb small{position:absolute;left:4px;bottom:4px;background:rgba(16,35,28,.75);color:#F2EFE4;
@@ -1137,6 +1165,7 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .aislelist{padding:4px 14px 8px}
 .aislerow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #F0EEE7}
 .aislerow span{flex:1;min-width:0;overflow-wrap:anywhere}
+.aislerow .grip{flex:0 0 auto}
 .aislerow button{flex:0 0 40px;height:40px;border:1.5px solid var(--rule);border-radius:8px;
   font-size:18px;color:var(--hull)}
 .aislerow button:disabled{opacity:.3}
@@ -1305,6 +1334,12 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbar"><button id="reCancel">Cancel</button>
     <span class="title" id="reTitleBar">New recipe</span><button id="reSave">Save</button></div>
   <div class="sheetbody" id="reBody"></div>
+</div>
+
+<div id="weekMenu" class="sheet hidden">
+  <div class="sheetbar"><button id="wmBack">Back</button>
+    <span class="title">Week&rsquo;s menu</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="wmBody"></div>
 </div>
 
 <div id="ideas" class="sheet hidden">
@@ -1591,7 +1626,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','rtEd','log',
-  'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook',
+  'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','stuff','stuffView','stuffEd'];
 function sheetsOpen(){
@@ -3785,11 +3820,8 @@ function logSectionRows(){
       Where, The day and Notes always show in full; the rest start folded away.</dd></div>
     ${secs.map((p,i)=>{
       const def=secDef(p.id);
-      return `<div class="setrow">
-        <span style="display:flex;flex-direction:column;gap:2px">
-          <button class="mv" data-secmv="${p.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-          <button class="mv" data-secmv="${p.id}:down" ${i===secs.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
-        </span>
+      return `<div class="setrow" data-hm="sec:${esc(p.id)}">
+        <span class="grip" aria-hidden="true">&#10303;</span>
         <span style="flex:1">${esc(def.label)}${def.fixed?' <span class="scope">always open</span>':''}</span>
         <button class="tg" data-secon="${p.id}" aria-pressed="${p.on}">${p.on?'On':'Off'}</button>
       </div>`;
@@ -3887,11 +3919,8 @@ function catRows(){
       Headings of your own, with whatever you want to fill in under them.
       They join the list above, so you can put them in order and switch them
       off like the rest. Yours alone — nobody else sees them.</dd></div>
-    ${LOGCATS.map((c,i)=>`<div class="setrow">
-      <span style="display:flex;flex-direction:column;gap:2px">
-        <button class="mv" data-catmv="${c.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-        <button class="mv" data-catmv="${c.id}:down" ${i===LOGCATS.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
-      </span>
+    ${LOGCATS.map((c,i)=>`<div class="setrow" data-hm="cat:${c.id}">
+      <span class="grip" aria-hidden="true">&#10303;</span>
       <input data-catname="${c.id}" value="${esc(c.label)}">
       <button class="addmore" data-catopen="${c.id}">${fieldsOf(c.id).length} to fill in &rsaquo;</button>
       <button class="x" data-catdrop="${c.id}" aria-label="Remove">&times;</button>
@@ -3931,16 +3960,10 @@ function wireCats(){
     if(error){ toast('Could not remove it'); return; }
     await loadLog(); openSettings();
   });
-  box.querySelectorAll('[data-catmv]').forEach(b=>b.onclick=async()=>{
-    const [id,dir]=b.dataset.catmv.split(':');
-    const i=LOGCATS.findIndex(c=>c.id===Number(id)), j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=LOGCATS.length) return;
-    const a=LOGCATS[i], c=LOGCATS[j];
-    await Promise.all([
-      sb.from('log_cats').update({sort_order:c.sort_order}).eq('id',a.id),
-      sb.from('log_cats').update({sort_order:a.sort_order}).eq('id',c.id)]);
+  HM_SAVE.cat=async keys=>{
+    if(!await hmNumber('log_cats','sort_order',keys)) toast('Could not reorder');
     await loadLog(); openSettings();
-  });
+  };
   box.querySelectorAll('[data-catopen]').forEach(b=>b.onclick=()=>
     editFields(Number(b.dataset.catopen)));
 }
@@ -3956,11 +3979,8 @@ function editFields(catId){
     box.innerHTML=`<div class="inner">
       <p class="dsec" style="padding-top:0">${esc(cat.label)} — what to fill in</p>
       <div style="max-height:52vh;overflow-y:auto">
-      ${list.length?list.map((f,i)=>`<div class="setrow fieldrow">
-        <span style="display:flex;flex-direction:column;gap:2px">
-          <button class="mv" data-fmv="${f.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-          <button class="mv" data-fmv="${f.id}:down" ${i===list.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
-        </span>
+      ${list.length?list.map((f,i)=>`<div class="setrow fieldrow" data-hm="fld:${f.id}">
+        <span class="grip" aria-hidden="true">&#10303;</span>
         <input data-flabel="${f.id}" value="${esc(f.label)}" style="flex:1 1 120px">
         <select data-fkind="${f.id}">${FIELD_KINDS.map(([k,l])=>
           `<option value="${k}" ${k===f.kind?'selected':''}>${l}</option>`).join('')}</select>
@@ -4054,16 +4074,11 @@ function editFields(catId){
       if(error){ toast('Could not remove it'); return; }
       await refresh();
     });
-    box.querySelectorAll('[data-fmv]').forEach(b=>b.onclick=async()=>{
-      const [id,dir]=b.dataset.fmv.split(':');
-      const list=fieldsOf(catId);
-      const i=list.findIndex(f=>String(f.id)===id), j=dir==='up'?i-1:i+1;
-      if(i<0||j<0||j>=list.length) return;
-      await Promise.all([
-        sb.from('log_fields').update({sort_order:list[j].sort_order}).eq('id',list[i].id),
-        sb.from('log_fields').update({sort_order:list[i].sort_order}).eq('id',list[j].id)]);
+    HM_SAVE.fld=async keys=>{
+      if(!await hmNumber('log_fields','sort_order',keys)) toast('Could not reorder');
       await refresh();
-    });
+    };
+    holdMove(box);
   };
   document.body.appendChild(box);
   draw();
@@ -4071,11 +4086,8 @@ function editFields(catId){
 
 function optionRows(kind,one){
   const list=LOGOPTS.filter(o=>o.kind===kind);
-  return `${list.length?list.map((r,i)=>`<div class="setrow">
-      <span style="display:flex;flex-direction:column;gap:2px">
-        <button class="mv" data-optmv="${kind}:${r.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-        <button class="mv" data-optmv="${kind}:${r.id}:down" ${i===list.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
-      </span>
+  return `${list.length?list.map((r,i)=>`<div class="setrow" data-hm="opt:${kind}:${r.id}">
+      <span class="grip" aria-hidden="true">&#10303;</span>
       <input data-optedit="${r.id}" value="${esc(r.name)}">
       ${kind==='medication'?`<button class="tg" data-optdaily="${r.id}"
         aria-pressed="${!!r.is_default}">Daily</button>`:''}
@@ -4170,10 +4182,7 @@ async function saveSetOrder(order){
 }
 function setHead(key,i,total){
   return `<summary>${esc(SET_LABEL[key])}
-    <span class="setmv">
-      <button class="mv" data-setmv="${key}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-      <button class="mv" data-setmv="${key}:down" ${i===total-1?'disabled':''} aria-label="Move down">&#9660;</button>
-    </span></summary>`;
+    <span class="setmv grip" aria-hidden="true">&#10303;</span></summary>`;
 }
 
 // Scrolling a dropdown of 258 names is no way to find anybody.
@@ -4228,11 +4237,8 @@ async function openSettings(goTo){
   if(!RCP_LOADED) await loadRecipes();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
-      ${list.map((r,i)=>`<div class="setrow">
-        <span style="display:flex;flex-direction:column;gap:2px">
-          <button class="mv" data-mv="${table}:${r.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-          <button class="mv" data-mv="${table}:${r.id}:down" ${i===list.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
-        </span>
+      ${list.map((r,i)=>`<div class="setrow" data-hm="row:${table}:${r.id}">
+        <span class="grip" aria-hidden="true">&#10303;</span>
         ${fields.map(fd=>`<input data-edit="${table}:${r.id}:${fd}" value="${esc(r[fd]??'')}">`).join('')}
         ${table==='groups'?`<span class="scope">${r.owner_id?'mine':'shared'}</span>`:''}
         <button class="x" data-drop="${table}:${r.id}" aria-label="Remove">&times;</button></div>`).join('')}
@@ -4243,6 +4249,7 @@ async function openSettings(goTo){
       </div>`;
 
   const card=(key,inner,list)=>`<details class="card logsec" data-setcard="${key}"
+    data-hm="card:${SET_GROUPS.indexOf(setGroupOf(key))}:${key}" data-hmgrip="summary"
     ${SET_OPEN[key]?'open':''}>${setHead(key,list.indexOf(key),list.length)}${inner}</details>`;
 
   const bodies={
@@ -4332,14 +4339,22 @@ async function openSettings(goTo){
         Show a Bluesky photo on Today</label></div>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         <strong>Tonight&rsquo;s idea</strong>: a recipe from the family cookbook at the
-        bottom of Today, one you have not cooked lately.</dd></div>
+        bottom of Today, one you have not cooked lately. It stays away on days when
+        the week&rsquo;s menu has a dinner planned.</dd></div>
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="rcpTodayOn" ${RCP_PREFS.today?'checked':''}>
         Suggest a recipe on Today</label></div>
       <div class="setadd"><input id="bskyName" autocomplete="off" autocapitalize="none"
         spellcheck="false" placeholder="${esc(BSKY_DEFAULT)} (Barry’s)" value="${esc(BSKY_OWN)}">
         <button class="btn" id="bskySave"
-        style="border:1.5px solid var(--rule)">Save Bluesky name</button></div>`,
+        style="border:1.5px solid var(--rule)">Save Bluesky name</button></div>
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        <strong>The weather</strong> under the Bluesky photo: today&rsquo;s forecast
+        for wherever the phone is, with a link to the Met Office. The phone asks
+        once whether the app may use its location.</dd></div>
+      <div class="checks" style="padding:0 14px 14px"><label>
+        <input type="checkbox" id="wxOn" ${WX_OFF?'':'checked'}>
+        Show the weather on Today</label></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
@@ -4379,27 +4394,15 @@ async function openSettings(goTo){
     SET_OPEN[d.dataset.setcard]=d.open;
     try{ localStorage.setItem('setopen',JSON.stringify(SET_OPEN)); }catch(e){}
   });
-  $('setBody').querySelectorAll('[data-setmv]').forEach(b=>b.onclick=ev=>{
-    ev.preventDefault(); ev.stopPropagation();
-    const [key,dir]=b.dataset.setmv.split(':');
-    const g=setGroupOf(key); if(!g) return;
-    const o=mySetOrder(), inG=cardsInGroup(g);
-    const gi=inG.indexOf(key), gj=dir==='up'?gi-1:gi+1;
-    if(gi<0||gj<0||gj>=inG.length) return;
-    const i=o.indexOf(inG[gi]), j=o.indexOf(inG[gj]);
-    if(i<0||j<0) return;
-    o.splice(j,0,o.splice(i,1)[0]);
-    saveSetOrder(o);
-  });
+  // A card moved under its screen's heading keeps the places that heading's
+  // cards had in your order, just in the new arrangement.
+  HM_SAVE.card=keys=>saveSetOrder(hmRefill(mySetOrder(),keys));
 
-  $('setBody').querySelectorAll('[data-secmv]').forEach(b=>b.onclick=()=>{
-    const [id,dir]=b.dataset.secmv.split(':');
+  HM_SAVE.sec=keys=>{
     const secs=mySections();
-    const i=secs.findIndex(x=>x.id===id), j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=secs.length) return;
-    secs.splice(j,0,secs.splice(i,1)[0]);
-    saveSections(secs);
-  });
+    saveSections(keys.map(k=>secs.find(x=>x.id===k)).filter(Boolean)
+      .concat(secs.filter(x=>!keys.includes(x.id))));
+  };
   $('setBody').querySelectorAll('[data-secon]').forEach(b=>b.onclick=()=>{
     const secs=mySections();
     const x=secs.find(y=>y.id===b.dataset.secon);
@@ -4411,17 +4414,10 @@ async function openSettings(goTo){
     if(error){ toast('Could not save'); return; }
     await loadLog(); openSettings();
   });
-  $('setBody').querySelectorAll('[data-optmv]').forEach(b=>b.onclick=async()=>{
-    const [kind,id,dir]=b.dataset.optmv.split(':');
-    const list=LOGOPTS.filter(o=>o.kind===kind);
-    const i=list.findIndex(x=>x.id===Number(id)), j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=list.length) return;
-    list.splice(j,0,list.splice(i,1)[0]);
-    const res=await Promise.all(list.map((r,n)=>
-      sb.from('log_options').update({sort_order:(n+1)*10}).eq('id',r.id)));
-    if(res.some(r=>r.error)){ toast('Could not reorder'); return; }
+  HM_SAVE.opt=async keys=>{
+    if(!await hmNumber('log_options','sort_order',keys)) toast('Could not reorder');
     await loadLog(); openSettings();
-  });
+  };
   $('setBody').querySelectorAll('[data-optdaily]').forEach(b=>b.onclick=async()=>{
     const want=b.getAttribute('aria-pressed')!=='true';
     const {error}=await sb.from('log_options')
@@ -4463,6 +4459,7 @@ async function openSettings(goTo){
   wireFinance();
   wireLinkSettings();
   wireRecipeSettings();
+  holdMove($('setBody'));
   $('setBody').querySelectorAll('[data-taxpre]').forEach(b=>b.onclick=()=>{
     const p=TAX_PRESETS.find(x=>x[0]===b.dataset.taxpre);
     if(p) setTaxStart(p[2],p[3]); });
@@ -4523,31 +4520,21 @@ async function openSettings(goTo){
   const bn=$('bskyOn');
   if(bn) bn.onchange=async()=>{ BSKY_OFF=!bn.checked; bskyApply(); await saveTiles();
     toast(BSKY_OFF?'No Bluesky photo on Today':'Today will show @'+BSKY_HANDLE); };
+  const wo=$('wxOn');
+  if(wo) wo.onchange=async()=>{ WX_OFF=!wo.checked; await saveTiles();
+    toast(WX_OFF?'No weather on Today':'Today will show the weather'); };
   const ba=$('briefAgain');
   if(ba) ba.onclick=()=>{ $('settings').classList.add('hidden'); openBrief(); };
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
     b.onclick=()=>doHandover(b.dataset.handover));
-  $('setBody').querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
-    const [t,id,dir]=b.dataset.mv.split(':');
-    if(t==='groups'){
-      const o=myGroupOrder();
-      const i=o.indexOf(Number(id)), j=dir==='up'?i-1:i+1;
-      if(i<0||j<0||j>=o.length) return;
-      o.splice(j,0,o.splice(i,1)[0]);
-      saveGroupOrder(o);
-      return;
-    }
-    const rows=[...(t==='groups'?GROUPS:t==='statuses'?STATUSES:t==='pet_types'?PETS:KINDS)];
-    const i=rows.findIndex(r=>r.id===Number(id));
-    const j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=rows.length)return;
-    rows.splice(j,0,rows.splice(i,1)[0]);
-    // Renumber the whole list. Swapping two values fails when several share one.
-    const res=await Promise.all(rows.map((r,n)=>
-      sb.from(t).update({sort_order:(n+1)*10}).eq('id',r.id)));
-    if(res.some(r=>r.error)){toast('Could not reorder');console.error(res);return;}
-    await loadAll();openSettings();
-  });
+  HM_SAVE.row=async(keys,list)=>{
+    const t=list.split(':')[1], ids=keys.map(Number);
+    // The order of groups is yours alone, so it is kept with you.
+    if(t==='groups'){ saveGroupOrder(hmRefill(myGroupOrder(),ids)); return; }
+    if(!['statuses','pet_types','link_kinds'].includes(t)) return;
+    if(!await hmNumber(t,'sort_order',keys)){ toast('Could not reorder'); return; }
+    await loadAll(); openSettings();
+  };
 
   $('setBody').querySelectorAll('[data-addrow]').forEach(b=>b.onclick=async()=>{
     const t=b.dataset.addrow,rec={};
@@ -4569,7 +4556,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['moneyImp','money'],['pairs','money'],['reports','reports'],['recon','money'],['moneyEd','money'],['money','money'],
   ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
-  ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['recipe','recipes'],
+  ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
@@ -4609,6 +4596,12 @@ function openHelp(where){
   picture. Put a different Bluesky name in <strong>Settings &rsaquo; Home
   screen</strong> to see someone else’s, or switch the photo off there. Tap it to open the
   post in Bluesky. If Bluesky cannot be reached it says so, with a Try again.</p>
+  <p>Under it is <strong>the weather</strong> for wherever the phone is: today&rsquo;s
+  forecast, the temperature now, the wind and the chance of rain, with the place
+  name. Tap it for the Met Office forecast. The phone asks once whether the app may
+  use its location. Switch it off under <strong>Settings &rsaquo; Home screen</strong>.</p>
+  <p>If you have planned meals for today in Recipes &rsaquo; Week&rsquo;s menu, they show
+  near the bottom as <strong>Today&rsquo;s Menu</strong>.</p>
   <p>It never appears on top of something you are in the middle of, and it is
   in the menu whenever you want another look. Turn it off under
   <strong>Settings &rsaquo; Home screen</strong>.</p>
@@ -4914,8 +4907,8 @@ function openHelp(where){
   see it full size. Anyone who can use the list sees the photos.</p>
   <p><strong>Aisles.</strong> Open <strong>Aisles, in shop order</strong> at the
   bottom of one of your lists and tap <em>Start with supermarket aisles</em>, or
-  add your own. The arrows move an aisle earlier or later in the shop, the
-  pencil renames it. The list then reads in the order you walk round, under the
+  add your own. Hold an aisle still for a moment until it lifts, then slide it
+  earlier or later in the shop; the pencil renames it. The list then reads in the order you walk round, under the
   aisle names, with anything not sorted yet at the top. Pick the aisle when you
   add something, or tap it later to choose one. Once something has been in an
   aisle it goes there by itself next time, including things added from a recipe.
@@ -5092,6 +5085,13 @@ function openHelp(where){
   while the app is open. <strong>I cooked
   this</strong>, under Cook mode, keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
   from the ones you have not cooked lately (&#8635; for another).</p>
+  <p><strong>Week&rsquo;s menu</strong>, at the top of Recipes, plans breakfast, lunch
+  and dinner for today and the six days after. Tap a meal to pick a recipe (ones filed
+  under that meal&rsquo;s name come first) or type a few words, like Out or Leftovers;
+  leave any empty. Today shows them as <strong>Today&rsquo;s Menu</strong>, only the
+  meals you planned; with no dinner planned, Tonight&rsquo;s idea still shows. Tick
+  people under <em>Who else sees this menu</em> and they see the same menu and can
+  change it; if someone shares theirs with you, buttons at the top switch between them.</p>
   <p>The &#9734; beside a recipe&rsquo;s title makes it one of <strong>My
   favourites</strong>, which sit at the top of the list. The rest are grouped by
   category, in your order from Settings &rsaquo; Recipes, so a recipe in two
@@ -5316,8 +5316,8 @@ function openHelp(where){
   are still part of the log they have been given, so keep anything truly
   private out of a log you share.</p>
   <p>The choices behind "who is aboard", medication, bike ride and alcohol are
-  yours to edit and reorder in Settings &mdash; type over one to rename it, or use
-  the arrows to put them in the order you use them.</p>
+  yours to edit and reorder in Settings &mdash; type over one to rename it, or hold
+  one still for a moment and slide it into the order you use them.</p>
   <p>Only medicines ticked <strong>Daily</strong> appear when filling in a day,
   so a medicine you have stopped taking stays out of the way without losing the
   days it appears on. Pills left carries over from the day before with &minus;
@@ -5504,8 +5504,11 @@ function openHelp(where){
 
   <h4 id="h-settings">Settings</h4>
   <p>Groups, relationship statuses, connection types and kinds of pet are all
-  editable. Use the small arrows to reorder them &mdash; that order is what the
-  grouped view follows.</p>
+  editable. To reorder them, hold one still for a moment (on the &#10303; or any
+  part that isn&rsquo;t a typing box) until it lifts, then slide it up or down
+  &mdash; that order is what the grouped view follows. Every list in Settings that
+  can be put in order works the same way, and so do the cards themselves: hold a
+  card&rsquo;s heading and slide it. A quick tap still opens and closes it.</p>
   <p>A group can be shared by everyone, or private to you. Tick the box when
   adding it. Removing something tells you how many contacts use it first;
   their other details are never touched.</p>
@@ -5659,10 +5662,16 @@ function itemsOn(day){
   });
 }
 
+// An entry about somebody else (its contact is not the one set as you) is
+// tinted, so yours stand out. With nobody set as you, nothing is tinted.
+function itemForOther(it){
+  const me=MY_PROFILE&&MY_PROFILE.my_contact_id;
+  return !!(me&&it&&it.contact_id&&it.contact_id!==me);
+}
 function itemRow(it){
   const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
   const shared=ITEM_SHARES.some(x=>x.item_id===it.id)||it.created_by!==ME.id;
-  return `<div class="item dlywrap">
+  return `<div class="item dlywrap${itemForOther(it)?' forother':''}">
     <button class="tick ${it.done_at?'on':''}" data-done="${it.id}"
       aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
     <button class="mid" data-item="${it.id}">
@@ -5910,6 +5919,133 @@ function wireRoutine(){
     await loadAll(); renderDiary(); toast('All unticked');
   };
   dragJobs(body);
+}
+
+/* ---------- Hold and slide, to put any list in order ----------
+   The same feel as the Regular jobs: hold a row still for half a second and
+   it lifts; slide it, let go, and the new order is saved. A quick tap still
+   does what it always did, holding a typing box still lets you type, and a
+   swipe that starts moving straight away still scrolls the screen.
+   Rows carry data-hm="list:key" and only swap with rows of the same list
+   beside them. A row with data-hmgrip lifts only from inside that part (a
+   Settings card, from its heading). HM_SAVE[the list's first word] is given
+   the keys in their new order. */
+const HM_SAVE={};
+let HM=null;
+const HM_SKIP='input,select,textarea,a,label,button:not(.grip),[contenteditable]';
+const hmList=el=>{ const k=(el.dataset&&el.dataset.hm)||''; return k.slice(0,k.lastIndexOf(':')); };
+const hmKey =el=>{ const k=(el.dataset&&el.dataset.hm)||''; return k.slice(k.lastIndexOf(':')+1); };
+function holdMove(box){
+  if(!box) return;
+  box.querySelectorAll('[data-hm]').forEach(row=>{
+    if(row.__hm) return;
+    row.__hm=true; row.classList.add('hmrow');
+    row.addEventListener('contextmenu',ev=>{
+      if(!ev.target.closest('input,textarea')) ev.preventDefault(); });
+    row.addEventListener('pointerdown',ev=>hmDown(ev,row));
+  });
+}
+function hmDown(ev,row){
+  if(ev.button>0||HM) return;
+  const grip=row.dataset.hmgrip;
+  if(grip){ const g=ev.target.closest(grip); if(!g||g.closest('[data-hm]')!==row) return; }
+  const t=ev.target.closest(HM_SKIP);
+  if(t&&row.contains(t)) return;
+  HM={row, x0:ev.clientX, y0:ev.clientY, y:ev.clientY, lifted:false,
+      hold:setTimeout(hmLift,450)};
+  window.addEventListener('pointermove',hmMove);
+  window.addEventListener('pointerup',hmUp);
+  window.addEventListener('pointercancel',hmUp);
+}
+function hmRows(h){ return [...h.card.children].filter(e=>hmIs(h,e)); }
+function hmIs(h,e){ return !!(e&&e.dataset&&e.dataset.hm&&hmList(e)===h.list); }
+function hmScroller(el){
+  for(let p=el.parentElement;p&&p!==document.body;p=p.parentElement){
+    const o=getComputedStyle(p).overflowY;
+    if((o==='auto'||o==='scroll')&&p.scrollHeight>p.clientHeight) return p;
+  }
+  return null;
+}
+function hmLift(){
+  const h=HM; if(!h) return;
+  h.hold=null;
+  if(!h.row.isConnected){ hmDrop(); return; }
+  h.lifted=true; h.card=h.row.parentElement; h.list=hmList(h.row);
+  h.top=h.row.getBoundingClientRect().top; h.scroller=hmScroller(h.row);
+  h.before=hmRows(h).map(hmKey).join('|');
+  h.row.classList.add('lifted'); document.body.classList.add('jobdrag');
+  try{ if(navigator.vibrate) navigator.vibrate(15); }catch(e){}
+  // Held still near the top or bottom, the screen keeps creeping along.
+  h.creep=setInterval(()=>{ if(HM===h&&hmEdge(h)) hmPlace(h); },40);
+}
+function hmEdge(h){
+  const sc=h.scroller, box=sc?sc.getBoundingClientRect():{top:0,bottom:innerHeight};
+  const by = h.y<box.top+48 ? -12 : h.y>box.bottom-48 ? 12 : 0;
+  if(!by) return false;
+  if(sc) sc.scrollTop+=by; else window.scrollBy(0,by);
+  return true;
+}
+function hmPlace(h){
+  const row=h.row, card=h.card;
+  row.style.transform='';
+  const ht=row.offsetHeight, want=h.top+(h.y-h.y0), mid=want+ht/2;
+  for(let moved=true;moved;){
+    moved=false;
+    const p=row.previousElementSibling, n=row.nextElementSibling;
+    if(hmIs(h,p)){ const b=p.getBoundingClientRect();
+      if(mid<b.top+b.height/2){ card.insertBefore(row,p); moved=true; continue; } }
+    if(hmIs(h,n)){ const b=n.getBoundingClientRect();
+      if(mid>b.top+b.height/2){ card.insertBefore(n,row); moved=true; } }
+  }
+  row.style.transform='translateY('+(want-row.getBoundingClientRect().top)+'px)';
+}
+function hmMove(ev){
+  const h=HM; if(!h) return;
+  if(!h.lifted){ if(Math.hypot(ev.clientX-h.x0,ev.clientY-h.y0)>8) hmDrop(); return; }
+  h.y=ev.clientY; hmPlace(h); hmEdge(h);
+}
+function hmDrop(){
+  const h=HM; HM=null;
+  window.removeEventListener('pointermove',hmMove);
+  window.removeEventListener('pointerup',hmUp);
+  window.removeEventListener('pointercancel',hmUp);
+  if(!h) return;
+  clearTimeout(h.hold); clearInterval(h.creep);
+  if(h.lifted){ h.row.style.transform=''; h.row.classList.remove('lifted');
+    document.body.classList.remove('jobdrag'); }
+}
+function hmUp(){
+  const h=HM; hmDrop();
+  if(!h||!h.lifted) return;
+  // The tap that ends a lift must not also open, close or press anything.
+  const eat=ev=>{ ev.preventDefault(); ev.stopPropagation(); };
+  document.addEventListener('click',eat,true);
+  setTimeout(()=>document.removeEventListener('click',eat,true),400);
+  const keys=hmRows(h).map(hmKey);
+  if(keys.join('|')===h.before) return;
+  const save=HM_SAVE[h.list.split(':')[0]];
+  if(save) save(keys,h.list);
+}
+// While a row is lifted the finger moves the row, not the screen. This has to
+// be in place before the touch starts, or the phone will not let it stop a scroll.
+window.addEventListener('touchmove',ev=>{
+  if(HM&&HM.lifted&&ev.cancelable) ev.preventDefault(); },{passive:false});
+// The new order, numbered afresh in tens, saved to a table's order column.
+async function hmNumber(table,col,keys){
+  const res=await Promise.all(keys.map((id,n)=>
+    sb.from(table).update({[col]:(n+1)*10}).eq('id',Number(id))));
+  const bad=res.find(r=>r.error);
+  if(bad){ console.error(bad.error); return false; }
+  return true;
+}
+// A full order with some of it rearranged: those keep the places they had
+// between them, in their new order, and everything else stays put.
+function hmRefill(order,keys){
+  const o=order.slice();
+  const at=keys.map(k=>o.indexOf(k)).filter(i=>i>=0).sort((a,b)=>a-b);
+  if(at.length!==keys.length) return o;
+  at.forEach((i,n)=>{ o[i]=keys[n]; });
+  return o;
 }
 
 /* Moving a job up or down under its heading. Hold it still for half a second
@@ -9549,11 +9685,8 @@ function linkLevelRows(){
   return `<div class="field"><dd style="color:var(--muted);font-size:15px">
     How much each link matters to you. Rename them, change the order, or add
     more. Removing one leaves its links Unsorted &mdash; nothing is deleted.</dd></div>
-  ${LINK_PREFS.levels.map((x,i)=>`<div class="setrow fieldrow">
-    <span style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto">
-      <button class="mv" data-lvmv="${esc(x.id)}:up" ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-      <button class="mv" data-lvmv="${esc(x.id)}:down" ${i===n-1?'disabled':''} aria-label="Move down">&#9660;</button>
-    </span>
+  ${LINK_PREFS.levels.map((x,i)=>`<div class="setrow fieldrow" data-hm="lv:${esc(x.id)}">
+    <span class="grip" aria-hidden="true">&#10303;</span>
     <input data-lvname="${esc(x.id)}" value="${esc(x.name)}" style="flex:1 1 150px">
     <button class="x" data-lvdrop="${esc(x.id)}" aria-label="Remove">&times;</button></div>`).join('')}
   <div class="setadd"><input id="lvNew" placeholder="New level">
@@ -9585,13 +9718,12 @@ async function relabelSubject(from,to){
 function wireLinkSettings(){
   const body=$('setBody'); if(!body) return;
   const save=async msg=>{ await saveTiles(); openSettings(); if(msg) toast(msg); };
-  body.querySelectorAll('[data-lvmv]').forEach(b=>b.onclick=ev=>{
-    ev.preventDefault();
-    const [id,dir]=b.dataset.lvmv.split(':'), L=LINK_PREFS.levels;
-    const i=L.findIndex(x=>x.id===id), j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=L.length) return;
-    L.splice(j,0,L.splice(i,1)[0]); save();
-  });
+  HM_SAVE.lv=keys=>{
+    const L=LINK_PREFS.levels;
+    LINK_PREFS.levels=keys.map(k=>L.find(x=>x.id===k)).filter(Boolean)
+      .concat(L.filter(x=>!keys.includes(x.id)));
+    save();
+  };
   body.querySelectorAll('[data-lvname]').forEach(inp=>inp.onchange=()=>{
     const x=LINK_PREFS.levels.find(l=>l.id===inp.dataset.lvname);
     const v=inp.value.trim();
@@ -9872,7 +10004,8 @@ function renderRecipes(){
       <span class="rcptwo"><button class="btn primary" id="rcpAdd">+ Add a recipe</button>
         <button class="btn" id="rcpBook">From a book</button></span>
       <span class="rcptwo"><button class="btn" id="rcpFind">Find new recipes</button>
-        <button class="btn" id="rcpIdeas">Ideas</button></span></div>
+        <button class="btn" id="rcpIdeas">Ideas</button></span>
+      <span class="rcptwo"><button class="btn" id="rcpWeek">&#128197; Week&rsquo;s menu</button></span></div>
     ${pile.length?`<p class="dsec">To try<span class="lcount">${pile.length}</span></p>
       <div class="card">${pile.map(rcpRow).join('')}</div>`:''}
     <div class="card msearch"><div class="mqrow">
@@ -11085,6 +11218,206 @@ function shutCook(){
 $('cookShut').onclick=shutCook;
 $('rvBack').onclick=shutRecipe;
 $('ideasBack').onclick=()=>{ $('ideas').classList.add('hidden'); lockBackground(); };
+$('wmBack').onclick=()=>{ $('weekMenu').classList.add('hidden'); lockBackground(); };
+$('rcpBody').addEventListener('click',ev=>{ if(ev.target.closest('#rcpWeek')) openWeekMenu(); });
+
+/* ---------- The week's menu ----------
+   Breakfast, lunch and dinner for today and the six days after, each a
+   recipe from the cookbook or a few words ("Out", "Leftovers"), or nothing.
+   A menu belongs to whoever started it; they can share it with anyone, who
+   then sees the same menu and can change it too (step 55). The day is
+   Today's day, so it turns over at four in the morning, not midnight.
+   Which menu you look at, when one has been shared with you, is kept with
+   your home screen choices; until you choose, it is yours if you have
+   planned anything, otherwise the one shared with you. */
+let MENU=[], MENU_SHARES=[], MENU_WHY='', MENU_LOADED=false, MENU_AT=0, MENU_OF='';
+const MEALS=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner']];
+function menuDays(){
+  const [y,m,d]=briefDay().split('-').map(Number);
+  return [0,1,2,3,4,5,6].map(i=>isoDay(new Date(y,m-1,d+i)));
+}
+async function loadMenu(){
+  const days=menuDays();
+  const [m,sh]=await Promise.all([
+    sb.from('meal_plan').select('*').gte('on_date',days[0]).lte('on_date',days[6]),
+    sb.from('meal_shares').select('*')]);
+  MENU_LOADED=true; MENU_AT=Date.now();
+  const err=m.error||sh.error;
+  if(err){
+    MENU_WHY=/relation|does not exist|schema cache/i.test(err.message||'') ? 'notset' : 'error';
+    console.error(err); return false;
+  }
+  MENU_WHY=''; MENU=m.data||[]; MENU_SHARES=sh.data||[];
+  return true;
+}
+function menuOwners(){
+  return [ME.id].concat(MENU_SHARES.filter(x=>x.viewer_id===ME.id&&x.owner_id!==ME.id)
+    .map(x=>x.owner_id));
+}
+function menuOwner(){
+  const all=menuOwners();
+  if(MENU_OF&&all.includes(MENU_OF)) return MENU_OF;
+  return all.find(o=>MENU.some(x=>x.owner_id===o)) || ME.id;
+}
+const menuName = o => o===ME.id ? 'Mine' : whoWrote(o)+'’s';
+function mealOf(owner,day,meal){
+  return MENU.find(x=>x.owner_id===owner&&x.on_date===day&&x.meal===meal)||null;
+}
+function menuDayLabel(day,i){
+  const [y,m,d]=day.split('-').map(Number);
+  const words=new Date(y,m-1,d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+  return i===0?'Today — '+words:i===1?'Tomorrow — '+words:words;
+}
+function menuWhyHtml(){
+  return `<div class="card"><div class="field"><dd style="color:${
+    MENU_WHY==='notset'?'var(--muted)':'var(--red)'}">${MENU_WHY==='notset'
+    ? 'The week&rsquo;s menu needs its place in the database first. Run the step 55 file in '
+      +'Supabase, then come back here.'
+    : 'Could not load the menu just now. Nothing has been lost &mdash; check your '
+      +'signal and try again.'}</dd></div></div>`;
+}
+
+async function openWeekMenu(){
+  showSheet('weekMenu'); lockBackground();
+  $('wmBody').innerHTML='<p class="empty">Fetching the menu…</p>';
+  if(!RCP_LOADED) await loadRecipes();
+  await loadMenu(); renderWeekMenu(); $('wmBody').scrollTop=0;
+}
+function renderWeekMenu(){
+  const body=$('wmBody'); if(!body) return;
+  const y=body.scrollTop;
+  if(MENU_WHY){ body.innerHTML=menuWhyHtml(); return; }
+  const owner=menuOwner(), owners=menuOwners(), mine=owner===ME.id;
+  const sharedTo=MENU_SHARES.filter(x=>x.owner_id===ME.id).map(x=>x.viewer_id);
+  body.innerHTML=`
+    ${owners.length>1?`<div class="kindpick" style="margin-bottom:10px">${owners.map(o=>
+      `<button data-wmof="${esc(o)}" aria-pressed="${o===owner}">${esc(menuName(o))}</button>`).join('')}</div>`:''}
+    <p class="coords" style="margin:0 2px 10px">Tap a meal to pick a recipe or type what
+      it is. Leave any of them empty.${mine?'':` This is ${esc(whoWrote(owner))}&rsquo;s menu,
+      shared with you: what you change, they see too.`}</p>
+    ${menuDays().map((day,i)=>`<p class="dsec">${esc(menuDayLabel(day,i))}</p>
+      <div class="card">${MEALS.map(([k,l])=>{
+        const m=mealOf(owner,day,k);
+        return `<div class="item wmrow"><button class="mid" data-wm="${day}|${k}">
+          <span class="wmmeal">${l}</span>
+          <span class="t ${m?'':'wmnone'}">${m?esc(m.title):'&mdash;'}</span></button>
+          ${m&&m.recipe_id&&RECIPES.some(r=>r.id===m.recipe_id)?`<button class="wmopen"
+            data-wmrec="${m.recipe_id}" aria-label="Open the recipe">&rsaquo;</button>`:''}</div>`;
+      }).join('')}</div>`).join('')}
+    ${mine?`<p class="dsec">Who else sees this menu</p>
+      <div class="card">${USERS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
+        Tick someone and they see this menu, on their Today screen too, and can
+        change it. Nobody else sees it.</dd></div>
+        <div class="checks" style="padding:4px 14px 14px">${USERS.map(u=>`<label>
+          <input type="checkbox" data-wmshare="${esc(u.id)}" ${sharedTo.includes(u.id)?'checked':''}>
+          ${esc(u.display_name||u.email.split('@')[0])}</label>`).join('')}</div>`
+        :'<div class="field"><dd>Nobody else has an account yet.</dd></div>'}</div>`:''}`;
+  body.scrollTop=y;
+  body.querySelectorAll('[data-wmof]').forEach(b=>b.onclick=async()=>{
+    MENU_OF=b.dataset.wmof===ME.id&&!MENU_SHARES.some(x=>x.viewer_id===ME.id)?'':b.dataset.wmof;
+    renderWeekMenu(); await saveTiles();
+  });
+  body.querySelectorAll('[data-wm]').forEach(b=>b.onclick=()=>{
+    const [day,meal]=b.dataset.wm.split('|'); menuPick(owner,day,meal); });
+  body.querySelectorAll('[data-wmrec]').forEach(b=>b.onclick=()=>
+    openRecipe(Number(b.dataset.wmrec)));
+  body.querySelectorAll('[data-wmshare]').forEach(c=>c.onchange=async()=>{
+    const who=c.dataset.wmshare;
+    const {error}=c.checked
+      ? await sb.from('meal_shares').insert({owner_id:ME.id, viewer_id:who})
+      : await sb.from('meal_shares').delete().eq('owner_id',ME.id).eq('viewer_id',who);
+    if(error){ toast('Could not change who sees it'); console.error(error); c.checked=!c.checked; return; }
+    await loadMenu();
+    toast(c.checked?whoWrote(who)+' can see your menu now':whoWrote(who)+' no longer sees it');
+  });
+}
+async function menuSave(owner,day,meal,rec,words){
+  const title=rec?rec.title:String(words||'').trim();
+  const {error}=title
+    ? await sb.from('meal_plan').upsert({owner_id:owner, on_date:day, meal,
+        recipe_id:rec?rec.id:null, title, updated_by:ME.id, updated_at:new Date().toISOString()},
+        {onConflict:'owner_id,on_date,meal'})
+    : await sb.from('meal_plan').delete().eq('owner_id',owner).eq('on_date',day).eq('meal',meal);
+  if(error){
+    toast(/meal_plan|relation|does not exist/i.test(error.message||'')
+      ?'The menu needs step 55 run in Supabase first':'Could not save that');
+    console.error(error); return false;
+  }
+  await loadMenu(); renderWeekMenu();
+  if(!$('brief').classList.contains('hidden')) paintBriefRecipe();
+  return true;
+}
+// Choosing a meal: the cookbook to search, with anything filed under that
+// meal's name first, or a few words typed in.
+function menuPick(owner,day,meal){
+  const label=(MEALS.find(x=>x[0]===meal)||[])[1]||meal;
+  const cur=mealOf(owner,day,meal);
+  const [y,m,d]=day.split('-').map(Number);
+  const when=new Date(y,m-1,d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(label)}, ${esc(when)}</p>
+    <div class="setadd" style="padding:0 0 10px"><input id="wmWords" autocomplete="off"
+      placeholder="Type it, e.g. Out, Leftovers" value="${esc(cur&&!cur.recipe_id?cur.title:'')}">
+      <button class="btn primary" id="wmUse">Use this</button></div>
+    <input id="wmQ" type="search" enterkeyhint="search" autocomplete="off"
+      placeholder="Or search the cookbook" style="width:100%;padding:10px;border:1.5px solid var(--rule);border-radius:8px">
+    <div id="wmList" style="max-height:44vh;overflow-y:auto;margin-top:8px"></div>
+    <div class="pickrow" style="margin-top:10px">
+      ${cur?'<button class="btn" id="wmClear">Leave it empty</button>':''}
+      <button class="btn" id="wmCancel">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  const fits=r=>arr(r.categories).some(c=>String(c).toLowerCase()===label.toLowerCase());
+  const az=(a,b)=>String(a.title).localeCompare(String(b.title),'en',{sensitivity:'base'});
+  const paint=()=>{
+    const words=$('wmQ').value.toLowerCase().split(/\s+/).filter(Boolean);
+    const rows=rcpVisible().filter(r=>{
+      const hay=[r.title,arr(r.categories).join(' '),
+        arr(r.ingredients).map(i=>i.head||i.name).join(' ')].join(' ').toLowerCase();
+      return words.every(w=>hay.includes(w));
+    }).sort((a,b)=>(fits(b)-fits(a))||az(a,b));
+    $('wmList').innerHTML=rows.length?`<div class="card" style="margin:0">${rows.map(r=>
+      `<button class="item" data-wmpick="${r.id}"><span class="mid"><span class="t">${
+        cur&&cur.recipe_id===r.id?'&#10003; ':''}${esc(r.title)}</span>${arr(r.categories).length
+        ?`<span class="w">${esc(arr(r.categories).join(', '))}</span>`:''}</span></button>`).join('')}</div>`
+      :`<p class="coords" style="text-align:center">${rcpVisible().length
+        ?'No recipe has those words.':'No recipes in the cookbook yet.'}</p>`;
+  };
+  paint();
+  $('wmQ').oninput=paint;
+  $('wmList').onclick=async ev=>{
+    const b=ev.target.closest('[data-wmpick]'); if(!b) return;
+    const r=RECIPES.find(x=>x.id===Number(b.dataset.wmpick));
+    if(r&&await menuSave(owner,day,meal,r,'')) close();
+  };
+  $('wmUse').onclick=async()=>{
+    const w=$('wmWords').value.trim();
+    if(!w){ toast('Type what it is, or pick a recipe'); return; }
+    if(await menuSave(owner,day,meal,null,w)) close();
+  };
+  $('wmWords').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); $('wmUse').click(); } };
+  const c=$('wmClear'); if(c) c.onclick=async()=>{ if(await menuSave(owner,day,meal,null,'')) close(); };
+  $('wmCancel').onclick=close;
+  box.addEventListener('click',ev=>{ if(ev.target===box) close(); });
+}
+
+/* Today's Menu on Today: only the meals planned, and nothing at all when
+   none are. With no dinner planned, Tonight's idea still shows under it. */
+function briefMenuHtml(){
+  if(!MENU_LOADED||MENU_WHY) return '';
+  const o=menuOwner(), day=briefDay();
+  const rows=MEALS.map(([k,l])=>[l,mealOf(o,day,k)]).filter(x=>x[1]);
+  if(!rows.length) return '';
+  return `<p class="dsec">Today&rsquo;s Menu</p>
+    <div class="card">${rows.map(([l,m])=>m.recipe_id
+      ?`<button class="brow" data-briefmeal="${m.recipe_id}"><span class="bwhen">${l}</span>
+         <span class="bwhat"><b>${esc(m.title)}</b></span></button>`
+      :`<div class="brow"><span class="bwhen">${l}</span>
+         <span class="bwhat"><b>${esc(m.title)}</b></span></div>`).join('')}</div>`;
+}
+const menuHasDinner = () => MENU_LOADED && !MENU_WHY && !!mealOf(menuOwner(),briefDay(),'dinner');
 
 /* ---------- Today: an idea for tonight ----------
    The same one all day, changing when Today's day does, and picked from the
@@ -11108,7 +11441,13 @@ function briefRecipeHtml(){
 }
 function paintBriefRecipe(){
   const slot=$('briefRecipe'); if(!slot) return;
-  slot.innerHTML=briefRecipeHtml();
+  slot.innerHTML=briefMenuHtml()+(menuHasDinner()?'':briefRecipeHtml());
+  slot.querySelectorAll('[data-briefmeal]').forEach(b=>b.onclick=async()=>{
+    const id=Number(b.dataset.briefmeal);
+    shutBrief(); await openRecipes();
+    if(RECIPES.some(r=>r.id===id)){ RCP_CUR=null; openRecipe(id); }
+    else toast('That recipe is not in the cookbook any more');
+  });
   const o=slot.querySelector('[data-ropen]');
   if(o) o.onclick=async()=>{ const id=Number(o.dataset.ropen);
     shutBrief(); await openRecipes(); RCP_CUR=null; openRecipe(id); };
@@ -11368,12 +11707,11 @@ function renderShop(){
       <summary>Aisles, in shop order</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         Put the aisles in the order you walk round, and the list follows it.
+        Hold one still for a moment, then slide it up or down.
         Once something has been in an aisle it goes there by itself next time.</dd></div>
-      ${aisles.length?`<div class="aislelist">${aisles.map((a,i)=>`<div class="aislerow">
+      ${aisles.length?`<div class="aislelist">${aisles.map((a,i)=>`<div class="aislerow" data-hm="aisle:${i}">
+        <span class="grip" aria-hidden="true">&#10303;</span>
         <span>${esc(a.name)}</span>
-        <button type="button" data-aup="${i}" aria-label="Earlier in the shop" ${i?'':'disabled'}>&uarr;</button>
-        <button type="button" data-adown="${i}" aria-label="Later in the shop"
-          ${i<aisles.length-1?'':'disabled'}>&darr;</button>
         <button type="button" data-aname="${i}" aria-label="Rename">&#9998;</button>
         <button type="button" data-adel="${i}" aria-label="Remove" class="ax">&times;</button>
         </div>`).join('')}</div>`
@@ -11466,10 +11804,11 @@ function renderShop(){
     if(!n){ toast('Type the aisle’s name'); return; }
     saveAisles(aisles.concat({id:newAisleId(), name:n}));
   };
-  const moveAisle=(i,by)=>{
-    const a=aisles.slice(); const [x]=a.splice(i,1); a.splice(i+by,0,x); saveAisles(a); };
-  $('shopBody').querySelectorAll('[data-aup]').forEach(b=>b.onclick=()=>moveAisle(Number(b.dataset.aup),-1));
-  $('shopBody').querySelectorAll('[data-adown]').forEach(b=>b.onclick=()=>moveAisle(Number(b.dataset.adown),1));
+  HM_SAVE.aisle=keys=>{
+    const a=keys.map(i=>aisles[Number(i)]).filter(Boolean);
+    if(a.length===aisles.length) saveAisles(a);
+  };
+  holdMove($('shopBody'));
   $('shopBody').querySelectorAll('[data-aname]').forEach(b=>b.onclick=()=>{
     const i=Number(b.dataset.aname);
     const n=prompt('Call this aisle:',aisles[i].name);
@@ -12141,8 +12480,11 @@ function renderStuffThing(){
       ${mine?R('Shared with',esc(namesOf(arr(t.shared_with)).join(', ')))
             :R('Shared by',esc(whoWrote(t.created_by)))}</div>
     ${also?`<p class="dsec">Also kept</p><div class="card">${also}</div>`:''}
-    ${photos.length>1?`<p class="dsec">More photos</p><div class="rcpthumbs">${photos.map((x,i)=>
-      i?`<img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-stfpic="${i}">`:'').join('')}</div>`:''}
+    ${photos.length>1?`<p class="dsec">More photos</p>${mine?`<p class="coords" style="margin:0 2px">
+      Tap &#9733; on one to make it the big photo at the top.</p>`:''}<div class="rcpthumbs">${photos.map((x,i)=>
+      i?`<span class="stfthumb"><img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-stfpic="${i}">${
+        mine?`<button class="mk1" data-stfmain="${i}" aria-label="Make this the main photo"
+        title="Make this the main photo">&#9733;</button>`:''}</span>`:'').join('')}</div>`:''}
     ${files.length?`<p class="dsec">Documents (PDF)</p><div class="card">${files.map((x,i)=>
       `<button class="item" data-stfpdf="${i}"><span class="mid"><span class="t">&#128196; ${
       esc(x.name||'Document')}</span><span class="w">Tap to open</span></span></button>`).join('')}</div>`:''}
@@ -12157,6 +12499,8 @@ function renderStuffThing(){
   const kb=$('stfKindBtn'); if(kb) kb.onclick=()=>stfPickKind(k=>stfChangeKind(t,k), t.kind);
   v.querySelectorAll('[data-stfpic]').forEach(i=>i.onclick=()=>
     lightbox(SIGNED[photos[Number(i.dataset.stfpic)].path]));
+  v.querySelectorAll('[data-stfmain]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation(); stfMainPhoto(t,Number(b.dataset.stfmain)); });
   v.querySelectorAll('[data-stfpdf]').forEach(b=>b.onclick=()=>stfOpenPdf(files[Number(b.dataset.stfpdf)]));
   stfWireContacts(v);
   const add=$('stfSvAdd'); if(add) add.onclick=()=>stfServiceForm(t,null);
@@ -12169,6 +12513,15 @@ function renderStuffThing(){
     await stfAfterChange(t.id); toast('Removed');
   });
   const e=$('stfEditBtn'); if(e) e.onclick=()=>openStuffEd(t);
+}
+// The first photo is the one shown big at the top; this moves another there.
+async function stfMainPhoto(t,i){
+  const all=arr(t.photos), kept=all.filter(x=>x&&x.path);
+  const pick=kept[i]; if(!pick||i<1) return;
+  const order=[pick,...all.filter(x=>x!==pick)];
+  const {error}=await sb.from('stuff').update({photos:order}).eq('id',t.id);
+  if(error){ toast('Could not change the main photo'); console.error(error); return; }
+  await stfAfterChange(t.id); toast('That is now the main photo');
 }
 $('stfBack').onclick=()=>{ STF_VIEW=null; $('stuffView').classList.add('hidden'); lockBackground(); };
 
@@ -12525,7 +12878,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'],
-  recipes:['recipes','recipe','recipeEd','ideas','cook'], stuff:['stuff','stuffView','stuffEd']};
+  recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -12623,6 +12976,8 @@ function loadTiles(){
   HIDE_GONE = !!(saved&&saved.hidegone===true);
   BSKY_OWN = (saved&&typeof saved.bsky==='string')?saved.bsky:'';
   BSKY_OFF = !!(saved&&saved.bskyoff===true);
+  WX_OFF = !!(saved&&saved.wxoff===true);
+  MENU_OF = (saved&&typeof saved.menuof==='string')?saved.menuof:'';
   bskyApply();
   const tx=(saved&&typeof saved.tax==='string')?saved.tax.match(/^(\d\d)-(\d\d)$/):null;
   TAX_START = tx&&taxOk(Number(tx[1])-1,Number(tx[2]))
@@ -12647,7 +13002,7 @@ function loadTiles(){
 }
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
-              backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, links:LINK_PREFS,
+              backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, wxoff:WX_OFF, menuof:MENU_OF, links:LINK_PREFS,
               recipes:RCP_PREFS, notsame:NOT_SAME,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
@@ -13825,6 +14180,8 @@ union all select 'url_links',            count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'url_link_shares',      count(*), coalesce(jsonb_agg(t), '[]') from url_link_shares t
 -- Recipes
 union all select 'recipes',              count(*), coalesce(jsonb_agg(t), '[]') from recipes t
+union all select 'meal_plan',            count(*), coalesce(jsonb_agg(t), '[]') from meal_plan t
+union all select 'meal_shares',          count(*), coalesce(jsonb_agg(t), '[]') from meal_shares t
 -- My Stuff
 union all select 'stuff',                count(*), coalesce(jsonb_agg(t), '[]') from stuff t
 union all select 'stuff_service',        count(*), coalesce(jsonb_agg(t), '[]') from stuff_service t
@@ -17321,11 +17678,8 @@ function finAccountRows(){
     remembers whether you left it open.</dd></div>
   <datalist id="dlAccGroups">${[...new Set(ACCOUNTS.map(a=>(a.group_name||'').trim())
     .filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
-  ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow" data-arow="${a.id}">
-    <span style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto">
-      <button class="mv" data-amv="${a.id}:up"   ${i===0?'disabled':''} aria-label="Move up">&#9650;</button>
-      <button class="mv" data-amv="${a.id}:down" ${i===ACCOUNTS.length-1?'disabled':''} aria-label="Move down">&#9660;</button>
-    </span>
+  ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow" data-arow="${a.id}" data-hm="acc:${a.id}">
+    <span class="grip" aria-hidden="true">&#10303;</span>
     <input data-afield="${a.id}:name" value="${esc(a.name)}" style="flex:1 1 150px">
     <input data-afield="${a.id}:group_name" value="${esc(a.group_name||'')}"
       list="dlAccGroups" placeholder="Group" style="flex:0 1 120px"
@@ -17560,18 +17914,10 @@ function wireFinance(){
   });
   // Moving an account up or down. The whole list is renumbered rather than
   // two values swapped, because swapping fails the moment several share one.
-  body.querySelectorAll('[data-amv]').forEach(b=>b.onclick=async()=>{
-    const [id,dir]=b.dataset.amv.split(':');
-    const rows=ACCOUNTS.slice();
-    const i=rows.findIndex(r=>r.id===Number(id));
-    const j=dir==='up'?i-1:i+1;
-    if(i<0||j<0||j>=rows.length) return;
-    rows.splice(j,0,rows.splice(i,1)[0]);
-    const res=await Promise.all(rows.map((r,n)=>
-      sb.from('accounts').update({sort:(n+1)*10}).eq('id',r.id)));
-    if(res.some(r=>r.error)){ fail(res,'Could not reorder those'); return; }
+  HM_SAVE.acc=async keys=>{
+    if(!await hmNumber('accounts','sort',keys)) toast('Could not reorder those');
     await after();
-  });
+  };
   body.querySelectorAll('[data-ashare]').forEach(b=>b.onclick=()=>
     shareBox(Number(b.dataset.ashare)));
   body.querySelectorAll('[data-afiles]').forEach(b=>b.onclick=()=>
@@ -17833,6 +18179,125 @@ function paintBsky(){
     const t=slot.querySelector('[data-bskyagain]'); if(t) t.onclick=loadBsky; };
 }
 
+/* ---------- Today: the weather ----------
+   Where the phone is, from its own location, so it follows the boat. The
+   forecast is Open-Meteo's (free, no sign-up, no key), the place name is the
+   same lookup the maps use, and the link opens the Met Office forecast for
+   that spot. The last one is kept on this phone, so Today has something to
+   show at once while a fresh look is taken. */
+let WX_OFF=false;
+let WX={state:'', at:0};        // state: 'loading'|'ok'|'fail'|'denied'|'nogeo'
+const WX_API='https://api.open-meteo.com/v1/forecast';
+const WX_CODES={0:['Clear sky','☀️'],1:['Mainly clear','🌤️'],
+  2:['Partly cloudy','⛅'],3:['Overcast','☁️'],45:['Fog','🌫️'],
+  48:['Freezing fog','🌫️'],51:['Light drizzle','🌦️'],
+  53:['Drizzle','🌦️'],55:['Heavy drizzle','🌧️'],
+  56:['Freezing drizzle','🌧️'],57:['Freezing drizzle','🌧️'],
+  61:['Light rain','🌦️'],63:['Rain','🌧️'],65:['Heavy rain','🌧️'],
+  66:['Freezing rain','🌧️'],67:['Freezing rain','🌧️'],
+  71:['Light snow','🌨️'],73:['Snow','🌨️'],75:['Heavy snow','❄️'],
+  77:['Snow grains','🌨️'],80:['Light showers','🌦️'],
+  81:['Showers','🌧️'],82:['Heavy showers','🌧️'],
+  85:['Snow showers','🌨️'],86:['Heavy snow showers','❄️'],
+  95:['Thunderstorms','⛈️'],96:['Thunderstorms with hail','⛈️'],
+  99:['Thunderstorms with hail','⛈️']};
+function wxWords(code){ return WX_CODES[code]||['Mixed weather','🌡️']; }
+// The Met Office names each forecast page by a geohash of the spot.
+function wxGeohash(lat,lng,len){
+  const b32='0123456789bcdefghjkmnpqrstuvwxyz';
+  let la=[-90,90], ln=[-180,180], out='', bit=0, ch=0, even=true;
+  while(out.length<(len||9)){
+    const r=even?ln:la, v=even?lng:lat, mid=(r[0]+r[1])/2;
+    if(v>=mid){ ch=ch*2+1; r[0]=mid; } else { ch=ch*2; r[1]=mid; }
+    even=!even;
+    if(++bit===5){ out+=b32[ch]; bit=0; ch=0; }
+  }
+  return out;
+}
+function wxLink(lat,lng){
+  return 'https://weather.metoffice.gov.uk/forecast/'+wxGeohash(lat,lng,9);
+}
+function wxKept(){
+  try{ const k=JSON.parse(localStorage.getItem('weather')||'null');
+    return k&&k.day&&typeof k.lat==='number'?k:null; }catch(e){ return null; }
+}
+function wxHere(){
+  return new Promise((ok,no)=>{
+    if(!navigator.geolocation){ no('nogeo'); return; }
+    navigator.geolocation.getCurrentPosition(p=>ok(p.coords),
+      e=>no(e&&e.code===1?'denied':'fail'),
+      {enableHighAccuracy:false, timeout:12000, maximumAge:30*60*1000});
+  });
+}
+async function wxFetch(lat,lng){
+  const q='?latitude='+lat.toFixed(3)+'&longitude='+lng.toFixed(3)
+    +'&current=temperature_2m,weather_code'
+    +'&daily=weather_code,temperature_2m_max,temperature_2m_min,'
+    +'precipitation_probability_max,wind_speed_10m_max'
+    +'&wind_speed_unit=mph&timezone=auto&forecast_days=1';
+  const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(WX_API+q,{signal:ctl.signal});
+    if(!r.ok) return null;
+    const j=await r.json(), d=j.daily||{}, c=j.current||{};
+    const one=k=>Array.isArray(d[k])?d[k][0]:null;
+    if(one('weather_code')==null) return null;
+    return {code:one('weather_code'), hi:one('temperature_2m_max'), lo:one('temperature_2m_min'),
+      rain:one('precipitation_probability_max'), wind:one('wind_speed_10m_max'),
+      now:c.temperature_2m};
+  }catch(e){ return null; }
+  finally{ clearTimeout(t); }
+}
+async function loadWeather(){
+  if(WX_OFF) return;
+  const kept=wxKept();
+  WX={...WX, state:'loading', at:Date.now(), w:WX.w||kept};
+  paintWeather();
+  let pos;
+  try{ pos=await wxHere(); }
+  catch(why){ WX={...WX, state:typeof why==='string'?why:'fail'}; paintWeather(); return; }
+  const lat=pos.latitude, lng=pos.longitude;
+  // Moved less than a couple of miles since the last name: keep that name.
+  const near=kept&&kept.place&&metresBetween({lat,lng},{lat:kept.lat,lng:kept.lng})<3000;
+  const [f,place]=await Promise.all([wxFetch(lat,lng), near?kept.place:placeName(lat,lng)]);
+  if(!f){ WX={...WX, state:'fail'}; paintWeather(); return; }
+  const w={...f, lat, lng, place:place||'', day:briefDay(), when:new Date().toISOString()};
+  WX={state:'ok', at:Date.now(), w};
+  try{ localStorage.setItem('weather',JSON.stringify(w)); }catch(e){}
+  paintWeather();
+}
+function briefWeather(){
+  if(WX_OFF) return '';
+  return '<div id="briefWeather">'+weatherHtml()+'</div>';
+}
+function weatherHtml(){
+  const w=WX.w, again=' <button class="linkbtn" data-wxagain="1">Try again</button>';
+  const note=t=>`<p class="bskynote">${t}</p>`;
+  const said = WX.state==='denied' ? note('The weather needs this phone’s location. '
+        +'Allow location for this app in the browser’s settings.'+again)
+    : WX.state==='nogeo' ? note('This device cannot say where it is, so there is no weather.')
+    : WX.state==='fail' ? note((w?'Could not get a newer forecast just now.'
+        :'The weather did not load.')+again)
+    : WX.state==='loading'&&!w ? note('Looking up the weather…') : '';
+  if(!w) return said;
+  const [words,icon]=wxWords(w.code), r=v=>Math.round(Number(v));
+  const old=w.day!==briefDay();
+  const bits=[w.now!=null&&!old?'Now '+r(w.now)+'°':'',
+    w.wind!=null?'wind up to '+r(w.wind)+' mph':'',
+    w.rain!=null?r(w.rain)+'% chance of rain':''].filter(Boolean).join(' · ');
+  return `<a class="wx" href="${esc(wxLink(w.lat,w.lng))}" target="_blank" rel="noopener">
+      <span class="wxicon" aria-hidden="true">${icon}</span>
+      <span class="wxwords"><b>${esc(words)}${w.hi!=null&&w.lo!=null?', '+r(w.lo)+'° to '+r(w.hi)+'°':''}</b>
+        ${bits?`<span>${esc(bits)}</span>`:''}
+        <small>${w.place?esc(w.place)+' · ':''}${old?'yesterday’s forecast · ':''}Met Office forecast &rsaquo;</small>
+      </span></a>${said}`;
+}
+function paintWeather(){
+  const slot=$('briefWeather'); if(!slot) return;
+  slot.innerHTML=weatherHtml();
+  const a=slot.querySelector('[data-wxagain]'); if(a) a.onclick=loadWeather;
+}
+
 // The birthday's own icon: a cake in the week ahead, a moving party popper on
 // the day (Google's free animated emoji, only fetched on someone's birthday,
 // with a still one if it will not load) and a woozy face the day after.
@@ -17883,6 +18348,7 @@ function renderBrief(){
   $('briefBody').innerHTML=`
     <p class="briefdate" id="briefHello">${esc(briefHello(today))}</p>
     ${briefPhoto()}
+    ${briefWeather()}
     <p class="dsec">Your Birthday Reminders for this Week</p>
     <div class="card">${bdayRows||none}</div>
 
@@ -17904,8 +18370,15 @@ function renderBrief(){
       open it again whenever you like from the menu.</p>`;
 
   paintBsky();
+  paintWeather();
   paintBriefRecipe();
+  // The weather is looked at again after half an hour, or straight away if
+  // the one kept is from another day or the last look failed.
+  if(!WX_OFF && WX.state!=='loading' && (!WX.w || WX.state!=='ok'
+      || Date.now()-(WX.at||0)>30*60*1000 || WX.w.day!==briefDay())) loadWeather();
   if(RCP_PREFS.today&&!RCP_LOADED) loadRecipes().then(paintBriefRecipe);
+  // Someone sharing the menu may have changed it, so a fresh look each time.
+  if(Date.now()-MENU_AT>60*1000) loadMenu().then(paintBriefRecipe);
   // A fresh look each time Today opens, but not on every redraw.
   if(BSKY_HANDLE && (BSKY.handle!==BSKY_HANDLE || (BSKY.state!=='loading'
       && Date.now()-(BSKY.at||0)>15*60*1000))) loadBsky();
@@ -18010,7 +18483,7 @@ const AREA_SHUT={
   wish: ()=>{ if(DPH&&DPH.box==='wPics') dphCancel(); $('wish').classList.add('hidden'); },
   links:()=>$('links').classList.add('hidden'),
   recipes:()=>{ if(COOK&&!shutCook()) return;
-    ['recipes','recipe','recipeEd','ideas'].forEach(id=>$(id).classList.add('hidden')); },
+    ['recipes','recipe','recipeEd','ideas','weekMenu'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
   stuff:()=>{ if(!$('stuffEd').classList.contains('hidden')){ dphCancel(); stfCancelPdfs(); }
               ['stuff','stuffView','stuffEd'].forEach(id=>$(id).classList.add('hidden')); },

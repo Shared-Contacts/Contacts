@@ -372,7 +372,7 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
   console.log('\nToday’s Menu on Today (ML180)');
   await ev(() => { window.__rows.meal_shares = []; RCP_PREFS.today = true; MENU_AT = 0; });
   await ev(() => openBrief()); await settle(900);
-  const tm = () => ev(() => { const s = $('briefRecipe'); return s ? s.textContent.replace(/\s+/g, ' ').trim() : ''; });
+  const tm = () => ev(() => { const s = $('briefRecipe'); return s ? s.textContent.replace(/\u{1F37D}/gu, ' ').replace(/\s+/g, ' ').trim() : ''; });
   let t = await tm();
   ok('Today’s Menu shows the meals planned', /Today’s Menu/.test(t) && /Breakfast Porridge/.test(t) && /Dinner Shepherd’s pie/.test(t), t);
   ok('no Lunch line when no lunch is planned', !/Lunch/.test(t), t);
@@ -380,6 +380,16 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
   ok('it sits where Tonight’s idea was, after the ASAP list', await ev(() => {
     const kids = [...$('briefBody').children];
     return kids.indexOf($('briefRecipe')) > kids.findIndex(k => k.matches('p.dsec') && /ASAP/.test(k.textContent)); }));
+  ok('a recipe on Today’s Menu looks as it does on the Recipes list: photo, name, categories and times',
+    /Dinner Shepherd’s pie Mains · Prep 20 mins, Cook 45 mins/.test(t)
+    && await ev(() => { const i = document.querySelector('#briefRecipe [data-briefmeal="1"] img'); return !!i && /pie\.jpg/.test(i.src); }), t);
+  ok('  and one without a photo gets the plate', await ev(() => !!document.querySelector('#briefRecipe [data-briefmeal="2"] .rcpnopic')));
+  ok('  each meal a neat row, the photo beside the name',
+    await ev(() => [...document.querySelectorAll('#briefRecipe .wmrow')].every(row => {
+      const h = row.getBoundingClientRect().height, im = row.querySelector('img,.rcpnopic'), w = row.querySelector('.rcpwhat');
+      const a = im.getBoundingClientRect(), b = w.getBoundingClientRect();
+      return h < 120 && a.width > 50 && a.width < 80 && b.left > a.right && Math.abs((a.top + a.bottom) / 2 - (b.top + b.bottom) / 2) < 20; })),
+    JSON.stringify(await ev(() => [...document.querySelectorAll('#briefRecipe .wmrow')].map(r => r.getBoundingClientRect().height))));
   await p.click('[data-briefmeal="1"]'); await settle(800);
   ok('tapping a planned recipe opens it', await ev(() => !$('recipe').classList.contains('hidden') && RCP_CUR === 1));
   await closeAll();
@@ -392,6 +402,17 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
     /Today’s Menu.*Lunch Sandwiches.*Tonight’s idea/.test(t), t);
   ok('  and words typed in are not a link', (await p.$$('#briefRecipe [data-briefmeal]')).length === 0);
   await closeAll();
+
+  // Tonight's idea off and the cookbook not yet opened: the menu still fetches it for the photos.
+  await ev(([t]) => { window.__rows.meal_plan = [{ owner_id: 'me', on_date: t, meal: 'dinner', recipe_id: 1, title: 'Shepherd’s pie' }];
+    RCP_PREFS.today = false; RCP_LOADED = false; RECIPES = []; MENU_AT = 0; }, [today]);
+  await ev(() => openBrief()); await settle(1200);
+  t = await tm();
+  ok('the photo and details show even before the Recipes screen has been opened',
+    /Dinner Shepherd’s pie Mains · Prep 20 mins/.test(t) && !/Not in the cookbook/.test(t)
+    && await ev(() => !!document.querySelector('#briefRecipe [data-briefmeal="1"] img')), t);
+  await closeAll();
+  await ev(() => { RCP_PREFS.today = true; });
 
   await ev(() => { window.__rows.meal_plan = []; MENU_AT = 0; });
   await ev(() => openBrief()); await settle(900);

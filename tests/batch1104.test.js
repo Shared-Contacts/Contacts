@@ -278,7 +278,8 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
   await ev(() => {
     const r = (id, title, cats, by = 'me') => ({ id, created_by: by, title, categories: cats, ingredients: [],
       prep_steps: [], cook_steps: [], photos: [], share_all: true, to_try: false, created_at: '2026-10-0' + (id % 9) + 'T10:00:00Z' });
-    window.__rows.recipes = [r(1, 'Shepherd’s pie', ['Mains']), r(2, 'Porridge', ['Breakfast']),
+    window.__rows.recipes = [Object.assign(r(1, 'Shepherd’s pie', ['Mains']), { photos: [{ path: 'rec/me/pie.jpg' }], prep_mins: 20, cook_mins: 45 }),
+      r(2, 'Porridge', ['Breakfast']),
       r(3, 'Leek and potato soup', ['Soups']), r(4, 'Apple crumble', ['Puddings'])];
     window.__rows.meal_plan = []; window.__rows.meal_shares = [];
     RCP_LOADED = false; MENU_LOADED = false; MENU_OF = '';
@@ -292,7 +293,12 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
     return h.length === 8 && /^Today/.test(h[0]) && /^Tomorrow/.test(h[1]) && /Who else/.test(h[7]); }));
   ok('breakfast, lunch and dinner each day, all empty', await ev(() =>
     $('wmBody').querySelectorAll('[data-wm]').length === 21
-    && [...$('wmBody').querySelectorAll('.wmrow .t')].every(t => t.classList.contains('wmnone'))));
+    && $('wmBody').querySelectorAll('.wmpick .wmnone').length === 21));
+  ok('an empty meal row is a sensible height, the meal’s name just above', await ev(() => {
+    const row = document.querySelector('.wmrow'), r = row.getBoundingClientRect();
+    const n = row.querySelector('.wmmeal').getBoundingClientRect(), b = row.querySelector('.wmpick').getBoundingClientRect();
+    return r.height < 90 && b.top - n.bottom < 12; }),
+    JSON.stringify(await ev(() => document.querySelector('.wmrow').getBoundingClientRect().height)));
   ok('in that order', await ev(() => [...$('wmBody').querySelectorAll('.card')][0].textContent.replace(/\s+/g, ' ')
     .match(/Breakfast.*Lunch.*Dinner/)));
   ok('the day goes by Today’s day (turning over at four)', await dayN(0) === today);
@@ -326,7 +332,17 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
     { owner_id: 'me', on_date: t, meal: 'dinner', recipe_id: 1, title: 'Shepherd’s pie' },
     { owner_id: 'me', on_date: m, meal: 'lunch', recipe_id: null, title: 'Out' }]; }, [today, tom]);
   await ev(async () => { await loadMenu(); renderWeekMenu(); }); await settle(300);
-  ok('the menu shows what is planned', await ev(t => document.querySelector(`[data-wm="${t}|breakfast"] .t`).textContent === 'Porridge', today));
+  ok('the menu shows what is planned', await ev(t => document.querySelector(`[data-wm="${t}|breakfast"] .rcpwhat b`).textContent === 'Porridge', today));
+  ok('a planned recipe shows its photo, categories and times, as on the Recipes list', await ev(t => {
+    const b = document.querySelector(`[data-wm="${t}|dinner"]`);
+    return /pie\.jpg$/.test(b.querySelector('img').src) && /Mains/.test(b.textContent) && /20|45|1 hr|65/.test(b.textContent); }, today));
+  ok('one with no photo has the plate in its place', await ev(t =>
+    !!document.querySelector(`[data-wm="${t}|breakfast"] .rcpnopic`), today));
+  ok('words typed in show as they are, with no photo', await ev(t => {
+    const b = document.querySelector(`[data-wm="${t}|lunch"]`);
+    return b.textContent.trim() === 'Out' && !b.querySelector('img,.rcpnopic'); }, tom));
+  ok('a meal with a photo is still a sensible height', await ev(t =>
+    document.querySelector(`[data-wm="${t}|dinner"]`).closest('.wmrow').getBoundingClientRect().height < 120, today));
   ok('a planned recipe can be opened', !!(await p.$('[data-wmrec="2"]')) && !(await p.$('[data-wmrec="0"]')));
   await p.click(`[data-wm="${tom}|lunch"]`); await settle(300);
   ok('typed words come back in the box to change', await ev(() => $('wmWords').value === 'Out'));

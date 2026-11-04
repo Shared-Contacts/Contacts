@@ -2,6 +2,7 @@
 // accounts that belong to somebody, reordering them, the reconciliation date
 // in colour, receipts on a transaction, and keeping the bank's own CSV.
 const { chromium } = require('playwright');
+const { holdSlide } = require('./hold');
 const path = require('path');
 const DIR = __dirname;
 
@@ -137,14 +138,10 @@ const ok = (what, cond, extra='') => {
   const unfold = () => page.evaluate(() =>
     document.querySelectorAll('.card.logsec').forEach(d => d.open = true));
   await unfold();
-  ok('every account has arrows', (await page.$$('[data-amv]')).length === 6);
-  ok('the first cannot go up further',
-     await page.isDisabled('[data-amv="1:up"]'));
-  ok('the last cannot go down further',
-     await page.isDisabled('[data-amv="3:down"]'));
+  ok('every account can be held and moved', (await page.$$('[data-hm^="acc:"] > .grip')).length === 3);
+  ok('no arrows left', (await page.$$('[data-amv]')).length === 0);
   await page.evaluate(() => { window.__writes.length = 0; });
-  await page.click('[data-amv="1:down"]');
-  await page.waitForTimeout(500);
+  await holdSlide(page, '[data-hm="acc:1"]', '[data-hm="acc:2"]');
   w = await page.evaluate(() => window.__writes.filter(x => x.table === 'accounts'));
   ok('moving one down renumbers the whole list', w.length === 3, JSON.stringify(w));
   ok('in tens, so there is room to drop one in between',

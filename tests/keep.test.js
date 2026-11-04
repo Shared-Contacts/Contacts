@@ -1,6 +1,7 @@
 // Screens keep your place when they redraw, changing a transaction from the
 // reconcile screen, and the two-line greeting (asked for 26 Oct 2026).
 const { chromium } = require('playwright');
+const { holdSlide } = require('./hold');
 const path=require('path');
 const errors=[]; let pass=0,fail=0;
 const ok=(w,c,e='')=>{ if(c){pass++;console.log('  ✓ '+w);}else{fail++;console.log('  ✗ '+w+(e?'  <- '+e:''));} };
@@ -37,16 +38,16 @@ const ok=(w,c,e='')=>{ if(c){pass++;console.log('  ✓ '+w);}else{fail++;console
   });
   await p.waitForTimeout(500);
   await p.evaluate(()=>{ document.querySelectorAll('#setBody [data-setcard]')
-    .forEach(d=>{ if(d.querySelector('[data-amv]')) d.open=true; }); });
+    .forEach(d=>{ if(d.querySelector('[data-hm^="acc:"]')) d.open=true; }); });
   await p.waitForTimeout(200);
-  const btn='#setBody [data-amv="25:down"]';
-  await p.$eval(btn, e=>e.scrollIntoView({block:'center'}));
+  await p.$eval('#setBody [data-hm="acc:25"]', e=>e.scrollIntoView({block:'center'}));
   await p.waitForTimeout(200);
   const before=await p.evaluate(()=>{ window.__writes=[]; return $('setBody').scrollTop; });
-  await p.click(btn); await p.waitForTimeout(800);
+  const letGo=await holdSlide(p, '#setBody [data-hm="acc:25"]', '#setBody [data-hm="acc:26"]');
+  await p.waitForTimeout(300);
   const after=await p.evaluate(()=>$('setBody').scrollTop);
   ok('the screen was scrolled down to start with', before>300, String(before));
-  ok('it stays where it was', Math.abs(after-before)<5, before+' -> '+after);
+  ok('it stays where it was when you let go', Math.abs(after-letGo)<5, before+' -> '+letGo+' -> '+after);
   // The stand-in database only records writes, so look at what was written.
   ok('the account was moved down', await p.evaluate(()=>{
      const w=window.__writes.filter(x=>x.op==='update'&&x.table==='accounts');

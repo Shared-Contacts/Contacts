@@ -4,6 +4,7 @@
 // time. The stand-in database records writes without applying them, so after
 // each save the test puts the saved state into __rows itself.
 const { chromium } = require('playwright');
+const { holdSlide } = require('./hold');
 const path = require('path');
 const errors = []; let pass = 0, fail = 0;
 const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); }
@@ -71,7 +72,7 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); }
   await ev(a => { window.__rows.shopping_lists[0].aisles = a; }, A);
   await redraw(); await settle();
   ok('the aisles panel stays open after saving', await ev(() => $('sAisles').open));
-  ok('and lists them in order', await ev(() => [...document.querySelectorAll('.aislerow span')].map(s => s.textContent).join('|'))
+  ok('and lists them in order', await ev(() => [...document.querySelectorAll('.aislerow span:not(.grip)')].map(s => s.textContent).join('|'))
      === A.map(a => a.name).join('|'));
 
   console.log('\nThe list in shop order');
@@ -125,16 +126,23 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); }
   ok('which forgets nothing', !(await last('upsert', 'shopping_aisle_memory')));
 
   console.log('\nChanging the aisles');
+  ok('no up and down arrows any more', await ev(() =>
+    !document.querySelector('[data-aup],[data-adown]') && document.querySelectorAll('.aislerow .grip').length === 12));
   await clear();
-  await p.click('[data-adown="0"]'); await settle();
+  await holdSlide(p, '[data-hm="aisle:0"]', '[data-hm="aisle:1"]');
   w = await last('update', 'shopping_lists');
-  ok('the down arrow moves an aisle later', w && w.patch.aisles[0].name === 'Meat & Fish' && w.patch.aisles[1].name === 'Fruit & Veg');
-  ok('the first cannot go up, the last cannot go down', await ev(() =>
-    document.querySelector('[data-aup="0"]').disabled && document.querySelector('[data-adown="11"]').disabled));
+  ok('held and slid down, an aisle goes later', w && w.patch.aisles[0].name === 'Meat & Fish' && w.patch.aisles[1].name === 'Fruit & Veg');
+  ok('  keeping every aisle and its id', w && w.patch.aisles.length === 12 && w.patch.aisles[1].id === A[0].id);
   await clear();
-  await p.click('[data-aup="5"]'); await settle();
+  await holdSlide(p, '[data-hm="aisle:5"]', '[data-hm="aisle:4"]', { below: false });
   w = await last('update', 'shopping_lists');
-  ok('the up arrow moves one earlier', w && w.patch.aisles[4].name === 'Home Baking, Eggs & Bread');
+  ok('held and slid up, one goes earlier', w && w.patch.aisles[4].name === 'Home Baking, Eggs & Bread');
+  await clear();
+  {
+    const g = await p.$eval('[data-hm="aisle:2"] .grip', e => { const r = e.getBoundingClientRect(); return { x: r.left + 8, y: r.top + r.height / 2 }; });
+    await p.mouse.move(g.x, g.y); await p.mouse.down(); await settle(200); await p.mouse.up(); await settle(500);
+  }
+  ok('a quick tap moves nothing', !(await last('update', 'shopping_lists')));
   await clear();
   await p.click('[data-aname="5"]'); await settle();
   w = await last('update', 'shopping_lists');

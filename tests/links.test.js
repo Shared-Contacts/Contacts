@@ -1,6 +1,7 @@
 // URL Links: a library of web links with levels, subjects, search and
 // sharing (ML48, step 42, asked for 26 Oct 2026).
 const { chromium } = require('playwright');
+const { holdSlide } = require('./hold');
 const path = require('path');
 const fs = require('fs');
 const errors = []; let pass = 0, fail = 0;
@@ -263,7 +264,7 @@ const seed = () => {
   let pw = (await writes()).find(x => x.op === 'update' && x.table === 'profiles');
   ok('a level can be renamed', pw && pw.patch.home_tiles.links.levels.find(x => x.id === 'maybe').name === 'Someday');
   await ev(() => { window.__writes = []; });
-  await p.click('[data-lvmv="favourites:up"]'); await settle(500);
+  await holdSlide(p, '[data-hm="lv:favourites"]', '[data-hm="lv:everyday"]', { below: false });
   pw = (await writes()).find(x => x.op === 'update' && x.table === 'profiles');
   ok('and moved', pw && pw.patch.home_tiles.links.levels[0].id === 'favourites',
      JSON.stringify(pw && pw.patch.home_tiles.links.levels));

@@ -1082,12 +1082,16 @@ i.key{vertical-align:middle}
 .rcptwo .btn{flex:1;border:1.5px solid var(--rule);font-size:16px;padding:12px 8px;color:var(--hull)}
 .rcptwo .btn.primary{border-color:var(--hull);color:#F2EFE4}
 /* The week's menu: the meal on the left, what it is on the right */
-.wmrow{align-items:center;padding:0}
-.wmrow .mid{display:flex;align-items:baseline;gap:10px;padding:12px 14px;flex:1;min-width:0;text-align:left}
-.wmrow .wmmeal{flex:0 0 84px;color:var(--muted);font-size:14px}
-.wmrow .t{flex:1;min-width:0}
-.wmrow .t.wmnone{color:var(--muted)}
-.wmrow .wmopen{flex:0 0 auto;font-size:26px;color:var(--hull);padding:4px 14px}
+.wmrow{padding:8px 14px 10px;border-bottom:1px solid #F0EEE7}
+.card .wmrow:last-child{border-bottom:none}
+.wmrow .wmmeal{display:block;color:var(--muted);font-size:13px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.wmline{display:flex;align-items:center;gap:6px}
+.wmpick{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;padding:2px 0}
+.wmpick img,.wmpick .rcpnopic{flex:0 0 64px;width:64px;height:64px;border-radius:8px;
+  object-fit:cover;background:#F0EEE7}
+.wmpick .wmnone{color:var(--muted);padding:4px 0}
+.wmrow .wmopen{flex:0 0 auto;font-size:28px;color:var(--hull);padding:6px 4px 6px 12px}
 .btn.rcpbookbtn{border:1.5px solid var(--hull);color:var(--hull);font-size:16px;padding:12px;margin-bottom:4px}
 .bookdet{margin:4px 0 8px;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--panel)}
 .bookdet summary{font-weight:600;color:var(--hull);cursor:pointer}
@@ -11298,11 +11302,11 @@ function renderWeekMenu(){
     ${menuDays().map((day,i)=>`<p class="dsec">${esc(menuDayLabel(day,i))}</p>
       <div class="card">${MEALS.map(([k,l])=>{
         const m=mealOf(owner,day,k);
-        return `<div class="item wmrow"><button class="mid" data-wm="${day}|${k}">
-          <span class="wmmeal">${l}</span>
-          <span class="t ${m?'':'wmnone'}">${m?esc(m.title):'&mdash;'}</span></button>
-          ${m&&m.recipe_id&&RECIPES.some(r=>r.id===m.recipe_id)?`<button class="wmopen"
-            data-wmrec="${m.recipe_id}" aria-label="Open the recipe">&rsaquo;</button>`:''}</div>`;
+        const r=m&&m.recipe_id?RECIPES.find(x=>x.id===m.recipe_id):null;
+        return `<div class="wmrow"><span class="wmmeal">${l}</span>
+          <div class="wmline"><button class="wmpick" data-wm="${day}|${k}"
+            aria-label="Choose ${l.toLowerCase()}">${menuMealHtml(m,r)}</button>
+          ${r?`<button class="wmopen" data-wmrec="${r.id}" aria-label="Open the recipe">&rsaquo;</button>`:''}</div></div>`;
       }).join('')}</div>`).join('')}
     ${mine?`<p class="dsec">Who else sees this menu</p>
       <div class="card">${USERS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
@@ -11330,6 +11334,18 @@ function renderWeekMenu(){
     await loadMenu();
     toast(c.checked?whoWrote(who)+' can see your menu now':whoWrote(who)+' no longer sees it');
   });
+}
+// One meal on the menu: a recipe looks as it does on the Recipes list (its
+// photo, name, categories and times); words typed in are just the words.
+function menuMealHtml(m,r){
+  if(!m) return '<span class="wmnone">&mdash; tap to choose</span>';
+  if(!r) return `<span class="rcpwhat"><b>${esc(m.title)}</b>${m.recipe_id
+    ?'<span>Not in the cookbook any more</span>':''}</span>`;
+  const pic=rcpPic(arr(r.photos)[0]);
+  const bits=[arr(r.categories).join(', '), rcpTimes(r)].filter(Boolean).join(' \u00b7 ');
+  return `${pic?`<img src="${esc(pic)}" alt="" loading="lazy">`
+      :'<span class="rcpnopic" aria-hidden="true">&#127869;</span>'}
+    <span class="rcpwhat"><b>${esc(r.title)}</b>${bits?`<span>${esc(bits)}</span>`:''}</span>`;
 }
 async function menuSave(owner,day,meal,rec,words){
   const title=rec?rec.title:String(words||'').trim();

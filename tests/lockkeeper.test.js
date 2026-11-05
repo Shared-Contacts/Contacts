@@ -1,0 +1,313 @@
+// MY Games and Lock Keeper (ML202, with step 57): an original dice game for
+// 2 to 5, played with real dice, each player on their own phone. The phones
+// are linked through step 57's functions; lkfake.js stands in for them here,
+// with the same rules, and window.__who plays the other people.
+const { chromium } = require('playwright');
+const path = require('path');
+const fs = require('fs');
+const errors = []; let pass = 0, fail = 0;
+const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); }
+  else { fail++; console.log('  ✗ ' + w + (e ? '  <- ' + e : '')); } };
+const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|ERR_FAILED|ServiceWorker|signed\.test|font|Failed to fetch|gstatic|nominatim|bsky|open-meteo|PGRST202|does not exist|Server unwell|^\[object Object\]$|JSHandle@object/i;
+const ROOT = path.join(__dirname, '..');
+
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });
+  const p = await b.newPage({ viewport: { width: 844, height: 390 } });
+  p.on('pageerror', e => errors.push('PAGE ERROR: ' + e.message));
+  p.on('console', m => { if (m.type() === 'error' && !quiet.test(m.text())) errors.push('CONSOLE: ' + m.text()); });
+  let answer = true; const asked = [];
+  p.on('dialog', d => { asked.push(d.message()); return answer ? d.accept() : d.dismiss(); });
+  await p.goto('file://' + path.join(__dirname, 'boot.html'));
+  await p.waitForTimeout(900);
+  if (await p.$('#noticeX')) { await p.click('#noticeX'); await p.waitForTimeout(300); }
+  await p.addScriptTag({ path: path.join(__dirname, 'lkfake.js') });
+  const ev = (f, a) => p.evaluate(f, a);
+  const settle = (ms = 300) => p.waitForTimeout(ms);
+  const top = () => ev(() => SHEET_STACK[SHEET_STACK.length - 1]);
+  const toasts = () => ev(() => [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '));
+  const clearToasts = () => ev(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
+  const rpcs = name => ev(n => window.__writes.filter(w => w.op === 'rpc' && w.name === n), name);
+  const clear = () => ev(() => { window.__writes.length = 0; });
+  const tap = async (c, n) => { await clearToasts(); await p.click(`[data-lk="${c}:${n}"]`); await settle(250); };
+  const cell = (c, n) => ev(k => { const e = document.querySelector(`[data-lk="${k}"]`); return e ? e.className : 'missing'; }, c + ':' + n);
+  const mine = () => ev(() => lkSheet(lkMe(LK_CUR).sheet));
+  const status = () => ev(() => $('lkStatus') ? $('lkStatus').textContent.replace(/\s+/g, ' ').trim() : '');
+  // Someone else does something, then this phone hears of it.
+  const as = async (who, name, args) => { await ev(([w, n, a]) => { window.__who = w; const r = window.__rpc(n, a); window.__who = null; return r; }, [who, name, args]);
+    await ev(async () => { await lkReload(LK_CUR); lkPaint(); }); await settle(150); };
+  const game = () => ev(() => JSON.parse(JSON.stringify(lkGame(LK_CUR))));
+  await ev(() => { WX_OFF = true; BSKY_OFF = true; if (typeof bskyApply === 'function') bskyApply(); window.__lkFake(); });
+
+  // ---------------------------------------------------------------
+  console.log('\nA MY Games tile, a place in the menu, and Help');
+  ok('there is a Games tile, and it opens MY Games', await ev(() => TILE_DEST.games && TILE_DEST.games.label === 'Games' && TILE_DEST.games.go === openGames));
+  ok('  new people get it after Jigsaws, with My Stuff still just before Settings', await ev(() =>
+    TILE_DEFAULTS.indexOf('games') === TILE_DEFAULTS.indexOf('jig') + 1 && TILE_DEFAULTS.indexOf('stuff') === TILE_DEFAULTS.indexOf('settings') - 1));
+  ok('  and it joins the end of an arrangement someone already has', await ev(() => {
+    const was = MY_PROFILE, keep = TILES; MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }, { dest: 'diary' }], hidden: [] } };
+    loadTiles(); const got = TILES.map(t => t.dest); MY_PROFILE = was; TILES = keep; return got.includes('games'); }));
+  ok('  unless they took it off before', await ev(() => {
+    const was = MY_PROFILE, keep = TILES; MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }], hidden: ['games'] } };
+    loadTiles(); const got = TILES.map(t => t.dest); MY_PROFILE = was; TILES = keep; return !got.includes('games'); }));
+  ok('Games is a place in the menu, with New game', await ev(() => AREAS.games && AREAS.games.title === 'Games'
+    && areaItems('games').some(x => x.label === 'New game of Lock Keeper')));
+  await ev(() => openHelp('games')); await settle(300);
+  ok('Help has the rules, in a box of their own', await ev(() => { const h = document.getElementById('h-games');
+    return !!h && h.parentElement.classList.contains('helpbox') && /Closing a lock/.test(h.parentElement.textContent)
+      && /78 for 12/.test(h.parentElement.textContent); }));
+  ok('  and the menu’s How it works goes there', await ev(() => HELP_AT.games === 'h-games'));
+  await ev(() => { $('help').classList.add('hidden'); lockBackground(); });
+
+  // ---------------------------------------------------------------
+  console.log('\nThe scoring and the sheet');
+  ok('a row scores 1, 3, 6, 10 … up to 78 for twelve marks', await ev(() =>
+    [1, 2, 3, 4, 5, 11, 12].map(lkTri).join() === '1,3,6,10,15,66,78'));
+  ok('a closed lock counts as one more mark', await ev(() => lkRowCount({ red: [2, 3, 4, 5, 6, 12], locked: ['red'] }, 'red') === 7));
+  ok('the total: the rows added, less 5 a penalty', await ev(() => {
+    const s = lkSheet({ red: [2, 4, 5], yellow: [3], green: [12, 11, 9, 8, 7], pen: 1 }); const r = lkScore(s);
+    return r.rows.join() === '6,1,15,0' && r.pen === 5 && r.total === 17; }));
+  ok('a saved sheet is tidied: real numbers only, once each, left to right', await ev(() => {
+    const s = lkSheet({ red: [5, 2, 5, 13, 'x'], green: [2, 12], pen: 9, locked: ['red', 'purple'] });
+    return s.red.join() === '2,5' && s.green.join() === '12,2' && s.pen === 4 && s.locked.join() === 'red' && s.blue.length === 0; }));
+
+  // ---------------------------------------------------------------
+  console.log('\nMY Games, and starting a game');
+  await ev(() => openGames()); await settle(400);
+  ok('MY Games opens', await top() === 'games' && await ev(() => /Lock Keeper/.test($('gamesBody').textContent)));
+  ok('  no games yet: it says so', await ev(() => /No games yet/.test($('gamesBody').textContent)));
+  ok('  How to play opens the rules', await ev(() => { $('lkHow').click(); const ok = !$('help').classList.contains('hidden');
+    $('help').classList.add('hidden'); lockBackground(); return ok; }));
+  await clear();
+  await p.click('#lkNew'); await settle(300);
+  ok('New game asks who is playing, a row each with their details', await ev(() => !!$('lkWho')
+    && $('lkWho').querySelectorAll('.checks.ppl label .pplwho b').length === 2));
+  await clearToasts(); await p.click('#lkwGo'); await settle(200);
+  ok('  nobody ticked: it says so', /Tick at least one/.test(await toasts()) && !!(await p.$('#lkWho')));
+  await ev(() => document.querySelector('#lkWho input[value="sandra"]').click());
+  await p.click('#lkwGo'); await settle(300);
+  ok('then who rolls first: you and Sandra', await ev(() => !!$('lkFirst')
+    && [...$('lkFirst').querySelectorAll('[data-lkfirst] b')].map(b => b.textContent).join() === 'Me,Sandra'));
+  ok('  saying how to choose', await ev(() => /first to\s+roll a 6/.test($('lkFirst').textContent)));
+  await p.click('[data-lkfirst="0"]'); await settle(500);
+  let r = await rpcs('new_game');
+  ok('the game is started for you both, you rolling first', r.length === 1 && r[0].args.players.join() === 'me,sandra' && r[0].args.first_seat === 0, JSON.stringify(r));
+  ok('  and its sheet opens on top', await top() === 'lkPlay');
+  const G1 = await ev(() => LK_CUR);
+
+  // ---------------------------------------------------------------
+  console.log('\nThe sheet, on a phone turned sideways');
+  const lay = await ev(() => {
+    const st = $('lkStage').getBoundingClientRect(), rows = [...document.querySelectorAll('.lkrow')];
+    return { w: st.width, h: st.height, iw: innerWidth, ih: innerHeight, tf: getComputedStyle($('lkStage')).transform,
+      rows: rows.map(x => x.dataset.lkrow).join(), red: [...rows[0].querySelectorAll('.lkn')].map(b => b.textContent).join(),
+      green: [...rows[2].querySelectorAll('.lkn')].map(b => b.textContent).join(), cells: rows.map(x => x.querySelectorAll('.lkn').length),
+      gates: document.querySelectorAll('.lkgate').length, cell: document.querySelector('.lkn').getBoundingClientRect().toJSON(),
+      done: $('lkDone').getBoundingClientRect().toJSON(),
+      spill: [...document.querySelectorAll('#lkStage *')].filter(e => { const r = e.getBoundingClientRect();
+        return r.right > innerWidth + 1 || r.bottom > innerHeight + 1 || r.left < -1; }).length }; });
+  ok('it fills the screen, the right way up', lay.tf === 'none' && Math.abs(lay.w - lay.iw) < 2 && Math.abs(lay.h - lay.ih) < 2, JSON.stringify(lay));
+  ok('four rows: red, yellow, green, blue', lay.rows === 'red,yellow,green,blue');
+  ok('  eleven numbers in each, and a lock at the end', lay.cells.every(n => n === 11) && lay.gates === 4);
+  ok('  red goes 2 up to 12, green 12 down to 2', lay.red === '2,3,4,5,6,7,8,9,10,11,12' && lay.green === '12,11,10,9,8,7,6,5,4,3,2');
+  ok('  every number big enough for a finger', lay.cell.width >= 44 && lay.cell.height >= 40, JSON.stringify(lay.cell));
+  ok('  and nothing spills off the screen', lay.spill === 0, lay.spill);
+  ok('the bottom tiles are out of the way while playing', await ev(() => getComputedStyle($('tray')).display === 'none'));
+  ok('  and so is the new-version bar', await ev(() => [...document.styleSheets].some(s => { try { return [...s.cssRules]
+    .some(r => /#lkPlay:not\(\.hidden\)\)?\s*#verBar/.test(r.cssText) && /display: none/.test(r.cssText)); } catch (e) { return false; } })));
+  ok('it says it is your roll, and what you can mark', /Your roll/.test(await status()) && /white and a colour/.test(await status()), await status());
+  ok('the players along the top, the roller marked', await ev(() => {
+    const s = [...document.querySelectorAll('.lkwho span')].map(x => x.textContent.replace(/\s+/g, ' ').trim());
+    return s.length === 2 && /^. You 0$/.test(s[0]) && /^Sandra 0$/.test(s[1]); }),
+    JSON.stringify(await ev(() => [...document.querySelectorAll('.lkwho span')].map(x => x.textContent))));
+
+  // ---------------------------------------------------------------
+  console.log('\nMarking on your own roll');
+  await clear();
+  await tap('red', 5);
+  ok('tap red 5: marked', /\bon\b/.test(await cell('red', 5)) && /\bnow\b/.test(await cell('red', 5)), await cell('red', 5));
+  ok('  2, 3 and 4 are crossed out', (await Promise.all([2, 3, 4].map(n => cell('red', n)))).every(c => /gone/.test(c)));
+  ok('  6 onwards still open', !/gone|on/.test(await cell('red', 6)));
+  r = await rpcs('save_sheet');
+  ok('  and it is saved for the others to see', r.length === 1 && r[0].args.g === G1 && r[0].args.s.red.join() === '5'
+    && r[0].args.s.turn.no === 1 && JSON.stringify(r[0].args.s.turn.marks) === '[["red",5]]', JSON.stringify(r));
+  ok('  the row now says 1 mark, and scores 1', await ev(() => document.querySelector('[data-lkrow="red"] .lkcount').textContent === '1'
+    && document.querySelector('.lkfoot .lkbox').textContent === '1'));
+  await tap('yellow', 3);
+  ok('a second mark on your own roll: fine', /\bon\b/.test(await cell('yellow', 3)));
+  await tap('green', 12);
+  ok('  a third: no', !/\bon\b/.test(await cell('green', 12)) && /Two marks is the most/.test(await toasts()), await toasts());
+  await tap('red', 3);
+  ok('a number already passed: no, and it says why', /passed: marks go left to right/.test(await toasts()), await toasts());
+  await tap('red', 5);
+  ok('tap the newest mark again: it comes off', !/\bon\b/.test(await cell('red', 5)) && !/gone/.test(await cell('red', 2)));
+  ok('  and the crossings out with it', (await mine()).red.length === 0 && (await mine()).turn.marks.length === 1);
+  await tap('red', 5);
+  ok('the last number needs five marks first', await (async () => { await tap('red', 12); return /needs five marks/.test(await toasts()); })()
+    || /Two marks/.test(await toasts()), await toasts());
+
+  // ---------------------------------------------------------------
+  console.log('\nDone, and the dice passing on');
+  await clear();
+  await p.click('#lkDone'); await settle(400);
+  r = await rpcs('finish_turn');
+  ok('Done tells the game you have finished with roll 1', r.length === 1 && r[0].args.at_turn === 1 && r[0].args.move_on === false, JSON.stringify(r));
+  ok('  no penalty asked: you marked something', asked.length === 0, asked.join(' | '));
+  ok('  now it waits for Sandra', /Waiting for Sandra/.test(await status()), await status());
+  ok('  you rolled, so you can carry on without her', !!(await p.$('#lkOn')) && !(await p.$('#lkDone')));
+  await tap('blue', 12);
+  ok('  your marks for that roll are finished', /finished with this roll/.test(await toasts()), await toasts());
+  await as('sandra', 'finish_turn', { g: G1, at_turn: 1 });
+  ok('Sandra finishes: it is her roll', /Sandra is rolling/.test(await status()) && /white dice total is yours too/.test(await status()), await status());
+  ok('  and the roller mark moves to her', await ev(() => /Sandra/.test(document.querySelector('.lkwho span.roll').textContent)));
+  ok('  Done is there again', !!(await p.$('#lkDone')) && await ev(() => !$('lkDone').disabled));
+  await tap('blue', 12);
+  ok('on someone else’s roll, one mark (the white dice)', /\bon\b/.test(await cell('blue', 12)));
+  await tap('blue', 10);
+  ok('  a second: no, and it says why', !/\bon\b/.test(await cell('blue', 10)) && /One mark is the most/.test(await toasts()), await toasts());
+  await p.click('#lkDone'); await settle(300);
+  ok('  Done, waiting for Sandra, and no carrying on: it is not your roll', /Waiting for Sandra/.test(await status()) && !(await p.$('#lkOn')));
+  await clearToasts();
+  await as('sandra', 'finish_turn', { g: G1, at_turn: 2 });
+  ok('Sandra finishes: your roll again, and it says so', /Your roll/.test(await status()) && /Your roll/.test(await toasts()), await toasts());
+
+  // ---------------------------------------------------------------
+  console.log('\nA penalty');
+  answer = false; asked.length = 0; await clear();
+  await p.click('#lkDone'); await settle(300);
+  ok('nothing marked on your own roll: Done asks about a penalty', asked.length === 1 && /penalty: minus 5/.test(asked[0]), asked.join(' | '));
+  ok('  Cancel goes back to marking, nothing sent', (await rpcs('finish_turn')).length === 0 && (await mine()).pen === 0);
+  answer = true; asked.length = 0;
+  await p.click('#lkDone'); await settle(400);
+  ok('  OK takes it: one penalty box crossed', (await mine()).pen === 1 && await ev(() => document.querySelectorAll('.lkpen.on').length === 1));
+  ok('  minus 5 in the total', await ev(() => [...document.querySelectorAll('.lkfoot .lkbox')].map(b => b.textContent).join() === '1,1,0,1,5,-2'),
+    await ev(() => [...document.querySelectorAll('.lkfoot .lkbox')].map(b => b.textContent).join()));
+  ok('  and the roll is finished', (await rpcs('finish_turn')).length === 1);
+  ok('  shown beside your name for the others', await ev(() => /✕/.test(document.querySelector('.lkwho span.me').textContent)));
+  await as('sandra', 'finish_turn', { g: G1, at_turn: 3 });
+
+  // ---------------------------------------------------------------
+  console.log('\nClosing a lock');
+  // Your sheet as it stands on roll 4 (Sandra's): red 2 to 5.
+  await ev(() => { const me = window.__rows.game_players.find(x => x.game_id === LK_CUR && x.user_id === 'me');
+    me.sheet = { red: [2, 3, 4, 5], yellow: [3], blue: [12], pen: 1 }; });
+  await as('sandra', 'finish_turn', { g: G1, at_turn: 4, move_on: true });   // she carries on without you: your roll 5
+  ok('the roller (Sandra) carried on without you: your roll', /Your roll/.test(await status()) && (await game()).turn_no === 5, await status());
+  await tap('red', 12);
+  ok('four marks in red: the 12 cannot close it yet', /needs five marks/.test(await toasts()), await toasts());
+  await tap('red', 6);
+  answer = false; asked.length = 0;
+  await tap('red', 12);
+  ok('five marks: the 12 asks first, saying it closes red for everyone', asked.length === 1 && /close the red lock/.test(asked[0]) && /Nobody can mark red/.test(asked[0]), asked.join(' | '));
+  ok('  Cancel leaves it open', !/\bon\b/.test(await cell('red', 12)) && (await rpcs('close_row')).length === 0);
+  answer = true; await clear();
+  await tap('red', 12);
+  r = await rpcs('close_row');
+  ok('  OK: marked, and the lock closed for everyone', /\bon\b/.test(await cell('red', 12)) && r.length === 1 && r[0].args.colour === 'red', JSON.stringify(r));
+  ok('  on this roll', (await game()).closed.red === 5, JSON.stringify((await game()).closed));
+  ok('  the gate is shut, and yours', await ev(() => /shut/.test(document.querySelector('[data-lkgate="red"]').className)
+    && /mine/.test(document.querySelector('[data-lkgate="red"]').className)));
+  ok('  it counts as a seventh mark: 28 points', await ev(() => document.querySelector('[data-lkrow="red"] .lkcount').textContent === '7'
+    && document.querySelector('.lkfoot .lkbox').textContent === '28'));
+  ok('  and says to put the red die aside', /put that die aside/.test(await toasts()), await toasts());
+  await tap('red', 12);
+  ok('a closed lock cannot be undone', /\bon\b/.test(await cell('red', 12)) && /stays closed/.test(await toasts()), await toasts());
+  await p.click('#lkDone'); await settle(300);
+  await as('sandra', 'finish_turn', { g: G1, at_turn: 5 });
+  await tap('red', 7);
+  ok('the next roll, red is closed for good', !/\bon\b/.test(await cell('red', 7)), await toasts());
+
+  // A lock Sandra closed, on an earlier roll
+  await as('sandra', 'close_row', { g: G1, colour: 'yellow' });
+  ok('a lock closed by Sandra this roll: its gate is shut for you too', await ev(() => /shut/.test(document.querySelector('[data-lkgate="yellow"]').className)
+    && !/mine/.test(document.querySelector('[data-lkgate="yellow"]').className)));
+
+  // ---------------------------------------------------------------
+  console.log('\nThe end of the game');
+  await p.click('#lkDone'); await settle(300);
+  await as('sandra', 'finish_turn', { g: G1, at_turn: 6 });
+  ok('two locks closed: when the roll is finished, the game is over', (await game()).status === 'ended' && /Game over/.test(await status()), await status());
+  const over = await ev(() => $('lkStage').querySelector('.lkover') ? $('lkStage').querySelector('.lkover').textContent.replace(/\s+/g, ' ') : '');
+  ok('  the final scores, the winner first', /You won, 25 to 0/.test(over) && /Two locks were closed/.test(over), over);
+  ok('  with Play again and Back to games', !!(await p.$('#lkAgain')) && !!(await p.$('#lkOverBack')));
+  ok('  and, as you started it, Clear it away', !!(await p.$('#lkClear')));
+  ok('  no Done or Stop once it has ended', !(await p.$('#lkDone')) && !(await p.$('#lkStop')));
+  await clearToasts(); await ev(() => lkTap('blue', 9)); await settle(200);
+  ok('  and nothing more can be marked (the scores sit over the sheet anyway)', !/\bon\b/.test(await cell('blue', 9)) && /has ended/.test(await toasts()), await toasts());
+  await p.click('#lkOverBack'); await settle(400);
+  ok('Back to games: the list, with it under Finished', await top() === 'games' && await ev(() =>
+    /Finished/.test($('gamesBody').textContent) && /You won/.test($('gamesBody').textContent)));
+
+  // ---------------------------------------------------------------
+  console.log('\nThe list, the number on the tile, and stopping');
+  await ev(async () => { window.__who = 'sandra'; window.__rpc('new_game', { players: ['sandra', 'me'], first_seat: 0 }); window.__who = null;
+    await lkReload(); renderGames(); });
+  const G2 = await ev(() => Math.max(...GAMES.map(g => g.id)));
+  ok('a game Sandra started shows up for you', await ev(() => /Going on/.test($('gamesBody').textContent) && /Sandra is rolling/.test($('gamesBody').textContent)));
+  ok('  the Games tile shows 1: a mark for you to make', await ev(() => lkWaitingCount() === 1 && tilePip('games') === 1));
+  await ev(id => document.querySelector(`[data-lkgame="${id}"]`).click(), G2); await settle(400);
+  ok('tap it: its sheet opens, Sandra rolling', await top() === 'lkPlay' && /Sandra is rolling/.test(await status()));
+  answer = true; asked.length = 0;
+  await p.click('#lkStop'); await settle(300);
+  ok('Stop game asks, then stops it for everyone, scores kept', asked.length === 1 && /Stop this game for everyone/.test(asked[0])
+    && (await game()).status === 'ended' && (await game()).end_reason === 'Stopped');
+  ok('  Sandra started this one, so you cannot clear it away', !(await p.$('#lkClear')));
+  ok('  and the tile number goes', await ev(() => lkWaitingCount() === 0));
+  await p.click('#lkOverBack'); await settle(300);
+  await ev(id => document.querySelector(`[data-lkgame="${id}"]`).click(), G1); await settle(400);
+  asked.length = 0;
+  await p.click('#lkClear'); await settle(400);
+  ok('Clear it away (yours): asks, then it is gone from the list', asked.length === 1 && await top() === 'games'
+    && await ev(id => !document.querySelector(`[data-lkgame="${id}"]`) && !GAMES.some(g => g.id === id), G1));
+
+  // ---------------------------------------------------------------
+  console.log('\nHeld upright');
+  await ev(async () => { window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 0 }); await lkReload(); renderGames(); });
+  const G3 = await ev(() => Math.max(...GAMES.map(g => g.id)));
+  await p.setViewportSize({ width: 390, height: 844 }); await settle(300);
+  await ev(id => lkOpen(id), G3); await settle(400);
+  const up = await ev(() => { const st = $('lkStage'), r = st.getBoundingClientRect();
+    return { tf: getComputedStyle(st).transform, w: r.width, h: r.height, iw: innerWidth, ih: innerHeight, x: r.left, y: r.top }; });
+  ok('the sheet turns itself round to fill the screen', up.tf !== 'none' && Math.abs(up.w - up.iw) < 2 && Math.abs(up.h - up.ih) < 2 && Math.abs(up.x) < 2 && Math.abs(up.y) < 2, JSON.stringify(up));
+  ok('  its top along the right-hand side, to read with the phone turned left', await ev(() => {
+    const bar = document.querySelector('.lkbar').getBoundingClientRect(), foot = document.querySelector('.lkfoot').getBoundingClientRect();
+    return bar.left > foot.left && bar.right > innerWidth - 80; }));
+  await tap('red', 4);
+  ok('  and the numbers still answer to a tap', /\bon\b/.test(await cell('red', 4)));
+  await p.setViewportSize({ width: 844, height: 390 }); await settle(300);
+  ok('turned sideways, it is the right way up again', await ev(() => getComputedStyle($('lkStage')).transform === 'none'));
+  await ev(() => lkBackToList()); await settle(300);
+
+  // ---------------------------------------------------------------
+  console.log('\nWhen the games cannot be fetched');
+  const n0 = await ev(() => GAMES.length);
+  await ev(() => { window.__origFrom = window.__origFrom || sb.from;
+    window.__failWith = e => ({ select: () => { const r = Promise.resolve({ data: null, error: e }); r.order = () => r; r.eq = () => r; return r; } });
+    sb.from = t => (t === 'games' || t === 'game_players') ? window.__failWith({ message: 'Server unwell' }) : window.__origFrom(t); });
+  await ev(() => openGames()); await settle(400);
+  ok('a failed fetch keeps the games already there, never an empty list', await ev(n => GAMES.length === n && n > 0
+    && document.querySelectorAll('[data-lkgame]').length === n, n0) && await ev(() => /Could not\s+fetch the games/.test($('gamesBody').textContent)));
+  await ev(() => { sb.from = t => (t === 'games' || t === 'game_players')
+    ? window.__failWith({ code: '42P01', message: 'relation "public.games" does not exist' }) : window.__origFrom(t); });
+  await ev(() => { GAMES = []; GAME_PLAYERS = []; }); await ev(() => openGames()); await settle(400);
+  ok('step 57 not run yet: it says so', await ev(() => /needs\s+step 57 run in Supabase first/.test($('gamesBody').textContent)));
+  await clearToasts(); await p.click('#lkNew'); await settle(200);
+  ok('  and New game says so too, rather than asking who', /step 57/.test(await toasts()) && !(await p.$('#lkWho')), await toasts());
+  await ev(() => { sb.from = window.__origFrom; GAMES_READY = true; });
+  ok('the app still started without step 57: the tile shows nothing', await ev(() => lkWaitingCount() === 0));
+
+  // ---------------------------------------------------------------
+  console.log('\nThe backup and step 57');
+  const src = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
+  ok('the in-app backup copies both new tables', /select 'games',\s+count/.test(src) && /select 'game_players',\s+count/.test(src));
+  const step = fs.readFileSync(path.join(ROOT, 'database', 'contacts-step57.sql'), 'utf8');
+  ok('step 57 holds no emails, phone numbers, names or keys (the repo is public)', !/@/.test(step)
+    && !/\b0\d{3,4}\s?\d{6}\b/.test(step) && !/eyJ|service_role|REMINDER_SECRET|sk_/i.test(step) && !/Barry|Sandra/.test(step));
+  ok('  and nothing in it can be changed except through its functions', !/create policy[^;]*for (insert|update|delete|all)/i.test(step));
+  ok('the game is an original: no other game’s name in the page', !/qwixx/i.test(src));
+
+  ok('no page errors', errors.length === 0, errors.join(' | '));
+  console.log(`\n${pass} passed, ${fail} failed`);
+  await b.close();
+  process.exit(fail ? 1 : 0);
+})();

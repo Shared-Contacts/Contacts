@@ -36,8 +36,8 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
   // The page is opened from a file in here, so there is no version.json beside
   // it. A suite hands it one by standing in for the fetch.
   const serve = info => ev(i => { window.fetchVersionInfo = async () => i ? JSON.parse(JSON.stringify(i)) : null; }, info);
-  const NEWER = { version: '2026.11.06.1', history: [
-    { version: '2026.11.06.1', changes: ['Something better on Today.', 'A fix in Finances.'] }].concat(VJ.history) };
+  const NEWER = { version: '2099.12.31.1', history: [
+    { version: '2099.12.31.1', changes: ['Something better on Today.', 'A fix in Finances.'] }].concat(VJ.history) };
 
   // ---------------------------------------------------------------
   console.log('\nThe version file and the page agree (ML195)');
@@ -76,8 +76,10 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
   ok('  it does not come back', !(await p.$('#verNotice')));
   await ev(() => { localStorage.setItem('ver-seen', '2026.11.04.1'); renderHome(); }); await settle(200);
   const since = await ev(() => [...$('verNotice').querySelectorAll('.vnwhen')].map(x => x.textContent));
-  ok('last seen on 4 Nov: everything since then, newest first', since.length === 4 && since[0] === '5 Nov 2026, update 2'
-    && since[3] === '4 Nov 2026, update 2', since.join(' | '));
+  const want = await ev(h => h.filter(x => verCmp(x.version, '2026.11.04.1') > 0 && verCmp(x.version, APP_VERSION) <= 0)
+    .map(x => verWords(x.version)), VJ.history);
+  ok('last seen on 4 Nov: everything since then, newest first', since.length >= 4 && since.join() === want.join()
+    && since[0] === await ev(v => verWords(v), appVer) && since[since.length - 1] === '4 Nov 2026, update 2', since.join(' | '));
   await p.click('#verSeenX'); await settle(200);
   ok('  the × marks it seen too', !(await p.$('#verNotice')) && await ev(() => localStorage.getItem('ver-seen')) === appVer);
 
@@ -120,11 +122,11 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
   await p.click('#verWhat'); await settle(400);
   ok('opens over whatever is on the screen', await top() === 'verSheet');
   let wn = await ev(() => $('verBody').textContent.replace(/\s+/g, ' '));
-  ok('  saying which version this phone has, and the newer one', wn.includes('5 Nov 2026, update 2') && wn.includes('6 Nov 2026') && /newer one/.test(wn), wn.slice(0, 200));
+  ok('  saying which version this phone has, and the newer one', wn.includes(await ev(() => verWords(APP_VERSION))) && wn.includes('31 Dec 2099') && /newer one/.test(wn), wn.slice(0, 200));
   ok('  with a Restart now button', !!(await p.$('#verGo2')));
   ok('  and every change there has been, newest first', await ev(n => {
     const w = [...$('verBody').querySelectorAll('.vnwhen')].map(x => x.textContent);
-    return w.length === n && w[0] === '6 Nov 2026'; }, NEWER.history.length));
+    return w.length === n && w[0] === '31 Dec 2099'; }, NEWER.history.length));
   ok('  it starts at the top', await ev(() => $('verBody').scrollTop === 0));
   await p.click('#verBack'); await settle(200);
   ok('Back closes it', await ev(() => $('verSheet').classList.contains('hidden')));
@@ -182,6 +184,27 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
     return l.length > 1 && l[1].getBoundingClientRect().top >= l[0].getBoundingClientRect().bottom - 1; }));
   ok('  ticking one still picks that person', await ev(() => { const i = document.querySelector('[name="shareWith"][value="sandra"]');
     i.closest('label').click(); return i.checked; }));
+  await closeAll();
+
+  // A long list taller than the screen once hung off the top, out of reach
+  // (Barry, Send to with 14 people, 5 Nov 2026).
+  await ev(async () => { for (let i = 0; i < 14; i++) window.__rows.profiles.push({ id: 'many' + i,
+    display_name: 'Person Number ' + i, email: 'person.number' + i + '@example.com', phone: '07700 9000' + (10 + i) });
+    await loadAll(); pickPeople('Who should get a copy?', () => {}); });
+  await settle(300);
+  const tall = await ev(() => { const box = document.querySelector('.daypick'); box.scrollTop = 0;
+    const t = box.querySelector('.dsec').getBoundingClientRect(), inner = box.querySelector('.inner').getBoundingClientRect();
+    box.scrollTop = box.scrollHeight; const go = $('ppGo').getBoundingClientRect();
+    return { title: t.top, tall: inner.height > innerHeight, goBottom: go.bottom, h: innerHeight }; });
+  ok('a list taller than the screen: scrolled up, the top is there to see', tall.tall && tall.title >= 0 && tall.title < 60, JSON.stringify(tall));
+  ok('  and scrolled down, so is Send', tall.goBottom <= tall.h, JSON.stringify(tall));
+  await closeAll();
+  await ev(async () => { window.__rows.profiles = window.__rows.profiles.filter(x => !/^many/.test(x.id)); await loadAll(); });
+  await ev(() => pickPeople('Short list', () => {})); await settle(200);
+  ok('  a short one still sits in the middle of the screen', await ev(() => { const r = document.querySelector('.daypick .inner').getBoundingClientRect();
+    return Math.abs(r.top - (innerHeight - r.bottom)) < 4 && r.top > 40; }));
+  await ev(() => document.querySelector('.daypick').classList.add('typing')); await settle(100);
+  ok('  and goes to the top while typing, as before', await ev(() => document.querySelector('.daypick .inner').getBoundingClientRect().top <= 12));
   await closeAll();
 
   // Every place people are chosen, as the page is written.
@@ -324,9 +347,9 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
   await p.click('#verGo');
   const req = await went; await settle(300);
   ok('nothing open: it restarts straight away, fetching the new page afresh', asked.length === 0 && !!req
-    && /\/index\.html\?v=2026\.11\.06\.1$/.test(req.url()), req ? req.url() : 'no request');
+    && /\/index\.html\?v=2099.12.31.1$/.test(req.url()), req ? req.url() : 'no request');
 
-  await p.goto('file://' + path.join(__dirname, 'boot.html') + '?v=2026.11.06.1');
+  await p.goto('file://' + path.join(__dirname, 'boot.html') + '?v=2099.12.31.1');
   await p.waitForTimeout(900);
   ok('once restarted, the ?v= is tidied off the address', await ev(() => location.search === '' && /boot\.html$/.test(location.pathname)), await ev(() => location.href));
 

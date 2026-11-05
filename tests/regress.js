@@ -21,6 +21,7 @@ const errs=[];
     ['where',      ()=>openWhere()],
     ['wishlist',   ()=>openWish()],
     ['recipes',    ()=>openRecipes()],
+    ['games',      ()=>openGames()],
     ['messages',   ()=>openChats()],
     ['sent to you',()=>openOffers()],
     ['import/export',()=>openIO()],

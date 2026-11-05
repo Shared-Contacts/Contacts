@@ -43,7 +43,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('its own screen opens', await shown('rtEd'));
   ok('on that job', await ev(() => $('rtForm').elements.title.value) === 'Grease the stern gland');
   ok('with the Regular list underneath', await shown('diary') && await ev(() => DIARY_VIEW === 'routine'));
-  ok('Today is closed', !(await shown('brief')));
+  ok('Today stays open underneath (5 Nov 2026)', await shown('brief'));
   await p.click('#rtCancel'); await settle(300);
   ok('Cancel leaves you on the Regular list', !(await shown('rtEd')) && await shown('diary'));
   await ev(() => document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden')));

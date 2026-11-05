@@ -144,12 +144,15 @@ const ok = (what, cond, extra='') => {
      await page.textContent('.briefdate'));
   ok('it says it only comes once a day', /once a day/.test(body));
 
-  ok('tapping a birthday opens that person', await page.evaluate(async () => {
+  // Since 5 Nov 2026 Today stays open underneath, so Back comes back to it.
+  ok('tapping a birthday opens that person, over Today', await page.evaluate(async () => {
     document.querySelector('[data-briefc]').click();
     await new Promise(r => setTimeout(r, 400));
     const out = !$('detail').classList.contains('hidden')
-             && $('brief').classList.contains('hidden');
+             && !$('brief').classList.contains('hidden')
+             && SHEET_STACK[SHEET_STACK.length - 1] === 'detail';
     $('detail').classList.add('hidden'); lockBackground();
+    $('brief').classList.add('hidden'); lockBackground();
     return out;
   }));
 

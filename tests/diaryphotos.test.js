@@ -76,7 +76,7 @@ const pic = n => ({ name: 'photo' + n + '.png', mimeType: 'image/png', buffer: P
   ok('the ASAP job is a button', await ev(() => !!document.querySelector('#briefBody button[data-briefr="1"]')));
   ok('only ASAP jobs are on Today', await ev(() => !document.querySelector('[data-briefr="2"]')));
   await p.click('[data-briefr="1"]'); await settle(300);
-  ok('Today closes', !(await visible('brief')));
+  ok('Today stays open underneath, for Back (5 Nov 2026)', await visible('brief'));
   ok('the Diary opens', await visible('diary'));
   ok('with the job’s own screen open over it (ML121)', await visible('rtEd')
     && await ev(() => $('rtForm').elements.title.value) === 'Tax return');

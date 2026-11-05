@@ -499,8 +499,9 @@ const seed = () => {
   const idea2 = await ev(() => +document.querySelector('#briefRecipe [data-ropen]').dataset.ropen);
   ok('↻ shows another', idea2 !== idea1);
   await p.click('#briefRecipe [data-ropen]'); await settle(500);
-  ok('tapping it opens the recipe, with Recipes behind', await p.isVisible('#recipe') && await p.isVisible('#recipes')
-     && !await p.isVisible('#brief'));
+  // Since 5 Nov 2026 it opens on its own over Today, so Back comes straight back.
+  ok('tapping it opens the recipe, over Today', await p.isVisible('#recipe')
+     && await p.isVisible('#brief') && await ev(() => SHEET_STACK.slice(-2).join() === 'brief,recipe'));
   await ev(() => { RCP_PREFS.today = false; openBrief(); }); await settle(300);
   ok('switched off in Settings, it is not there', !/Tonight.s idea/.test(await p.textContent('#briefBody')));
   await ev(() => { RCP_PREFS.today = true; shutBrief(); });

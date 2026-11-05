@@ -349,7 +349,7 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
   await clear();
   await p.click('#wmClear'); await settle(500);
   w = await ev(() => window.__writes.filter(x => x.table === 'meal_plan'));
-  ok('Leave it empty takes it off', w.length === 1 && w[0].op === 'delete'
+  ok('Take it off the menu takes it off', w.length === 1 && w[0].op === 'delete'
     && JSON.stringify(w[0].where) === JSON.stringify([['eq', 'owner_id', 'me'], ['eq', 'on_date', tom], ['eq', 'meal', 'lunch']]),
     JSON.stringify(w));
   await ev(() => document.querySelectorAll('.daypick').forEach(d => d.remove()));
@@ -440,10 +440,12 @@ const HERE = { latitude: 53.3015, longitude: -1.1240 };
     JSON.stringify(w.map(x => x.rows)));
   await clear();
   await p.click('[data-wmof="me"]'); await settle(500);
-  w = await writes('update', 'profiles');
-  ok('choosing Mine is remembered with your home screen choices', w.some(x => x.patch.home_tiles && x.patch.home_tiles.menuof === 'me'));
-  ok('  and shows your own', await ev(() => document.querySelector('[data-wmof="me"]').getAttribute('aria-pressed') === 'true'
+  ok('choosing Mine shows your own', await ev(() => document.querySelector('[data-wmof="me"]').getAttribute('aria-pressed') === 'true'
     && !!document.querySelector('[data-wmshare]')));
+  // Since 5 Nov 2026 looking at a menu does not change the one Today shows; the ★ does.
+  await p.click('[data-wmstar="me"]'); await settle(500);
+  w = await writes('update', 'profiles');
+  ok('its ☆ makes it Today’s, remembered with your home screen choices', w.some(x => x.patch.home_tiles && x.patch.home_tiles.menuof === 'me'));
   await closeAll();
 
   // Before step 55

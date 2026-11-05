@@ -802,7 +802,7 @@ body.vbtyping #verBar{display:none}
 .pfform input{display:block;width:100%;margin-top:4px;padding:12px;font:inherit;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .pfform .btn{display:block;width:100%}
-/* ---------- MY Games: Lock Keeper ----------
+/* ---------- MY Games: Loxx ----------
    The sheet fills a phone turned on its side. Held upright with the screen
    locked upright, it turns itself round, so turning the phone to the left
    reads it. Sizes follow the sheet's own box (cqh, cqw), whichever way up. */
@@ -1514,7 +1514,7 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbody" id="gamesBody"></div>
 </div>
 
-<div id="lkPlay" class="sheet hidden" aria-label="Lock Keeper">
+<div id="lkPlay" class="sheet hidden" aria-label="Loxx">
   <div class="lkstage" id="lkStage"></div>
 </div>
 
@@ -5290,8 +5290,8 @@ function openHelp(where){
   done and it carries on where you left it next time, on the same phone. The
   puzzles come from jigsawexplorer.com, so they need the internet.</p>
 
-  <h4 id="h-games">MY Games: Lock Keeper</h4>
-  <p><strong>Lock Keeper</strong> is a dice game for 2 to 5 players. You need six
+  <h4 id="h-games">MY Games: Loxx</h4>
+  <p><strong>Loxx</strong> is a dice game for 2 to 5 players. You need six
   dice: two white, and one each of red, yellow, green and blue. Everyone plays on
   their own phone, and the phones keep each other up to date. The sheet fills the
   phone turned on its side; if your phone keeps the screen upright, the sheet turns
@@ -5308,9 +5308,11 @@ function openHelp(where){
   12 down to 2. Marks go left to right; anything you pass is crossed out and cannot
   be marked later. The number at the left of each row is how many marks it has.
   Tap a mark made on this roll to take it off again.</p>
-  <p><strong>Penalties:</strong> if you mark nothing on your own roll, that is a
-  penalty, minus 5; Done asks first. Marking nothing on someone else&rsquo;s roll is
-  fine.</p>
+  <p><strong>Penalties:</strong> on your own roll you can take two numbers: the white
+  dice total, and a white and a colour. Each one you don&rsquo;t take, because you
+  can&rsquo;t or would rather not, is a penalty, minus 5, so taking neither is minus 10.
+  Done asks first, and once you have taken a penalty that roll&rsquo;s marks stay as
+  they are. Marking nothing on someone else&rsquo;s roll is fine.</p>
   <p><strong>Closing a lock:</strong> once a row has five marks, its last number
   (12, or 2) can be marked, and that closes its lock. The lock counts as one more
   mark for you, and nobody can mark that colour after that roll: put that die
@@ -12541,15 +12543,17 @@ function shutJigPlay(){
 $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
 
 /* ============================================================
-   MY Games: Lock Keeper (ML202, step 57)
+   MY Games: Loxx (ML202, step 57; called Lock Keeper until ML207)
 
    A dice game for 2 to 5 people, played with real dice, each on their
    own phone. Four rows of numbers: red and yellow go up the flight from
    2 to 12, green and blue come down from 12 to 2. Marks go left to
    right and anything passed is gone. Five marks in a row, then its last
    number closes that row's lock: it counts as one more mark, and nobody
-   marks that colour after the roll. Whoever is rolling marks nothing
-   and takes a penalty. Two locks closed, or four penalties, and the game
+   marks that colour after the roll. Whoever is rolling takes a penalty
+   for each of their two numbers not taken (Barry's rule, ML207: the
+   printed rules give one for taking neither). Two locks closed, or four
+   penalties, and the game
    ends when that roll is finished.
 
    The phones are linked through two tables, games and game_players,
@@ -12702,10 +12706,10 @@ function renderGames(){
   const going=mine.filter(g=>g.status==='playing'), over=mine.filter(g=>g.status!=='playing');
   b.innerHTML=`<div class="card lkintro">
       <div class="lkhead"><span class="lklogo">${LK_GATES(true)}</span>
-        <div><h2>Lock Keeper</h2><p>A dice game for 2 to 5 players: real dice, and a
+        <div><h2>Loxx</h2><p>A dice game for 2 to 5 players: real dice, and a
         phone each to mark your sheet. Red and yellow climb the flight, green and blue
         come down, and closing a lock shuts that colour for everyone.</p></div></div>
-      ${GAMES_READY?'':`<div class="field"><dd style="color:var(--red)">Lock Keeper needs
+      ${GAMES_READY?'':`<div class="field"><dd style="color:var(--red)">Loxx needs
         step 57 run in Supabase first.</dd></div>`}
       <div class="setadd lkbtns"><button class="btn primary" id="lkNew">New game</button>
         <button class="btn" id="lkHow" style="border:1.5px solid var(--rule)">How to play</button></div></div>
@@ -12739,7 +12743,7 @@ function lkPickPlayers(){
     box.querySelector('#lkwGo').onclick=()=>{
       const who=[...box.querySelectorAll('input:checked')].map(i=>i.value);
       if(!who.length){ toast('Tick at least one person'); return; }
-      if(who.length>4){ toast('Up to four others: Lock Keeper is for 2 to 5 players'); return; }
+      if(who.length>4){ toast('Up to four others: Loxx is for 2 to 5 players'); return; }
       done(who);
     };
   });
@@ -12763,7 +12767,7 @@ function lkPickFirst(players){
   });
 }
 async function lkNewGame(same){
-  if(!GAMES_READY){ toast('Lock Keeper needs step 57 run in Supabase first'); return; }
+  if(!GAMES_READY){ toast('Loxx needs step 57 run in Supabase first'); return; }
   if(!USERS.length){ toast('Nobody else has an account yet'); return; }
   const who=same||await lkPickPlayers(); if(!who) return;
   const players=[ME.id].concat(who.filter(x=>x!==ME.id));
@@ -12772,7 +12776,7 @@ async function lkNewGame(same){
   if(error){
     console.error(error);
     toast(/new_game|PGRST202/i.test((error.message||'')+(error.code||''))
-      ?'Lock Keeper needs step 57 run in Supabase first':'Could not start the game');
+      ?'Loxx needs step 57 run in Supabase first':'Could not start the game');
     return;
   }
   const id=Number(data);
@@ -12937,7 +12941,7 @@ async function lkSave(g,s){
   if(error){
     me.sheet=was; lkPaint(); console.error(error);
     toast(/save_sheet|PGRST202/i.test((error.message||'')+(error.code||''))
-      ?'Lock Keeper needs step 57 run in Supabase first'
+      ?'Loxx needs step 57 run in Supabase first'
       :/not running/i.test(error.message||'')?'This game has ended':'Could not save that: check your signal');
     return false;
   }
@@ -12949,6 +12953,10 @@ async function lkTap(c,n){
   const r=LK_ROWS.find(x=>x.c===c); if(!r) return;
   const s=lkSheet(me.sheet);
   if(s.turn.no!==g.turn_no) s.turn={no:g.turn_no, marks:[], pen:false};
+  // A penalty taken on this roll fixes its marks: no taking one back to
+  // owe less, nor adding one after (if Done found no signal).
+  if(s.turn.pen&&g.status==='playing'&&!lkDoneThisRoll(g,me)){
+    toast('You have taken the penalty for this roll: tap Done'); return; }
   const marked=s[c];
   // Taking a mark off again: the newest in its row, made on this roll, and
   // not one that closed a lock (everyone has been told about that).
@@ -12981,12 +12989,21 @@ async function lkTap(c,n){
 async function lkDone(id){
   const g=lkGame(id), me=g&&lkMe(id); if(!me||g.status!=='playing') return;
   const s=lkSheet(me.sheet);
+  // On your own roll, a penalty for each of the two numbers not taken
+  // (Barry's rule). Taken once: if Done then finds no signal, pressing it
+  // again does not charge twice, and the roll's marks stay as they are.
   const tookPen=s.turn.no===g.turn_no&&s.turn.pen;
-  if(lkMyRoll(g)&&!lkTurnMarks(s,g).length&&!tookPen){
-    if(!confirm('You marked nothing on your own roll, so that is a penalty: minus 5. '
-      +'Take it? (Cancel to go back and mark something.)')) return;
-    s.pen=Math.min(4,s.pen+1);
-    s.turn={no:g.turn_no, marks:[], pen:true};
+  const marks=lkTurnMarks(s,g).length, owe=Math.min(2-Math.min(2,marks), 4-s.pen);
+  if(lkMyRoll(g)&&owe>0&&!tookPen){
+    const fourth=s.pen+owe>=4?' That is your fourth, so the game ends after this roll.':'';
+    if(!confirm((marks
+        ?'You took one number on your own roll, not two, so that is a penalty: minus 5.'
+        :owe===2?'You took neither number on your own roll, so that is two penalties: minus 10.'
+        :'You took neither number on your own roll, so that is a penalty (four is the most): minus 5.')
+      +fourth+' Take '+(owe===2?'them':'it')+'? (Cancel to go back and mark '
+      +(marks?'another':'something')+'.)')) return;
+    s.pen=Math.min(4,s.pen+owe);
+    s.turn={no:g.turn_no, marks:s.turn.no===g.turn_no?s.turn.marks:[], pen:true};
     if(!await lkSave(g,s)) return;
   }
   await lkFinish(g,false);
@@ -13002,7 +13019,7 @@ async function lkFinish(g,moveOn){
   if(error){
     console.error(error);
     toast(/finish_turn|PGRST202/i.test((error.message||'')+(error.code||''))
-      ?'Lock Keeper needs step 57 run in Supabase first':'Could not reach the game: check your signal');
+      ?'Loxx needs step 57 run in Supabase first':'Could not reach the game: check your signal');
     return;
   }
   if(data==='ended') toast('That is the end of the game');
@@ -14102,7 +14119,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.05.4';
+const APP_VERSION='2026.11.05.5';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -19636,7 +19653,7 @@ function areaItems(area){
   if(area==='shop') return [
     it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
   if(area==='games') return [
-    it('New game of Lock Keeper',  ()=>{ shutMenu(); lkNewGame(); })];
+    it('New game of Loxx',  ()=>{ shutMenu(); lkNewGame(); })];
   if(area==='chats') return [
     it('Start a message',         ()=>{ shutMenu(); newChat(); })];
   if(area==='home') return [

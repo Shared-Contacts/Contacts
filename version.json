@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.05.4",
+  "version": "2026.11.05.5",
   "history": [
+    {
+      "version": "2026.11.05.5",
+      "changes": [
+        "Lock Keeper is now called Loxx.",
+        "Loxx: on your own roll, each of your two numbers you don't take is a penalty, so taking neither is minus 10."
+      ]
+    },
     {
       "version": "2026.11.05.4",
       "changes": [

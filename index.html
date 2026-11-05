@@ -762,6 +762,40 @@ i.key{vertical-align:middle}
 .helpfind input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
 .helpfind .hx{flex:0 0 auto;font-size:26px;line-height:1;color:var(--muted);padding:6px 8px}
 .helpsaid{color:var(--muted);margin:0 2px 12px}
+/* A new version is ready: a bar just above the bottom strip, over everything */
+#verBar{position:fixed;left:8px;right:8px;margin:0 auto;max-width:620px;z-index:60;
+  bottom:calc(var(--tray) + env(safe-area-inset-bottom,0px) + 8px);
+  background:var(--hull);color:#F2EFE4;border-radius:12px;padding:12px 14px;
+  box-shadow:0 6px 22px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:10px}
+#verBar .vbtext b{display:block;font-size:17px}
+#verBar .vbtext span{display:block;font-size:15px;opacity:.92;margin-top:2px}
+#verBar .vbbtns{display:flex;gap:10px;align-items:center}
+#verBar .go{background:#F2EFE4;color:var(--hull);font-weight:700;border-radius:8px;padding:10px 16px}
+#verBar #verWhat{color:#F2EFE4;text-decoration:underline;font-weight:600;padding:10px 4px}
+#verBar .x{margin-left:auto;color:#F2EFE4;font-size:28px;line-height:1;padding:4px 8px;
+  min-width:44px;min-height:44px}
+body.vbtyping #verBar{display:none}
+.vnwhen{margin:10px 0 4px;font-weight:700;color:var(--hull)}
+.vnlist{margin:0 0 8px;padding-left:20px}
+.vnlist li{margin-bottom:4px}
+.vnall .vnwhen:first-child{margin-top:0}
+/* Choosing people: a row each, the name and how to reach them */
+.checks.ppl{flex-direction:column;flex-wrap:nowrap;gap:6px}
+.checks.ppl label{display:flex;width:100%;align-items:center;gap:12px;padding:9px 12px;
+  border-radius:10px;text-align:left}
+.checks.ppl input{flex:0 0 auto;width:20px;height:20px}
+.pplwho{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.pplwho b{font-weight:700;color:var(--ink)}
+.pplwho small{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.pplrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;
+  border-bottom:1px solid #F0EEE7}
+.card .pplrow:last-child{border-bottom:none}
+.pplrow .pplwho{flex:1}
+.pplrow .pplown{flex:0 0 auto;font-size:13px;font-weight:700;color:var(--brass)}
+.pfform label{display:block;font-weight:600;margin:0 0 12px}
+.pfform input{display:block;width:100%;margin-top:4px;padding:12px;font:inherit;
+  border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.pfform .btn{display:block;width:100%}
 /* Hold a row (or the grip) and slide it, instead of up and down arrows */
 .grip{flex:0 0 auto;color:var(--muted);font-size:22px;line-height:1;padding:6px 4px;
   cursor:grab;touch-action:none}
@@ -1585,6 +1619,12 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbody" id="helpBody"></div>
 </div>
 
+<div id="verSheet" class="sheet hidden">
+  <div class="sheetbar"><button id="verBack">Back</button>
+    <span class="title">What&rsquo;s new</span><span style="width:56px"></span></div>
+  <div class="sheetbody" id="verBody"></div>
+</div>
+
 <div id="settings" class="sheet hidden">
   <div class="sheetbar"><button id="setBack">Back</button>
     <span class="title">Settings</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1637,7 +1677,8 @@ const LAB = {
 };
 
 let ME=null, GROUPS=[], STATUSES=[], KINDS=[], CONTACTS=[], LINKS=[], TAGS={};
-let USERS=[], SHARES=[], PETS=[], PENDING=null, MY_PROFILE=null, FAVS=[];
+let USERS=[], SHARES=[], PETS=[], PENDING=null, MY_PROFILE=null, FAVS=[], OWNERS=null,
+    PEOPLE_READY=false;   // step 56 has run: names and phones can be filled in
 let FILTER=null, MODE='grouped', CURRENT=null, OPEN=new Set(), MAPS=[], DRAFT={};
 let VIEW='grouped', SORTBY='last';
 try{ VIEW=localStorage.getItem('view')||'grouped'; }catch(e){}
@@ -1653,7 +1694,7 @@ const $  = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr = v => Array.isArray(v) ? v : [];
 
-const SHEET_IDS=['detail','editor','settings','menu','help','brief','invite','diary','itemEd','rtEd','log',
+const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','invite','diary','itemEd','rtEd','log',
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','stuff','stuffView','stuffEd'];
@@ -1789,7 +1830,7 @@ function clearTrouble(){
 }
 
 async function loadAll(){
-  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp,of]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp,of,ow]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
@@ -1804,7 +1845,8 @@ async function loadAll(){
     sb.from('shopping').select('*'),
     // Everything still waiting, plus what has happened to the ones you sent,
     // so you can be told who took them.
-    sb.from('contact_offers').select('*').or('decided_at.is.null,from_user.eq.'+ME.id)
+    sb.from('contact_offers').select('*').or('decided_at.is.null,from_user.eq.'+ME.id),
+    sb.from('app_owners').select('user_id')     // step 56; missing before it
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){
     console.error(r.error);
@@ -1814,6 +1856,10 @@ async function loadAll(){
   }
   GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
+  USERS.sort((a,b)=>personName(a).localeCompare(personName(b),'en',{sensitivity:'base'}));
+  // The owners, from step 56. Not there yet, or nobody in it: the old rule (isOwner).
+  OWNERS=(ow&&!ow.error&&arr(ow.data).length)?ow.data.map(x=>x.user_id):null;
+  PEOPLE_READY=!!(ow&&!ow.error);
   MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
   if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
   // Came back empty where there was plenty a moment ago? That is the signal
@@ -3024,7 +3070,7 @@ function offerLinkedShares(uid){
   box.innerHTML=`<h3>Share the connections too?</h3>
     <div class="field"><dd style="color:var(--muted);font-size:15px">
       ${esc(fullName(CURRENT))} is connected to these people, who
-      ${esc(who?(who.display_name||who.email):'they')} cannot see.</dd></div>
+      ${esc(who?personName(who):'they')} cannot see.</dd></div>
     ${candidates.map(c=>`<div class="setrow">
       <label style="margin:0;display:flex;gap:10px;align-items:center;color:var(--ink);flex:1">
         <input type="checkbox" style="width:auto;margin:0" data-also="${c.id}" checked>
@@ -3826,7 +3872,7 @@ function logShareRows(){
       const sh=mine.find(x=>x.viewer_id===u.id);
       const hid=sh?arr(sh.hidden):[];
       return `<div class="lshare">
-        <div class="who"><span>${esc(u.display_name||u.email||'Someone')}</span>
+        <div class="who"><span>${esc(personName(u))}</span>
           <button class="tg" data-lshare="${esc(u.id)}" aria-pressed="${!!sh}">${sh?'Shared':'Not shared'}</button></div>
         ${sh?`<div class="checks">
             <label><input type="checkbox" data-lsedit="${esc(u.id)}" ${sh.can_edit?'checked':''}>
@@ -3890,7 +3936,7 @@ function handoverRows(){
      :!anyOld?'<div class="field"><dd>You are not sharing anything the old way. Nothing to hand over.</dd></div>'
      :per.filter(x=>x.shared||x.taken||x.waiting).map(x=>`
       <div class="setrow" style="flex-wrap:wrap">
-        <span style="flex:1 1 100%;font-weight:600">${esc(x.u.display_name||x.u.email)}</span>
+        <span style="flex:1 1 100%;font-weight:600">${esc(personName(x.u))}</span>
         <span style="flex:1 1 100%;color:var(--muted);font-size:15px">
           ${x.shared} shared the old way${x.taken?' · '+x.taken+' now theirs':''}${
             x.waiting?' · '+x.waiting+' waiting in their inbox':''}</span>
@@ -4386,7 +4432,7 @@ async function openSettings(goTo){
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="rcpTodayOn" ${RCP_PREFS.today?'checked':''}>
         Suggest a recipe on Today</label></div>`,
-    people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
+    people: `${peopleRows()}<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
         never sit in a public web page.</dd></div>${isOwner()?`
@@ -4500,6 +4546,8 @@ async function openSettings(goTo){
     if(!taxOk(m,d)){ toast('There is no such date'); return; }
     setTaxStart(m,d); };
   paintBgPick();
+  $('setBody').querySelectorAll('[data-person]').forEach(b=>
+    b.onclick=()=>editPerson(b.dataset.person));
   const gi=$('goInvite');
   if(gi) gi.onclick=()=>{ $('settings').classList.add('hidden'); openInvite(); };
   const bo=$('briefOn');
@@ -5235,6 +5283,17 @@ function openHelp(where){
   <p>There is no "forgotten password" email. If you are locked out, Barry can set
   a new one for you.</p>
 
+  <h4 id="h-names">Names and phones of the people who sign in</h4>
+  <p><strong>Settings &rsaquo; The app &rsaquo; People who can sign in</strong> lists
+  everyone with an account, as the others see them. Tap yourself to put in your
+  name and phone. If one of your contacts has the same email as the account (or
+  is set as you), <strong>Fill in from &hellip; in Contacts</strong> does it in
+  one tap; <strong>Choose from Contacts</strong> picks anyone else. The email
+  stays as it is: that is what they sign in with.</p>
+  <p>Barry and Sandra, the app&rsquo;s owners, can fill in anyone&rsquo;s. Wherever
+  you choose people to share with, each one then shows as their name, with their
+  email and phone underneath.</p>
+
   <h4 id="h-people">Setting someone up</h4>
   <p>Send a new user this link. It gives them the address, how to sign in, how
   to add it to their phone, and what is private versus shared:</p>
@@ -5559,12 +5618,24 @@ function openHelp(where){
   <p>New sign-in accounts are the one thing not done here. They are created in
   the Supabase dashboard.</p>
 
+  <h4 id="h-versions">New versions of the app</h4>
+  <p>When the app has been changed, a bar comes up at the bottom saying a new
+  version is ready, with the first of what changed. <strong>Restart now</strong>
+  loads it (it asks first if you are part way through filling something in);
+  <strong>What&rsquo;s new</strong> shows everything that changed; the
+  <strong>&times;</strong> puts it off for an hour.</p>
+  <p>After a restart, Today says once what is new. Menu &rsaquo;
+  <strong>What&rsquo;s new</strong> lists every change, newest first, and which
+  version you have.</p>
+
   <h4 id="h-trouble">If something looks wrong</h4>
   <ul>
     <li>Photos missing or showing as broken? The links they use expire after an
         hour. Menu &rsaquo; <strong>Photos not showing? Fetch them again</strong>
         gets fresh ones.</li>
     <li>Close the app fully and reopen it. It reloads everything on start.</li>
+    <li>Menu &rsaquo; <strong>What&rsquo;s new</strong> says which version you have,
+        and offers a restart if there is a newer one.</li>
     <li>A blank map usually means the canal tile server is busy. Switch layers.</li>
     <li>The app refreshes itself every few minutes while it is sitting open, and
         whenever you come back to it. The <strong>circular arrow</strong> beside
@@ -6946,9 +7017,9 @@ function openItem(it, presetContact, presetDay, presetKind){
         <input type="datetime-local" name="due_from"></label>
     </fieldset>
     <fieldset><legend>Who else to remind</legend>
-      ${USERS.length?`<div class="checks">${USERS.map(u=>`<label>
+      ${USERS.length?`<div class="checks ppl">${USERS.map(u=>`<label>
           <input type="checkbox" name="alsoremind" value="${u.id}">
-          ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+          ${pplWho(u)}</label>`).join('')}</div>
         <p class="coords">They get the same entry in their own diary, and can
         tick it off or change it.</p>`
         :'<p class="coords">Nobody else has an account yet.</p>'}
@@ -7377,7 +7448,7 @@ const logsSharedWithMe = () => LOG_SHARES.filter(x=>ME&&x.viewer_id===ME.id);
 const myLogShares      = () => LOG_SHARES.filter(x=>ME&&x.owner_id===ME.id);
 function logPersonName(id){
   const u=USERS.find(x=>x.id===id);
-  return u ? (u.display_name||u.email||'Someone') : 'Someone';
+  return u ? personName(u) : 'Someone';
 }
 const optsFor = kind => LOGOPTS.filter(o=>o.kind===kind).map(o=>o.name);
 
@@ -8840,14 +8911,14 @@ function partnerShortName(){
     if(c) return fullName(c);
   }
   const u=USERS[0];
-  if(u&&u.display_name) return u.display_name.split(/\s+/)[0];
+  if(u) return personName(u).split(/\s+/)[0];
   return 'The other person';
 }
 
 function namesOf(ids){
   return ids.map(id=>{
     const u=USERS.find(x=>x.id===id);
-    return u?(u.display_name||u.email):'someone';
+    return u?personName(u):'someone';
   });
 }
 
@@ -8881,7 +8952,7 @@ async function writePosition(pos){
     user_id:ME.id, lat:pos.coords.latitude, lng:pos.coords.longitude,
     accuracy:pos.coords.accuracy, updated_at:new Date().toISOString(),
     until:SHARE_UNTIL.toISOString(),
-    label:(MY_PROFILE&&MY_PROFILE.display_name)||ME.email
+    label:MY_PROFILE?personName(MY_PROFILE):ME.email
   },{onConflict:'user_id'});
   // Only count it as sent if it actually was. Marking it sent regardless would
   // mean one failed write stopped the next one being attempted for three
@@ -9018,10 +9089,10 @@ function renderWhere(){
           Nobody can see where you are. Choose who may, and for how long.
           It switches itself off at the end, and only they can see it.</dd></div>
         <div class="setadd">
-          <div class="checks">${USERS.map(u=>`<label>
+          <div class="checks ppl">${USERS.map(u=>`<label>
             <input type="checkbox" name="shareWith" value="${u.id}"
               ${SHARED_WITH.includes(u.id)?'checked':''}>
-            ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+            ${pplWho(u)}</label>`).join('')}</div>
           <div class="pickrow" style="margin-top:14px">
             <button id="w1" type="button">1 hour</button>
             <button id="w4" type="button">4 hours</button>
@@ -9089,7 +9160,107 @@ async function loadLists(){
 function whoWrote(id){
   if(id===ME.id) return 'you';
   const u=USERS.find(x=>x.id===id);
-  return u?(u.display_name||u.email.split('@')[0]):'someone';
+  return u?personName(u):'someone';
+}
+
+/* ---------- People who can sign in ----------
+   Each sign-in has its row in profiles, made when the account was set up and
+   linked to it by the sign-in's own id, with the email it signs in with. The
+   name started out as that email; step 56 lets it be filled in properly, with
+   a phone beside it, by the person or by an owner (Barry or Sandra), and the
+   app offers the details from Contacts, matching by email. Wherever people
+   are chosen they show as name, then email and phone. */
+function personName(u){
+  if(!u) return 'Someone';
+  const n=String(u.display_name||'').trim(), mail=String(u.email||'').trim();
+  if(n && n.toLowerCase()!==mail.toLowerCase()) return n;
+  return mail.split('@')[0]||'Someone';
+}
+const personDetail = u => [u&&u.email, u&&u.phone].filter(Boolean).join(' · ');
+function pplWho(u){
+  const d=personDetail(u);
+  return `<span class="pplwho"><b>${esc(personName(u))}</b>${d?`<small>${esc(d)}</small>`:''}</span>`;
+}
+// The contact who is this person: for yourself the one set as you, otherwise
+// one of your contacts with their sign-in email. The email is the link.
+function personContact(u){
+  if(!u) return null;
+  if(u.id===ME.id&&MY_PROFILE&&MY_PROFILE.my_contact_id){
+    const c=CONTACTS.find(x=>x.id===MY_PROFILE.my_contact_id); if(c) return c; }
+  const mail=String(u.email||'').trim().toLowerCase(); if(!mail) return null;
+  return CONTACTS.find(c=>arr(c.emails).some(e=>String(e&&e.value||'').trim().toLowerCase()===mail))||null;
+}
+function contactPhone(c){
+  const ph=arr(c&&c.phones).filter(p=>p&&p.value);
+  return ((ph.find(p=>/mobile/i.test(p.label||''))||ph[0])||{}).value||'';
+}
+const contactPersonName = c => c ? ([c.first_name,c.last_name].filter(Boolean).join(' ')||fullName(c)) : '';
+function peopleRows(){
+  const all=[MY_PROFILE].concat(USERS).filter(Boolean), own=isOwner();
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+      Everyone who can sign in, as the others see them when choosing who to share
+      with. ${own?'Tap anyone to fill in their name and phone; the app offers them from Contacts.'
+        :'Tap yourself to fill in your name and phone; the app offers them from Contacts.'}
+      The email is what they sign in with.</dd></div>
+    ${PEOPLE_READY?'':`<div class="field"><dd style="color:var(--red);font-size:15px">
+      Filling these in needs step 56 run in Supabase first.</dd></div>`}
+    ${all.map(u=>{
+      const can=u.id===ME.id||own, tag=OWNERS&&OWNERS.includes(u.id)?'<span class="pplown">Owner</span>':'';
+      return can?`<button class="pplrow" data-person="${esc(u.id)}">${pplWho(u)}${tag}<span aria-hidden="true">&rsaquo;</span></button>`
+        :`<div class="pplrow">${pplWho(u)}${tag}</div>`;
+    }).join('')}`;
+}
+// Filling in one person: the name and phone, offered from Contacts.
+function editPerson(id, fill){
+  const u=id===ME.id?MY_PROFILE:USERS.find(x=>x.id===id); if(!u) return;
+  const match=personContact(u);
+  // The name box starts empty while the name is still just the email.
+  const cur={name:fill?fill.name:(String(u.display_name||'').trim().toLowerCase()===String(u.email||'').trim().toLowerCase()
+    ?'':String(u.display_name||'').trim()), phone:fill?fill.phone:(u.phone||'')};
+  const box=document.createElement('div');
+  box.className='daypick';
+  box.id='personBox';
+  box.innerHTML=`<div class="inner pfform">
+    <p class="dsec" style="padding-top:0">${u.id===ME.id?'You':'Someone who can sign in'}</p>
+    <p class="coords" style="margin:0 0 10px">Signs in as <strong>${esc(u.email||'')}</strong>.
+      That stays as it is.</p>
+    ${match&&!fill?`<button class="btn" id="pfMatch" style="border:1.5px solid var(--rule);margin-bottom:8px">
+      Fill in from ${esc(contactPersonName(match))} in Contacts</button>`:''}
+    <button class="btn" id="pfPick" style="border:1.5px solid var(--rule);margin-bottom:12px">
+      ${fill?'Fill in from someone else in Contacts':'Choose from Contacts'}</button>
+    <label>Name <input id="pfName" autocomplete="off" value="${esc(cur.name)}"
+      placeholder="As everyone should see it"></label>
+    <label>Phone <input id="pfPhone" type="tel" inputmode="tel" autocomplete="off"
+      autocorrect="off" spellcheck="false" value="${esc(cur.phone)}"></label>
+    <div class="pfoot"><button id="pfCancel">Cancel</button>
+      <button id="pfSave" class="go">Save</button></div></div>`;
+  document.body.appendChild(box);
+  ['pfName','pfPhone'].forEach(k=>{ const i=$(k);
+    i.addEventListener('focus',()=>box.classList.add('typing'));
+    i.addEventListener('blur',()=>box.classList.remove('typing')); });
+  const close=()=>box.remove();
+  const from=c=>{ $('pfName').value=contactPersonName(c); $('pfPhone').value=contactPhone(c); };
+  const m=$('pfMatch'); if(m) m.onclick=()=>from(match);
+  $('pfPick').onclick=async()=>{
+    const keep={name:$('pfName').value, phone:$('pfPhone').value};
+    close();
+    const cid=await pickContact('Which contact is '+(u.id===ME.id?'you':personName(u))+'?', match&&match.id);
+    const c=cid?CONTACTS.find(x=>x.id===cid):null;
+    editPerson(id, c?{name:contactPersonName(c), phone:contactPhone(c)}:keep);
+  };
+  $('pfCancel').onclick=close;
+  box.addEventListener('click',ev=>{ if(ev.target===box) close(); });
+  $('pfSave').onclick=async()=>{
+    const {error}=await sb.rpc('set_person',{who:u.id, full_name:$('pfName').value.trim(),
+      phone_no:$('pfPhone').value.trim()});
+    if(error){
+      console.error(error);
+      toast(/set_person|PGRST202|function/i.test(error.message||error.code||'')
+        ?'This needs step 56 run in Supabase first':'Could not save that');
+      return;
+    }
+    close(); await loadAll(); openSettings(); toast('Saved');
+  };
 }
 
 /* ---------- wishlist ---------- */
@@ -9592,9 +9763,9 @@ function editLink(id,start){
     <p class="ulhead">Who can see it</p>
     <span class="pickrow">${[['me','Just me'],['all','Everyone'],['some','Choose people']]
       .map(([k,t])=>`<button type="button" data-lewho="${k}" aria-pressed="${mode===k}">${t}</button>`).join('')}</span>
-    <div class="checks" id="lePeople" ${mode==='some'?'':'hidden'}>${USERS.length
+    <div class="checks ppl" id="lePeople" ${mode==='some'?'':'hidden'}>${USERS.length
       ? USERS.map(u=>`<label><input type="checkbox" data-leppl="${u.id}"
-          ${had.includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')
+          ${had.includes(u.id)?'checked':''}> ${pplWho(u)}</label>`).join('')
       : '<span style="color:var(--muted)">Nobody else has an account yet.</span>'}</div>
     ${old?`<p class="ulhead" style="margin-top:14px"><button type="button" class="lcopy"
       id="leCopy">Copy the web address</button></p>`:''}
@@ -11452,9 +11623,9 @@ function renderWeekMenu(){
       <div class="card">${USERS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
         Tick someone and they see this menu, on their Today screen too, and can
         change it. Nobody else sees it.</dd></div>
-        <div class="checks" style="padding:4px 14px 14px">${USERS.map(u=>`<label>
+        <div class="checks ppl" style="padding:4px 14px 14px">${USERS.map(u=>`<label>
           <input type="checkbox" data-wmshare="${esc(u.id)}" ${sharedTo.includes(u.id)?'checked':''}>
-          ${esc(u.display_name||u.email.split('@')[0])}</label>`).join('')}</div>`
+          ${pplWho(u)}</label>`).join('')}</div>`
         :'<div class="field"><dd>Nobody else has an account yet.</dd></div>'}</div>`:''}`;
   body.scrollTop=y;
   body.querySelectorAll('[data-wmof]').forEach(b=>b.onclick=()=>{
@@ -11900,9 +12071,9 @@ function renderShop(){
     html+=`<details class="card logsec"><summary>Who can use this list</summary>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         Only you and the people you tick. They can add to it and tick things off.</dd></div>
-      ${USERS.length?`<div class="setadd"><div class="checks">
+      ${USERS.length?`<div class="setadd"><div class="checks ppl">
         ${USERS.map(u=>`<label><input type="checkbox" data-sshare="${u.id}"
-          ${shared.includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')}
+          ${shared.includes(u.id)?'checked':''}> ${pplWho(u)}</label>`).join('')}
         </div></div>`
         :'<div class="field"><dd>Nobody else has an account yet.</dd></div>'}
       <div class="setadd">
@@ -12792,9 +12963,9 @@ function openStuffEd(t,kind){
       <label><input type="checkbox" name="locked" ${locked?'checked':''}> &#128274; Keep it locked</label></div>
       <p class="coords">For a will, a passport, a driving licence: it needs your My Stuff
       password before it opens. A locked thing is yours alone, so it can't be shared.</p></fieldset>
-    ${USERS.length?`<fieldset id="stfShareSet" ${locked?'style="display:none"':''}><legend>Share with</legend><div class="checks">${USERS.map(u=>
+    ${USERS.length?`<fieldset id="stfShareSet" ${locked?'style="display:none"':''}><legend>Share with</legend><div class="checks ppl">${USERS.map(u=>
       `<label><input type="checkbox" name="share" value="${esc(u.id)}" ${
-      arr(t&&t.shared_with).includes(u.id)?'checked':''}> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+      arr(t&&t.shared_with).includes(u.id)?'checked':''}> ${pplWho(u)}</label>`).join('')}</div>
       <p class="coords">They can look at it, its photos, PDFs and service record.
       Only you can change it.</p></fieldset>`:''}
     ${t?'<button type="button" class="btn danger" id="stfDelete">Delete this</button>':''}
@@ -13310,11 +13481,140 @@ function jotHtml(){
   </div>`;
 }
 
+/* ---------- Versions ----------
+   Every upload has a version, and this copy is APP_VERSION. version.json is
+   uploaded beside index.html each time and holds the newest version and,
+   newest first, what changed in each, in plain words. The app looks at it
+   when it opens, when you come back to it, and every half hour. A newer one
+   there means this phone is running an old copy: a bar says so, with what
+   changed and Restart now. Once restarted, the changes since the last
+   version this phone showed appear once on the home screen, and Menu >
+   What's new has the whole list. Browser storage only remembers which
+   version this phone last showed the changes for. */
+const APP_VERSION='2026.11.05.2';
+let VER={info:null, at:0, later:0};
+const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
+function verCmp(a,b){
+  const x=verParts(a), y=verParts(b);
+  for(let i=0;i<Math.max(x.length,y.length);i++){
+    const d=(x[i]||0)-(y[i]||0); if(d) return d<0?-1:1; }
+  return 0;
+}
+function verWords(v){            // 2026.11.05.2 -> 5 Nov 2026, update 2
+  const [y,m,d,n]=verParts(v); if(!y||!m||!d) return String(v||'');
+  const day=new Date(y,m-1,d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  return n>1?day+', update '+n:day;
+}
+async function fetchVersionInfo(){
+  if(location.protocol==='file:') return null;    // the tests: no version.json beside the page
+  try{
+    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return null;
+    const j=await r.json();
+    return j&&j.version ? j : null;
+  }catch(e){ return null; }
+}
+const verNewer = () => !!(VER.info && verCmp(VER.info.version, APP_VERSION)>0);
+// What changed after `from`, up to and including `to`. Nothing seen before on
+// this phone: just this version's own changes, not the whole history.
+function verChangesSince(from,to){
+  return arr(VER.info&&VER.info.history).filter(h=>h&&h.version
+    && verCmp(h.version,to)<=0 && (from ? verCmp(h.version,from)>0 : verCmp(h.version,to)===0));
+}
+async function checkVersion(force){
+  if(!force && Date.now()-VER.at<60*1000) return;
+  VER.at=Date.now();
+  const j=await fetchVersionInfo(); if(!j) return;
+  VER.info=j;
+  paintVerBar();
+  if(whatsNewDue() && !$('verNotice') && !ARRANGING
+     && !$('home').classList.contains('hidden')) renderHome();
+}
+function paintVerBar(){
+  let bar=$('verBar');
+  if(!verNewer() || Date.now()<VER.later){ if(bar) bar.remove(); return; }
+  const lines=verChangesSince(APP_VERSION, VER.info.version).flatMap(h=>arr(h.changes));
+  if(!bar){ bar=document.createElement('div'); bar.id='verBar'; bar.setAttribute('role','status');
+    document.body.appendChild(bar); }
+  bar.innerHTML=`<div class="vbtext"><b>A new version of the app is ready</b>
+      <span>${lines.length?esc(lines[0])+(lines.length>1?` &mdash; and ${lines.length-1} more`:'')
+        :'Restart the app to get it.'}</span></div>
+    <div class="vbbtns"><button class="go" id="verGo">Restart now</button>
+      <button id="verWhat">What&rsquo;s new</button>
+      <button class="x" id="verLater" aria-label="Not now">&times;</button></div>`;
+  $('verGo').onclick=verRestart;
+  $('verWhat').onclick=()=>openWhatsNew();
+  $('verLater').onclick=()=>{ VER.later=Date.now()+60*60*1000; paintVerBar();
+    toast('It will remind you again in an hour'); };
+}
+// A fresh address, so the phone fetches the new page rather than the one it kept.
+function verRestart(){
+  const busy=['editor','itemEd','rtEd','logEd','moneyEd','recipeEd','stuffEd']
+    .some(id=>$(id)&&!$(id).classList.contains('hidden'));
+  if(busy&&!confirm('Something is open and not saved yet. Restart anyway? '
+    +'Anything not saved will be lost.')) return;
+  location.replace('index.html?v='+encodeURIComponent(VER.info?VER.info.version:Date.now()));
+}
+(function(){            // tidy that address away again once it has done its job
+  try{
+    const p=new URLSearchParams(location.search);
+    if(!p.has('v')) return;
+    p.delete('v'); const q=p.toString();
+    history.replaceState(null,'',location.pathname+(q?'?'+q:'')+location.hash);
+  }catch(e){}
+})();
+const VER_SEEN_KEY='ver-seen';
+function verSeen(){ try{ return localStorage.getItem(VER_SEEN_KEY)||''; }catch(e){ return ''; } }
+function verMarkSeen(){ try{ localStorage.setItem(VER_SEEN_KEY,APP_VERSION); }catch(e){} }
+const whatsNewDue = () => !!VER.info && verCmp(verSeen(),APP_VERSION)<0
+  && verChangesSince(verSeen(),APP_VERSION).length>0;
+function verListHtml(list){
+  return list.map(h=>`<p class="vnwhen">${esc(verWords(h.version))}</p>
+    <ul class="vnlist">${arr(h.changes).map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`).join('');
+}
+function whatsNewHtml(){
+  if(!whatsNewDue()) return '';
+  return `<div class="notice" id="verNotice">
+    <button class="x" id="verSeenX" aria-label="Close">&times;</button>
+    <h4>What&rsquo;s new in the app</h4>
+    ${verListHtml(verChangesSince(verSeen(),APP_VERSION))}
+    <p style="margin:10px 0 0"><button class="go" id="verSeenGo">Got it</button></p></div>`;
+}
+async function openWhatsNew(){
+  showSheet('verSheet'); lockBackground();
+  $('verBody').innerHTML='<p class="empty">Looking for the latest…</p>';
+  await checkVersion(true);
+  const info=VER.info;
+  $('verBody').innerHTML=`<div class="card"><div class="field"><dd>
+      This phone has the version of <strong>${esc(verWords(APP_VERSION))}</strong>.
+      ${!info?'':verNewer()?`A newer one, <strong>${esc(verWords(info.version))}</strong>,
+        is ready.`:'That is the newest.'}</dd></div>
+      ${verNewer()?`<div class="setadd"><button class="btn primary" id="verGo2">Restart now to get it</button></div>`:''}</div>
+    ${info?`<p class="dsec">What has changed</p>
+      <div class="card"><div class="field vnall"><dd>${verListHtml(arr(info.history))}</dd></div></div>`
+    :`<div class="card"><div class="field"><dd style="color:var(--red)">Could not fetch the
+      list of changes just now. Check your signal and try again.</dd></div></div>`}`;
+  const g=$('verGo2'); if(g) g.onclick=verRestart;
+  $('verBody').scrollTop=0;
+}
+$('verBack').onclick=()=>{ $('verSheet').classList.add('hidden'); lockBackground(); };
+function watchVersion(){
+  checkVersion(true);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') checkVersion(); });
+  setInterval(()=>{ if(!document.hidden) checkVersion(); }, 30*60*1000);
+  // Out of the way while you type: the keyboard pushes it up over the form.
+  document.addEventListener('focusin',ev=>{
+    if(ev.target.matches&&ev.target.matches('input:not([type=checkbox]):not([type=radio]),textarea,select'))
+      document.body.classList.add('vbtyping'); });
+  document.addEventListener('focusout',()=>document.body.classList.remove('vbtyping'));
+}
+
 function renderHome(){
   const box=$('homeBody'); if(!box) return;
   applySkins();
   const n=TILES.length;
-  box.innerHTML=(ARRANGING?'':noticeHtml())+(ARRANGING?'':jotHtml())
+  box.innerHTML=(ARRANGING?'':whatsNewHtml())+(ARRANGING?'':noticeHtml())+(ARRANGING?'':jotHtml())
     +`<div class="tiles${ARRANGING?' arranging':''}">${TILES.map((t,i)=>`
     <div class="tilewrap">
       <button class="tile" data-tile="${i}"
@@ -13338,6 +13638,8 @@ function renderHome(){
       you can always add it back.</p>`
      :''}`;
 
+  ['verSeenX','verSeenGo'].forEach(id=>{ const b=$(id);
+    if(b) b.onclick=()=>{ verMarkSeen(); renderHome(); }; });
   const nx=$('noticeX');
   if(nx) nx.onclick=()=>{
     try{ localStorage.setItem(NOTICE_KEY,'1'); }catch(e){}
@@ -13678,8 +13980,8 @@ function newChat(){
   box.className='daypick';
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">Who is it for?</p>
-    <div class="checks">${USERS.map(u=>`<label><input type="checkbox"
-      value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+    <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
+      value="${u.id}"> ${pplWho(u)}</label>`).join('')}</div>
     <label>A name for it, if it is a group
       <input id="ncName" placeholder="Boaters, Family, The crew…" autocomplete="off"></label>
     <p class="coords" style="margin-top:8px">Tick one person for a quiet word, or
@@ -13730,8 +14032,8 @@ function showWho(){
     <div class="field"><dd>${here.map(u=>esc(u===ME.id?'You':whoWrote(u)))
       .join(', ')}</dd></div>
     ${(!c.is_everyone&&spare.length)?`<p class="dsec">Bring somebody in</p>
-      <div class="checks">${spare.map(u=>`<label><input type="checkbox"
-        value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>`:''}
+      <div class="checks ppl">${spare.map(u=>`<label><input type="checkbox"
+        value="${u.id}"> ${pplWho(u)}</label>`).join('')}</div>`:''}
     <div class="pfoot"><button id="whoClose">Close</button>
       ${(!c.is_everyone&&spare.length)?'<button id="whoAdd" class="go">Add them</button>':''}
     </div></div>`;
@@ -13836,8 +14138,8 @@ function pickPeople(title, onGo){
   box.className='daypick';
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">${esc(title)}</p>
-    <div class="checks">${USERS.map(u=>`<label><input type="checkbox"
-      value="${u.id}"> ${esc(u.display_name||u.email)}</label>`).join('')}</div>
+    <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
+      value="${u.id}"> ${pplWho(u)}</label>`).join('')}</div>
     <p class="coords" style="margin-top:10px">Once somebody accepts a copy it is
     theirs, which means they can pass it on again. Your own record is not
     affected either way.</p>
@@ -14335,6 +14637,7 @@ union all select 'contact_favourites',   count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'contact_shares',       count(*), coalesce(jsonb_agg(t), '[]') from contact_shares t
 union all select 'contact_offers',       count(*), coalesce(jsonb_agg(t), '[]') from contact_offers t
 union all select 'profiles',             count(*), coalesce(jsonb_agg(t), '[]') from profiles t
+union all select 'app_owners',           count(*), coalesce(jsonb_agg(t), '[]') from app_owners t
 -- Daily log setup
 union all select 'log_options',          count(*), coalesce(jsonb_agg(t), '[]') from log_options t
 union all select 'log_cats',             count(*), coalesce(jsonb_agg(t), '[]') from log_cats t
@@ -14482,6 +14785,7 @@ function wireBackupCard(){
    the check is for tidiness, not for safety.
    ============================================================ */
 function isOwner(){
+  if(OWNERS) return OWNERS.includes(ME&&ME.id);   // step 56: app_owners decides
   const name=((MY_PROFILE&&MY_PROFILE.display_name)||'').trim().toLowerCase();
   const mail=((ME&&ME.email)||'').trim().toLowerCase();
   return ['barry','sandra'].some(n=>name.startsWith(n)||mail.startsWith(n));
@@ -14516,7 +14820,7 @@ function inviteSubject(){ return 'Your sign-in for It’s MY life'; }
 
 function inviteBody(){
   const who=(INVITE.name||'').trim().split(/\s+/)[0] || 'there';
-  const me=((MY_PROFILE&&MY_PROFILE.display_name)||'').trim().split(/\s+/)[0]
+  const me=(MY_PROFILE?personName(MY_PROFILE):'').trim().split(/\s+/)[0]
            || 'Barry';
   // No hard wrapping and no indents: every mail app wraps for the screen it
   // is read on, and a line broken by hand at 72 characters comes out ragged
@@ -17882,7 +18186,7 @@ function finAccountRows(){
 function shareRow(a){
   const mine = a.created_by===ME.id;
   const on = SHARED_ACCS.filter(s=>s.account_id===a.id);
-  const who = u => (u&&(u.display_name||u.email))||'somebody';
+  const who = u => u?personName(u):'somebody';
   const them = [MY_PROFILE].concat(USERS).filter(Boolean);
 
   if(!mine){
@@ -17915,7 +18219,7 @@ function shareBox(accId){
         const s=on.find(x=>x.viewer_id===u.id);
         const lvl = !s ? 'no' : (s.can_edit?'edit':'look');
         return `<div class="setrow" style="flex-direction:column;align-items:stretch;gap:6px">
-          <b>${esc(u.display_name||u.email)}</b>
+          ${pplWho(u)}
           <div class="pickrow" style="gap:6px">
             ${[['no','Not at all'],['look','Look only'],['edit','Look and change']]
               .map(([v,t])=>`<button data-lvl="${u.id}:${v}"
@@ -18746,6 +19050,7 @@ function openMenu(area){
       ${a.set ? row('Settings for '+esc(a.title),'data-mset="1"')
               : row('Settings','data-mset="1"')}
       ${row(here?'How '+esc(a.title)+' works':'How to use this','data-mhelp="1"')}
+      ${row('What&rsquo;s new'+(verNewer()?' &mdash; <b>a new version is ready</b>':''),'data-mver="1"')}
       <button class="menuitem" data-mref="1">Refresh Data and Images</button>
     </div>
 
@@ -18763,6 +19068,8 @@ function openMenu(area){
     shutMenu(); $('settings').classList.add('hidden'); openSettings(a.set||undefined); };
   $('menuBody').querySelector('[data-mhelp]').onclick=()=>{
     shutMenu(); openHelp(a.help); };
+  $('menuBody').querySelector('[data-mver]').onclick=()=>{
+    shutMenu(); openWhatsNew(); };
   $('menuBody').querySelector('[data-mref]').onclick=async b=>{
     shutMenu(); await refreshAll(); };
   $('menuBody').querySelectorAll('[data-mgo]').forEach(b=>
@@ -18907,6 +19214,7 @@ async function start(){
     sharedIn(s);
   } else maybeBrief();    // what the day has in it, once a day
   watchForNewDay();
+  watchVersion();
   loadDevices();
   loadShares();
 }

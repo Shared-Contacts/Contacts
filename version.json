@@ -1,0 +1,111 @@
+{
+  "version": "2026.11.05.2",
+  "history": [
+    {
+      "version": "2026.11.05.2",
+      "changes": [
+        "The app now tells you when a new version is ready, with what changed and a Restart now button.",
+        "Menu > What's new lists every change, newest first.",
+        "Settings > The app > People who can sign in: each person's name and phone, filled in from Contacts with one tap.",
+        "Choosing people to share with now shows their name, email and phone."
+      ]
+    },
+    {
+      "version": "2026.11.05.1",
+      "changes": [
+        "Help has a search box, and each part of it sits in its own box.",
+        "Week's menu: an x on a planned meal takes it off the menu.",
+        "A star picks whose week's menu Today shows, also in Settings > Home screen.",
+        "Settings > Home screen: the Bluesky name box is back with its Bluesky words.",
+        "Something tapped on Today opens over it, so Back comes back to Today."
+      ]
+    },
+    {
+      "version": "2026.11.04.3",
+      "changes": [
+        "Today's Menu shows each meal like the Recipes list: photo, name, categories and times."
+      ]
+    },
+    {
+      "version": "2026.11.04.2",
+      "changes": [
+        "Week's menu: each meal shows like the Recipes list, without the tall gaps."
+      ]
+    },
+    {
+      "version": "2026.11.04.1",
+      "changes": [
+        "Diary: entries about someone other than you have a pale blue background.",
+        "Hold and slide replaces the up and down arrows everywhere.",
+        "My Stuff: a star picks which photo is the big one.",
+        "Today: the weather for wherever the phone is, with a link to the Met Office.",
+        "Recipes > Week's menu: plan breakfast, lunch and dinner, and share the menu."
+      ]
+    },
+    {
+      "version": "2026.11.03.4",
+      "changes": [
+        "Diary: + asks Appointment or To-do first.",
+        "Diary: a status on appointments (Completed, Missed, Delayed, On hold, Cancelled).",
+        "Diary: birthday cakes on the month view, and tap the month's name to jump through the year."
+      ]
+    },
+    {
+      "version": "2026.11.03.3",
+      "changes": [
+        "My Stuff: a clearer message when a Boat or Loyalty card cannot be saved yet."
+      ]
+    },
+    {
+      "version": "2026.11.03.2",
+      "changes": [
+        "My Stuff: the round red +, photo counts, and coming dates under each name.",
+        "My Stuff: lock private things like a passport or will with a password of your own.",
+        "My Stuff: new Boat and Loyalty card types, and Change the type.",
+        "Typing a date: a dd/mm/yyyy box, and tap the month's name to pick the year."
+      ]
+    },
+    {
+      "version": "2026.11.03.1",
+      "changes": [
+        "Contacts: one that is used elsewhere cannot be deleted, and Menu > Find double-ups blends two into one.",
+        "Wishlist: ideas in A to Z order, and Add it stays above the keyboard.",
+        "Web addresses and emails are no longer changed by the keyboard's autocorrect.",
+        "Recipes: the cooking timer now sounds on an iPhone."
+      ]
+    },
+    {
+      "version": "2026.11.02.5",
+      "changes": [
+        "New contact: a warning about a duplicate as soon as you type the name."
+      ]
+    },
+    {
+      "version": "2026.11.02.4",
+      "changes": [
+        "Contact searches put the name first, and a new contact with a name already there asks what to do."
+      ]
+    },
+    {
+      "version": "2026.11.02.3",
+      "changes": [
+        "My Stuff: Bought from, Insurer and services chosen from Contacts, and the first photo on each row."
+      ]
+    },
+    {
+      "version": "2026.11.02.2",
+      "changes": [
+        "My Stuff: a new tile for the things you own, with photos, PDFs, a service record and due dates."
+      ]
+    },
+    {
+      "version": "2026.11.02.1",
+      "changes": [
+        "Today: a party popper on someone's birthday.",
+        "Regular jobs: hold and slide to reorder.",
+        "Sent to you: look at a contact before accepting it.",
+        "Maps: an Our location button, and an x to empty the Find box."
+      ]
+    }
+  ]
+}

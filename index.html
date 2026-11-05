@@ -309,6 +309,12 @@ body:has(> .sheet:not(.hidden)) > #home{visibility:hidden}
    out of sight above it. While you are typing, it goes to the top instead. */
 .daypick.typing{align-items:flex-start;padding-top:10px}
 .daypick .inner{background:var(--paper);border-radius:12px;padding:16px;max-width:420px;width:100%}
+/* Centred by its margins, not by the box around it: a long list taller than
+   the screen then starts at the top and scrolls, rather than hanging off the
+   top where no scrolling can reach it (a long Send to list, 5 Nov 2026). */
+.daypick{align-items:flex-start}
+.daypick .inner{margin:auto 0}
+.daypick.typing .inner, .daypick.lnked .inner{margin:0 0 auto}
 .logsec>summary{cursor:pointer;padding:13px 52px 13px 32px;font-size:14px;font-weight:700;
   letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#F4F2EB;
   border-bottom:1px solid var(--rule);position:relative;list-style:none}
@@ -796,6 +802,80 @@ body.vbtyping #verBar{display:none}
 .pfform input{display:block;width:100%;margin-top:4px;padding:12px;font:inherit;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 .pfform .btn{display:block;width:100%}
+/* ---------- MY Games: Lock Keeper ----------
+   The sheet fills a phone turned on its side. Held upright with the screen
+   locked upright, it turns itself round, so turning the phone to the left
+   reads it. Sizes follow the sheet's own box (cqh, cqw), whichever way up. */
+.lkintro{padding:14px}
+.lkhead{display:flex;gap:14px;align-items:flex-start;margin-bottom:6px}
+.lkhead h2{margin:0 0 4px;font-size:22px}
+.lkhead p{margin:0;color:var(--muted);font-size:15px;line-height:1.4}
+.lklogo{flex:0 0 auto;width:56px;height:56px;border-radius:12px;background:var(--hull);color:#F2EFE4;
+  display:flex;align-items:center;justify-content:center}
+.lklogo svg{width:38px;height:30px}
+.lkbtns{display:flex;gap:10px;padding:10px 0 0}
+.lkgrow .lkpts{flex:0 0 auto;font-weight:800;font-size:18px;color:var(--hull);min-width:34px;text-align:right}
+#lkPlay{background:#EFEBDD;container-type:size}
+.lkstage{position:absolute;inset:0;display:flex;flex-direction:column;gap:1.5cqh;container-type:size;
+  padding:1.5cqh 2cqw calc(1.5cqh + env(safe-area-inset-bottom,0px));color:var(--ink)}
+@media (orientation:portrait){
+  .lkstage{inset:auto;top:0;left:100cqw;width:100cqh;height:100cqw;
+    transform-origin:0 0;transform:rotate(90deg)}
+}
+.lkbar{display:flex;align-items:center;gap:1.6cqw;flex:0 0 auto}
+.lkbar button,.lkoverbtns button{min-height:42px;padding:0 14px;border-radius:10px;font-weight:700;font-size:16px;flex:0 0 auto}
+.lkback{color:var(--hull);border:1.5px solid var(--rule);background:#fff}
+.lkdone{background:var(--hull);color:#F2EFE4;min-width:96px}
+.lkdone:disabled{opacity:.5}
+.lkstatus{flex:1;min-width:0;font-size:clamp(13px,4.2cqh,17px);line-height:1.25}
+.lkwho{display:flex;gap:6px;align-items:center;flex:0 0 auto;overflow:hidden;white-space:nowrap}
+.lkwho span{padding:3px 10px;border-radius:99px;background:#fff;border:1px solid var(--rule);
+  font-size:clamp(12px,3.8cqh,15px)}
+.lkwho span.me{border-color:var(--hull)}
+.lkwho span.roll{background:#FFF3C4}
+.lkwho i{font-style:normal}
+.lkwho em{font-style:normal;color:var(--red);letter-spacing:-1px}
+.lkstop{margin-left:auto;color:var(--muted);text-decoration:underline;font-size:14px;padding:4px 6px;min-height:32px}
+.lkrows{flex:1 1 auto;display:flex;flex-direction:column;gap:1.2cqh;min-height:0}
+.lkrow{flex:1 1 0;min-height:0;display:grid;align-items:stretch;
+  grid-template-columns:minmax(24px,.55fr) repeat(11,minmax(0,1fr)) minmax(42px,1.15fr);
+  gap:.7cqw;background:var(--rc);border-radius:12px;padding:.8cqh .7cqw}
+.lkcount{display:flex;align-items:center;justify-content:center;color:var(--rf);font-weight:800;
+  font-size:clamp(12px,4cqh,18px)}
+.lkn{position:relative;min-width:0;padding:0;border-radius:9px;background:var(--rs);color:var(--ri);
+  font-weight:800;font-size:clamp(14px,6.2cqh,30px);display:flex;align-items:center;justify-content:center}
+.lkn span{position:relative;z-index:1}
+.lkn.on::before{content:'';position:absolute;inset:8%;border-radius:50%;background:var(--ink)}
+.lkn.on span{color:#fff}
+.lkn.now::before{background:var(--rc);box-shadow:0 0 0 3px var(--ink)}
+.lkn.now span{color:var(--rf)}
+.lkn.gone{opacity:.5}
+.lkn.gone::after{content:'';position:absolute;inset:14%;
+  background:linear-gradient(to top right,transparent 45%,var(--ink) 46%,var(--ink) 54%,transparent 55%)}
+.lkgate{min-width:0;padding:0;border-radius:9px;background:var(--rs);color:var(--ri);
+  display:flex;align-items:center;justify-content:center}
+.lkgate svg{width:70%;max-height:80%}
+.lkgate.shut{background:var(--ink);color:#fff}
+.lkgate.mine{box-shadow:0 0 0 3px #fff inset}
+.lkrow.shut .lkcount{opacity:.8}
+.lkfoot{flex:0 0 auto;display:flex;align-items:center;gap:1cqw;font-weight:700}
+.lkbox{min-width:46px;padding:3px 8px;border:2.5px solid var(--bc,var(--ink));border-radius:9px;background:#fff;
+  text-align:center;font-size:clamp(14px,4.6cqh,20px);line-height:1.3}
+.lkbox.lktotal{min-width:64px;border-width:3px;font-weight:800}
+.lkop{font-size:clamp(14px,4.6cqh,20px)}
+.lkpens{display:flex;gap:6px;margin-left:auto;align-items:center}
+.lkpens::before{content:'Penalties';font-size:13px;color:var(--muted);margin-right:2px}
+.lkpen{width:26px;height:26px;border:2px solid #8A8A84;border-radius:6px;background:#fff;position:relative}
+.lkpen.on::after{content:'\2715';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:var(--red);font-weight:800}
+.lkover{position:absolute;inset:6cqh 14cqw;z-index:2;background:var(--paper);border-radius:14px;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);padding:14px 18px;overflow:auto}
+.lkover h3{margin:0 0 4px;font-size:22px}
+.lkres{margin:8px 0 12px;padding-left:22px}
+.lkres li{display:flex;justify-content:space-between;max-width:320px;padding:4px 0;font-size:17px}
+.lkres li.win{font-weight:800;color:var(--hull)}
+.lkoverbtns{display:flex;gap:10px;flex-wrap:wrap}
+body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 /* Hold a row (or the grip) and slide it, instead of up and down arrows */
 .grip{flex:0 0 auto;color:var(--muted);font-size:22px;line-height:1;padding:6px 4px;
   cursor:grab;touch-action:none}
@@ -1428,6 +1508,16 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbody" id="jigPlayBody" style="padding:0"></div>
 </div>
 
+<div id="games" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="games" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="gamesMenu" data-menu="games" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">MY Games</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="gamesBody"></div>
+</div>
+
+<div id="lkPlay" class="sheet hidden" aria-label="Lock Keeper">
+  <div class="lkstage" id="lkStage"></div>
+</div>
+
 <div id="stuff" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="stuff" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="stuffMenu" data-menu="stuff" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">My Stuff</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1697,7 +1787,7 @@ const arr = v => Array.isArray(v) ? v : [];
 const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','invite','diary','itemEd','rtEd','log',
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
-  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','stuff','stuffView','stuffEd'];
+  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','stuff','stuffView','stuffEd'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2395,6 +2485,8 @@ async function refreshAll(){
   if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
     if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
   if(!$('reports').classList.contains('hidden')) await repLoad();
+  if(!$('games').classList.contains('hidden')||LK_CUR!=null){ await lkReload(LK_CUR==null?undefined:LK_CUR);
+    if(!$('games').classList.contains('hidden')) renderGames(); if(LK_CUR!=null) lkPaint(); }
   if(!$('stuff').classList.contains('hidden')){ await loadStuff(); renderStuff();
     if(!$('stuffView').classList.contains('hidden')) renderStuffThing(); }
   toast('Up to date');
@@ -4638,7 +4730,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
-  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],
+  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
@@ -4654,7 +4746,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
-  brief:'h-brief', invite:'h-invite', jig:'h-jig', recipes:'h-recipes', stuff:'h-stuff'};
+  brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', recipes:'h-recipes', stuff:'h-stuff'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -5197,6 +5289,38 @@ function openHelp(where){
   start. <strong>Back</strong> takes you to the pictures again. Leave one half
   done and it carries on where you left it next time, on the same phone. The
   puzzles come from jigsawexplorer.com, so they need the internet.</p>
+
+  <h4 id="h-games">MY Games: Lock Keeper</h4>
+  <p><strong>Lock Keeper</strong> is a dice game for 2 to 5 players. You need six
+  dice: two white, and one each of red, yellow, green and blue. Everyone plays on
+  their own phone, and the phones keep each other up to date. The sheet fills the
+  phone turned on its side; if your phone keeps the screen upright, the sheet turns
+  itself round, so turn the phone to the left to read it.</p>
+  <p><strong>Starting:</strong> Games &rsaquo; <strong>New game</strong>, tick who
+  is playing, then choose who rolls first (everyone rolls one die: the first 6
+  starts). The game appears on their phones under Games.</p>
+  <p><strong>Each roll:</strong> whoever is rolling throws all six dice. Everyone
+  may mark the total of the two white dice, in any one row. The roller may also
+  add one white die to one coloured die and mark that in the row of that colour.
+  Then everyone taps <strong>Done</strong>, and when all of you have, the dice pass
+  on. If someone has wandered off, the roller can carry on without them.</p>
+  <p><strong>Left to right:</strong> red and yellow go 2 up to 12, green and blue
+  12 down to 2. Marks go left to right; anything you pass is crossed out and cannot
+  be marked later. The number at the left of each row is how many marks it has.
+  Tap a mark made on this roll to take it off again.</p>
+  <p><strong>Penalties:</strong> if you mark nothing on your own roll, that is a
+  penalty, minus 5; Done asks first. Marking nothing on someone else&rsquo;s roll is
+  fine.</p>
+  <p><strong>Closing a lock:</strong> once a row has five marks, its last number
+  (12, or 2) can be marked, and that closes its lock. The lock counts as one more
+  mark for you, and nobody can mark that colour after that roll: put that die
+  aside. A closed lock cannot be undone.</p>
+  <p><strong>The end:</strong> when two locks are closed, or someone has four
+  penalties, the game ends once that roll is finished. Each row scores by its marks:
+  1 mark is 1 point, 2 are 3, 3 are 6, and so on, each extra mark adding one more
+  than the last, up to 78 for 12. Penalties take 5 each. The scores add themselves
+  up along the bottom, and the highest wins. <strong>Stop game</strong> ends one
+  early for everyone, keeping the scores.</p>
 
   <h4 id="h-deceased">Those who have died</h4>
   <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
@@ -5822,6 +5946,7 @@ function tilePip(dest){
   if(dest==='shop')  return SHOP.filter(x=>!x.got).length;
   if(dest==='offers') return offersToMe().length+offersBack().length;
   if(dest==='chats')  return unreadTotal();
+  if(dest==='games')  return lkWaitingCount();
   return 0;
 }
 
@@ -12415,6 +12540,491 @@ function shutJigPlay(){
 }
 $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
 
+/* ============================================================
+   MY Games: Lock Keeper (ML202, step 57)
+
+   A dice game for 2 to 5 people, played with real dice, each on their
+   own phone. Four rows of numbers: red and yellow go up the flight from
+   2 to 12, green and blue come down from 12 to 2. Marks go left to
+   right and anything passed is gone. Five marks in a row, then its last
+   number closes that row's lock: it counts as one more mark, and nobody
+   marks that colour after the roll. Whoever is rolling marks nothing
+   and takes a penalty. Two locks closed, or four penalties, and the game
+   ends when that roll is finished.
+
+   The phones are linked through two tables, games and game_players,
+   changed only through step 57's functions, which check it is your game,
+   your sheet and your turn. Each phone watches the game live while it is
+   open, with a fetch every 15 seconds in case the live link drops.
+   ============================================================ */
+const LK_ROWS=[
+  {c:'red',    name:'Red',    up:true,  bg:'#B83A30', ink:'#A3271E', soft:'#FBE3E0', fg:'#fff'},
+  {c:'yellow', name:'Yellow', up:true,  bg:'#E0B21B', ink:'#7A5A00', soft:'#FFF6D6', fg:'#3A2C00'},
+  {c:'green',  name:'Green',  up:false, bg:'#2E7D46', ink:'#22663A', soft:'#DFF1E4', fg:'#fff'},
+  {c:'blue',   name:'Blue',   up:false, bg:'#2F5FA8', ink:'#244E8F', soft:'#DFE8F6', fg:'#fff'}];
+const LK_UP=[2,3,4,5,6,7,8,9,10,11,12], LK_DOWN=LK_UP.slice().reverse();
+const lkNums = r => r.up ? LK_UP : LK_DOWN;
+const lkTri = n => n*(n+1)/2;          // 1, 3, 6, 10 ... 78 for twelve marks
+let GAMES=[], GAME_PLAYERS=[], GAMES_READY=true, GAMES_FAILED=false,
+    LK_CUR=null, LK_SUB=null, LK_POLL=null, LK_SAVING=0, LK_SOON=null;
+
+// A sheet as it was saved, tidied: only real numbers, in order, once each.
+function lkSheet(raw){
+  const s=raw&&typeof raw==='object'?raw:{};
+  const t=s.turn&&typeof s.turn==='object'?s.turn:{};
+  const out={pen:Math.max(0,Math.min(4,parseInt(s.pen,10)||0)),
+    locked:arr(s.locked).filter(c=>LK_ROWS.some(r=>r.c===c)),
+    turn:{no:Number(t.no)||0, marks:arr(t.marks).filter(m=>Array.isArray(m)&&m.length===2)
+      .map(m=>[String(m[0]),Number(m[1])]), pen:!!t.pen}};
+  LK_ROWS.forEach(r=>{
+    const order=lkNums(r);
+    out[r.c]=arr(s[r.c]).map(Number).filter(n=>order.includes(n))
+      .filter((n,i,a)=>a.indexOf(n)===i).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  });
+  return out;
+}
+const lkRowCount = (s,c) => arr(s[c]).length + (arr(s.locked).includes(c)?1:0);
+function lkScore(s){
+  const rows=LK_ROWS.map(r=>lkTri(lkRowCount(s,r.c)));
+  return {rows, pen:s.pen*5, total:rows.reduce((a,b)=>a+b,0)-s.pen*5};
+}
+
+const lkGame    = id => GAMES.find(g=>Number(g.id)===Number(id));
+const lkPlayers = id => GAME_PLAYERS.filter(p=>Number(p.game_id)===Number(id)).sort((a,b)=>a.seat-b.seat);
+const lkMe      = id => GAME_PLAYERS.find(p=>Number(p.game_id)===Number(id)&&p.user_id===ME.id);
+function lkWho(uid){
+  if(uid===ME.id) return 'You';
+  const u=USERS.find(x=>x.id===uid);
+  return u?personName(u):'Someone';
+}
+function lkAnd(list){
+  return list.length<2 ? (list[0]||'') : list.slice(0,-1).join(', ')+' and '+list[list.length-1];
+}
+function lkRoller(g){ const p=lkPlayers(g.id).find(x=>x.seat===g.turn); return p?p.user_id:null; }
+const lkMyRoll = g => g.status==='playing' && lkRoller(g)===ME.id;
+const lkTurnMarks = (s,g) => s.turn.no===g.turn_no ? s.turn.marks : [];
+// A row closed on an earlier roll. Closed on this one, the marks being made
+// at the same time still count.
+const lkClosedBefore = (g,c) => g.closed && g.closed[c]!=null && Number(g.closed[c])<g.turn_no;
+const lkClosed = (g,c) => !!(g.closed && g.closed[c]!=null);
+const lkDoneThisRoll = (g,p) => !!p && p.done_turn>=g.turn_no;
+
+// Why a number cannot be marked now, or '' when it can.
+function lkWhyNot(g,s,r,n){
+  if(g.status!=='playing') return 'This game has ended';
+  if(lkDoneThisRoll(g,lkMe(g.id))) return 'You have finished with this roll';
+  if(lkClosedBefore(g,r.c)) return 'The '+r.name.toLowerCase()+' lock is closed';
+  if(s.locked.includes(r.c)) return 'You closed this lock';
+  const order=lkNums(r), at=order.indexOf(n), marked=s[r.c];
+  const last=marked.length?order.indexOf(marked[marked.length-1]):-1;
+  if(marked.includes(n)) return 'That one is already marked';
+  if(at<last) return 'That one has been passed: marks go left to right';
+  const mine=lkMyRoll(g), limit=mine?2:1;
+  if(lkTurnMarks(s,g).length>=limit) return mine
+    ? 'Two marks is the most on your own roll'
+    : 'One mark is the most on someone else’s roll: the white dice total';
+  if(at===order.length-1 && marked.length<5)
+    return 'The '+n+' needs five marks in the row first';
+  return '';
+}
+
+/* ---------- fetching ---------- */
+const lkMissing = e => /games|game_players|42P01|PGRST205|does not exist|schema cache/i.test((e&&(e.message||e.code))||'');
+async function lkReload(id){
+  const one=id!=null;
+  const [g,p]=await Promise.all([
+    one?sb.from('games').select('*').eq('id',id)
+       :sb.from('games').select('*').order('created_at',{ascending:false}),
+    one?sb.from('game_players').select('*').eq('game_id',id)
+       :sb.from('game_players').select('*')]);
+  if(g.error||p.error){
+    const e=g.error||p.error; console.error(e);
+    if(lkMissing(e)) GAMES_READY=false; else GAMES_FAILED=true;
+    return false;                 // what was there stays: never an empty list for a failed fetch
+  }
+  GAMES_READY=true; GAMES_FAILED=false;
+  const was=one?lkGame(id):null;
+  // A mark of yours still on its way: keep it rather than the copy from before it.
+  const keep=LK_SAVING&&one?lkMe(id):null;
+  if(one){
+    GAMES=GAMES.filter(x=>Number(x.id)!==Number(id)).concat(g.data||[]);
+    GAME_PLAYERS=GAME_PLAYERS.filter(x=>Number(x.game_id)!==Number(id)).concat(p.data||[]);
+  } else { GAMES=g.data||[]; GAME_PLAYERS=p.data||[]; }
+  if(keep){ const m=lkMe(id); if(m) m.sheet=keep.sheet; }
+  const now=one?lkGame(id):null;
+  if(was&&now&&now.turn_no!==was.turn_no&&lkMyRoll(now)&&Number(LK_CUR)===Number(id)){
+    toast('Your roll');
+    try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){}
+  }
+  return true;
+}
+// Games where you have something to do: your roll, or a mark to make.
+function lkWaitingCount(){
+  return GAMES.filter(g=>g.status==='playing'&&lkMe(g.id)&&!lkDoneThisRoll(g,lkMe(g.id))).length;
+}
+
+/* ---------- the list of games ---------- */
+const LK_GATES=(shut)=>`<svg viewBox="0 0 40 30" aria-hidden="true" fill="none" stroke="currentColor"
+  stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v24M36 3v24"/>${shut
+  ?'<path d="M6 7l14 9 14-9"/><path d="M6 13l14 9 14-9" stroke-width="2"/>'
+  :'<path d="M7 6l3 18M33 6l-3 18" stroke-width="2.6"/>'}</svg>`;
+
+async function openGames(){
+  showSheet('games'); $('gamesBody').scrollTop=0; lockBackground();
+  if(!GAMES.length) $('gamesBody').innerHTML='<p class="empty">Just a moment…</p>';
+  await lkReload();
+  renderGames();
+}
+
+function lkGameLine(g){
+  const ps=lkPlayers(g.id), me=lkMe(g.id); if(!me) return '';
+  const others=lkAnd(ps.filter(p=>p.user_id!==ME.id).map(p=>lkWho(p.user_id)));
+  let sub;
+  if(g.status==='playing'){
+    const r=lkRoller(g), done=lkDoneThisRoll(g,me);
+    sub = r===ME.id
+      ? (done?'Your roll · waiting for the others':'<b>Your roll</b>')
+      : (done?esc(lkWho(r))+' is rolling · you have finished with it'
+             :'<b>'+esc(lkWho(r))+' is rolling</b> · the white dice are yours too');
+  } else {
+    const res=lkResults(g);
+    sub=esc(res.line)+' · '+esc(new Date(g.ended_at||g.created_at)
+      .toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
+  }
+  return `<button class="pplrow lkgrow" data-lkgame="${esc(g.id)}">
+    <span class="pplwho"><b>With ${esc(others)}</b><small>${sub}</small></span>
+    <span class="lkpts">${lkScore(lkSheet(me.sheet)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
+}
+
+function renderGames(){
+  const b=$('gamesBody'); if(!b) return;
+  const mine=GAMES.filter(g=>lkMe(g.id));
+  const going=mine.filter(g=>g.status==='playing'), over=mine.filter(g=>g.status!=='playing');
+  b.innerHTML=`<div class="card lkintro">
+      <div class="lkhead"><span class="lklogo">${LK_GATES(true)}</span>
+        <div><h2>Lock Keeper</h2><p>A dice game for 2 to 5 players: real dice, and a
+        phone each to mark your sheet. Red and yellow climb the flight, green and blue
+        come down, and closing a lock shuts that colour for everyone.</p></div></div>
+      ${GAMES_READY?'':`<div class="field"><dd style="color:var(--red)">Lock Keeper needs
+        step 57 run in Supabase first.</dd></div>`}
+      <div class="setadd lkbtns"><button class="btn primary" id="lkNew">New game</button>
+        <button class="btn" id="lkHow" style="border:1.5px solid var(--rule)">How to play</button></div></div>
+    ${GAMES_FAILED?`<div class="card"><div class="field"><dd style="color:var(--red)">Could not
+      fetch the games just now. Nothing is lost: try the refresh button.</dd></div></div>`:''}
+    ${going.length?`<p class="dsec">Going on</p><div class="card">${going.map(lkGameLine).join('')}</div>`:''}
+    ${over.length?`<p class="dsec">Finished</p><div class="card">${over.map(lkGameLine).join('')}</div>`:''}
+    ${GAMES_READY&&!GAMES_FAILED&&!mine.length?'<p class="empty">No games yet. New game starts one.</p>':''}`;
+  $('lkNew').onclick=()=>lkNewGame();
+  $('lkHow').onclick=()=>openHelp('games');
+  b.querySelectorAll('[data-lkgame]').forEach(x=>x.onclick=()=>lkOpen(Number(x.dataset.lkgame)));
+}
+
+/* ---------- starting one ---------- */
+function lkPickPlayers(){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='lkWho';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Who is playing with you?</p>
+      <p class="coords" style="margin:0 0 10px">Up to four others. Each of them plays
+        on their own phone.</p>
+      <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
+        value="${esc(u.id)}"> ${pplWho(u)}</label>`).join('')}</div>
+      <div class="pfoot"><button id="lkwCancel">Cancel</button>
+        <button id="lkwGo" class="go">Next</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#lkwCancel').onclick=()=>done(null);
+    box.querySelector('#lkwGo').onclick=()=>{
+      const who=[...box.querySelectorAll('input:checked')].map(i=>i.value);
+      if(!who.length){ toast('Tick at least one person'); return; }
+      if(who.length>4){ toast('Up to four others: Lock Keeper is for 2 to 5 players'); return; }
+      done(who);
+    };
+  });
+}
+function lkPickFirst(players){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='lkFirst';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Who rolls first?</p>
+      <p class="coords" style="margin:0 0 10px">Everyone rolls one die: the first to
+        roll a 6 starts. The dice then go round in this order.</p>
+      ${players.map((id,i)=>`<button class="pplrow" data-lkfirst="${i}"><span class="pplwho"><b>${
+        esc(id===ME.id?'Me':lkWho(id))}</b></span><span aria-hidden="true">&rsaquo;</span></button>`).join('')}
+      <div class="pfoot" style="margin-top:8px"><button id="lkfCancel">Cancel</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#lkfCancel').onclick=()=>done(null);
+    box.querySelectorAll('[data-lkfirst]').forEach(b=>b.onclick=()=>done(Number(b.dataset.lkfirst)));
+  });
+}
+async function lkNewGame(same){
+  if(!GAMES_READY){ toast('Lock Keeper needs step 57 run in Supabase first'); return; }
+  if(!USERS.length){ toast('Nobody else has an account yet'); return; }
+  const who=same||await lkPickPlayers(); if(!who) return;
+  const players=[ME.id].concat(who.filter(x=>x!==ME.id));
+  const first=await lkPickFirst(players); if(first==null) return;
+  const {data,error}=await sb.rpc('new_game',{players, first_seat:first});
+  if(error){
+    console.error(error);
+    toast(/new_game|PGRST202/i.test((error.message||'')+(error.code||''))
+      ?'Lock Keeper needs step 57 run in Supabase first':'Could not start the game');
+    return;
+  }
+  const id=Number(data);
+  await lkReload(id);
+  lkOpen(id);
+}
+
+/* ---------- the sheet ---------- */
+async function lkOpen(id){
+  LK_CUR=id;
+  showSheet('lkPlay'); lockBackground();
+  // Sideways if the phone allows it (an installed app usually does). If not,
+  // the sheet turns itself round for a phone held upright.
+  try{ screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+  lkPaint();
+  lkWatch(id);
+  await lkReload(id);
+  lkPaint();
+}
+function lkShut(){
+  lkUnwatch();
+  try{ screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock(); }catch(e){}
+  if($('lkPlay')) $('lkPlay').classList.add('hidden');
+  LK_CUR=null;
+}
+function lkWatch(id){
+  lkUnwatch();
+  const soon=()=>{ clearTimeout(LK_SOON);
+    LK_SOON=setTimeout(async()=>{ if(Number(LK_CUR)!==Number(id)) return;
+      await lkReload(id); lkPaint(); },250); };
+  if(sb.channel){
+    try{
+      LK_SUB=sb.channel('game'+id)
+        .on('postgres_changes',{event:'*',schema:'public',table:'games',filter:'id=eq.'+id},soon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'game_id=eq.'+id},soon)
+        .subscribe();
+    }catch(e){ /* no live link: the fetch below keeps up */ }
+  }
+  LK_POLL=setInterval(()=>{ if(!document.hidden) soon(); },15000);
+}
+function lkUnwatch(){
+  if(LK_SUB&&sb.removeChannel){ try{ sb.removeChannel(LK_SUB); }catch(e){} }
+  LK_SUB=null; clearInterval(LK_POLL); LK_POLL=null; clearTimeout(LK_SOON);
+}
+
+function lkResults(g){
+  const list=lkPlayers(g.id).map(p=>({id:p.user_id, who:lkWho(p.user_id),
+    total:lkScore(lkSheet(p.sheet)).total})).sort((a,b)=>b.total-a.total);
+  const best=list.length?list[0].total:0, tops=list.filter(x=>x.total===best);
+  const line=tops.length>1
+    ? 'A draw on '+best
+    : (tops[0]&&tops[0].id===ME.id?'You won':(tops[0]?tops[0].who+' won':''))
+      +(list[1]?', '+best+' to '+list[1].total:'');
+  return {list, best, line};
+}
+
+function lkStatus(g,me){
+  if(g.status!=='playing') return 'Game over: '+(g.end_reason||'ended');
+  const r=lkRoller(g), done=lkDoneThisRoll(g,me);
+  const waiting=lkPlayers(g.id).filter(p=>!lkDoneThisRoll(g,p)&&p.user_id!==ME.id).map(p=>lkWho(p.user_id));
+  if(done) return waiting.length?'Waiting for '+lkAnd(waiting):'Passing the dice on…';
+  if(r===ME.id) return '<b>Your roll.</b> The white dice total in any row, a white and a colour in that colour’s row. Then Done.';
+  return '<b>'+esc(lkWho(r))+' is rolling.</b> The white dice total is yours too, in any row. Then Done.';
+}
+
+function lkPaint(){
+  const st=$('lkStage'); if(!st||$('lkPlay').classList.contains('hidden')) return;
+  const g=lkGame(LK_CUR), me=g&&lkMe(g.id);
+  if(!g||!me){
+    st.innerHTML=`<div class="lkbar"><button class="lkback" id="lkBack">&lsaquo; Games</button>
+      <div class="lkstatus">${GAMES_FAILED?'Could not fetch this game just now.':'Fetching the game…'}</div></div>`;
+    $('lkBack').onclick=lkBackToList; return;
+  }
+  const s=lkSheet(me.sheet), sc=lkScore(s), ps=lkPlayers(g.id), roller=lkRoller(g);
+  const turn=lkTurnMarks(s,g), done=lkDoneThisRoll(g,me), playing=g.status==='playing';
+  const waiting=ps.filter(p=>!lkDoneThisRoll(g,p));
+  const canCarryOn=playing&&done&&roller===ME.id&&waiting.length>0;
+  const row=r=>{
+    const order=lkNums(r), marked=s[r.c], last=marked.length?order.indexOf(marked[marked.length-1]):-1;
+    const shutAll=lkClosedBefore(g,r.c), mineShut=s.locked.includes(r.c), shut=lkClosed(g,r.c)||mineShut;
+    return `<div class="lkrow${shut?' shut':''}" style="--rc:${r.bg};--ri:${r.ink};--rs:${r.soft};--rf:${r.fg}"
+        data-lkrow="${r.c}" aria-label="${r.name} row, ${r.up?'2 up to 12':'12 down to 2'}">
+      <span class="lkcount" title="Marks in this row">${lkRowCount(s,r.c)}</span>
+      ${order.map((n,i)=>{
+        const on=marked.includes(n), now=on&&turn.some(m=>m[0]===r.c&&m[1]===n);
+        const gone=!on&&(i<last||shutAll||mineShut);
+        return `<button class="lkn${on?' on':''}${now?' now':''}${gone?' gone':''}" data-lk="${r.c}:${n}"
+          aria-label="${r.name} ${n}${on?', marked':gone?', crossed out':''}"><span>${n}</span></button>`;
+      }).join('')}
+      <button class="lkgate${shut?' shut':''}${mineShut?' mine':''}" data-lkgate="${r.c}"
+        aria-label="${r.name} lock${mineShut?', closed by you':shut?', closed':', open'}">${LK_GATES(shut)}</button>
+    </div>`;
+  };
+  st.innerHTML=`
+    <div class="lkbar">
+      <button class="lkback" id="lkBack">&lsaquo; Games</button>
+      <div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>
+      ${playing?(canCarryOn
+        ?'<button class="lkdone" id="lkOn">Carry on without them</button>'
+        :`<button class="lkdone" id="lkDone" ${done?'disabled':''}>${done?'Done ✓':'Done'}</button>`):''}
+    </div>
+    <div class="lkwho">${ps.map(p=>{
+      const t=lkScore(lkSheet(p.sheet)).total, pen=lkSheet(p.sheet).pen;
+      return `<span class="${p.user_id===ME.id?'me':''}${playing&&p.user_id===roller?' roll':''}">${
+        playing&&p.user_id===roller?'<i aria-label="rolling">⚄</i> ':''}${esc(lkWho(p.user_id))} <b>${t}</b>${
+        pen?' <em>'+'✕'.repeat(pen)+'</em>':''}${playing&&lkDoneThisRoll(g,p)?' ✓':''}</span>`;
+    }).join('')}${playing?'<button class="lkstop" id="lkStop">Stop game</button>':''}</div>
+    <div class="lkrows">${LK_ROWS.map(row).join('')}</div>
+    <div class="lkfoot">
+      ${LK_ROWS.map((r,i)=>`<span class="lkbox" style="--bc:${r.bg}" aria-label="${r.name} row points">${sc.rows[i]}</span>`)
+        .join('<span class="lkop">+</span>')}
+      <span class="lkop">&minus;</span><span class="lkbox" style="--bc:#8A8A84" aria-label="Penalty points">${sc.pen}</span>
+      <span class="lkop">=</span><span class="lkbox lktotal" aria-label="Total">${sc.total}</span>
+      <span class="lkpens" aria-label="Penalties, ${s.pen} of 4">${[0,1,2,3].map(i=>
+        `<span class="lkpen${i<s.pen?' on':''}"></span>`).join('')}</span>
+    </div>
+    ${playing?'':lkOverHtml(g)}`;
+  $('lkBack').onclick=lkBackToList;
+  const d=$('lkDone'); if(d) d.onclick=()=>lkDone(g.id);
+  const on=$('lkOn'); if(on) on.onclick=()=>lkCarryOn(g.id);
+  st.querySelectorAll('[data-lk]').forEach(b=>b.onclick=()=>{
+    const [c,n]=b.dataset.lk.split(':'); lkTap(c,Number(n)); });
+  st.querySelectorAll('[data-lkgate]').forEach(b=>b.onclick=()=>{
+    const r=LK_ROWS.find(x=>x.c===b.dataset.lkgate);
+    toast(lkClosed(g,r.c)||s.locked.includes(r.c)
+      ?'The '+r.name.toLowerCase()+' lock is closed'
+      :'Five marks, then the '+(r.up?12:2)+', closes the '+r.name.toLowerCase()+' lock'); });
+  const again=$('lkAgain');
+  if(again) again.onclick=()=>lkNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id));
+  const clr=$('lkClear');
+  if(clr) clr.onclick=()=>lkClearAway(g.id);
+  const ob=$('lkOverBack'); if(ob) ob.onclick=lkBackToList;
+  const sp=$('lkStop'); if(sp) sp.onclick=lkStop;
+}
+
+function lkOverHtml(g){
+  const res=lkResults(g);
+  return `<div class="lkover" role="dialog" aria-label="Final scores">
+    <h3>${esc(res.line)}</h3>
+    <p class="coords">${esc(g.end_reason==='Stopped'?'The game was stopped.':
+      g.end_reason==='Four penalties'?'Someone took a fourth penalty.':'Two locks were closed.')}</p>
+    <ol class="lkres">${res.list.map(x=>`<li class="${x.total===res.best?'win':''}">${
+      esc(x.who)}<b>${x.total}</b></li>`).join('')}</ol>
+    <div class="lkoverbtns"><button class="lkdone" id="lkAgain">Play again</button>
+      <button class="lkback" id="lkOverBack">Back to games</button>
+      ${g.created_by===ME.id?'<button class="lkback" id="lkClear">Clear it away</button>':''}</div></div>`;
+}
+
+function lkBackToList(){
+  lkShut(); lockBackground();
+  if(!$('games').classList.contains('hidden')) renderGames();
+  else openGames();
+}
+
+/* ---------- marking ---------- */
+async function lkSave(g,s){
+  const me=lkMe(g.id); if(!me) return false;
+  const was=me.sheet;
+  me.sheet=s; LK_SAVING++; lkPaint();
+  const {error}=await sb.rpc('save_sheet',{g:g.id, s});
+  LK_SAVING--;
+  if(error){
+    me.sheet=was; lkPaint(); console.error(error);
+    toast(/save_sheet|PGRST202/i.test((error.message||'')+(error.code||''))
+      ?'Lock Keeper needs step 57 run in Supabase first'
+      :/not running/i.test(error.message||'')?'This game has ended':'Could not save that: check your signal');
+    return false;
+  }
+  return true;
+}
+
+async function lkTap(c,n){
+  const g=lkGame(LK_CUR), me=g&&lkMe(g.id); if(!me) return;
+  const r=LK_ROWS.find(x=>x.c===c); if(!r) return;
+  const s=lkSheet(me.sheet);
+  if(s.turn.no!==g.turn_no) s.turn={no:g.turn_no, marks:[], pen:false};
+  const marked=s[c];
+  // Taking a mark off again: the newest in its row, made on this roll, and
+  // not one that closed a lock (everyone has been told about that).
+  if(marked.length&&marked[marked.length-1]===n){
+    const i=s.turn.marks.findIndex(m=>m[0]===c&&m[1]===n);
+    if(i>=0&&!s.locked.includes(c)&&g.status==='playing'&&!lkDoneThisRoll(g,me)){
+      marked.pop(); s.turn.marks.splice(i,1);
+      await lkSave(g,s); return;
+    }
+    toast(s.locked.includes(c)?'A closed lock stays closed'
+      :lkDoneThisRoll(g,me)?'You have finished with this roll':'That was marked on an earlier roll');
+    return;
+  }
+  const why=lkWhyNot(g,s,r,n);
+  if(why){ toast(why); return; }
+  const order=lkNums(r), closing=order.indexOf(n)===order.length-1;
+  if(closing&&!confirm('Mark the '+n+' and close the '+r.name.toLowerCase()+' lock? '
+      +'Nobody can mark '+r.name.toLowerCase()+' after this roll, and it cannot be undone.')) return;
+  marked.push(n); s.turn.marks.push([c,n]);
+  if(closing) s.locked.push(c);
+  if(!await lkSave(g,s)) return;
+  if(closing){
+    const {error}=await sb.rpc('close_row',{g:g.id, colour:c});
+    if(error){ console.error(error); toast('Could not close the lock for everyone: check your signal'); }
+    else toast('The '+r.name.toLowerCase()+' lock is closed: put that die aside');
+    await lkReload(g.id); lkPaint();
+  }
+}
+
+async function lkDone(id){
+  const g=lkGame(id), me=g&&lkMe(id); if(!me||g.status!=='playing') return;
+  const s=lkSheet(me.sheet);
+  const tookPen=s.turn.no===g.turn_no&&s.turn.pen;
+  if(lkMyRoll(g)&&!lkTurnMarks(s,g).length&&!tookPen){
+    if(!confirm('You marked nothing on your own roll, so that is a penalty: minus 5. '
+      +'Take it? (Cancel to go back and mark something.)')) return;
+    s.pen=Math.min(4,s.pen+1);
+    s.turn={no:g.turn_no, marks:[], pen:true};
+    if(!await lkSave(g,s)) return;
+  }
+  await lkFinish(g,false);
+}
+async function lkCarryOn(id){
+  const g=lkGame(id); if(!g) return;
+  const left=lkPlayers(id).filter(p=>!lkDoneThisRoll(g,p)).map(p=>lkWho(p.user_id));
+  if(!confirm('Pass the dice on without '+lkAnd(left)+'? They cannot mark this roll after.')) return;
+  await lkFinish(g,true);
+}
+async function lkFinish(g,moveOn){
+  const {data,error}=await sb.rpc('finish_turn',{g:g.id, at_turn:g.turn_no, move_on:!!moveOn});
+  if(error){
+    console.error(error);
+    toast(/finish_turn|PGRST202/i.test((error.message||'')+(error.code||''))
+      ?'Lock Keeper needs step 57 run in Supabase first':'Could not reach the game: check your signal');
+    return;
+  }
+  if(data==='ended') toast('That is the end of the game');
+  await lkReload(g.id); lkPaint();
+}
+
+async function lkClearAway(id){
+  if(!confirm('Clear this game away, for everyone who played it?')) return;
+  const {error}=await sb.rpc('delete_game',{g:id});
+  if(error){ console.error(error); toast('Could not clear it away'); return; }
+  GAMES=GAMES.filter(x=>Number(x.id)!==Number(id));
+  GAME_PLAYERS=GAME_PLAYERS.filter(x=>Number(x.game_id)!==Number(id));
+  lkBackToList();
+}
+async function lkStop(){
+  const g=lkGame(LK_CUR); if(!g||g.status!=='playing'){ toast('Open a game that is going on first'); return; }
+  if(!confirm('Stop this game for everyone? The scores so far are kept.')) return;
+  const {error}=await sb.rpc('stop_game',{g:g.id});
+  if(error){ console.error(error); toast('Could not stop the game'); return; }
+  await lkReload(g.id); lkPaint();
+}
+
 
 
 /* ============================================================
@@ -13190,6 +13800,7 @@ const TILE_DEST={
   menu:    {label:'Menu',       go:()=>$('menuBtn').click()},
   money:   {label:'Finances',   go:openMoney},
   jig:     {label:'Jigsaws',    go:openJig},
+  games:   {label:'Games',      go:openGames},
   recipes: {label:'Recipes',    go:openRecipes},
   stuff:   {label:'My Stuff',   go:openStuff},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
@@ -13202,9 +13813,9 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C'};
+  stuff:'#3A4A3C', games:'#6B3030'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','links','stuff','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -13223,7 +13834,7 @@ function shade(hex,amt){
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd','rtEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
-  settings:['settings'], pick:['app'], jig:['jig','jigPlay'],
+  settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -13491,7 +14102,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.05.2';
+const APP_VERSION='2026.11.05.4';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -14638,6 +15249,8 @@ union all select 'contact_shares',       count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'contact_offers',       count(*), coalesce(jsonb_agg(t), '[]') from contact_offers t
 union all select 'profiles',             count(*), coalesce(jsonb_agg(t), '[]') from profiles t
 union all select 'app_owners',           count(*), coalesce(jsonb_agg(t), '[]') from app_owners t
+union all select 'games',                count(*), coalesce(jsonb_agg(t), '[]') from games t
+union all select 'game_players',         count(*), coalesce(jsonb_agg(t), '[]') from game_players t
 -- Daily log setup
 union all select 'log_options',          count(*), coalesce(jsonb_agg(t), '[]') from log_options t
 union all select 'log_cats',             count(*), coalesce(jsonb_agg(t), '[]') from log_cats t
@@ -15240,7 +15853,7 @@ $('trayHelp').onclick=()=>openHelp();
 // The strip steps out of the way while you are typing into a form, and while
 // you are ticking contacts, where the bottom of the screen is already spoken for.
 function paintTray(){
-  const busy=['editor','logEd','itemEd','chat','recipeEd','cook'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
+  const busy=['editor','logEd','itemEd','chat','recipeEd','cook','lkPlay'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
   $('tray').style.display=(busy||PICKING)?'none':'';
 }
 /* ============================================================
@@ -18958,6 +19571,7 @@ const AREAS={
   links:   {title:'URL Links',    set:'URL Links', help:'links'},
   recipes: {title:'Recipes',      set:'Recipes',   help:'recipes'},
   jig:     {title:'Jigsaws',      set:null,        help:'jig'},
+  games:   {title:'Games',        set:null,        help:'games'},
   stuff:   {title:'My Stuff',     set:null,        help:'stuff'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
@@ -18980,6 +19594,7 @@ const AREA_SHUT={
   recipes:()=>{ if(COOK&&!shutCook()) return;
     ['recipes','recipe','recipeEd','ideas','weekMenu'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
+  games:()=>{ lkShut(); $('games').classList.add('hidden'); },
   stuff:()=>{ if(!$('stuffEd').classList.contains('hidden')){ dphCancel(); stfCancelPdfs(); }
               ['stuff','stuffView','stuffEd'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
@@ -18987,7 +19602,7 @@ const AREA_SHUT={
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, stuff:openStuff, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -19020,6 +19635,8 @@ function areaItems(area){
     it('Ideas',                   ()=>{ shutMenu(); openIdeas(); })];
   if(area==='shop') return [
     it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
+  if(area==='games') return [
+    it('New game of Lock Keeper',  ()=>{ shutMenu(); lkNewGame(); })];
   if(area==='chats') return [
     it('Start a message',         ()=>{ shutMenu(); newChat(); })];
   if(area==='home') return [
@@ -19215,6 +19832,7 @@ async function start(){
   } else maybeBrief();    // what the day has in it, once a day
   watchForNewDay();
   watchVersion();
+  lkReload().then(ok=>{ if(ok&&!$('home').classList.contains('hidden')) renderHome(); });
   loadDevices();
   loadShares();
 }

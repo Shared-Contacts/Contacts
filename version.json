@@ -1,6 +1,19 @@
 {
-  "version": "2026.11.05.2",
+  "version": "2026.11.05.4",
   "history": [
+    {
+      "version": "2026.11.05.4",
+      "changes": [
+        "New MY Games tile, with Lock Keeper: a dice game for 2 to 5, with real dice and a phone each.",
+        "Lock Keeper: tap to mark, passed numbers are crossed out, closing a lock shuts it for everyone, and the scores add themselves up."
+      ]
+    },
+    {
+      "version": "2026.11.05.3",
+      "changes": [
+        "A long list of people (Send to, Share with) now scrolls right up to the top."
+      ]
+    },
     {
       "version": "2026.11.05.2",
       "changes": [

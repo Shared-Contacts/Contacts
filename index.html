@@ -748,6 +748,20 @@ i.key{vertical-align:middle}
 .helpsec ul{margin:0 0 10px;padding-left:20px}
 .helpsec li{margin-bottom:5px}
 .helpsec .lead{color:var(--muted)}
+/* Each part of Help in its own box, a shade darker than the page */
+.helpbox{background:var(--band,#F3F1EA);border:1.5px solid var(--rule);
+  border-color:color-mix(in srgb,var(--rule) 75%,var(--ink));border-radius:var(--radius);
+  padding:2px 14px 4px;margin:0 0 14px;scroll-margin-top:76px}
+.helpsec .helpbox h4{margin:12px 0 10px;padding-bottom:7px;font-size:19px;font-weight:800;
+  border-bottom:1.5px solid var(--rule)}
+.helpsec mark{background:#FFE27A;color:inherit;border-radius:3px;padding:0 1px}
+.helpfind{position:sticky;top:-16px;z-index:2;background:var(--paper);margin:-16px -16px 10px;
+  padding:12px 16px 10px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--rule)}
+.helpfind input{flex:1;min-width:0;padding:11px 12px;font-size:17px;border:1.5px solid var(--rule);
+  border-radius:10px;background:var(--panel)}
+.helpfind input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.helpfind .hx{flex:0 0 auto;font-size:26px;line-height:1;color:var(--muted);padding:6px 8px}
+.helpsaid{color:var(--muted);margin:0 2px 12px}
 /* Hold a row (or the grip) and slide it, instead of up and down arrows */
 .grip{flex:0 0 auto;color:var(--muted);font-size:22px;line-height:1;padding:6px 4px;
   cursor:grab;touch-action:none}
@@ -1092,6 +1106,16 @@ i.key{vertical-align:middle}
   object-fit:cover;background:#F0EEE7}
 .wmpick .wmnone{color:var(--muted);padding:4px 0}
 .wmrow .wmopen{flex:0 0 auto;font-size:28px;color:var(--hull);padding:6px 4px 6px 12px}
+.wmrow .wmdrop{flex:0 0 auto;min-width:40px;min-height:40px;font-size:26px;line-height:1;
+  color:var(--muted);padding:6px 4px 6px 12px;text-align:center}
+.wmwho{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.wmone{flex:1 1 140px;display:flex;border:1.5px solid var(--rule);border-radius:8px;overflow:hidden}
+.wmone button{padding:12px;font-weight:600}
+.wmone [data-wmof]{flex:1;text-align:left}
+.wmone [data-wmof][aria-pressed="true"]{background:var(--hull);color:#F2EFE4}
+.wmone .wmstar{flex:0 0 auto;font-size:22px;line-height:1;padding:8px 14px;color:var(--brass);
+  border-left:1.5px solid var(--rule);background:var(--panel)}
+.menustars button{font-weight:600}
 .btn.rcpbookbtn{border:1.5px solid var(--hull);color:var(--hull);font-size:16px;padding:12px;margin-bottom:4px}
 .bookdet{margin:4px 0 8px;border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--panel)}
 .bookdet summary{font-weight:600;color:var(--hull);cursor:pointer}
@@ -1667,6 +1691,7 @@ function stackSheets(){
 
 function lockBackground(){
   stackSheets();
+  briefOnTopAgain();
   const home = !$('home').classList.contains('hidden');
   document.body.style.overflow = (sheetsOpen()||home) ? 'hidden' : '';
   if(typeof paintTray==='function') paintTray();
@@ -4239,6 +4264,7 @@ async function openSettings(goTo){
   if(!CURRENCIES.length && MONEY_WHY!=='notset') await loadMoney();
   if(!HANDOVER) await loadHandover();
   if(!RCP_LOADED) await loadRecipes();
+  if(!MENU_LOADED) await loadMenu();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
       ${list.map((r,i)=>`<div class="setrow" data-hm="row:${table}:${r.id}">
@@ -4341,14 +4367,7 @@ async function openSettings(goTo){
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="bskyOn" ${BSKY_OFF?'':'checked'}>
         Show a Bluesky photo on Today</label></div>
-      <div class="field"><dd style="color:var(--muted);font-size:15px">
-        <strong>Tonight&rsquo;s idea</strong>: a recipe from the family cookbook at the
-        bottom of Today, one you have not cooked lately. It stays away on days when
-        the week&rsquo;s menu has a dinner planned.</dd></div>
-      <div class="checks" style="padding:0 14px 14px"><label>
-        <input type="checkbox" id="rcpTodayOn" ${RCP_PREFS.today?'checked':''}>
-        Suggest a recipe on Today</label></div>
-      <div class="setadd"><input id="bskyName" autocomplete="off" autocapitalize="none"
+      <div class="setadd" style="padding-top:0"><input id="bskyName" autocomplete="off" autocapitalize="none"
         spellcheck="false" placeholder="${esc(BSKY_DEFAULT)} (Barry’s)" value="${esc(BSKY_OWN)}">
         <button class="btn" id="bskySave"
         style="border:1.5px solid var(--rule)">Save Bluesky name</button></div>
@@ -4358,7 +4377,15 @@ async function openSettings(goTo){
         once whether the app may use its location.</dd></div>
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="wxOn" ${WX_OFF?'':'checked'}>
-        Show the weather on Today</label></div>`,
+        Show the weather on Today</label></div>
+      ${menuChoiceRows()}
+      <div class="field"><dd style="color:var(--muted);font-size:15px">
+        <strong>Tonight&rsquo;s idea</strong>: a recipe from the family cookbook at the
+        bottom of Today, one you have not cooked lately. It stays away on days when
+        the week&rsquo;s menu has a dinner planned.</dd></div>
+      <div class="checks" style="padding:0 14px 14px"><label>
+        <input type="checkbox" id="rcpTodayOn" ${RCP_PREFS.today?'checked':''}>
+        Suggest a recipe on Today</label></div>`,
     people: `<div class="field"><dd>Accounts are created in the Supabase dashboard
         under Authentication &rsaquo; Users, then given group access with one line of
         SQL. That cannot be done here safely \u2014 it needs an admin key which must
@@ -4527,6 +4554,8 @@ async function openSettings(goTo){
   const wo=$('wxOn');
   if(wo) wo.onchange=async()=>{ WX_OFF=!wo.checked; await saveTiles();
     toast(WX_OFF?'No weather on Today':'Today will show the weather'); };
+  $('setBody').querySelectorAll('[data-menustar]').forEach(b=>b.onclick=()=>
+    menuStar(b.dataset.menustar, ()=>openSettings()));
   const ba=$('briefAgain');
   if(ba) ba.onclick=()=>{ $('settings').classList.add('hidden'); openBrief(); };
   $('setBody').querySelectorAll('[data-handover]').forEach(b=>
@@ -4564,8 +4593,13 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
-  for(const [id,scr] of SCREEN_ORDER)
+  // Today can sit open underneath whatever was tapped on it; then it is not
+  // where you are.
+  const top=SHEET_STACK[SHEET_STACK.length-1];
+  for(const [id,scr] of SCREEN_ORDER){
+    if(id==='brief'&&top&&top!=='brief') continue;
     if($(id) && !$(id).classList.contains('hidden')) return scr;
+  }
   return 'contacts';
 }
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
@@ -4595,7 +4629,8 @@ function openHelp(where){
   to-dos</strong>, with anything overdue in red at the top and a button to show
   the whole week; and whatever is on the
   <strong>ASAP</strong> list under Calendar &rsaquo; Regular jobs. Tap any of
-  them to go straight there.</p>
+  them to go straight there. Today stays open underneath, so Back, Cancel or the
+  arrow brings you back to Today rather than the opening screen.</p>
   <p>At the top is Barry’s Bluesky photo of the day: the newest post with a
   picture. Put a different Bluesky name in <strong>Settings &rsaquo; Home
   screen</strong> to see someone else’s, or switch the photo off there. Tap it to open the
@@ -4605,7 +4640,9 @@ function openHelp(where){
   name. Tap it for the Met Office forecast. The phone asks once whether the app may
   use its location. Switch it off under <strong>Settings &rsaquo; Home screen</strong>.</p>
   <p>If you have planned meals for today in Recipes &rsaquo; Week&rsquo;s menu, they show
-  near the bottom as <strong>Today&rsquo;s Menu</strong>.</p>
+  near the bottom as <strong>Today&rsquo;s Menu</strong>. If someone shares their menu
+  with you, choose whose Today shows under <strong>Settings &rsaquo; Home screen</strong>,
+  or with the &#9733; on the Week&rsquo;s menu.</p>
   <p>It never appears on top of something you are in the middle of, and it is
   in the menu whenever you want another look. Turn it off under
   <strong>Settings &rsaquo; Home screen</strong>.</p>
@@ -5092,10 +5129,13 @@ function openHelp(where){
   <p><strong>Week&rsquo;s menu</strong>, at the top of Recipes, plans breakfast, lunch
   and dinner for today and the six days after. Tap a meal to pick a recipe (ones filed
   under that meal&rsquo;s name come first) or type a few words, like Out or Leftovers;
-  leave any empty. Today shows them as <strong>Today&rsquo;s Menu</strong>, only the
+  leave any empty. The <strong>&times;</strong> on a planned meal takes it off the menu
+  (it asks first). Today shows them as <strong>Today&rsquo;s Menu</strong>, only the
   meals you planned; with no dinner planned, Tonight&rsquo;s idea still shows. Tick
   people under <em>Who else sees this menu</em> and they see the same menu and can
-  change it; if someone shares theirs with you, buttons at the top switch between them.</p>
+  change it; if someone shares theirs with you, buttons at the top switch between them,
+  and the <strong>&#9733;</strong> marks the one Today shows. Tap a &#9734; to make that
+  one Today&rsquo;s instead; looking at another menu does not move the star.</p>
   <p>The &#9734; beside a recipe&rsquo;s title makes it one of <strong>My
   favourites</strong>, which sit at the top of the list. The rest are grouped by
   category, in your order from Settings &rsaquo; Recipes, so a recipe in two
@@ -5534,6 +5574,7 @@ function openHelp(where){
     <li>A contact you cannot find may be one you have not been shared.</li>
   </ul>
   </div>`;
+  helpDress();
   const cs=$('copyStart');
   if(cs) cs.onclick=async()=>{
     try{ await navigator.clipboard.writeText(START_LINK); toast('Link copied'); }
@@ -5542,9 +5583,80 @@ function openHelp(where){
   showSheet('help');
   if(anchor) setTimeout(()=>{
     const h=document.getElementById(anchor);
-    if(h) h.scrollIntoView({block:'start'});
+    if(h) (h.closest('.helpbox')||h).scrollIntoView({block:'start'});
   },30);
   $('helpBody').scrollTop=0;lockBackground();
+}
+
+/* Help, dressed: each heading and what follows it in a box of its own, and a
+   search at the top that keeps only the boxes with every word typed, marked
+   in yellow. Done to the page once it is drawn, so the words above stay as
+   they are written. */
+function helpDress(){
+  const body=$('helpBody'), sec=body.querySelector('.helpsec'); if(!sec) return;
+  let box=null;
+  [...sec.children].forEach(el=>{
+    if(el.tagName==='H4'){ box=document.createElement('section'); box.className='helpbox';
+      sec.insertBefore(box,el); }
+    if(box) box.appendChild(el);
+  });
+  const find=document.createElement('div');
+  find.className='helpfind';
+  find.innerHTML=`<input id="helpQ" type="search" enterkeyhint="search" autocomplete="off"
+      placeholder="Search Help" aria-label="Search Help">
+    <button class="hx hidden" id="helpX" aria-label="Empty the search">&times;</button>`;
+  body.insertBefore(find,sec);
+  const said=document.createElement('p');
+  said.className='helpsaid hidden'; said.id='helpSaid';
+  body.insertBefore(said,sec);
+  $('helpQ').oninput=helpSearch;
+  $('helpQ').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); ev.target.blur(); } };
+  $('helpX').onclick=()=>{ $('helpQ').value=''; helpSearch(); $('helpQ').focus(); };
+}
+const helpFold = s => String(s).toLowerCase().replace(/[‘’]/g,"'");
+function helpSearch(){
+  const body=$('helpBody'), q=$('helpQ').value;
+  const words=helpFold(q).split(/\s+/).filter(Boolean);
+  const boxes=[...body.querySelectorAll('.helpbox')];
+  boxes.forEach(b=>helpUnmark(b));
+  $('helpX').classList.toggle('hidden',!q);
+  const lead=body.querySelector('.helpsec > .lead');
+  if(lead) lead.classList.toggle('hidden',!!words.length);
+  let n=0;
+  boxes.forEach(b=>{
+    const hit=!words.length||words.every(w=>helpFold(b.textContent).includes(w));
+    b.classList.toggle('hidden',!hit);
+    if(hit&&words.length){ n++; helpMark(b,words); }
+  });
+  const said=$('helpSaid');
+  said.classList.toggle('hidden',!words.length);
+  said.textContent=!words.length?'':n?(n===1?'1 part of Help mentions that.'
+    :n+' parts of Help mention that.'):'Nothing in Help mentions that. Try fewer or different words.';
+  body.scrollTop=0;
+}
+function helpUnmark(root){
+  root.querySelectorAll('mark.hm').forEach(m=>{
+    const p=m.parentNode; p.replaceChild(document.createTextNode(m.textContent),m); p.normalize();
+  });
+}
+function helpMark(root,words){
+  const re=new RegExp(words.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
+    .replace(/'/g,"['‘’]")).join('|'),'gi');
+  const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>
+    n.parentNode.closest('button,input,textarea,script,style')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  const nodes=[]; while(walk.nextNode()) nodes.push(walk.currentNode);
+  nodes.forEach(n=>{
+    const t=n.nodeValue; re.lastIndex=0; if(!re.test(t)) return;
+    re.lastIndex=0;
+    const frag=document.createDocumentFragment(); let last=0, m;
+    while((m=re.exec(t))){
+      if(!m[0]){ re.lastIndex++; continue; }
+      frag.append(t.slice(last,m.index));
+      const mk=document.createElement('mark'); mk.className='hm'; mk.textContent=m[0];
+      frag.append(mk); last=m.index+m[0].length;
+    }
+    frag.append(t.slice(last)); n.parentNode.replaceChild(frag,n);
+  });
 }
 
 
@@ -11234,7 +11346,7 @@ $('rcpBody').addEventListener('click',ev=>{ if(ev.target.closest('#rcpWeek')) op
    Which menu you look at, when one has been shared with you, is kept with
    your home screen choices; until you choose, it is yours if you have
    planned anything, otherwise the one shared with you. */
-let MENU=[], MENU_SHARES=[], MENU_WHY='', MENU_LOADED=false, MENU_AT=0, MENU_OF='';
+let MENU=[], MENU_SHARES=[], MENU_WHY='', MENU_LOADED=false, MENU_AT=0, MENU_OF='', MENU_VIEW='';
 const MEALS=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner']];
 function menuDays(){
   const [y,m,d]=briefDay().split('-').map(Number);
@@ -11264,6 +11376,29 @@ function menuOwner(){
   return all.find(o=>MENU.some(x=>x.owner_id===o)) || ME.id;
 }
 const menuName = o => o===ME.id ? 'Mine' : whoWrote(o)+'’s';
+// The ★ marks the menu Today shows (menuOwner). On the Week's menu you can
+// look at another one without moving the star; it opens on the starred one.
+function menuViewing(){
+  return MENU_VIEW&&menuOwners().includes(MENU_VIEW) ? MENU_VIEW : menuOwner();
+}
+async function menuStar(o, then){
+  if(!menuOwners().includes(o)) return;
+  MENU_OF=o; await saveTiles();
+  toast('Today will show '+(o===ME.id?'your menu':whoWrote(o)+'’s menu'));
+  if(then) then();
+}
+// Settings > Home screen: which menu Today's Menu comes from, when there is a choice.
+function menuChoiceRows(){
+  if(!MENU_LOADED||MENU_WHY) return '';
+  const owners=menuOwners(), star=menuOwner();
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+      <strong>Today&rsquo;s Menu</strong>: the meals planned for today in Recipes &rsaquo;
+      Week&rsquo;s menu. ${owners.length>1
+        ?'Tap the one Today should show; the &#9733; marks it.'
+        :'When someone shares their week&rsquo;s menu with you, you can choose theirs here instead of yours.'}</dd></div>
+    ${owners.length>1?`<div class="setadd" style="padding-top:0"><div class="kindpick menustars" style="margin:0">${owners.map(o=>
+      `<button data-menustar="${esc(o)}" aria-pressed="${o===star}">${o===star?'&#9733;':'&#9734;'} ${esc(menuName(o))}</button>`).join('')}</div></div>`:''}`;
+}
 function mealOf(owner,day,meal){
   return MENU.find(x=>x.owner_id===owner&&x.on_date===day&&x.meal===meal)||null;
 }
@@ -11284,6 +11419,7 @@ function menuWhyHtml(){
 async function openWeekMenu(){
   showSheet('weekMenu'); lockBackground();
   $('wmBody').innerHTML='<p class="empty">Fetching the menu…</p>';
+  MENU_VIEW='';
   if(!RCP_LOADED) await loadRecipes();
   await loadMenu(); renderWeekMenu(); $('wmBody').scrollTop=0;
 }
@@ -11291,13 +11427,16 @@ function renderWeekMenu(){
   const body=$('wmBody'); if(!body) return;
   const y=body.scrollTop;
   if(MENU_WHY){ body.innerHTML=menuWhyHtml(); return; }
-  const owner=menuOwner(), owners=menuOwners(), mine=owner===ME.id;
+  const owner=menuViewing(), owners=menuOwners(), mine=owner===ME.id, star=menuOwner();
   const sharedTo=MENU_SHARES.filter(x=>x.owner_id===ME.id).map(x=>x.viewer_id);
   body.innerHTML=`
-    ${owners.length>1?`<div class="kindpick" style="margin-bottom:10px">${owners.map(o=>
-      `<button data-wmof="${esc(o)}" aria-pressed="${o===owner}">${esc(menuName(o))}</button>`).join('')}</div>`:''}
+    ${owners.length>1?`<div class="wmwho">${owners.map(o=>
+      `<span class="wmone"><button data-wmof="${esc(o)}" aria-pressed="${o===owner}">${esc(menuName(o))}</button><button
+        class="wmstar" data-wmstar="${esc(o)}" aria-pressed="${o===star}"
+        aria-label="${o===star?'Today shows this menu':'Show this menu on Today'}">${o===star?'&#9733;':'&#9734;'}</button></span>`).join('')}</div>
+      <p class="coords" style="margin:0 2px 10px">&#9733; is the menu Today shows. Tap a &#9734; to change it.</p>`:''}
     <p class="coords" style="margin:0 2px 10px">Tap a meal to pick a recipe or type what
-      it is. Leave any of them empty.${mine?'':` This is ${esc(whoWrote(owner))}&rsquo;s menu,
+      it is. Leave any of them empty, or tap &times; to take one off.${mine?'':` This is ${esc(whoWrote(owner))}&rsquo;s menu,
       shared with you: what you change, they see too.`}</p>
     ${menuDays().map((day,i)=>`<p class="dsec">${esc(menuDayLabel(day,i))}</p>
       <div class="card">${MEALS.map(([k,l])=>{
@@ -11306,7 +11445,8 @@ function renderWeekMenu(){
         return `<div class="wmrow"><span class="wmmeal">${l}</span>
           <div class="wmline"><button class="wmpick" data-wm="${day}|${k}"
             aria-label="Choose ${l.toLowerCase()}">${menuMealHtml(m,r)}</button>
-          ${r?`<button class="wmopen" data-wmrec="${r.id}" aria-label="Open the recipe">&rsaquo;</button>`:''}</div></div>`;
+          ${r?`<button class="wmopen" data-wmrec="${r.id}" aria-label="Open the recipe">&rsaquo;</button>`:''}
+          ${m?`<button class="wmdrop" data-wmdrop="${day}|${k}" aria-label="Take ${l.toLowerCase()} off the menu">&times;</button>`:''}</div></div>`;
       }).join('')}</div>`).join('')}
     ${mine?`<p class="dsec">Who else sees this menu</p>
       <div class="card">${USERS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
@@ -11317,12 +11457,17 @@ function renderWeekMenu(){
           ${esc(u.display_name||u.email.split('@')[0])}</label>`).join('')}</div>`
         :'<div class="field"><dd>Nobody else has an account yet.</dd></div>'}</div>`:''}`;
   body.scrollTop=y;
-  body.querySelectorAll('[data-wmof]').forEach(b=>b.onclick=async()=>{
-    MENU_OF=b.dataset.wmof===ME.id&&!MENU_SHARES.some(x=>x.viewer_id===ME.id)?'':b.dataset.wmof;
-    renderWeekMenu(); await saveTiles();
+  body.querySelectorAll('[data-wmof]').forEach(b=>b.onclick=()=>{
+    MENU_VIEW=b.dataset.wmof; renderWeekMenu(); });
+  body.querySelectorAll('[data-wmstar]').forEach(b=>b.onclick=()=>{
+    const o=b.dataset.wmstar;
+    if(o===menuOwner()){ toast('Today already shows this menu'); return; }
+    menuStar(o, renderWeekMenu);
   });
   body.querySelectorAll('[data-wm]').forEach(b=>b.onclick=()=>{
     const [day,meal]=b.dataset.wm.split('|'); menuPick(owner,day,meal); });
+  body.querySelectorAll('[data-wmdrop]').forEach(b=>b.onclick=()=>{
+    const [day,meal]=b.dataset.wmdrop.split('|'); menuDrop(owner,day,meal); });
   body.querySelectorAll('[data-wmrec]').forEach(b=>b.onclick=()=>
     openRecipe(Number(b.dataset.wmrec)));
   body.querySelectorAll('[data-wmshare]').forEach(c=>c.onchange=async()=>{
@@ -11363,6 +11508,16 @@ async function menuSave(owner,day,meal,rec,words){
   if(!$('brief').classList.contains('hidden')) paintBriefRecipe();
   return true;
 }
+// The × on a planned meal: asks first (Barry's choice), as it sits by the thumb.
+async function menuDrop(owner,day,meal){
+  const m=mealOf(owner,day,meal); if(!m) return;
+  const i=menuDays().indexOf(day);
+  const [y,mo,d]=day.split('-').map(Number);
+  const dayWord=i===0?'today':i===1?'tomorrow'
+    :new Date(y,mo-1,d).toLocaleDateString('en-GB',{weekday:'long'});
+  if(!confirm(`Take ${m.title} off ${dayWord}’s ${meal}?`)) return;
+  if(await menuSave(owner,day,meal,null,'')) toast('Taken off the menu');
+}
 // Choosing a meal: the cookbook to search, with anything filed under that
 // meal's name first, or a few words typed in.
 function menuPick(owner,day,meal){
@@ -11381,7 +11536,7 @@ function menuPick(owner,day,meal){
       placeholder="Or search the cookbook" style="width:100%;padding:10px;border:1.5px solid var(--rule);border-radius:8px">
     <div id="wmList" style="max-height:44vh;overflow-y:auto;margin-top:8px"></div>
     <div class="pickrow" style="margin-top:10px">
-      ${cur?'<button class="btn" id="wmClear">Leave it empty</button>':''}
+      ${cur?'<button class="btn" id="wmClear">Take it off the menu</button>':''}
       <button class="btn" id="wmCancel">Cancel</button></div></div>`;
   document.body.appendChild(box);
   const close=()=>box.remove();
@@ -11459,17 +11614,20 @@ function briefRecipeHtml(){
 function paintBriefRecipe(){
   const slot=$('briefRecipe'); if(!slot) return;
   slot.innerHTML=briefMenuHtml()+(menuHasDinner()?'':briefRecipeHtml());
-  slot.querySelectorAll('[data-briefmeal]').forEach(b=>b.onclick=async()=>{
-    const id=Number(b.dataset.briefmeal);
-    shutBrief(); await openRecipes();
-    if(RECIPES.some(r=>r.id===id)){ RCP_CUR=null; openRecipe(id); }
-    else toast('That recipe is not in the cookbook any more');
-  });
+  slot.querySelectorAll('[data-briefmeal]').forEach(b=>b.onclick=()=>
+    briefOpenRecipe(Number(b.dataset.briefmeal)));
   const o=slot.querySelector('[data-ropen]');
-  if(o) o.onclick=async()=>{ const id=Number(o.dataset.ropen);
-    shutBrief(); await openRecipes(); RCP_CUR=null; openRecipe(id); };
+  if(o) o.onclick=()=>briefOpenRecipe(Number(o.dataset.ropen));
   const s=slot.querySelector('[data-briefspin]');
   if(s) s.onclick=()=>{ RCP_SPIN.n++; paintBriefRecipe(); };
+}
+// A recipe tapped on Today opens on its own, over Today, so Back comes
+// straight back here rather than to the Recipes list.
+async function briefOpenRecipe(id){
+  if(!RCP_LOADED) await loadRecipes();
+  if(RCP_WHY){ toast('Could not load the recipes just now'); return; }
+  if(!RECIPES.some(r=>r.id===id)){ toast('That recipe is not in the cookbook any more'); return; }
+  RCP_CUR=null; openRecipe(id);
 }
 
 /* ---------- Settings: categories, the cupboard, hidden recipes ---------- */
@@ -18411,12 +18569,26 @@ function renderBrief(){
     if(!h||$('brief').classList.contains('hidden')){ clearInterval(BRIEF_CLOCK); BRIEF_CLOCK=null; return; }
     h.textContent=briefHello();
   },20000);
-  $('briefBody').querySelectorAll('[data-briefc]').forEach(b=>b.onclick=()=>{
-    shutBrief(); openDetail(Number(b.dataset.briefc)); });
-  $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>{
-    shutBrief(); openItem(ITEMS.find(x=>x.id===Number(b.dataset.briefi))); });
-  $('briefBody').querySelectorAll('[data-briefr]').forEach(b=>b.onclick=()=>{
-    shutBrief(); showRoutineJob(Number(b.dataset.briefr)); });
+  // Whatever is tapped opens over Today, which stays open underneath, so
+  // Back, Cancel or the arrow home comes back to Today (Barry, 5 Nov 2026).
+  $('briefBody').querySelectorAll('[data-briefc]').forEach(b=>b.onclick=()=>
+    openDetail(Number(b.dataset.briefc)));
+  $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>
+    openItem(ITEMS.find(x=>x.id===Number(b.dataset.briefi))));
+  $('briefBody').querySelectorAll('[data-briefr]').forEach(b=>b.onclick=()=>
+    showRoutineJob(Number(b.dataset.briefr)));
+}
+
+// Back on Today after something opened over it: drawn again, in the same
+// place, so a to-do just ticked off or a meal just changed is up to date.
+var BRIEF_UNDER=false;   // var, not let: lockBackground can run before this line does
+function briefOnTopAgain(){
+  const b=$('brief');
+  if(!b||b.classList.contains('hidden')){ BRIEF_UNDER=false; return; }
+  if(SHEET_STACK[SHEET_STACK.length-1]!=='brief'){ BRIEF_UNDER=true; return; }
+  if(!BRIEF_UNDER) return;
+  BRIEF_UNDER=false;
+  const y=$('briefBody').scrollTop; renderBrief(); $('briefBody').scrollTop=y;
 }
 
 // From an ASAP job on Today: the job's own screen, opened over the Diary's
@@ -18625,6 +18797,7 @@ function backHome(area){
 function goArea(k){
   shutMenu();
   (AREA_SHUT[MENU_AREA]||(()=>{}))();
+  $('brief').classList.add('hidden');   // Today left open underneath goes too
   if(k!=='home') (AREA_OPEN[k]||(()=>{}))();
   else showHome();
   lockBackground();

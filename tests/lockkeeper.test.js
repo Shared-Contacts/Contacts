@@ -1,4 +1,5 @@
-// MY Games and Lock Keeper (ML202, with step 57): an original dice game for
+// MY Games and Loxx (ML202, with step 57; called Lock Keeper until ML207,
+// when the roller's penalty became one for each number not taken): an original dice game for
 // 2 to 5, played with real dice, each player on their own phone. The phones
 // are linked through step 57's functions; lkfake.js stands in for them here,
 // with the same rules, and window.__who plays the other people.
@@ -51,7 +52,7 @@ const ROOT = path.join(__dirname, '..');
     const was = MY_PROFILE, keep = TILES; MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }], hidden: ['games'] } };
     loadTiles(); const got = TILES.map(t => t.dest); MY_PROFILE = was; TILES = keep; return !got.includes('games'); }));
   ok('Games is a place in the menu, with New game', await ev(() => AREAS.games && AREAS.games.title === 'Games'
-    && areaItems('games').some(x => x.label === 'New game of Lock Keeper')));
+    && areaItems('games').some(x => x.label === 'New game of Loxx')));
   await ev(() => openHelp('games')); await settle(300);
   ok('Help has the rules, in a box of their own', await ev(() => { const h = document.getElementById('h-games');
     return !!h && h.parentElement.classList.contains('helpbox') && /Closing a lock/.test(h.parentElement.textContent)
@@ -74,7 +75,7 @@ const ROOT = path.join(__dirname, '..');
   // ---------------------------------------------------------------
   console.log('\nMY Games, and starting a game');
   await ev(() => openGames()); await settle(400);
-  ok('MY Games opens', await top() === 'games' && await ev(() => /Lock Keeper/.test($('gamesBody').textContent)));
+  ok('MY Games opens', await top() === 'games' && await ev(() => /Loxx/.test($('gamesBody').textContent)));
   ok('  no games yet: it says so', await ev(() => /No games yet/.test($('gamesBody').textContent)));
   ok('  How to play opens the rules', await ev(() => { $('lkHow').click(); const ok = !$('help').classList.contains('hidden');
     $('help').classList.add('hidden'); lockBackground(); return ok; }));
@@ -172,18 +173,19 @@ const ROOT = path.join(__dirname, '..');
   ok('Sandra finishes: your roll again, and it says so', /Your roll/.test(await status()) && /Your roll/.test(await toasts()), await toasts());
 
   // ---------------------------------------------------------------
-  console.log('\nA penalty');
+  console.log('\nA penalty for each number not taken');
   answer = false; asked.length = 0; await clear();
   await p.click('#lkDone'); await settle(300);
-  ok('nothing marked on your own roll: Done asks about a penalty', asked.length === 1 && /penalty: minus 5/.test(asked[0]), asked.join(' | '));
+  ok('neither number taken on your own roll: Done asks about two penalties', asked.length === 1
+    && /took neither number/.test(asked[0]) && /two penalties: minus 10/.test(asked[0]) && /Take them\?/.test(asked[0]), asked.join(' | '));
   ok('  Cancel goes back to marking, nothing sent', (await rpcs('finish_turn')).length === 0 && (await mine()).pen === 0);
   answer = true; asked.length = 0;
   await p.click('#lkDone'); await settle(400);
-  ok('  OK takes it: one penalty box crossed', (await mine()).pen === 1 && await ev(() => document.querySelectorAll('.lkpen.on').length === 1));
-  ok('  minus 5 in the total', await ev(() => [...document.querySelectorAll('.lkfoot .lkbox')].map(b => b.textContent).join() === '1,1,0,1,5,-2'),
+  ok('  OK takes them: two penalty boxes crossed', (await mine()).pen === 2 && await ev(() => document.querySelectorAll('.lkpen.on').length === 2));
+  ok('  minus 10 in the total', await ev(() => [...document.querySelectorAll('.lkfoot .lkbox')].map(b => b.textContent).join() === '1,1,0,1,10,-7'),
     await ev(() => [...document.querySelectorAll('.lkfoot .lkbox')].map(b => b.textContent).join()));
   ok('  and the roll is finished', (await rpcs('finish_turn')).length === 1);
-  ok('  shown beside your name for the others', await ev(() => /✕/.test(document.querySelector('.lkwho span.me').textContent)));
+  ok('  shown beside your name for the others, one cross each', await ev(() => /✕✕/.test(document.querySelector('.lkwho span.me').textContent)));
   await as('sandra', 'finish_turn', { g: G1, at_turn: 3 });
 
   // ---------------------------------------------------------------
@@ -276,6 +278,43 @@ const ROOT = path.join(__dirname, '..');
   ok('  and the numbers still answer to a tap', /\bon\b/.test(await cell('red', 4)));
   await p.setViewportSize({ width: 844, height: 390 }); await settle(300);
   ok('turned sideways, it is the right way up again', await ev(() => getComputedStyle($('lkStage')).transform === 'none'));
+
+  // ---------------------------------------------------------------
+  console.log('\nOne number taken, one not');
+  // Game 3, your roll: red 4 taken, the second number not.
+  answer = false; asked.length = 0;
+  await p.click('#lkDone'); await settle(300);
+  ok('one number taken on your own roll: Done asks about one penalty', asked.length === 1 && /took one number/.test(asked[0])
+    && /a penalty: minus 5/.test(asked[0]) && /mark another/.test(asked[0]), asked.join(' | '));
+  // This time Done finds no signal: the penalty is kept, the roll not finished.
+  await ev(() => { window.__lkReal = window.__rpc; window.__rpc = (n, a) => n === 'finish_turn'
+    ? { data: null, error: { message: 'Failed to fetch' } } : window.__lkReal(n, a); });
+  answer = true; asked.length = 0; await clearToasts();
+  await p.click('#lkDone'); await settle(400);
+  ok('  OK takes it: one box crossed, though there was no signal to finish the roll', (await mine()).pen === 1
+    && /check your signal/.test(await toasts()) && !!(await p.$('#lkDone')), await toasts());
+  await tap('red', 4);
+  ok('  the roll’s marks then stay as they are: red 4 cannot be taken back to owe two', /\bon\b/.test(await cell('red', 4))
+    && /taken the penalty/.test(await toasts()), await toasts());
+  await tap('yellow', 5);
+  ok('  nor a second number added to owe none', !/\bon\b/.test(await cell('yellow', 5)) && /taken the penalty/.test(await toasts()), await toasts());
+  await ev(() => { window.__rpc = window.__lkReal; }); asked.length = 0; await clear();
+  await p.click('#lkDone'); await settle(400);
+  ok('  Done again, with signal: the roll finishes, with no second penalty', asked.length === 0 && (await mine()).pen === 1
+    && (await rpcs('finish_turn')).length === 1, asked.join(' | '));
+  await as('sandra', 'finish_turn', { g: G3, at_turn: 1 });
+  asked.length = 0; await clear();
+  await p.click('#lkDone'); await settle(300);
+  ok('Sandra’s roll, nothing taken: no penalty', asked.length === 0 && (await mine()).pen === 1 && (await rpcs('finish_turn')).length === 1, asked.join(' | '));
+  await as('sandra', 'finish_turn', { g: G3, at_turn: 2 });
+  await ev(async () => { const me = window.__rows.game_players.find(x => x.game_id === LK_CUR && x.user_id === 'me');
+    me.sheet = { ...me.sheet, pen: 3 }; await lkReload(LK_CUR); lkPaint(); }); await settle(200);
+  asked.length = 0;
+  await p.click('#lkDone'); await settle(400);
+  ok('three penalties already, neither number taken: four boxes is the most, so one more', asked.length === 1
+    && /four is the most/.test(asked[0]) && /your fourth, so the game ends after this roll/.test(asked[0]) && (await mine()).pen === 4, asked.join(' | '));
+  await as('sandra', 'finish_turn', { g: G3, at_turn: 3 });
+  ok('  and when Sandra finishes, the game is over', (await game()).status === 'ended' && (await game()).end_reason === 'Four penalties', JSON.stringify(await game()));
   await ev(() => lkBackToList()); await settle(300);
 
   // ---------------------------------------------------------------
@@ -305,6 +344,9 @@ const ROOT = path.join(__dirname, '..');
     && !/\b0\d{3,4}\s?\d{6}\b/.test(step) && !/eyJ|service_role|REMINDER_SECRET|sk_/i.test(step) && !/Barry|Sandra/.test(step));
   ok('  and nothing in it can be changed except through its functions', !/create policy[^;]*for (insert|update|delete|all)/i.test(step));
   ok('the game is an original: no other game’s name in the page', !/qwixx/i.test(src));
+  ok('it is called Loxx wherever it shows', !/['`"][^'`"\n]*Lock Keeper/.test(src) && await ev(() =>
+    !/Lock Keeper/.test(document.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, ''))
+    && $('h-games').textContent === 'MY Games: Loxx'));
 
   ok('no page errors', errors.length === 0, errors.join(' | '));
   console.log(`\n${pass} passed, ${fail} failed`);

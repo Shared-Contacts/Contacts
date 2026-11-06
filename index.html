@@ -633,6 +633,29 @@ input[name="postcode"]{text-transform:uppercase}
 .jigframe{display:block;width:100%;height:calc(var(--vh,100dvh) - 150px);min-height:340px;
   border:2px solid #888;border-radius:6px;background:#fff;margin:4px 0 16px}
 .jigplay{padding:14px 14px calc(96px + env(safe-area-inset-bottom));line-height:1.45}
+/* A landscape puzzle fills the phone on its side (ML210). The frame is only
+   restyled, never moved, so the puzzle is not started again. Held upright
+   with the screen locked upright, it turns itself round, as Loxx does. */
+.jigside{display:none}
+.jiggofull{display:block;width:100%;margin:4px 0 8px;padding:12px;border-radius:10px;
+  background:var(--hull);color:var(--paper);font-weight:700;font-size:16px}
+#jigPlay.jigfull .jigstage{position:fixed;top:0;top:var(--vtop,0);left:0;width:100vw;
+  height:var(--vh,100dvh);z-index:20;display:flex;background:#20262B;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px)
+    env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#jigPlay.jigfull .jigframe{flex:1 1 auto;width:auto;height:100%;min-height:0;margin:0;
+  border:0;border-radius:0}
+#jigPlay.jigfull .jigside{display:flex;flex-direction:column;gap:10px;flex:0 0 auto;padding:8px 6px}
+.jigside button{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,.16);
+  color:#fff;font-size:26px;font-weight:700;line-height:1;display:flex;align-items:center;
+  justify-content:center}
+.jigside .jigi{font-family:Georgia,serif;font-style:italic;font-size:24px}
+@media (orientation:portrait){
+  #jigPlay.jigfull .jigstage{top:0;left:100vw;width:var(--vh,100dvh);height:100vw;
+    transform-origin:0 0;transform:rotate(90deg);
+    padding:0 env(safe-area-inset-bottom,0px) 0 env(safe-area-inset-top,0px)}
+}
+body:has(#jigPlay.jigfull:not(.hidden)) #verBar{display:none}
 .jigsteps{list-style:none;padding:0;margin:6px 0 12px}
 .jigsteps li{display:flex;align-items:flex-start;gap:10px;margin:0 0 9px}
 .jigsteps img,.jigsteps .ico{width:26px;height:26px;flex:0 0 auto;background:#fff;
@@ -793,6 +816,30 @@ body.vbtyping #verBar{display:none}
 .pplwho{display:flex;flex-direction:column;min-width:0;line-height:1.3}
 .pplwho b{font-weight:700;color:var(--ink)}
 .pplwho small{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+/* Finding someone in a list of people (ML211): a search box at its top once
+   there are more than three. A row the search hides keeps its tick. */
+.pplfind{display:flex;gap:6px;align-items:center;margin:0 0 4px}
+.pplfind input,.checks.ppl .pplfind input{flex:1 1 auto;min-width:0;width:auto;height:auto;
+  margin:0;padding:10px 12px;font-size:17px;border:1.5px solid var(--rule);border-radius:10px;
+  background:var(--panel)}
+.pplfind input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.pplfind .hx{flex:0 0 auto;font-size:26px;line-height:1;color:var(--muted);padding:6px 8px;
+  min-width:44px;min-height:44px}
+.pplfind .hx[hidden],.checks.ppl>[hidden],.ppllist>[hidden]{display:none!important}
+/* A list of people put away (URL Links when it is Just me) stays put away:
+   .checks drew it anyway, before 6 Nov 2026. */
+.checks[hidden]{display:none!important}
+.pplnone{color:var(--muted);margin:6px 2px}
+/* A box for choosing people fills the screen: its heading and buttons stay
+   put, and only the people scroll, between them (ML211). */
+.daypick.pplbox{padding:0;align-items:stretch;justify-content:center;overflow:hidden}
+.daypick.pplbox .inner{margin:0;max-width:560px;height:var(--vh,100dvh);max-height:var(--vh,100dvh);
+  border-radius:0;display:flex;flex-direction:column;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(8px + env(safe-area-inset-bottom,0px))}
+.daypick.pplbox .inner>*{flex:0 0 auto}
+.daypick.pplbox .inner>.checks.ppl,.daypick.pplbox .inner>.ppllist{flex:1 1 auto;min-height:0;
+  overflow-y:auto;overscroll-behavior:contain;margin-top:4px;padding-bottom:8px}
+.pplbox .pplfind{position:sticky;top:0;z-index:1;background:var(--paper);padding-bottom:4px}
 .pplrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;
   border-bottom:1px solid #F0EEE7}
 .card .pplrow:last-child{border-bottom:none}
@@ -827,6 +874,8 @@ body.vbtyping #verBar{display:none}
 .lkback{color:var(--hull);border:1.5px solid var(--rule);background:#fff}
 .lkdone{background:var(--hull);color:#F2EFE4;min-width:96px}
 .lkdone:disabled{opacity:.5}
+.lkundo{white-space:nowrap}
+.lkundo:disabled{opacity:.45}
 .lkstatus{flex:1;min-width:0;font-size:clamp(13px,4.2cqh,17px);line-height:1.25}
 .lkwho{display:flex;gap:6px;align-items:center;flex:0 0 auto;overflow:hidden;white-space:nowrap}
 .lkwho span{padding:3px 10px;border-radius:99px;background:#fff;border:1px solid var(--rule);
@@ -5287,7 +5336,13 @@ function openHelp(where){
   ones as on barryandsandra.com. Tap a picture to open its puzzle, choose the
   number of pieces, the background colour and whether the pieces are turned, and
   start. <strong>Back</strong> takes you to the pictures again. Leave one half
-  done and it carries on where you left it next time, on the same phone. The
+  done and it carries on where you left it next time, on the same phone.</p>
+  <p><strong>On its side:</strong> a landscape picture opens filling the whole
+  phone turned on its side (if your phone keeps the screen upright, the puzzle
+  turns itself round, so turn the phone to the left). The &times; at the side goes
+  back to all the pictures; the <em>i</em> shows the picture, its story and the
+  instructions, with <strong>Play full screen, on its side</strong> to go back to
+  the puzzle where you left it. Upright pictures open as before. The
   puzzles come from jigsawexplorer.com, so they need the internet.</p>
 
   <h4 id="h-games">MY Games: Loxx</h4>
@@ -5307,16 +5362,22 @@ function openHelp(where){
   <p><strong>Left to right:</strong> red and yellow go 2 up to 12, green and blue
   12 down to 2. Marks go left to right; anything you pass is crossed out and cannot
   be marked later. The number at the left of each row is how many marks it has.
-  Tap a mark made on this roll to take it off again.</p>
+  <strong>Undo last move</strong> takes back your newest mark on this roll, one at
+  a time, until you tap Done; tapping a mark made on this roll takes it off too.</p>
   <p><strong>Penalties:</strong> on your own roll you can take two numbers: the white
   dice total, and a white and a colour. Each one you don&rsquo;t take, because you
   can&rsquo;t or would rather not, is a penalty, minus 5, so taking neither is minus 10.
   Done asks first, and once you have taken a penalty that roll&rsquo;s marks stay as
   they are. Marking nothing on someone else&rsquo;s roll is fine.</p>
-  <p><strong>Closing a lock:</strong> once a row has five marks, its last number
-  (12, or 2) can be marked, and that closes its lock. The lock counts as one more
-  mark for you, and nobody can mark that colour after that roll: put that die
-  aside. A closed lock cannot be undone.</p>
+  <p><strong>Closing a lock:</strong> a row&rsquo;s last number (12, or 2) can be
+  marked at any time. With five marks already in the row, marking it closes that
+  row&rsquo;s lock: the lock counts as one more mark for you, and nobody can mark
+  that colour after that roll, so put that die aside. Everyone else can still mark
+  that colour on the same roll, the white dice total included, and anyone with five
+  marks there who takes its last number closes it too. With fewer than five marks,
+  the 12 (or 2) is just a mark: the lock stays open, and you can&rsquo;t mark that
+  row again. Undo last move opens a lock you closed again, until you tap Done;
+  after that roll it is closed for good.</p>
   <p><strong>The end:</strong> when two locks are closed, or someone has four
   penalties, the game ends once that roll is finished. Each row scores by its marks:
   1 mark is 1 point, 2 are 3, 3 are 6, and so on, each extra mark adding one more
@@ -5419,6 +5480,11 @@ function openHelp(where){
   <p>Barry and Sandra, the app&rsquo;s owners, can fill in anyone&rsquo;s. Wherever
   you choose people to share with, each one then shows as their name, with their
   email and phone underneath.</p>
+  <p><strong>Finding someone:</strong> with more than three people to choose from,
+  a <strong>Search people</strong> box sits at the top of the list. Type part of a
+  name, an email or a phone number; the &times; empties it. Anyone you have ticked
+  stays ticked while the search hides them. A box that is only for choosing people
+  fills the screen, and just the people scroll.</p>
 
   <h4 id="h-people">Setting someone up</h4>
   <p>Send a new user this link. It gives them the address, how to sign in, how
@@ -9308,6 +9374,49 @@ function pplWho(u){
   const d=personDetail(u);
   return `<span class="pplwho"><b>${esc(personName(u))}</b>${d?`<small>${esc(d)}</small>`:''}</span>`;
 }
+
+/* Finding someone in a list of people (ML211). Every list of people to choose
+   from (.checks.ppl, or one marked data-pplfind) gets a search box at its top
+   once it has more than three people. It keeps the rows with every word typed,
+   in the name, email or phone; a tick on a row it hides stays. Added by
+   watching the page, so a list drawn anywhere, now or later, gets one. */
+const PPL_FIND_FROM=4;
+function pplFind(list, q){
+  if(!list||list.dataset.pf) return;
+  list.dataset.pf='1';
+  const rows=()=>[...list.children].filter(el=>el.querySelector('.pplwho'));
+  if(rows().length<PPL_FIND_FROM) return;
+  const bar=document.createElement('div');
+  bar.className='pplfind';
+  bar.innerHTML=`<input type="search" placeholder="Search people" aria-label="Search people"
+    autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+    enterkeyhint="search"><button type="button" class="hx" aria-label="Empty the search" hidden>&times;</button>`;
+  const none=document.createElement('p');
+  none.className='pplnone'; none.hidden=true;
+  list.prepend(bar); list.append(none);
+  const inp=bar.querySelector('input'), x=bar.querySelector('.hx');
+  const norm=t=>String(t||'').toLowerCase().replace(/[‘’]/g,"'");
+  const run=()=>{
+    const words=norm(inp.value).split(/\s+/).filter(Boolean);
+    let shown=0;
+    rows().forEach(r=>{ const hit=words.every(w=>norm(r.textContent).includes(w));
+      r.hidden=!hit; if(hit) shown++; });
+    x.hidden=!inp.value;
+    none.hidden=shown>0;
+    none.textContent=shown?'':'Nobody matches “'+inp.value.trim()+'”.';
+  };
+  inp.addEventListener('input',run);
+  // Enter would otherwise send the form round it (a to-do, My Stuff) too soon.
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
+  x.onclick=()=>{ inp.value=''; run(); inp.focus(); };
+  if(q){ inp.value=q; run(); }
+}
+(function(){
+  const scan=()=>document.querySelectorAll('.checks.ppl:not([data-pf]),[data-pplfind]:not([data-pf])')
+    .forEach(l=>pplFind(l));
+  new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});
+  scan();
+})();
 // The contact who is this person: for yourself the one set as you, otherwise
 // one of your contacts with their sign-in email. The email is the link.
 function personContact(u){
@@ -12502,9 +12611,25 @@ function renderJig(){
     b.onclick=()=>playJig(+b.dataset.jig));
 }
 
+// A landscape puzzle opens filling the phone on its side (Barry's choice,
+// ML210); an upright one opens as before. Only the frame's look changes, so
+// going in and out of it never starts the puzzle again.
+var JIG_TURNED=false;   // var: paintTray may ask before this line has run
+function jigFull(on){
+  const sh=$('jigPlay'); if(!sh) return;
+  on=!!on&&!sh.classList.contains('hidden')&&!!sh.querySelector('.jigstage');
+  sh.classList.toggle('jigfull',on);
+  try{
+    if(on) screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{});
+    else if(JIG_TURNED) screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock();
+  }catch(e){}
+  JIG_TURNED=on;
+  if(typeof paintTray==='function') paintTray();
+}
+
 function playJig(i){
   const j=JIGSAWS[i]; if(!j) return;
-  const src=JIG_PLAYER+j.q;
+  const src=JIG_PLAYER+j.q, wide=!j.v;
   $('jigTitle').textContent='Jigsaws';
   $('jigPlayBody').innerHTML=`
     <div class="jigplay">
@@ -12517,8 +12642,14 @@ function playJig(i){
       </div>
       <p>Before you start the puzzle you can change the default settings to make it
       as easy or difficult as you like. See below the puzzle for the instructions…</p>
-      <iframe class="jigframe" src="${esc(src)}" title="${esc(j.t)} jigsaw puzzle"
-        allow="fullscreen" allowfullscreen></iframe>
+      ${wide?'<button type="button" class="jiggofull" id="jigGoFull">Play full screen, on its side</button>':''}
+      <div class="jigstage">
+        <div class="jigside">
+          <button type="button" id="jigAll" aria-label="All the puzzles" title="All the puzzles">&times;</button>
+          <button type="button" class="jigi" id="jigAbout" aria-label="About this puzzle"
+            title="About this puzzle">i</button></div>
+        <iframe class="jigframe" src="${esc(src)}" title="${esc(j.t)} jigsaw puzzle"
+          allow="fullscreen" allowfullscreen></iframe></div>
       <p><strong>Instructions</strong></p>
       ${jigSteps(JIG_STEPS_BEFORE)}
       <p>Once you’ve started the puzzle there are more options…</p>
@@ -12532,13 +12663,20 @@ function playJig(i){
     </div>`;
   // The logo goes back to all the puzzles, as it does on the website.
   $('jigFoot').onclick=()=>{ shutJigPlay(); lockBackground(); };
+  // Full screen: x goes back to all the puzzles; i comes out to this page
+  // (the picture, its words and the instructions), the puzzle still there.
+  $('jigAll').onclick=()=>{ shutJigPlay(); lockBackground(); };
+  $('jigAbout').onclick=()=>{ jigFull(false); $('jigPlayBody').scrollTop=0; };
+  const gf=$('jigGoFull'); if(gf) gf.onclick=()=>jigFull(true);
   showSheet('jigPlay'); $('jigPlayBody').scrollTop=0; lockBackground();
+  if(wide) jigFull(true);
 }
 
 // Emptying the frame stops the puzzle running behind the list.
 function shutJigPlay(){
   const b=$('jigPlayBody'); if(b) b.innerHTML='';
   $('jigPlay').classList.add('hidden');
+  jigFull(false);
 }
 $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
 
@@ -12548,9 +12686,11 @@ $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
    A dice game for 2 to 5 people, played with real dice, each on their
    own phone. Four rows of numbers: red and yellow go up the flight from
    2 to 12, green and blue come down from 12 to 2. Marks go left to
-   right and anything passed is gone. Five marks in a row, then its last
-   number closes that row's lock: it counts as one more mark, and nobody
-   marks that colour after the roll. Whoever is rolling takes a penalty
+   right and anything passed is gone. The last number can be taken at any
+   time (ML212), but only with five marks already in the row does it close
+   that row's lock: it counts as one more mark, and nobody marks that
+   colour after the roll. Undo last move takes back marks until Done, and
+   opens a lock again through step 58's reopen_row (ML213). Whoever is rolling takes a penalty
    for each of their two numbers not taken (Barry's rule, ML207: the
    printed rules give one for taking neither). Two locks closed, or four
    penalties, and the game
@@ -12627,10 +12767,14 @@ function lkWhyNot(g,s,r,n){
   if(lkTurnMarks(s,g).length>=limit) return mine
     ? 'Two marks is the most on your own roll'
     : 'One mark is the most on someone else’s roll: the white dice total';
-  if(at===order.length-1 && marked.length<5)
-    return 'The '+n+' needs five marks in the row first';
+  // The last number (12, or 2) can be taken at any time (Barry's rule,
+  // ML212). It only closes the lock with five marks already in the row.
   return '';
 }
+// The newest of your marks on this roll: what Undo last move takes back.
+const lkLastMark = (g,s) => { const t=lkTurnMarks(s,g); return t.length?t[t.length-1]:null; };
+const lkCanUndo = (g,me,s) => g.status==='playing' && !lkDoneThisRoll(g,me)
+  && !(s.turn.no===g.turn_no&&s.turn.pen) && !!lkLastMark(g,s);
 
 /* ---------- fetching ---------- */
 const lkMissing = e => /games|game_players|42P01|PGRST205|does not exist|schema cache/i.test((e&&(e.message||e.code))||'');
@@ -12659,6 +12803,17 @@ async function lkReload(id){
   if(was&&now&&now.turn_no!==was.turn_no&&lkMyRoll(now)&&Number(LK_CUR)===Number(id)){
     toast('Your roll');
     try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){}
+  }
+  // Someone else closed a lock on this roll, or opened it again with Undo.
+  if(was&&now&&now.turn_no===was.turn_no&&now.status==='playing'&&Number(LK_CUR)===Number(id)){
+    const me=lkMe(id), mine=me?lkSheet(me.sheet).locked:[];
+    LK_ROWS.forEach(r=>{
+      const a=lkClosed(was,r.c), b=lkClosed(now,r.c), n=r.name.toLowerCase();
+      if(mine.includes(r.c)||a===b) return;
+      if(b) toast(lkDoneThisRoll(now,me)?'The '+n+' lock has been closed'
+        :'The '+n+' lock has been closed. You can still mark '+n+' on this roll, until you tap Done.');
+      else toast('The '+n+' lock is open again');
+    });
   }
   return true;
 }
@@ -12727,7 +12882,7 @@ function renderGames(){
 function lkPickPlayers(){
   return new Promise(resolve=>{
     const box=document.createElement('div');
-    box.className='daypick'; box.id='lkWho';
+    box.className='daypick pplbox'; box.id='lkWho';
     box.innerHTML=`<div class="inner">
       <p class="dsec" style="padding-top:0">Who is playing with you?</p>
       <p class="coords" style="margin:0 0 10px">Up to four others. Each of them plays
@@ -12838,8 +12993,13 @@ function lkStatus(g,me){
   const r=lkRoller(g), done=lkDoneThisRoll(g,me);
   const waiting=lkPlayers(g.id).filter(p=>!lkDoneThisRoll(g,p)&&p.user_id!==ME.id).map(p=>lkWho(p.user_id));
   if(done) return waiting.length?'Waiting for '+lkAnd(waiting):'Passing the dice on…';
-  if(r===ME.id) return '<b>Your roll.</b> The white dice total in any row, a white and a colour in that colour’s row. Then Done.';
-  return '<b>'+esc(lkWho(r))+' is rolling.</b> The white dice total is yours too, in any row. Then Done.';
+  const s=lkSheet(me.sheet);
+  const closing=LK_ROWS.filter(x=>lkClosed(g,x.c)&&!lkClosedBefore(g,x.c)&&!s.locked.includes(x.c))
+    .map(x=>x.name.toLowerCase());
+  const still=closing.length?' The '+lkAnd(closing)+' lock'+(closing.length>1?'s close':' closes')
+    +' after this roll: you can still mark '+(closing.length>1?'them':closing[0])+' now.':'';
+  if(r===ME.id) return '<b>Your roll.</b> The white dice total in any row, a white and a colour in that colour’s row. Then Done.'+still;
+  return '<b>'+esc(lkWho(r))+' is rolling.</b> The white dice total is yours too, in any row. Then Done.'+still;
 }
 
 function lkPaint(){
@@ -12874,6 +13034,8 @@ function lkPaint(){
     <div class="lkbar">
       <button class="lkback" id="lkBack">&lsaquo; Games</button>
       <div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>
+      ${playing?`<button class="lkback lkundo" id="lkUndo" ${lkCanUndo(g,me,s)?'':'disabled'}
+        aria-label="Undo last move: take back your newest mark on this roll">&#8630; Undo last move</button>`:''}
       ${playing?(canCarryOn
         ?'<button class="lkdone" id="lkOn">Carry on without them</button>'
         :`<button class="lkdone" id="lkDone" ${done?'disabled':''}>${done?'Done ✓':'Done'}</button>`):''}
@@ -12895,6 +13057,7 @@ function lkPaint(){
     </div>
     ${playing?'':lkOverHtml(g)}`;
   $('lkBack').onclick=lkBackToList;
+  const un=$('lkUndo'); if(un) un.onclick=lkUndo;
   const d=$('lkDone'); if(d) d.onclick=()=>lkDone(g.id);
   const on=$('lkOn'); if(on) on.onclick=()=>lkCarryOn(g.id);
   st.querySelectorAll('[data-lk]').forEach(b=>b.onclick=()=>{
@@ -12958,23 +13121,23 @@ async function lkTap(c,n){
   if(s.turn.pen&&g.status==='playing'&&!lkDoneThisRoll(g,me)){
     toast('You have taken the penalty for this roll: tap Done'); return; }
   const marked=s[c];
-  // Taking a mark off again: the newest in its row, made on this roll, and
-  // not one that closed a lock (everyone has been told about that).
+  // Taking a mark off again: the newest in its row, made on this roll, until
+  // you tap Done. One that closed a lock opens it again (ML213).
   if(marked.length&&marked[marked.length-1]===n){
     const i=s.turn.marks.findIndex(m=>m[0]===c&&m[1]===n);
-    if(i>=0&&!s.locked.includes(c)&&g.status==='playing'&&!lkDoneThisRoll(g,me)){
-      marked.pop(); s.turn.marks.splice(i,1);
-      await lkSave(g,s); return;
-    }
+    if(i>=0&&g.status==='playing'&&!lkDoneThisRoll(g,me)){ await lkTakeBack(g,s,c,n); return; }
     toast(s.locked.includes(c)?'A closed lock stays closed'
       :lkDoneThisRoll(g,me)?'You have finished with this roll':'That was marked on an earlier roll');
     return;
   }
   const why=lkWhyNot(g,s,r,n);
   if(why){ toast(why); return; }
-  const order=lkNums(r), closing=order.indexOf(n)===order.length-1;
-  if(closing&&!confirm('Mark the '+n+' and close the '+r.name.toLowerCase()+' lock? '
-      +'Nobody can mark '+r.name.toLowerCase()+' after this roll, and it cannot be undone.')) return;
+  const order=lkNums(r), last=order.indexOf(n)===order.length-1, name=r.name.toLowerCase();
+  const closing=last&&marked.length>=5;
+  if(closing&&!confirm('Mark the '+n+' and close the '+name+' lock? '
+      +'Nobody can mark '+name+' after this roll. Undo last move opens it again, until you tap Done.')) return;
+  if(last&&!closing&&!confirm('Mark the '+n+' in '+name+'? You have fewer than five '+name
+      +' marks, so it scores as a mark but does not close the lock, and you can’t mark '+name+' again after it.')) return;
   marked.push(n); s.turn.marks.push([c,n]);
   if(closing) s.locked.push(c);
   if(!await lkSave(g,s)) return;
@@ -12984,6 +13147,49 @@ async function lkTap(c,n){
     else toast('The '+r.name.toLowerCase()+' lock is closed: put that die aside');
     await lkReload(g.id); lkPaint();
   }
+}
+
+// Takes back one of your marks from this roll. One that closed a lock opens
+// it again for everyone (step 58), unless someone else closed it on this
+// roll too. The lock is opened first, so a failed save can simply be tried
+// again: opening an open lock does nothing.
+async function lkTakeBack(g,s,c,n){
+  const r=LK_ROWS.find(x=>x.c===c), name=r.name.toLowerCase();
+  const i=s.turn.marks.findIndex(m=>m[0]===c&&m[1]===n);
+  if(i<0||s[c][s[c].length-1]!==n) return;
+  const lock=s.locked.includes(c);
+  let kept=false;
+  if(lock){
+    if(!confirm('Take back the '+n+' and open the '+name+' lock again, for everyone?')) return;
+    const {data,error}=await sb.rpc('reopen_row',{g:g.id, colour:c});
+    if(error){
+      console.error(error);
+      const m=(error.message||'')+(error.code||'');
+      toast(/reopen_row|PGRST202/i.test(m)?'Opening a lock again needs step 58 run in Supabase first'
+        :/earlier roll|finished|not running/i.test(m)?'Too late: the '+name+' lock is closed for good'
+        :'Could not open the lock again: check your signal');
+      return;
+    }
+    kept=data==='kept';
+    s.locked=s.locked.filter(x=>x!==c);
+  }
+  s[c].pop(); s.turn.marks.splice(i,1);
+  if(!await lkSave(g,s)) return;
+  if(lock){
+    toast(kept?'Taken back. The '+name+' lock stays closed: someone else closed it on this roll too'
+      :'The '+name+' lock is open again: put that die back');
+    await lkReload(g.id); lkPaint();
+  }
+}
+async function lkUndo(){
+  const g=lkGame(LK_CUR), me=g&&lkMe(g.id); if(!me) return;
+  const s=lkSheet(me.sheet);
+  if(g.status!=='playing'){ toast('This game has ended'); return; }
+  if(lkDoneThisRoll(g,me)){ toast('You have finished with this roll'); return; }
+  if(s.turn.no===g.turn_no&&s.turn.pen){ toast('You have taken the penalty for this roll: tap Done'); return; }
+  const m=lkLastMark(g,s);
+  if(!m){ toast('Nothing to undo: you have not marked anything on this roll'); return; }
+  await lkTakeBack(g,s,m[0],m[1]);
 }
 
 async function lkDone(id){
@@ -14119,7 +14325,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.05.5';
+const APP_VERSION='2026.11.06.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -14605,7 +14811,7 @@ function watchMessages(){
 function newChat(){
   if(!USERS.length){ toast('Nobody else has an account yet'); return; }
   const box=document.createElement('div');
-  box.className='daypick';
+  box.className='daypick pplbox';
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">Who is it for?</p>
     <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
@@ -14627,7 +14833,7 @@ function newChat(){
     close();
     await startChat(who, who.length>1?(name||null):null);
   };
-  setTimeout(()=>box.querySelector('input')&&box.querySelector('input').focus(),50);
+  setTimeout(()=>box.querySelector('input[type=checkbox]')&&box.querySelector('input[type=checkbox]').focus(),50);
 }
 async function startChat(userIds, title){
   // One to one: reuse the conversation you already have with them.
@@ -14654,7 +14860,7 @@ function showWho(){
   const here=membersOf(c.id);
   const spare=USERS.filter(u=>!here.includes(u.id));
   const box=document.createElement('div');
-  box.className='daypick';
+  box.className='daypick'+((!c.is_everyone&&spare.length)?' pplbox':'');
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">${esc(chatName(c))}</p>
     <div class="field"><dd>${here.map(u=>esc(u===ME.id?'You':whoWrote(u)))
@@ -14763,7 +14969,7 @@ async function sendContacts(ids, userIds){
 function pickPeople(title, onGo){
   if(!USERS.length){ toast('Nobody else has an account yet'); return; }
   const box=document.createElement('div');
-  box.className='daypick';
+  box.className='daypick pplbox';
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">${esc(title)}</p>
     <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
@@ -15871,7 +16077,12 @@ $('trayHelp').onclick=()=>openHelp();
 // you are ticking contacts, where the bottom of the screen is already spoken for.
 function paintTray(){
   const busy=['editor','logEd','itemEd','chat','recipeEd','cook','lkPlay'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
-  $('tray').style.display=(busy||PICKING)?'none':'';
+  // A jigsaw full screen on its side has the whole phone. Put away by anything
+  // else (Home, another screen), the phone goes back upright too.
+  const jp=$('jigPlay');
+  if(JIG_TURNED&&jp&&jp.classList.contains('hidden')) jigFull(false);
+  const jigOn=!!jp&&!jp.classList.contains('hidden')&&jp.classList.contains('jigfull');
+  $('tray').style.display=(busy||jigOn||PICKING)?'none':'';
 }
 /* ============================================================
    Finances — a cashbook
@@ -18838,14 +19049,16 @@ function shareBox(accId){
   const a=accOf(accId); if(!a) return;
   const them=USERS.slice();
   const box=document.createElement('div');
-  box.className='daypick';
+  box.className='daypick pplbox';
   const draw=()=>{
     const on=SHARED_ACCS.filter(s=>s.account_id===accId);
+    // Drawn again after every change: keep what was typed in the search.
+    const was=box.querySelector('.pplfind input'), q=was?was.value:'';
     box.innerHTML=`<div class="inner">
       <p class="dsec" style="padding-top:0">Who can see ${esc(a.name)}</p>
       <p class="coords" style="margin:0 0 12px">It is yours. Nobody sees it unless
         you say so here, and you can take it back at any time.</p>
-      ${them.length?them.map(u=>{
+      ${them.length?'<div class="ppllist" data-pplfind>'+them.map(u=>{
         const s=on.find(x=>x.viewer_id===u.id);
         const lvl = !s ? 'no' : (s.can_edit?'edit':'look');
         return `<div class="setrow" style="flex-direction:column;align-items:stretch;gap:6px">
@@ -18854,9 +19067,10 @@ function shareBox(accId){
             ${[['no','Not at all'],['look','Look only'],['edit','Look and change']]
               .map(([v,t])=>`<button data-lvl="${u.id}:${v}"
                 aria-pressed="${lvl===v}" class="chip">${t}</button>`).join('')}
-          </div></div>`;}).join('')
+          </div></div>`;}).join('')+'</div>'
         :'<p class="empty">Nobody else has an account yet.</p>'}
       <button class="btn" id="shDone" style="margin-top:12px">Done</button></div>`;
+    pplFind(box.querySelector('.ppllist'), q);
     box.querySelector('#shDone').onclick=()=>{ box.remove(); openSettings('Finances'); };
     box.querySelectorAll('[data-lvl]').forEach(b=>b.onclick=async()=>{
       const [uid,lvl]=b.dataset.lvl.split(':');

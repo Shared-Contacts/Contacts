@@ -1,6 +1,15 @@
 {
-  "version": "2026.11.05.5",
+  "version": "2026.11.06.1",
   "history": [
+    {
+      "version": "2026.11.06.1",
+      "changes": [
+        "Jigsaws: a landscape puzzle now opens filling the phone on its side. The i shows its words, the x goes back to all the puzzles.",
+        "Choosing people: the box fills the screen and only the people scroll, with a search box for name, email or phone.",
+        "Loxx: an Undo last move button, which can also open a lock you closed by mistake, until you tap Done.",
+        "Loxx: the 12 (or 2) can be taken with fewer than five marks. It scores, but only closes the lock with five marks already."
+      ]
+    },
     {
       "version": "2026.11.05.5",
       "changes": [

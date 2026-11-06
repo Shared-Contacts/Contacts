@@ -187,20 +187,23 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
   await closeAll();
 
   // A long list taller than the screen once hung off the top, out of reach
-  // (Barry, Send to with 14 people, 5 Nov 2026).
+  // (Barry, Send to with 14 people, 5 Nov 2026). Since ML211 (6 Nov) a box
+  // for choosing people fills the screen and only the people scroll.
   await ev(async () => { for (let i = 0; i < 14; i++) window.__rows.profiles.push({ id: 'many' + i,
     display_name: 'Person Number ' + i, email: 'person.number' + i + '@example.com', phone: '07700 9000' + (10 + i) });
     await loadAll(); pickPeople('Who should get a copy?', () => {}); });
   await settle(300);
-  const tall = await ev(() => { const box = document.querySelector('.daypick'); box.scrollTop = 0;
+  const tall = await ev(() => { const box = document.querySelector('.daypick'), list = box.querySelector('.checks.ppl'); list.scrollTop = 0;
     const t = box.querySelector('.dsec').getBoundingClientRect(), inner = box.querySelector('.inner').getBoundingClientRect();
-    box.scrollTop = box.scrollHeight; const go = $('ppGo').getBoundingClientRect();
-    return { title: t.top, tall: inner.height > innerHeight, goBottom: go.bottom, h: innerHeight }; });
-  ok('a list taller than the screen: scrolled up, the top is there to see', tall.tall && tall.title >= 0 && tall.title < 60, JSON.stringify(tall));
+    list.scrollTop = list.scrollHeight; const go = $('ppGo').getBoundingClientRect();
+    return { title: t.top, tall: inner.height >= innerHeight - 1, goBottom: go.bottom, h: innerHeight }; });
+  ok('a list taller than the screen: the top is there to see', tall.tall && tall.title >= 0 && tall.title < 60, JSON.stringify(tall));
   ok('  and scrolled down, so is Send', tall.goBottom <= tall.h, JSON.stringify(tall));
   await closeAll();
   await ev(async () => { window.__rows.profiles = window.__rows.profiles.filter(x => !/^many/.test(x.id)); await loadAll(); });
-  await ev(() => pickPeople('Short list', () => {})); await settle(200);
+  // Any other short box still sits in the middle.
+  await ev(() => { const d = document.createElement('div'); d.className = 'daypick';
+    d.innerHTML = '<div class="inner"><p class="dsec">Short</p><p>Just a line or two.</p></div>'; document.body.appendChild(d); }); await settle(200);
   ok('  a short one still sits in the middle of the screen', await ev(() => { const r = document.querySelector('.daypick .inner').getBoundingClientRect();
     return Math.abs(r.top - (innerHeight - r.bottom)) < 4 && r.top > 40; }));
   await ev(() => document.querySelector('.daypick').classList.add('typing')); await settle(100);

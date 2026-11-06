@@ -1,5 +1,6 @@
 // MY Games and Loxx (ML202, with step 57; called Lock Keeper until ML207,
-// when the roller's penalty became one for each number not taken): an original dice game for
+// when the roller's penalty became one for each number not taken; ML212 the
+// 12 or 2 without five marks; ML213 Undo last move, step 58): an original dice game for
 // 2 to 5, played with real dice, each player on their own phone. The phones
 // are linked through step 57's functions; lkfake.js stands in for them here,
 // with the same rules, and window.__who plays the other people.
@@ -144,8 +145,8 @@ const ROOT = path.join(__dirname, '..');
   ok('tap the newest mark again: it comes off', !/\bon\b/.test(await cell('red', 5)) && !/gone/.test(await cell('red', 2)));
   ok('  and the crossings out with it', (await mine()).red.length === 0 && (await mine()).turn.marks.length === 1);
   await tap('red', 5);
-  ok('the last number needs five marks first', await (async () => { await tap('red', 12); return /needs five marks/.test(await toasts()); })()
-    || /Two marks/.test(await toasts()), await toasts());
+  await tap('red', 12);
+  ok('a third mark, even the 12: no', !/\bon\b/.test(await cell('red', 12)) && /Two marks/.test(await toasts()), await toasts());
 
   // ---------------------------------------------------------------
   console.log('\nDone, and the dice passing on');
@@ -195,12 +196,16 @@ const ROOT = path.join(__dirname, '..');
     me.sheet = { red: [2, 3, 4, 5], yellow: [3], blue: [12], pen: 1 }; });
   await as('sandra', 'finish_turn', { g: G1, at_turn: 4, move_on: true });   // she carries on without you: your roll 5
   ok('the roller (Sandra) carried on without you: your roll', /Your roll/.test(await status()) && (await game()).turn_no === 5, await status());
+  answer = false; asked.length = 0;
   await tap('red', 12);
-  ok('four marks in red: the 12 cannot close it yet', /needs five marks/.test(await toasts()), await toasts());
+  ok('four marks in red: the 12 asks first, saying it would not close the lock', asked.length === 1 && /Mark the 12 in red\?/.test(asked[0])
+    && /fewer than five red marks/.test(asked[0]) && /does not close the lock/.test(asked[0]) && /can’t mark red again/.test(asked[0]), asked.join(' | '));
+  ok('  Cancel leaves it unmarked', !/\bon\b/.test(await cell('red', 12)) && (await rpcs('close_row')).length === 0);
   await tap('red', 6);
   answer = false; asked.length = 0;
   await tap('red', 12);
-  ok('five marks: the 12 asks first, saying it closes red for everyone', asked.length === 1 && /close the red lock/.test(asked[0]) && /Nobody can mark red/.test(asked[0]), asked.join(' | '));
+  ok('five marks: the 12 asks first, saying it closes red for everyone', asked.length === 1 && /close the red lock/.test(asked[0]) && /Nobody can mark red/.test(asked[0])
+    && /Undo last move opens it again, until you tap Done/.test(asked[0]), asked.join(' | '));
   ok('  Cancel leaves it open', !/\bon\b/.test(await cell('red', 12)) && (await rpcs('close_row')).length === 0);
   answer = true; await clear();
   await tap('red', 12);
@@ -212,17 +217,39 @@ const ROOT = path.join(__dirname, '..');
   ok('  it counts as a seventh mark: 28 points', await ev(() => document.querySelector('[data-lkrow="red"] .lkcount').textContent === '7'
     && document.querySelector('.lkfoot .lkbox').textContent === '28'));
   ok('  and says to put the red die aside', /put that die aside/.test(await toasts()), await toasts());
+  answer = false; asked.length = 0; await clear();
   await tap('red', 12);
-  ok('a closed lock cannot be undone', /\bon\b/.test(await cell('red', 12)) && /stays closed/.test(await toasts()), await toasts());
+  ok('tap the 12 again on the same roll: it asks before opening the lock again for everyone', asked.length === 1
+    && /Take back the 12 and open the red lock again, for everyone\?/.test(asked[0]), asked.join(' | '));
+  ok('  Cancel keeps it closed', /\bon\b/.test(await cell('red', 12)) && (await rpcs('reopen_row')).length === 0 && (await game()).closed.red === 5);
+  answer = true; asked.length = 0; await clearToasts();
+  await p.click('#lkUndo'); await settle(400);
+  r = await rpcs('reopen_row');
+  ok('Undo last move: the 12 taken back and the lock open again, for everyone', asked.length === 1 && r.length === 1 && r[0].args.colour === 'red'
+    && !/\bon\b/.test(await cell('red', 12)) && (await game()).closed.red === undefined && !(await mine()).locked.includes('red'), JSON.stringify(r));
+  ok('  the gate is open again, and it says to put the die back', await ev(() => !/shut/.test(document.querySelector('[data-lkgate="red"]').className))
+    && /open again: put that die back/.test(await toasts()), await toasts());
+  ok('  red is back to five marks: 15 points', await ev(() => document.querySelector('[data-lkrow="red"] .lkcount').textContent === '5'
+    && document.querySelector('.lkfoot .lkbox').textContent === '15'));
+  await tap('red', 12);
+  ok('  and the 12 closes it again', (await game()).closed.red === 5 && (await mine()).locked.includes('red') && /\bon\b/.test(await cell('red', 12)));
   await p.click('#lkDone'); await settle(300);
   await as('sandra', 'finish_turn', { g: G1, at_turn: 5 });
   await tap('red', 7);
   ok('the next roll, red is closed for good', !/\bon\b/.test(await cell('red', 7)), await toasts());
+  await tap('red', 12);
+  ok('  its 12 cannot be taken back now: a closed lock stays closed', /\bon\b/.test(await cell('red', 12)) && /stays closed/.test(await toasts()), await toasts());
+  ok('  and Undo last move has nothing to take back', await ev(() => $('lkUndo').disabled));
 
-  // A lock Sandra closed, on an earlier roll
+  // A lock Sandra closed, on this roll
+  await clearToasts();
   await as('sandra', 'close_row', { g: G1, colour: 'yellow' });
   ok('a lock closed by Sandra this roll: its gate is shut for you too', await ev(() => /shut/.test(document.querySelector('[data-lkgate="yellow"]').className)
     && !/mine/.test(document.querySelector('[data-lkgate="yellow"]').className)));
+  ok('  your phone says you can still mark yellow on this roll', /yellow lock has been closed\. You can still mark yellow on this roll, until you tap Done/.test(await toasts()), await toasts());
+  ok('  and so does the line at the top', /The yellow lock closes after this roll: you can still mark yellow now/.test(await status()), await status());
+  await tap('yellow', 8);
+  ok('  the white dice total in yellow: marked, though Sandra has closed it', /\bon\b/.test(await cell('yellow', 8)) && !/gone/.test(await cell('yellow', 8)));
 
   // ---------------------------------------------------------------
   console.log('\nThe end of the game');
@@ -230,7 +257,7 @@ const ROOT = path.join(__dirname, '..');
   await as('sandra', 'finish_turn', { g: G1, at_turn: 6 });
   ok('two locks closed: when the roll is finished, the game is over', (await game()).status === 'ended' && /Game over/.test(await status()), await status());
   const over = await ev(() => $('lkStage').querySelector('.lkover') ? $('lkStage').querySelector('.lkover').textContent.replace(/\s+/g, ' ') : '');
-  ok('  the final scores, the winner first', /You won, 25 to 0/.test(over) && /Two locks were closed/.test(over), over);
+  ok('  the final scores, the winner first', /You won, 27 to 0/.test(over) && /Two locks were closed/.test(over), over);
   ok('  with Play again and Back to games', !!(await p.$('#lkAgain')) && !!(await p.$('#lkOverBack')));
   ok('  and, as you started it, Clear it away', !!(await p.$('#lkClear')));
   ok('  no Done or Stop once it has ended', !(await p.$('#lkDone')) && !(await p.$('#lkStop')));
@@ -296,6 +323,8 @@ const ROOT = path.join(__dirname, '..');
   await tap('red', 4);
   ok('  the roll’s marks then stay as they are: red 4 cannot be taken back to owe two', /\bon\b/.test(await cell('red', 4))
     && /taken the penalty/.test(await toasts()), await toasts());
+  ok('  nor with Undo last move', await ev(() => $('lkUndo').disabled) && await (async () => { await clearToasts();
+    await ev(() => lkUndo()); await settle(200); return /taken the penalty/.test(await toasts()) && /\bon\b/.test(await cell('red', 4)); })(), await toasts());
   await tap('yellow', 5);
   ok('  nor a second number added to owe none', !/\bon\b/.test(await cell('yellow', 5)) && /taken the penalty/.test(await toasts()), await toasts());
   await ev(() => { window.__rpc = window.__lkReal; }); asked.length = 0; await clear();
@@ -315,6 +344,100 @@ const ROOT = path.join(__dirname, '..');
     && /four is the most/.test(asked[0]) && /your fourth, so the game ends after this roll/.test(asked[0]) && (await mine()).pen === 4, asked.join(' | '));
   await as('sandra', 'finish_turn', { g: G3, at_turn: 3 });
   ok('  and when Sandra finishes, the game is over', (await game()).status === 'ended' && (await game()).end_reason === 'Four penalties', JSON.stringify(await game()));
+  await ev(() => lkBackToList()); await settle(300);
+
+  // ---------------------------------------------------------------
+  console.log('\nUndo last move (ML213)');
+  await ev(async () => { window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 0 }); await lkReload(); renderGames(); });
+  const G4 = await ev(() => Math.max(...GAMES.map(g => g.id)));
+  await ev(id => lkOpen(id), G4); await settle(400);
+  const undoOff = () => ev(() => !!$('lkUndo') && $('lkUndo').disabled);
+  ok('an Undo last move button on the bar, with nothing to take back yet', await undoOff()
+    && /Undo last move/.test(await ev(() => $('lkUndo').textContent)));
+  ok('  it fits on the bar beside Done, big enough for a thumb', await ev(() => { const u = $('lkUndo').getBoundingClientRect(),
+    d = $('lkDone').getBoundingClientRect(), s = $('lkStatus').getBoundingClientRect();
+    return u.right <= d.left && u.left >= s.right - 1 && u.height >= 40 && d.right <= innerWidth && s.width > 150; }));
+  await clear();
+  await tap('red', 4); await tap('green', 10);
+  ok('two marks on your own roll: Undo is ready', !(await undoOff()));
+  await p.click('#lkUndo'); await settle(300);
+  ok('Undo takes back the newest first: green 10', !/\bon\b/.test(await cell('green', 10)) && /\bon\b/.test(await cell('red', 4))
+    && JSON.stringify((await mine()).turn.marks) === '[["red",4]]', JSON.stringify(await mine()));
+  r = await rpcs('save_sheet');
+  ok('  and saves that for the others', r.length === 3 && r[2].args.s.green.length === 0 && r[2].args.s.red.join() === '4', JSON.stringify(r.map(x => x.args.s)));
+  await p.click('#lkUndo'); await settle(300);
+  ok('  then red 4, and the crossings out with it', !/\bon\b/.test(await cell('red', 4)) && !/gone/.test(await cell('red', 2))
+    && (await mine()).turn.marks.length === 0);
+  ok('  nothing left to take back', await undoOff());
+  await clearToasts(); await ev(() => lkUndo()); await settle(200);
+  ok('  (asked anyway, it says why)', /Nothing to undo/.test(await toasts()), await toasts());
+  await tap('yellow', 6); await tap('blue', 9);
+  asked.length = 0;
+  await p.click('#lkDone'); await settle(300);
+  ok('Done: Undo has nothing it may take back now', asked.length === 0 && await undoOff() && await (async () => { await clearToasts();
+    await ev(() => lkUndo()); await settle(200); return /finished with this roll/.test(await toasts()); })(), await toasts());
+  await as('sandra', 'finish_turn', { g: G4, at_turn: 1 });
+
+  console.log('\nThe 12, or the 2, without five marks (ML212)');
+  // Roll 2, Sandra's: one mark, the white dice total.
+  answer = false; asked.length = 0; await clear();
+  await tap('blue', 2);
+  ok('blue 2 with one blue mark: it asks first, saying it will not close the lock', asked.length === 1 && /Mark the 2 in blue\?/.test(asked[0])
+    && /fewer than five blue marks/.test(asked[0]) && /does not close the lock/.test(asked[0]), asked.join(' | '));
+  ok('  Cancel: not marked, nothing saved', !/\bon\b/.test(await cell('blue', 2)) && (await rpcs('save_sheet')).length === 0);
+  answer = true; asked.length = 0;
+  await tap('blue', 2);
+  ok('  OK: marked, a mark like any other', /\bon\b/.test(await cell('blue', 2)) && (await mine()).blue.join() === '9,2', JSON.stringify(await mine()));
+  ok('  the lock stays open, for you and everyone', (await rpcs('close_row')).length === 0 && !(await mine()).locked.includes('blue')
+    && await ev(() => !/shut/.test(document.querySelector('[data-lkgate="blue"]').className)) && (await game()).closed.blue === undefined);
+  ok('  the rest of blue is crossed out for you', (await Promise.all([8, 7, 3].map(n => cell('blue', n)))).every(c => /gone/.test(c)));
+  ok('  blue has 2 marks: 3 points', await ev(() => document.querySelector('[data-lkrow="blue"] .lkcount').textContent === '2'
+    && document.querySelectorAll('.lkfoot .lkbox')[3].textContent === '3'));
+  await p.click('#lkUndo'); await settle(300);
+  ok('Undo takes it back again, on someone else’s roll too', !/\bon\b/.test(await cell('blue', 2)) && !/gone/.test(await cell('blue', 8)));
+
+  console.log('\nA lock Sandra closes, then opens again');
+  await clearToasts();
+  await ev(() => { const s = window.__rows.game_players.find(x => x.game_id === LK_CUR && x.user_id === 'sandra');
+    s.sheet = { yellow: [2, 3, 4, 5, 6, 12], locked: ['yellow'] }; });
+  await as('sandra', 'close_row', { g: G4, colour: 'yellow' });
+  ok('Sandra closes yellow: you are told you can still mark yellow on this roll', /yellow lock has been closed\. You can still mark yellow/.test(await toasts()), await toasts());
+  await tap('yellow', 8);
+  ok('  your white dice total in yellow: marked', /\bon\b/.test(await cell('yellow', 8)));
+  await clearToasts();
+  await as('sandra', 'reopen_row', { g: G4, colour: 'yellow' });
+  ok('Sandra takes hers back: your phone says the lock is open again', /yellow lock is open again/.test(await toasts())
+    && (await game()).closed.yellow === undefined && await ev(() => !/shut/.test(document.querySelector('[data-lkgate="yellow"]').className)), await toasts());
+  ok('  and your yellow 8 stays', /\bon\b/.test(await cell('yellow', 8)));
+  await p.click('#lkDone'); await settle(300);
+  await as('sandra', 'finish_turn', { g: G4, at_turn: 2 });
+
+  console.log('\nTaking back a lock someone else closed on the same roll');
+  await ev(async () => { const P = window.__rows.game_players.filter(x => x.game_id === LK_CUR);
+    P.find(x => x.user_id === 'me').sheet = { red: [2, 3, 4, 5, 6], pen: 0 };
+    P.find(x => x.user_id === 'sandra').sheet = { red: [2, 3, 4, 5, 6], pen: 0 }; await lkReload(LK_CUR); lkPaint(); }); await settle(200);
+  answer = true; await clear();
+  await tap('red', 12);
+  ok('roll 3, yours: you close red', (await game()).closed.red === 3 && (await mine()).locked.includes('red'));
+  await ev(() => { const s = window.__rows.game_players.find(x => x.game_id === LK_CUR && x.user_id === 'sandra');
+    s.sheet = { red: [2, 3, 4, 5, 6, 12], locked: ['red'] }; });
+  await clearToasts(); asked.length = 0;
+  await p.click('#lkUndo'); await settle(400);
+  ok('Sandra closed it too: Undo takes back your 12, and red stays closed', asked.length === 1 && !/\bon\b/.test(await cell('red', 12))
+    && !(await mine()).locked.includes('red') && (await game()).closed.red === 3 && /stays closed: someone else closed it on this roll too/.test(await toasts()), await toasts());
+  await tap('red', 12);
+  ok('  you can still take the 12 again on this roll, closing it with her', /\bon\b/.test(await cell('red', 12)) && (await mine()).locked.includes('red'));
+
+  console.log('\nBefore step 58 is run');
+  await ev(() => { window.__lkReal = window.__rpc; window.__rpc = (n, a) => n === 'reopen_row'
+    ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.reopen_row' } } : window.__lkReal(n, a); });
+  await clearToasts();
+  await p.click('#lkUndo'); await settle(300);
+  ok('Undo of a lock says it needs step 58, and nothing changes', /needs step 58 run in Supabase first/.test(await toasts())
+    && /\bon\b/.test(await cell('red', 12)) && (await mine()).locked.includes('red'), await toasts());
+  await ev(() => { window.__rpc = window.__lkReal; });
+  await p.click('#lkUndo'); await settle(300);
+  ok('  with step 58 run, it works again', !/\bon\b/.test(await cell('red', 12)) && !(await mine()).locked.includes('red') && (await game()).closed.red === 3);
   await ev(() => lkBackToList()); await settle(300);
 
   // ---------------------------------------------------------------
@@ -343,6 +466,11 @@ const ROOT = path.join(__dirname, '..');
   ok('step 57 holds no emails, phone numbers, names or keys (the repo is public)', !/@/.test(step)
     && !/\b0\d{3,4}\s?\d{6}\b/.test(step) && !/eyJ|service_role|REMINDER_SECRET|sk_/i.test(step) && !/Barry|Sandra/.test(step));
   ok('  and nothing in it can be changed except through its functions', !/create policy[^;]*for (insert|update|delete|all)/i.test(step));
+  const step58 = fs.readFileSync(path.join(ROOT, 'database', 'contacts-step58.sql'), 'utf8');
+  ok('step 58 holds no emails, phone numbers, names or keys either', !/@/.test(step58)
+    && !/\b0\d{3,4}\s?\d{6}\b/.test(step58) && !/eyJ|service_role|REMINDER_SECRET|sk_/i.test(step58) && !/Barry|Sandra/.test(step58));
+  ok('  it only adds reopen_row, for signed-in people', /create or replace function reopen_row/.test(step58)
+    && /revoke all on function reopen_row\(bigint, text\) from public, anon/.test(step58) && !/create table|drop table|alter table/i.test(step58));
   ok('the game is an original: no other game’s name in the page', !/qwixx/i.test(src));
   ok('it is called Loxx wherever it shows', !/['`"][^'`"\n]*Lock Keeper/.test(src) && await ev(() =>
     !/Lock Keeper/.test(document.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, ''))

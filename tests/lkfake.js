@@ -1,4 +1,4 @@
-// A stand-in for step 57's functions, for the tests: the same rules, kept in
+// A stand-in for step 57's functions (and step 58's reopen_row), for the tests: the same rules, kept in
 // window.__rows. window.__who says who is asking (the page itself is 'me').
 window.__lkFake = function(){
   window.__rows.games = window.__rows.games || [];
@@ -29,6 +29,19 @@ window.__lkFake = function(){
       const g = gm(a.g); if (!g || !inG(a.g)) return bad('That game is not yours');
       if (g.status === 'playing' && g.closed[a.colour] == null) g.closed = { ...g.closed, [a.colour]: g.turn_no };
       return { data: null, error: null };
+    },
+    reopen_row(a){
+      const g = gm(a.g); if (!g || !inG(a.g)) return bad('That game is not yours');
+      if (!['red', 'yellow', 'green', 'blue'].includes(a.colour)) return bad('There is no ' + a.colour + ' row');
+      if (g.status !== 'playing') return bad('That game is not running');
+      if (g.closed[a.colour] == null) return { data: 'open', error: null };
+      if (Number(g.closed[a.colour]) !== g.turn_no) return bad('That lock was closed on an earlier roll');
+      const me = P().find(p => p.game_id === a.g && p.user_id === who());
+      if (me.done_turn >= g.turn_no) return bad('You have finished with this roll');
+      if (P().some(p => p.game_id === a.g && p.user_id !== who() && Array.isArray((p.sheet || {}).locked)
+        && p.sheet.locked.includes(a.colour))) return { data: 'kept', error: null };
+      const c = { ...g.closed }; delete c[a.colour]; g.closed = c;
+      return { data: 'open', error: null };
     },
     finish_turn(a){
       const g = gm(a.g); if (!g || !inG(a.g)) return bad('That game is not yours');

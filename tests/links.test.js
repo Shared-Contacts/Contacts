@@ -301,8 +301,11 @@ const seed = () => {
      HELP_AT.links === 'h-urllinks' && /URL Links/.test((document.getElementById('h-urllinks')||{}).textContent||'')));
   await ev(() => { $('help').classList.add('hidden'); lockBackground(); });
   const man = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'manifest.json'), 'utf8'));
-  ok('Chrome\'s Share menu can send a page to the app', man.share_target && man.share_target.method === 'GET'
-     && man.share_target.action === man.scope && man.share_target.params.url === 'share_url', JSON.stringify(man.share_target));
+  // A POST since 9 Nov 2026 (ML226), so pictures can be shared in too; sw.js
+  // turns it back into index.html?share_url=... (tested in sharein.test.js).
+  ok('Chrome\'s Share menu can send a page to the app', man.share_target && man.share_target.method === 'POST'
+     && man.share_target.action.startsWith(man.scope) && man.share_target.params.url === 'share_url'
+     && man.share_target.params.title === 'share_title' && man.share_target.params.text === 'share_text', JSON.stringify(man.share_target));
 
   console.log('\nArriving from Chrome\'s Share menu');
   const p2 = await ctx.newPage();

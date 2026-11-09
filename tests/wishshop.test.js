@@ -55,14 +55,13 @@ const pic = n => ({ name: 'photo' + n + '.png', mimeType: 'image/png', buffer: P
   await ev(() => openWish()); await settle();
   ok('each idea has Copy idea', await ev(() =>
     $('wishBody').querySelectorAll('[data-wfield="t"]').length) === 2);
-  ok('and Copy notes only where there are notes', await ev(() =>
-    [...$('wishBody').querySelectorAll('[data-wfield="n"]')].map(b => b.dataset.wcopy).join()) === '1');
+  // Copy notes went on 9 Nov 2026 (ML225): Copy idea carries the notes.
+  ok('and no Copy notes any more', await ev(() =>
+    $('wishBody').querySelectorAll('[data-wfield="n"]').length) === 0);
   await p.click('[data-wcopy="1"][data-wfield="t"]'); await settle(200);
   // Since ML220 (9 Nov 2026) Copy idea gives both boxes, the Tile/Area then the description.
   ok('Copy idea puts the idea and its notes on the clipboard', await ev(() => window.__copied) === 'Copy buttons on the Wishlist\nSo ideas can go into Claude');
   ok('and says so', /Copied/.test(await ev(() => $('toasts') ? $('toasts').textContent : '')));
-  await p.click('[data-wcopy="1"][data-wfield="n"]'); await settle(200);
-  ok('Copy notes puts the notes on it', await ev(() => window.__copied) === 'So ideas can go into Claude');
   await p.click('[data-wcopy="2"][data-wfield="t"]'); await settle(200);
   ok('somebody else\'s idea can be copied too', await ev(() => window.__copied) === 'Bigger buttons');
   ok('copying writes nothing to the database', !(await writes()).some(x => /insert|update|delete/.test(x.op)));
@@ -108,11 +107,13 @@ const pic = n => ({ name: 'photo' + n + '.png', mimeType: 'image/png', buffer: P
   await ev(() => openWish()); await settle();
   await clear();
   await p.click('[data-wedit="1"]'); await settle();
-  ok('the box has Copy idea and Copy notes', await ev(() =>
-    document.querySelectorAll('.daypick [data-wecopy]').length) === 2);
+  ok('the box has Copy idea, and no Copy notes', await ev(() =>
+    document.querySelectorAll('.daypick [data-wecopy="t"]').length === 1
+    && document.querySelectorAll('.daypick [data-wecopy="n"]').length === 0));
   await p.fill('#weNotes', 'Changed notes');
-  await p.click('.daypick [data-wecopy="n"]'); await settle(200);
-  ok('Copy notes copies what is in the box now', await ev(() => window.__copied) === 'Changed notes');
+  await p.click('.daypick [data-wecopy="t"]'); await settle(200);
+  ok('Copy idea copies what is in the boxes now', await ev(() => window.__copied) === 'Copy buttons on the Wishlist\nChanged notes',
+     JSON.stringify(await ev(() => window.__copied)));
   ok('the saved photo shows', await ev(() =>
     document.querySelector('#wePics img').src) === 'https://signed.test/wsh/me/screen.jpg');
   await p.setInputFiles('.daypick [data-dphadd]:not([capture])', [pic(3)]); await settle(800);

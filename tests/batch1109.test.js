@@ -48,8 +48,10 @@ const NAMES = ['Barclays Everyday Saver', 'Barclays ISA Issue 1', 'Barclays BBA 
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  ok('the page and version.json are 2026.11.09.1', appVer === '2026.11.09.1' && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
-  const said = VJ.history[0].changes.join(' ');
+  // A later version goes on top; this one stays in the list.
+  const V9 = VJ.history.find(h => h.version === '2026.11.09.1');
+  ok('2026.11.09.1 is in version.json, and the page is the newest', !!V9 && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
+  const said = (V9 ? V9.changes : []).join(' ');
   ok('  saying what changed: accounts, putting in order, jigsaws, Loxx, Wishlist', /sort code/.test(said) && /order/.test(said)
     && /Jigsaws/.test(said) && /Loxx/.test(said) && /Tile\/Area/.test(said), said);
 
@@ -262,8 +264,8 @@ const NAMES = ['Barclays Everyday Saver', 'Barclays ISA Issue 1', 'Barclays BBA 
     value: { writeText: async s => { window.__copied = s; }, readText: async () => '' } }); });
   await ev(() => document.querySelector('[data-wcopy="991"][data-wfield="t"]').click()); await settle(200);
   ok('Copy idea: Tile/Area on the first line, the description under it', await ev(() => window.__copied) === 'Loxx\nQuestions the same way round', JSON.stringify(await ev(() => window.__copied)));
-  await ev(() => document.querySelector('[data-wcopy="991"][data-wfield="n"]').click()); await settle(200);
-  ok('Copy notes: just the description', await ev(() => window.__copied) === 'Questions the same way round');
+  // Copy notes went later the same day (ML225): Copy idea already carries it.
+  ok('no Copy notes button (it went with ML225)', await ev(() => !document.querySelector('[data-wcopy="991"][data-wfield="n"]')));
   await ev(() => document.querySelector('[data-wcopy="992"][data-wfield="t"]').click()); await settle(200);
   ok('Copy idea with no description: just the Tile/Area', await ev(() => window.__copied) === 'Jigsaws');
   await ev(id => editWish(id), wid); await settle(300);

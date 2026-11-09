@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.09.3",
+  "version": "2026.11.09.4",
   "history": [
+    {
+      "version": "2026.11.09.4",
+      "changes": [
+        "Finances: the note about rows left out of a Monzo file reads across the screen. Its button had squeezed it to one letter a line."
+      ]
+    },
     {
       "version": "2026.11.09.3",
       "changes": [

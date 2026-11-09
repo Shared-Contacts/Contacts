@@ -14544,7 +14544,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.09.3';
+const APP_VERSION='2026.11.09.4';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -18860,8 +18860,8 @@ function importPreview(keepTicks){
     <strong>${pairs.size} rows ${IMPORT.potsIn?'brought in':'left out'}</strong>: money moving
     within the bank, such as between this account and its pots. Each move is in
     the file twice, out and back in at the same minute, so together they make no
-    difference.</dd>
-    <button type="button" class="btn" id="impPots" style="margin-top:10px">${
+    difference.</dd></div>
+    <div style="padding:12px 14px"><button type="button" class="btn" id="impPots">${
       IMPORT.potsIn?'Leave them out':'Bring them in too'}</button></div></div>`:''}
   ${dups?`<div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
     A bank rarely agrees with you about the date, so anything of the same amount

@@ -924,6 +924,24 @@ body.vbtyping #verBar{display:none}
 .lkres li{display:flex;justify-content:space-between;max-width:320px;padding:4px 0;font-size:17px}
 .lkres li.win{font-weight:800;color:var(--hull)}
 .lkoverbtns{display:flex;gap:10px;flex-wrap:wrap}
+/* A question during the game, on the sheet so it turns with it (ML219) */
+.lkask{position:absolute;inset:0;z-index:5;background:rgba(16,35,28,.45);display:flex;
+  align-items:center;justify-content:center;padding:4cqh 6cqw}
+.lkaskin{background:var(--paper);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.35);
+  padding:16px 20px;max-width:560px;width:100%;max-height:100%;overflow:auto}
+.lkaskin p{margin:0 0 14px;font-size:clamp(15px,5cqh,19px);line-height:1.35}
+.lkaskbtns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.lkaskbtns button{min-height:44px;padding:0 18px;border-radius:10px;font-weight:700;font-size:16px}
+/* Messages while a game, or a jigsaw full screen, is on its side and the
+   phone is held upright: turned round the same way, along the bottom of
+   the game rather than across it. */
+@media (orientation:portrait){
+  body:has(#lkPlay:not(.hidden)) #toasts,
+  body:has(#jigPlay.jigfull:not(.hidden)) #toasts{top:0;bottom:auto;left:100vw;right:auto;
+    width:var(--vh,100dvh);height:100vw;transform-origin:0 0;transform:rotate(90deg);
+    flex-direction:column-reverse;justify-content:flex-start;
+    padding:0 16px calc(20px + env(safe-area-inset-left,0px))}
+}
 body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 /* Hold a row (or the grip) and slide it, instead of up and down arrows */
 .grip{flex:0 0 auto;color:var(--muted);font-size:22px;line-height:1;padding:6px 4px;
@@ -1177,6 +1195,28 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 /* Who an account is shared with, under its row in Settings */
 .shr{flex:1 1 100%;color:var(--muted);font-size:14.5px;padding-top:2px}
 .shr button{padding:0}
+/* Each account in Settings in a box of its own, with a wash of colour, and
+   its name bold on a line to itself (ML217). */
+.setrow.fieldrow.accbox{margin:12px 12px 0;padding:10px 12px 12px;border:1.5px solid #CFD8CF;
+  border-color:color-mix(in srgb,var(--hull) 22%,#fff);border-radius:12px;background:#F2F3EC;
+  background:color-mix(in srgb,var(--hull) 8%,#FFFDF7)}
+.setrow.fieldrow.accbox:last-of-type{border-bottom:1.5px solid #CFD8CF;
+  border-bottom-color:color-mix(in srgb,var(--hull) 22%,#fff);margin-bottom:12px}
+.accbox .accname{flex:1 1 calc(100% - 44px);font-weight:700;font-size:18px;color:var(--ink)}
+.accbox select{background:#fff}
+.accbank{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px}
+.accbank label{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;
+  font-weight:600;color:var(--muted)}
+.accbank input{width:100%;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.accbank .sc{flex:0 0 118px}
+.accbank .an{flex:1 1 150px}
+.accbank .ib{flex:1 1 100%}
+/* While one is held and moving, every box folds down to its name, so a long
+   list of tall boxes can be put in order without miles of sliding. */
+.hmfolding>[data-hmfold]{padding-top:6px;padding-bottom:6px}
+.hmfolding>[data-hmfold]>:not(.grip):not(.hmkeep){display:none!important}
+.hmfolding>[data-hmfold] .hmkeep{pointer-events:none}
+.hmfolding>.setrow.fieldrow.accbox{margin-top:6px}
 /* Still waiting for a category. A brass edge down the left, so a column of
    them is obvious at arm's length without shouting. */
 .txn.nocat{border-left:4px solid var(--brass);padding-left:10px}
@@ -4885,6 +4925,16 @@ function openHelp(where){
   Revolut, Cash, Premium Bonds &mdash; and the ones sharing a group fold
   together on this screen with a total of their own. Whether you leave a group
   open or folded away is remembered.</p>
+  <p>Each account in Settings has its own box, with room for its
+  <strong>sort code</strong>, <strong>account number</strong> and
+  <strong>international number (IBAN)</strong>. Type them any way you like:
+  they're put into the usual layout when you move on (20-00-00, an 8-figure
+  account number, a New Zealand one as 12-3456-1234567-00, the IBAN in groups
+  of four), and an IBAN that doesn't add up is pointed out. Anyone you share an
+  account with sees these too. To put the accounts in order, hold the
+  &#10303; beside a name and slide it: the boxes fold down to their names while
+  one is moving, and the screen moves along when you get near the top or
+  bottom.</p>
   <p>Finances opens where you left it: the account you last looked at, with its
   group open and the others folded away. <strong>Reconcile, import and the
   rest</strong> is folded away too &mdash; those jobs are all in the menu as
@@ -5174,8 +5224,13 @@ function openHelp(where){
   <em>Choose</em> when you put an idea in, or later with the pencil. Everyone
   sees them; tap one to see it full size. To put one into Claude on the laptop,
   right-click the full-size picture and choose <em>Copy image</em>, then paste.</p>
-  <p><strong>Copy idea</strong> and <strong>Copy notes</strong> put that wording
-  on the clipboard, ready to paste into Claude as a to-do.</p>
+  <p>An idea has two boxes: <strong>Tile/Area</strong>, the part of the app it
+  is about (Finances, Jigsaws, Loxx), and <strong>Description of
+  idea/change</strong>. Ideas sort by Tile/Area, so the ones for the same part
+  sit together.</p>
+  <p><strong>Copy idea</strong> puts both on the clipboard, the Tile/Area on the
+  first line and the description underneath, ready to paste into Claude as a
+  to-do. <strong>Copy notes</strong> copies just the description.</p>
 
   <h4 id="h-urllinks">URL Links</h4>
   <p><strong>URL Links</strong> is a library of web pages you want to find again,
@@ -5337,12 +5392,14 @@ function openHelp(where){
   number of pieces, the background colour and whether the pieces are turned, and
   start. <strong>Back</strong> takes you to the pictures again. Leave one half
   done and it carries on where you left it next time, on the same phone.</p>
-  <p><strong>On its side:</strong> a landscape picture opens filling the whole
+  <p><strong>On its side:</strong> a landscape picture opens on its own page
+  first, with the picture, its story and the instructions. Tap
+  <strong>Play full screen, on its side</strong> and the puzzle fills the whole
   phone turned on its side (if your phone keeps the screen upright, the puzzle
   turns itself round, so turn the phone to the left). The &times; at the side goes
-  back to all the pictures; the <em>i</em> shows the picture, its story and the
-  instructions, with <strong>Play full screen, on its side</strong> to go back to
-  the puzzle where you left it. Upright pictures open as before. The
+  back to all the pictures; the <em>i</em> comes back to the puzzle's page, and
+  <strong>Play full screen, on its side</strong> takes you back to the puzzle
+  where you left it. Upright pictures open as before. The
   puzzles come from jigsawexplorer.com, so they need the internet.</p>
 
   <h4 id="h-games">MY Games: Loxx</h4>
@@ -6351,19 +6408,52 @@ function hmLift(){
   h.hold=null;
   if(!h.row.isConnected){ hmDrop(); return; }
   h.lifted=true; h.card=h.row.parentElement; h.list=hmList(h.row);
-  h.top=h.row.getBoundingClientRect().top; h.scroller=hmScroller(h.row);
+  h.scroller=hmScroller(h.row);
+  if('hmfold' in h.row.dataset) hmFold(h,true);
+  h.top=h.row.getBoundingClientRect().top; h.y0=h.y;
   h.before=hmRows(h).map(hmKey).join('|');
   h.row.classList.add('lifted'); document.body.classList.add('jobdrag');
   try{ if(navigator.vibrate) navigator.vibrate(15); }catch(e){}
   // Held still near the top or bottom, the screen keeps creeping along.
   h.creep=setInterval(()=>{ if(HM===h&&hmEdge(h)) hmPlace(h); },40);
 }
-function hmEdge(h){
+// Rows marked data-hmfold (the accounts in Settings) fold down to their name
+// while one is moving. The held row is kept under the finger as they fold
+// and unfold, so nothing seems to jump.
+function hmFold(h,on){
+  const r0=h.row.getBoundingClientRect(), off=Math.max(0,Math.min(h.y-r0.top,24));
+  h.card.classList.toggle('hmfolding',on);
+  h.folded=on;
+  // Under the finger, but never hidden behind the strip at the bottom: let go
+  // down there and the box opens out where its name can still be seen.
+  const b=hmBounds(h), want=Math.max(b.top+8,Math.min(h.y-off,b.bottom-140));
+  const by=h.row.getBoundingClientRect().top-want;
+  if(h.scroller) h.scroller.scrollTop+=by; else window.scrollBy(0,by);
+}
+// The part of the list that can actually be seen: the Wishlist/Help strip
+// (and the red bars just above it) cover the bottom of the screen.
+function hmBounds(h){
   const sc=h.scroller, box=sc?sc.getBoundingClientRect():{top:0,bottom:innerHeight};
-  const by = h.y<box.top+48 ? -12 : h.y>box.bottom-48 ? 12 : 0;
-  if(!by) return false;
+  let top=Math.max(box.top,0), bottom=Math.min(box.bottom,innerHeight);
+  ['tray','shareBar','loadBar'].forEach(id=>{
+    const e=$(id); if(!e||e.classList.contains('hidden')) return;
+    const r=e.getBoundingClientRect();
+    if(r.height>0&&r.top>top+80&&r.top<bottom) bottom=r.top;
+  });
+  return {top,bottom};
+}
+// Held near the top or bottom of what can be seen, the screen creeps along,
+// faster the closer the finger is to the edge. It used to wait for the
+// finger to be on the strip itself, so a list could hardly move down (found
+// 9 Nov 2026, Barry's accounts).
+function hmEdge(h){
+  const sc=h.scroller, b=hmBounds(h), zone=64;
+  const into = h.y<b.top+zone ? h.y-(b.top+zone) : h.y>b.bottom-zone ? h.y-(b.bottom-zone) : 0;
+  if(!into) return false;
+  const by=Math.sign(into)*Math.min(26,8+Math.abs(into)/3);
+  const was=sc?sc.scrollTop:scrollY;
   if(sc) sc.scrollTop+=by; else window.scrollBy(0,by);
-  return true;
+  return (sc?sc.scrollTop:scrollY)!==was;
 }
 function hmPlace(h){
   const row=h.row, card=h.card;
@@ -6392,7 +6482,8 @@ function hmDrop(){
   if(!h) return;
   clearTimeout(h.hold); clearInterval(h.creep);
   if(h.lifted){ h.row.style.transform=''; h.row.classList.remove('lifted');
-    document.body.classList.remove('jobdrag'); }
+    document.body.classList.remove('jobdrag');
+    if(h.folded&&h.card) hmFold(h,false); }
 }
 function hmUp(){
   const h=HM; hmDrop();
@@ -9511,6 +9602,9 @@ async function copyField(s){
   if(!s){ toast('Nothing to copy'); return; }
   toast(await copyText(s) ? 'Copied' : 'Could not copy it');
 }
+// Copy idea gives both boxes, the Tile/Area on the first line and the
+// description under it, the way Barry pastes them into Claude (ML220).
+const wishCopyText=(t,n)=>[String(t||'').trim(),String(n||'').trim()].filter(Boolean).join('\n');
 const wishCopyBtns=(t,n,attr)=>`<span class="wcopies">
     <button type="button" ${attr}="t">Copy idea</button>
     ${n?`<button type="button" ${attr}="n">Copy notes</button>`:''}</span>`;
@@ -9526,8 +9620,8 @@ function editWish(id){
   box.className='daypick';
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">Change this idea</p>
-    <label>What would be good?<input id="weTitle" value="${esc(w.title)}"></label>
-    <label>Anything worth explaining
+    <label>Tile/Area<input id="weTitle" value="${esc(w.title)}"></label>
+    <label>Description of idea/change
       <textarea id="weNotes" rows="3">${esc(w.notes||'')}</textarea></label>
     ${wishCopyBtns(w.title,true,'data-wecopy')}
     <p class="dsec">Photos</p>${dphHtml('wePics')}
@@ -9540,11 +9634,12 @@ function editWish(id){
   const close=async()=>{ box.remove(); await dphCancel(); DPH=adding; };
   box.querySelector('#weCancel').onclick=close;
   box.onclick=ev=>{ if(ev.target===box) close(); };
-  box.querySelectorAll('[data-wecopy]').forEach(b=>b.onclick=()=>copyField(
-    box.querySelector(b.dataset.wecopy==='t'?'#weTitle':'#weNotes').value.trim()));
+  box.querySelectorAll('[data-wecopy]').forEach(b=>b.onclick=()=>{
+    const t=box.querySelector('#weTitle').value.trim(), n=box.querySelector('#weNotes').value.trim();
+    copyField(b.dataset.wecopy==='t' ? wishCopyText(t,n) : n); });
   box.querySelector('#weGo').onclick=async()=>{
     const t=box.querySelector('#weTitle').value.trim();
-    if(!t){ toast('It needs a title'); return; }
+    if(!t){ toast('Say which tile or area it is for'); return; }
     const d={title:t, notes:box.querySelector('#weNotes').value.trim()||null};
     // Only sent when there is something to say, so an idea still saves on a
     // database that has not had step 47 yet.
@@ -9573,8 +9668,8 @@ function renderWish(){
       <button data-wapp="contacts" aria-pressed="true">Ideas for this app</button>
     </div>
     <div class="card"><h3>Add an idea</h3><div class="setadd">
-      <input id="wTitle" placeholder="What would be good?">
-      <textarea id="wNotes" rows="2" placeholder="Anything worth explaining (optional)"
+      <input id="wTitle" placeholder="Tile/Area">
+      <textarea id="wNotes" rows="2" placeholder="Description of idea/change"
         style="width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;margin-bottom:8px"></textarea>
       <div class="wpics"><p class="coords">Photos or screenshots (optional)</p>${dphHtml('wPics')}</div>
       <button class="btn primary" id="wAdd">Add it</button>
@@ -9640,7 +9735,7 @@ function renderWish(){
   }
   $('wAdd').onclick=async()=>{
     const t=$('wTitle').value.trim();
-    if(!t){ toast('Say what the idea is'); return; }
+    if(!t){ toast('Say which tile or area it is for'); return; }
     const d={created_by:ME.id, app:WISH_APP, title:t,
       notes:$('wNotes').value.trim()||null};
     const photos=dphNow();
@@ -9654,7 +9749,7 @@ function renderWish(){
     lightbox(SIGNED[i.dataset.wpic]));
   $('wishBody').querySelectorAll('[data-wcopy]').forEach(b=>b.onclick=()=>{
     const w=WISHES.find(x=>x.id===Number(b.dataset.wcopy));
-    if(w) copyField(b.dataset.wfield==='t' ? w.title : (w.notes||''));
+    if(w) copyField(b.dataset.wfield==='t' ? wishCopyText(w.title,w.notes) : (w.notes||''));
   });
   $('wishBody').querySelectorAll('[data-wedit]').forEach(b=>b.onclick=()=>
     editWish(Number(b.dataset.wedit)));
@@ -12611,9 +12706,11 @@ function renderJig(){
     b.onclick=()=>playJig(+b.dataset.jig));
 }
 
-// A landscape puzzle opens filling the phone on its side (Barry's choice,
-// ML210); an upright one opens as before. Only the frame's look changes, so
-// going in and out of it never starts the puzzle again.
+// A landscape puzzle can fill the phone on its side (ML210). It opens on its
+// page first, the picture and its words, with Play full screen, on its side
+// as a button (Barry's choice, ML218: going straight in skipped the page).
+// Only the frame's look changes, so going in and out of it never starts the
+// puzzle again.
 var JIG_TURNED=false;   // var: paintTray may ask before this line has run
 function jigFull(on){
   const sh=$('jigPlay'); if(!sh) return;
@@ -12669,7 +12766,6 @@ function playJig(i){
   $('jigAbout').onclick=()=>{ jigFull(false); $('jigPlayBody').scrollTop=0; };
   const gf=$('jigGoFull'); if(gf) gf.onclick=()=>jigFull(true);
   showSheet('jigPlay'); $('jigPlayBody').scrollTop=0; lockBackground();
-  if(wide) jigFull(true);
 }
 
 // Emptying the frame stops the puzzle running behind the list.
@@ -12952,6 +13048,7 @@ async function lkOpen(id){
   lkPaint();
 }
 function lkShut(){
+  lkAskShut();
   lkUnwatch();
   try{ screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock(); }catch(e){}
   if($('lkPlay')) $('lkPlay').classList.add('hidden');
@@ -13005,9 +13102,12 @@ function lkStatus(g,me){
 function lkPaint(){
   const st=$('lkStage'); if(!st||$('lkPlay').classList.contains('hidden')) return;
   const g=lkGame(LK_CUR), me=g&&lkMe(g.id);
+  // A question being asked stays up through a redraw (a live change, say).
+  const ask=st.querySelector('.lkask');
   if(!g||!me){
     st.innerHTML=`<div class="lkbar"><button class="lkback" id="lkBack">&lsaquo; Games</button>
       <div class="lkstatus">${GAMES_FAILED?'Could not fetch this game just now.':'Fetching the game…'}</div></div>`;
+    if(ask) st.appendChild(ask);
     $('lkBack').onclick=lkBackToList; return;
   }
   const s=lkSheet(me.sheet), sc=lkScore(s), ps=lkPlayers(g.id), roller=lkRoller(g);
@@ -13056,6 +13156,7 @@ function lkPaint(){
         `<span class="lkpen${i<s.pen?' on':''}"></span>`).join('')}</span>
     </div>
     ${playing?'':lkOverHtml(g)}`;
+  if(ask) st.appendChild(ask);
   $('lkBack').onclick=lkBackToList;
   const un=$('lkUndo'); if(un) un.onclick=lkUndo;
   const d=$('lkDone'); if(d) d.onclick=()=>lkDone(g.id);
@@ -13086,6 +13187,44 @@ function lkOverHtml(g){
     <div class="lkoverbtns"><button class="lkdone" id="lkAgain">Play again</button>
       <button class="lkback" id="lkOverBack">Back to games</button>
       ${g.created_by===ME.id?'<button class="lkback" id="lkClear">Clear it away</button>':''}</div></div>`;
+}
+
+/* Questions during a game (ML219). The phone's own confirm box always
+   stands upright, across a game played on its side, so they are asked on
+   the game sheet instead and turn with it. Resolves true or false. */
+function lkAsk(msg,yes,no){
+  const st=$('lkStage');
+  if(!st||$('lkPlay').classList.contains('hidden')) return Promise.resolve(confirm(msg));
+  const old=st.querySelector('.lkask'); if(old&&old.__done) old.__done(false);
+  return new Promise(res=>{
+    const box=document.createElement('div');
+    box.className='lkask'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true');
+    box.innerHTML=`<div class="lkaskin"><p>${esc(msg)}</p><div class="lkaskbtns">
+      <button type="button" class="lkback" data-ask="0">${esc(no||'Cancel')}</button>
+      <button type="button" class="lkdone" data-ask="1">${esc(yes||'OK')}</button></div></div>`;
+    const done=v=>{ box.__done=null; box.remove(); res(v); };
+    box.__done=done;
+    box.querySelectorAll('[data-ask]').forEach(b=>b.onclick=ev=>{
+      ev.stopPropagation(); done(b.dataset.ask==='1'); });
+    box.onclick=ev=>{ if(ev.target===box) done(false); };
+    st.appendChild(box);
+  });
+}
+// The game can change while a question is open, which the phone's own box
+// never allowed (it stopped everything). If this phone's game has moved on
+// by the time the answer comes, the answer is not acted on.
+const lkSnap = id => { const g=lkGame(id), me=g&&lkMe(id);
+  return JSON.stringify([g&&g.status, g&&g.turn_no, g&&g.turn, g&&g.closed, me&&me.done_turn, me&&me.sheet]); };
+async function lkAskNow(id,msg,yes,no){
+  const before=lkSnap(id);
+  if(!await lkAsk(msg,yes,no)) return false;
+  if(lkSnap(id)!==before){ toast('The game moved on while you were deciding: have another look'); return false; }
+  return true;
+}
+// A question still open when the game is put away is answered no.
+function lkAskShut(){
+  const a=$('lkStage')&&$('lkStage').querySelector('.lkask');
+  if(a&&a.__done) a.__done(false);
 }
 
 function lkBackToList(){
@@ -13134,10 +13273,12 @@ async function lkTap(c,n){
   if(why){ toast(why); return; }
   const order=lkNums(r), last=order.indexOf(n)===order.length-1, name=r.name.toLowerCase();
   const closing=last&&marked.length>=5;
-  if(closing&&!confirm('Mark the '+n+' and close the '+name+' lock? '
-      +'Nobody can mark '+name+' after this roll. Undo last move opens it again, until you tap Done.')) return;
-  if(last&&!closing&&!confirm('Mark the '+n+' in '+name+'? You have fewer than five '+name
-      +' marks, so it scores as a mark but does not close the lock, and you can’t mark '+name+' again after it.')) return;
+  if(closing&&!await lkAskNow(g.id,'Mark the '+n+' and close the '+name+' lock? '
+      +'Nobody can mark '+name+' after this roll. Undo last move opens it again, until you tap Done.',
+      'Close the lock')) return;
+  if(last&&!closing&&!await lkAskNow(g.id,'Mark the '+n+' in '+name+'? You have fewer than five '+name
+      +' marks, so it scores as a mark but does not close the lock, and you can’t mark '+name+' again after it.',
+      'Mark it')) return;
   marked.push(n); s.turn.marks.push([c,n]);
   if(closing) s.locked.push(c);
   if(!await lkSave(g,s)) return;
@@ -13160,7 +13301,8 @@ async function lkTakeBack(g,s,c,n){
   const lock=s.locked.includes(c);
   let kept=false;
   if(lock){
-    if(!confirm('Take back the '+n+' and open the '+name+' lock again, for everyone?')) return;
+    if(!await lkAskNow(g.id,'Take back the '+n+' and open the '+name+' lock again, for everyone?',
+      'Open it again')) return;
     const {data,error}=await sb.rpc('reopen_row',{g:g.id, colour:c});
     if(error){
       console.error(error);
@@ -13202,12 +13344,12 @@ async function lkDone(id){
   const marks=lkTurnMarks(s,g).length, owe=Math.min(2-Math.min(2,marks), 4-s.pen);
   if(lkMyRoll(g)&&owe>0&&!tookPen){
     const fourth=s.pen+owe>=4?' That is your fourth, so the game ends after this roll.':'';
-    if(!confirm((marks
+    if(!await lkAskNow(id,(marks
         ?'You took one number on your own roll, not two, so that is a penalty: minus 5.'
         :owe===2?'You took neither number on your own roll, so that is two penalties: minus 10.'
         :'You took neither number on your own roll, so that is a penalty (four is the most): minus 5.')
-      +fourth+' Take '+(owe===2?'them':'it')+'? (Cancel to go back and mark '
-      +(marks?'another':'something')+'.)')) return;
+      +fourth+' Take '+(owe===2?'them':'it')+', or go back and mark '
+      +(marks?'another':'something')+'?', owe===2?'Take them':'Take it', 'Go back')) return;
     s.pen=Math.min(4,s.pen+owe);
     s.turn={no:g.turn_no, marks:s.turn.no===g.turn_no?s.turn.marks:[], pen:true};
     if(!await lkSave(g,s)) return;
@@ -13217,7 +13359,8 @@ async function lkDone(id){
 async function lkCarryOn(id){
   const g=lkGame(id); if(!g) return;
   const left=lkPlayers(id).filter(p=>!lkDoneThisRoll(g,p)).map(p=>lkWho(p.user_id));
-  if(!confirm('Pass the dice on without '+lkAnd(left)+'? They cannot mark this roll after.')) return;
+  if(!await lkAskNow(id,'Pass the dice on without '+lkAnd(left)+'? They cannot mark this roll after.',
+    'Pass the dice on')) return;
   await lkFinish(g,true);
 }
 async function lkFinish(g,moveOn){
@@ -13233,7 +13376,7 @@ async function lkFinish(g,moveOn){
 }
 
 async function lkClearAway(id){
-  if(!confirm('Clear this game away, for everyone who played it?')) return;
+  if(!await lkAsk('Clear this game away, for everyone who played it?','Clear it away')) return;
   const {error}=await sb.rpc('delete_game',{g:id});
   if(error){ console.error(error); toast('Could not clear it away'); return; }
   GAMES=GAMES.filter(x=>Number(x.id)!==Number(id));
@@ -13242,7 +13385,8 @@ async function lkClearAway(id){
 }
 async function lkStop(){
   const g=lkGame(LK_CUR); if(!g||g.status!=='playing'){ toast('Open a game that is going on first'); return; }
-  if(!confirm('Stop this game for everyone? The scores so far are kept.')) return;
+  if(!await lkAsk('Stop this game for everyone? The scores so far are kept.','Stop the game')) return;
+  if(Number(LK_CUR)!==Number(g.id)) return;
   const {error}=await sb.rpc('stop_game',{g:g.id});
   if(error){ console.error(error); toast('Could not stop the game'); return; }
   await lkReload(g.id); lkPaint();
@@ -14325,7 +14469,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.06.1';
+const APP_VERSION='2026.11.09.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -18996,11 +19140,15 @@ function finAccountRows(){
     Barclays, Revolut, Premium Bonds, Cash. Accounts sharing one are folded
     together on the Finances screen with a total of their own, and each group
     remembers whether you left it open.</dd></div>
+  <div class="field"><dd style="color:var(--muted);font-size:15px">
+    To put them in order, hold the &#10303; beside a name and slide it. The
+    boxes fold down to just their names while one is moving.</dd></div>
   <datalist id="dlAccGroups">${[...new Set(ACCOUNTS.map(a=>(a.group_name||'').trim())
     .filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
-  ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow" data-arow="${a.id}" data-hm="acc:${a.id}">
+  ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow accbox" data-arow="${a.id}" data-hm="acc:${a.id}" data-hmfold>
     <span class="grip" aria-hidden="true">&#10303;</span>
-    <input data-afield="${a.id}:name" value="${esc(a.name)}" style="flex:1 1 150px">
+    <input class="accname hmkeep" data-afield="${a.id}:name" value="${esc(a.name)}"
+      aria-label="Account name">
     <input data-afield="${a.id}:group_name" value="${esc(a.group_name||'')}"
       list="dlAccGroups" placeholder="Group" style="flex:0 1 120px"
       aria-label="Which bank it belongs to">
@@ -19015,12 +19163,53 @@ function finAccountRows(){
     <label style="flex:0 0 auto;color:var(--muted);font-size:15px">
       <input type="checkbox" data-afield="${a.id}:active" ${a.active?'checked':''}> in use</label>
     <button class="x" data-adrop="${a.id}" aria-label="Remove">&times;</button>
+    <div class="accbank">
+      <label class="sc">Sort code<input data-afield="${a.id}:sort_code"
+        value="${esc(a.sort_code||'')}" inputmode="numeric" placeholder="20-00-00"
+        autocomplete="off"></label>
+      <label class="an">Account number<input data-afield="${a.id}:account_number"
+        value="${esc(a.account_number||'')}" inputmode="numeric" placeholder="12345678"
+        autocomplete="off"></label>
+      <label class="ib">International number (IBAN)<input data-afield="${a.id}:iban"
+        value="${esc(a.iban||'')}" placeholder="GB00 ABCD 0000 0000 0000 00"
+        autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+    </div>
     ${shareRow(a)}${filesRow(a)}</div>`).join('')}
   <div class="setadd">
     <input data-anew="name" placeholder="New account">
     <button class="btn primary" data-aadd="1">Add account</button>
   </div>`;
 }
+
+/* Bank details on an account (ML217, step 59), each tidied into the way it
+   is usually written as it is saved. Anything that doesn't fit a pattern is
+   kept as typed rather than refused. */
+function fmtSortCode(v){
+  const s=String(v||'').trim(), d=s.replace(/\D/g,'');
+  return d.length===6 ? d.slice(0,2)+'-'+d.slice(2,4)+'-'+d.slice(4) : s;
+}
+function fmtAccNo(v){
+  const s=String(v||'').trim().replace(/\s+/g,' ');
+  if(/[^\d\s-]/.test(s)) return s;
+  const d=s.replace(/\D/g,'');
+  if(d.length===8) return d;                     // a UK account number
+  // New Zealand: bank, branch, account and suffix, 12-3456-1234567-00 (or -000).
+  if(d.length===15||d.length===16) return d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6,13)+'-'+d.slice(13);
+  return s;
+}
+// Capitals, in groups of four, as the banks print it.
+const fmtIban = v => String(v||'').replace(/\s+/g,'').toUpperCase().replace(/(.{4})(?=.)/g,'$1 ');
+// Every IBAN carries its own check: moved round and read as one long number,
+// it leaves 1 when divided by 97.
+function ibanOk(v){
+  const s=String(v||'').replace(/\s+/g,'').toUpperCase();
+  if(!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return false;
+  let m=0;
+  for(const ch of (s.slice(4)+s.slice(0,4)).replace(/[A-Z]/g,c=>String(c.charCodeAt(0)-55)))
+    m=(m*10+Number(ch))%97;
+  return m===1;
+}
+const BANK_FMT={sort_code:fmtSortCode, account_number:fmtAccNo, iban:fmtIban};
 
 /* Who else can see one account. Only its owner decides; everybody else is
    told who can see it and left at that. */
@@ -19184,8 +19373,19 @@ function wireFinance(){
     if(field==='category_id')     v=v?Number(v):null;
     if(typeof v==='string')       v=v.trim();
     if(field==='name'&&!v){ toast('It needs a name'); await after(); return; }
+    // Bank details go in the way each is usually written (ML217).
+    const bank = table==='accounts' && BANK_FMT[field];
+    if(bank){ v=bank(v); el.value=v; if(!v) v=null; }
     const {error}=await sb.from(table).update({[field]:v}).eq('id',Number(id));
-    if(error) return fail(error,'Could not save that');
+    if(error){
+      if(bank&&/sort_code|account_number|iban|PGRST204|42703/i.test((error.message||'')+(error.code||'')))
+        return fail(error,'Bank details need step 59 run in Supabase first');
+      return fail(error,'Could not save that');
+    }
+    if(field==='sort_code'&&v&&!/^\d\d-\d\d-\d\d$/.test(v))
+      toast('Saved. A UK sort code is six numbers, like 20-00-00');
+    if(field==='iban'&&v&&!ibanOk(v))
+      toast('Saved, but that IBAN doesn’t add up: worth checking it against the bank’s own paperwork');
     await loadMoney();
   };
 

@@ -1,6 +1,16 @@
 {
-  "version": "2026.11.06.1",
+  "version": "2026.11.09.1",
   "history": [
+    {
+      "version": "2026.11.09.1",
+      "changes": [
+        "Finances: each account in Settings in its own box, its name in bold, with its sort code, account number and IBAN.",
+        "Putting accounts in order works again: the screen moves along near the bottom, and the boxes fold to their names while one moves.",
+        "Jigsaws: a landscape puzzle opens on its page first again, with Play full screen, on its side as a button.",
+        "Loxx: the questions and messages during a game now show the same way round as the game.",
+        "Wishlist: the boxes are now Tile/Area and Description of idea/change, and Copy idea copies both."
+      ]
+    },
     {
       "version": "2026.11.06.1",
       "changes": [

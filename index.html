@@ -222,8 +222,10 @@ ul.list{padding-bottom:calc(var(--tray) + 70px + env(safe-area-inset-bottom,0px)
 #homeRefresh.spin svg{animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#homeRefresh.spin svg{animation:none}}
+/* Room at the bottom for the Wishlist/Help strip as well, so the last row of
+   tiles scrolls clear of it (ML230: this used to leave 28px for a 47px strip). */
 .homebody{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:18px 18px calc(28px + env(safe-area-inset-bottom))}
+  padding:18px 18px calc(28px + var(--tray) + env(safe-area-inset-bottom))}
 .tiles{display:grid;gap:11px;grid-template-columns:repeat(3,1fr)}
 @media (min-width:560px){.tiles{gap:14px;
   grid-template-columns:repeat(auto-fill,minmax(136px,1fr))}}
@@ -5070,8 +5072,21 @@ function openHelp(where){
   the date, which is the description and which is the amount. Some banks use one
   amount column with minus signs; others use separate <em>money in</em> and
   <em>money out</em> columns &mdash; both work.</p>
-  <p>Give the layout a name and it is remembered, so next month is just choose
-  file, import.</p>
+  <p>What you choose is remembered for that account, so next month a file laid
+  out the same way comes in set already: choose the file, check, import.</p>
+  <p><strong>American Express</strong> writes spending as a plain figure and
+  payments with a minus, the other way round from a bank. For a file with one
+  amount column, <strong>Spending shows as</strong> says which way round it is,
+  and is set for American Express by itself. If spending ever comes out as
+  money in, change it there.</p>
+  <p>If nothing comes through, the app says why: no date it could read, no
+  money in the amount column, or <strong>Only rows where</strong> leaving them
+  all out.</p>
+  <p><strong>Take an import out again</strong>, at the bottom of the same page,
+  lists what each file brought into the account chosen at the top. Take out
+  removes exactly those rows (and the statement file kept with them), so a file
+  that came in wrong can be brought in again. Anything done to them since goes
+  too, and it cannot be undone.</p>
   <p><strong>An account holding several currencies</strong>, such as Revolut,
   needs one account here per currency &mdash; Revolut GBP, Revolut EUR and so
   on. That is not the app being awkward: Revolut really does keep a separate
@@ -5230,7 +5245,14 @@ function openHelp(where){
   sit together.</p>
   <p><strong>Copy idea</strong> puts both on the clipboard, the Tile/Area on the
   first line and the description underneath, ready to paste into Claude as a
-  to-do. <strong>Copy notes</strong> copies just the description.</p>
+  to-do. <strong>Share idea</strong> sends the words and the idea's photos
+  together: it opens the phone's Share list, and you choose Claude (or anywhere
+  else). The clipboard can only hold one picture, so Copy idea is words only.</p>
+  <p><strong>A screenshot straight in.</strong> Take the screenshot, tap
+  <em>Share</em> on the little picture that appears, and choose <strong>MY
+  life</strong>. The Wishlist opens with the screenshot already on a new idea:
+  fill in the two boxes and press <em>Add it</em>. (A phone can take a day or
+  two after an update to offer pictures to MY life.)</p>
 
   <h4 id="h-urllinks">URL Links</h4>
   <p><strong>URL Links</strong> is a library of web pages you want to find again,
@@ -9605,9 +9627,53 @@ async function copyField(s){
 // Copy idea gives both boxes, the Tile/Area on the first line and the
 // description under it, the way Barry pastes them into Claude (ML220).
 const wishCopyText=(t,n)=>[String(t||'').trim(),String(n||'').trim()].filter(Boolean).join('\n');
-const wishCopyBtns=(t,n,attr)=>`<span class="wcopies">
+// Copy notes went on 9 Nov 2026 (ML225): Copy idea already carries the
+// description. Share idea sends the words and the idea's photos together
+// through the phone's Share list, to Claude or anywhere else. The clipboard
+// holds one picture at most, and most apps paste the words or the picture,
+// never both. Only offered where the phone can share at all.
+const wishCopyBtns=attr=>`<span class="wcopies">
     <button type="button" ${attr}="t">Copy idea</button>
-    ${n?`<button type="button" ${attr}="n">Copy notes</button>`:''}</span>`;
+    ${navigator.share?`<button type="button" ${attr}="s">Share idea</button>`:''}</span>`;
+
+// The photos are fetched after the tap, and a phone only lets a page open the
+// Share list for a few seconds after one. If fetching them takes longer, they
+// are kept ready here and the next tap shares at once.
+let WISH_SHARE=null;          // {key, data}
+async function shareIdea(t,n,paths,btn){
+  const text=wishCopyText(t,n);
+  if(!text&&!paths.length){ toast('Nothing to share'); return; }
+  const key=JSON.stringify([text,paths]);
+  let data;
+  if(WISH_SHARE&&WISH_SHARE.key===key) data=WISH_SHARE.data;
+  else {
+    data={text};
+    if(paths.length){
+      toast(paths.length>1?'Getting the photos ready…':'Getting the photo ready…');
+      const files=[];
+      for(let i=0;i<paths.length;i++){
+        try{
+          const {data:blob,error}=await sb.storage.from('photos').download(paths[i]);
+          if(error||!blob) throw error||new Error('no photo');
+          files.push(new File([blob],'photo-'+(i+1)+'.jpg',{type:blob.type||'image/jpeg'}));
+        }catch(e){ console.warn('a photo could not be fetched to share', e); }
+      }
+      if(files.length&&(!navigator.canShare||navigator.canShare({files}))) data.files=files;
+      else toast(files.length?'This phone can only share the words':'Could not fetch the photos, so just the words');
+    }
+  }
+  WISH_SHARE=null;
+  try{ await navigator.share(data); }
+  catch(e){
+    if(e&&e.name==='AbortError') return;          // the Share list was closed
+    if(e&&e.name==='NotAllowedError'){
+      WISH_SHARE={key,data};
+      if(btn) btn.textContent='Ready: tap to share';
+      toast('Ready: tap Share idea again'); return;
+    }
+    console.error(e); toast('Could not share it');
+  }
+}
 
 // Your own ideas can be reworded, and given photos. Anybody can still move
 // any of them along. Photos half-added to a new idea wait while this is open.
@@ -9623,7 +9689,7 @@ function editWish(id){
     <label>Tile/Area<input id="weTitle" value="${esc(w.title)}"></label>
     <label>Description of idea/change
       <textarea id="weNotes" rows="3">${esc(w.notes||'')}</textarea></label>
-    ${wishCopyBtns(w.title,true,'data-wecopy')}
+    ${wishCopyBtns('data-wecopy')}
     <p class="dsec">Photos</p>${dphHtml('wePics')}
     <div class="pfoot"><button id="weCancel">Cancel</button>
       <button id="weGo" class="go">Save</button></div></div>`;
@@ -9636,7 +9702,8 @@ function editWish(id){
   box.onclick=ev=>{ if(ev.target===box) close(); };
   box.querySelectorAll('[data-wecopy]').forEach(b=>b.onclick=()=>{
     const t=box.querySelector('#weTitle').value.trim(), n=box.querySelector('#weNotes').value.trim();
-    copyField(b.dataset.wecopy==='t' ? wishCopyText(t,n) : n); });
+    if(b.dataset.wecopy==='s') shareIdea(t,n,dphNow().map(p=>p.path),b);
+    else copyField(wishCopyText(t,n)); });
   box.querySelector('#weGo').onclick=async()=>{
     const t=box.querySelector('#weTitle').value.trim();
     if(!t){ toast('Say which tile or area it is for'); return; }
@@ -9691,7 +9758,7 @@ function renderWish(){
           ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
           ${arr(w.photos).length?`<span class="rcpthumbs">${arr(w.photos).map(p=>`<img
             src="${esc(SIGNED[p.path]||'')}" alt="Photo" data-wpic="${esc(p.path)}">`).join('')}</span>`:''}
-          ${wishCopyBtns(w.title,w.notes,'data-wcopy="'+w.id+'" data-wfield')}
+          ${wishCopyBtns('data-wcopy="'+w.id+'" data-wfield')}
           <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
             ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
           <span class="pickrow" style="margin-top:8px">
@@ -9749,7 +9816,9 @@ function renderWish(){
     lightbox(SIGNED[i.dataset.wpic]));
   $('wishBody').querySelectorAll('[data-wcopy]').forEach(b=>b.onclick=()=>{
     const w=WISHES.find(x=>x.id===Number(b.dataset.wcopy));
-    if(w) copyField(b.dataset.wfield==='t' ? wishCopyText(w.title,w.notes) : (w.notes||''));
+    if(!w) return;
+    if(b.dataset.wfield==='s') shareIdea(w.title,w.notes,arr(w.photos).map(p=>p.path),b);
+    else copyField(wishCopyText(w.title,w.notes));
   });
   $('wishBody').querySelectorAll('[data-wedit]').forEach(b=>b.onclick=()=>
     editWish(Number(b.dataset.wedit)));
@@ -14469,7 +14538,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.09.1';
+const APP_VERSION='2026.11.09.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -16779,6 +16848,25 @@ function paintMoneyPickBar(){
   $('mpDel').onclick=deletePickedTxns;
 }
 
+// In batches, so a few hundred does not go out as one enormous request. Used
+// by Choose several to delete and by taking an import out again (ML228).
+async function deleteTxnIds(ids){
+  let gone=0, stuck=0;
+  for(let i=0;i<ids.length;i+=100){
+    const slice=ids.slice(i,i+100);
+    const {error}=await sb.from('transactions').delete().in('id',slice);
+    if(error){
+      // A locked statement refuses the whole batch, so retry them one by one
+      // to get rid of everything that can go.
+      for(const id of slice){
+        const r=await sb.from('transactions').delete().eq('id',id);
+        if(r.error) stuck++; else gone++;
+      }
+    } else gone+=slice.length;
+  }
+  return {gone,stuck};
+}
+
 async function deletePickedTxns(){
   const ids=[...MONEY_PICKED];
   if(!ids.length) return;
@@ -16801,21 +16889,7 @@ async function deletePickedTxns(){
 
   const bar=$('moneyPickBar');
   bar.innerHTML='<span style="flex:1">Deleting…</span>';
-
-  // In batches, so a few hundred does not go out as one enormous request.
-  let gone=0, stuck=0;
-  for(let i=0;i<ids.length;i+=100){
-    const slice=ids.slice(i,i+100);
-    const {error}=await sb.from('transactions').delete().in('id',slice);
-    if(error){
-      // A locked statement refuses the whole batch, so retry them one by one
-      // to get rid of everything that can go.
-      for(const id of slice){
-        const r=await sb.from('transactions').delete().eq('id',id);
-        if(r.error) stuck++; else gone++;
-      }
-    } else gone+=slice.length;
-  }
+  const {gone,stuck}=await deleteTxnIds(ids);
 
   MONEY_PICKING=false; MONEY_PICKED.clear();
   await loadMoney(); renderMoney(); paintMoneyPickBar();
@@ -18445,12 +18519,19 @@ function renderImport(){
   ${picked?`
   <p class="dsec">Which column is which</p>
   <div class="card">
+    ${IMPORT.used?`<div class="field"><dd style="color:var(--muted);font-size:15px">
+      Set the way you had it last time for this account.</dd></div>`:''}
     ${colSel('date','Date')}
     ${colSel('desc','Description')}
     ${colSel('amount','Amount','Not one column — see below')}
     ${String(m.amount)===''||m.amount===undefined?`
       ${colSel('in','Money in')}
-      ${colSel('out','Money out')}`:''}
+      ${colSel('out','Money out')}`:`
+    <div class="setrow"><label style="flex:0 0 38%;color:var(--muted)">Spending shows as</label>
+      <select data-imap="flip">
+        <option value="" ${m.flip?'':'selected'}>−12.50, with a minus (most banks)</option>
+        <option value="1" ${m.flip?'selected':''}>12.50, no minus (American Express)</option>
+      </select></div>`}
     ${colSel('cur','Currency','The whole file is one currency')}
     ${colSel('fee','Fee','None')}
     ${colSel('kind','How it was paid','Leave them all as Debit card')}
@@ -18474,12 +18555,108 @@ function renderImport(){
       <input type="checkbox" data-imap="head" ${m.head?'checked':''}>
       The first row is headings</label></div>
     <div class="setadd">
-      <input id="impName" placeholder="Remember this layout as…" value="${esc(IMPORT.name||'')}">
+      <p class="coords" style="margin:0 0 8px">These choices are remembered for this
+        account, so next time a file laid out like this one comes in they are set already.</p>
       <button class="btn" id="impPreview" style="border:1.5px solid var(--rule)">See what it will do</button>
     </div>
   </div>
   <div id="impOut"></div>`:''}
+  <details class="card" id="impUndo" ${IMPORT.undoOpen?'open':''}>
+    <summary style="padding:14px;font-weight:600;cursor:pointer">Take an import out again</summary>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">
+      Everything one file brought into the account chosen at the top, so a file
+      read the wrong way round can go and be brought in again. Newest first.</dd></div>
+    <div id="impUndoList"></div>
+  </details>
   <div style="height:30px"></div>`;
+  const u=$('impUndo');
+  u.ontoggle=()=>{ IMPORT.undoOpen=u.open; if(u.open) paintImpUndo(); };
+  if(u.open) paintImpUndo();
+}
+
+/* ---------- Taking an import out again (ML228) ----------
+   Every row one file brought in shares the moment it came in (imported_at),
+   so that finds exactly what the file added and nothing typed by hand. Asked
+   for when an American Express file had come in back to front: take it out,
+   then bring it in again the right way round. As with deleting by hand, the
+   other half of any transfer goes too, and a locked statement refuses. */
+async function importGroups(acc){
+  const {data,error}=await sb.from('transactions')
+    .select('id,imported_at,transfer_id,tdate')
+    .eq('account_id',acc).not('imported_at','is',null)
+    .order('imported_at',{ascending:false}).limit(5000);
+  if(error){ console.error(error); return null; }
+  const g=new Map();
+  (data||[]).forEach(t=>{
+    if(!t.imported_at) return;
+    if(!g.has(t.imported_at)) g.set(t.imported_at,{at:t.imported_at, ids:[], halves:[], from:t.tdate, to:t.tdate});
+    const x=g.get(t.imported_at);
+    x.ids.push(t.id);
+    if(t.transfer_id) x.halves.push(t.transfer_id);
+    if(t.tdate<x.from) x.from=t.tdate;
+    if(t.tdate>x.to) x.to=t.tdate;
+  });
+  return [...g.values()].sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,10);
+}
+const whenWords=iso=>new Date(iso).toLocaleString('en-GB',
+  {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+// The statement file kept by that import: stored for the same account just
+// after the rows went in.
+function keptFileFor(acc,at){
+  const t=new Date(at).getTime();
+  return BANKFILES.filter(f=>f.account_id===acc&&f.created_at)
+    .map(f=>({f, d:new Date(f.created_at).getTime()-t}))
+    .filter(x=>x.d>=-5000&&x.d<=10*60000)
+    .sort((a,b)=>a.d-b.d).map(x=>x.f)[0]||null;
+}
+let IMP_UNDO_ASK=0;
+async function paintImpUndo(){
+  const el=$('impUndoList'); if(!el) return;
+  const acc=IMPORT.acc, ask=++IMP_UNDO_ASK;
+  if(!acc){ el.innerHTML='<p class="coords" style="padding:0 14px 12px">Choose an account at the top first.</p>'; return; }
+  el.innerHTML='<p class="coords" style="padding:0 14px 12px">Looking…</p>';
+  const groups=await importGroups(acc);
+  if(ask!==IMP_UNDO_ASK||!$('impUndoList')) return;
+  const box=$('impUndoList');
+  IMPORT.groups=groups||[];
+  // A failed look-up says so, rather than looking like nothing was ever imported.
+  if(!groups){ box.innerHTML='<p class="coords" style="padding:0 14px 12px">Could not look those up. Try again in a moment.</p>'; return; }
+  if(!groups.length){ box.innerHTML='<p class="coords" style="padding:0 14px 12px">Nothing has come into this account from a file.</p>'; return; }
+  box.innerHTML=groups.map((g,i)=>{ const f=keptFileFor(acc,g.at);
+    return `<div class="setrow" style="align-items:center">
+      <span style="flex:1;min-width:0"><strong>${esc(whenWords(g.at))}</strong><br>
+        <span style="color:var(--muted);font-size:14px">${g.ids.length} transaction${g.ids.length===1?'':'s'},
+        ${esc(shortDate(g.from))}${g.to!==g.from?' to '+esc(shortDate(g.to)):''}${f?' &middot; '+esc(f.name):''}</span></span>
+      <button type="button" class="btn" data-impundo="${i}"
+        style="flex:0 0 auto;width:auto;border:1.5px solid var(--rule);padding:8px 12px">Take out</button></div>`; }).join('');
+}
+async function undoImport(g){
+  const acc=IMPORT.acc, a=accOf(acc)||{};
+  const ids=g.ids.slice();
+  let extra=0;
+  if(g.halves.length){
+    const {data}=await sb.from('transactions').select('id,transfer_id')
+      .in('transfer_id',[...new Set(g.halves)]);
+    (data||[]).forEach(t=>{ if(!ids.includes(t.id)){ ids.push(t.id); extra++; } });
+  }
+  const f=keptFileFor(acc,g.at), n=g.ids.length;
+  if(!confirm('Take out the '+n+' transaction'+(n===1?'':'s')+' brought into '
+    +(a.name||'this account')+' on '+whenWords(g.at)+'?'
+    +'\n\nAnything done to them since (categories, notes, receipts) goes with them.'
+    +(extra?'\n\nThat includes '+extra+' on the other side of a transfer, which would be left stranded otherwise.':'')
+    +(f?'\n\nThe statement file kept with them ('+f.name+') goes too, so bringing it in again keeps it just once.':'')
+    +'\n\nThis cannot be undone.')) return;
+  toast('Taking them out…');
+  const {gone,stuck}=await deleteTxnIds(ids);
+  if(f&&!stuck){
+    await sb.storage.from('photos').remove([f.path]);
+    await sb.from('bank_files').delete().eq('id',f.id);
+    await loadBankFiles();
+  }
+  await loadMoney(); renderMoney();
+  toast(stuck ? gone+' taken out, '+stuck+' refused: those are on a locked statement'
+    : gone+' taken out. Now bring the file in again');
+  paintImpUndo();
 }
 
 /* ---------- Is this row already in the books? ----------
@@ -18555,10 +18732,18 @@ function importPreview(keepTicks){
   const was=keepTicks&&IMPORT.ready
     ? new Map(IMPORT.ready.map(x=>[x.key,x.take])) : null;
 
+  // Why rows were dropped, so "nothing in this file" can say what to change
+  // (ML229). An example of what the file actually says goes with each.
+  const why={date:0, zero:0, only:0, egDate:'', egZero:''};
   const out=body.map(r=>{
     const date=parseDate(r[m.date],m.fmt);
     let amt;
-    if(col('amount')!==null) amt=num(r[m.amount]);
+    if(col('amount')!==null){
+      amt=num(r[m.amount]);
+      // American Express (and a few others) write spending as a plain figure
+      // and payments with a minus, the other way round from a bank (ML227).
+      if(m.flip) amt=-amt;
+    }
     else amt=Math.abs(num(r[m.in]))-Math.abs(num(r[m.out]));
     const fee=col('fee')!==null ? Math.abs(num(r[m.fee])) : 0;
     // A file that carries its own currency - Revolut's does - lets us leave
@@ -18574,8 +18759,29 @@ function importPreview(keepTicks){
              method:col('kind')!==null
                ? methodFrom(r[m.kind],acc.kind) : null,
              keep:col('only')===null || !m.onlyVal
-               || String(r[m.only]??'').trim()===m.onlyVal };
-  }).filter(x=>x.date&&(x.amount||x.fee)&&x.keep);
+               || String(r[m.only]??'').trim()===m.onlyVal,
+             raw:{date:String(r[m.date]??'').trim(),
+                  amt:col('amount')!==null ? String(r[m.amount]??'').trim()
+                    : [r[m.in],r[m.out]].map(v=>String(v??'').trim()).filter(Boolean).join(' / ')} };
+  }).filter(x=>{
+    if(!x.date){ why.date++; if(!why.egDate&&x.raw.date) why.egDate=x.raw.date; return false; }
+    if(!(x.amount||x.fee)){ why.zero++; if(!why.egZero&&x.raw.amt) why.egZero=x.raw.amt; return false; }
+    if(!x.keep){ why.only++; return false; }
+    return true;
+  });
+  const whyNone=()=>{
+    const n=body.length, bits=[];
+    if(!n) return 'There are no rows under the headings.';
+    if(why.date) bits.push(`${why.date} of the ${n} rows had no date the app could read in the
+      <strong>Date</strong> column${why.egDate?` (one says &ldquo;${esc(why.egDate.slice(0,30))}&rdquo;)`:''}.
+      Check which column is the Date, and <strong>Dates look like</strong>.`);
+    if(why.zero) bits.push(`${why.zero} came out as no money at all${why.egZero
+      ?` (one says &ldquo;${esc(why.egZero.slice(0,30))}&rdquo;)`:' (the column was empty)'}. Check
+      ${col('amount')!==null?'the <strong>Amount</strong> column':'the <strong>Money in</strong> and <strong>Money out</strong> columns'}.`);
+    if(why.only) bits.push(`${why.only} were left out by <strong>Only rows where</strong>.
+      Choose <em>Bring in every row</em> there to have them.`);
+    return bits.join('<br><br>');
+  };
 
   // Rows in another currency are not an error and not a duplicate - they
   // belong to a different account of yours.
@@ -18637,7 +18843,8 @@ function importPreview(keepTicks){
           x.was.tdate!==x.date?' on '+esc(shortDate(x.was.tdate)):''}</span>`
         :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`:''}</span>
       <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></button>`).join('')
-      ||'<div class="field"><dd style="color:var(--muted)">Nothing in this file for this account.</dd></div>'}
+      ||`<div class="field"><dd style="color:var(--muted)">Nothing in this file for this account.${
+        whyNone()?'<br><br>'+whyNone():''}</dd></div>`}
   </div>
   ${mine.length?`<button class="btn primary" id="impGo" ${take?'':'disabled'}>Import ${
     take} transaction${take===1?'':'s'}</button>`:''}
@@ -18709,10 +18916,7 @@ async function doMoneyImport(){
   });
   await sb.from('transaction_items').insert(lines);
 
-  if(IMPORT.name){
-    await sb.from('import_maps').insert({account_id:IMPORT.acc, name:IMPORT.name,
-      map:IMPORT.map, created_by:ME.id});
-  }
+  await rememberLayout();
   await keepBankFile(rows);
   $('moneyImp').classList.add('hidden'); lockBackground();
   await loadMoney(); renderMoney();
@@ -19059,7 +19263,15 @@ $('reconBody').addEventListener('change',async ev=>{
 });
 
 $('impBody').addEventListener('change',ev=>{
-  if(ev.target.id==='impAcc'){ IMPORT.acc=Number(ev.target.value); return; }
+  if(ev.target.id==='impAcc'){
+    IMPORT.acc=Number(ev.target.value);
+    // A file already read is worked out again for the new account: its own
+    // remembered layout, or an American Express account's way round.
+    if(IMPORT.rows.length){ IMPORT.map=guessMap(IMPORT.head); IMPORT.used=''; IMPORT.ready=null;
+      renderImport(); useRemembered(); }
+    else if($('impUndo')&&$('impUndo').open) paintImpUndo();   // leaves anything pasted alone
+    return;
+  }
   const m=ev.target.closest('[data-imap]');
   if(m){
     IMPORT.map=IMPORT.map||{};
@@ -19093,6 +19305,8 @@ $('impBody').addEventListener('click',ev=>{
     return;
   }
   if(ev.target.id==='impGo'){ doMoneyImport(); return; }
+  const u=ev.target.closest('[data-impundo]');
+  if(u){ const g=(IMPORT.groups||[])[Number(u.dataset.impundo)]; if(g) undoImport(g); return; }
 });
 
 function takeCSV(text){
@@ -19100,9 +19314,17 @@ function takeCSV(text){
   if(!rows.length){ toast('Nothing readable in that'); return; }
   IMPORT.rows=rows;
   IMPORT.head=rows[0].map(h=>String(h).trim());
-  const h=IMPORT.head;
-  // A first guess from the headings, and from any layout already remembered.
-  IMPORT.map={ head:true,
+  IMPORT.map=guessMap(IMPORT.head);
+  IMPORT.used=''; IMPORT.ready=null;
+  renderImport();
+  setTimeout(()=>{ const o=$('impOut'); if(o) o.innerHTML=''; },0);
+  useRemembered();      // a layout kept from last time beats the guess
+}
+
+// A first guess from the headings.
+function guessMap(h){
+  const body=IMPORT.rows.slice(1);
+  const m={ head:true,
     date:guessCol(h,['date']),
     desc:guessCol(h,['description','details','narrative','reference','payee','memo']),
     amount:guessCol(h,['amount','value']),
@@ -19112,17 +19334,87 @@ function takeCSV(text){
     fee:guessCol(h,['fee','charge']),
     kind:guessCol(h,['type','transaction type']),
     ref:guessCol(h,['transaction id','reference number','id']),
-    only:guessCol(h,['state','status']),
-    fmt:'dmy' };
+    // Whole words only. "Appears On Your Statement As", on an American
+    // Express file, has "state" inside it, and was taken for a status column
+    // that kept only one shop's rows (ML227).
+    only:(i=>i<0?'':String(i))(h.findIndex(x=>/\b(state|status)\b/i.test(x))),
+    fmt:'dmy', flip:'' };
   // A status column almost always means some rows are not settled yet. Pick
   // the one that looks completed, so pending rows stay out by default.
-  if(IMPORT.map.only!==''){
-    const vals=valuesIn(Number(IMPORT.map.only));
-    IMPORT.map.onlyVal=vals.find(v=>/complete|settled|posted|cleared|ok/i.test(v))||vals[0]||'';
+  if(m.only!==''){
+    const vals=[...new Set(body.map(r=>String(r[Number(m.only)]??'').trim()).filter(Boolean))];
+    m.onlyVal=vals.find(v=>/complete|settled|posted|cleared|ok/i.test(v))||vals[0]||'';
   }
-  if(IMPORT.map.in!==''||IMPORT.map.out!=='') IMPORT.map.amount='';
+  // Money in and money out columns win over an amount column, unless they
+  // are empty all the way down and the amount column is not.
+  const hasMoney=c=>c!==''&&body.some(r=>num(r[Number(c)])!==0);
+  if(m.in!==''||m.out!==''){
+    if(!hasMoney(m.in)&&!hasMoney(m.out)&&hasMoney(m.amount)){ m.in=''; m.out=''; }
+    else m.amount='';
+  }
+  // A column called just Reference, all different, is the bank's own
+  // reference for each row (American Express has one), so a file brought in
+  // twice is caught exactly. Not when it is the description.
+  if(m.ref===''){
+    const i=h.findIndex(x=>/^reference$/i.test(x));
+    const vals=body.map(r=>String(r[i]??'').trim());
+    if(i>=0&&String(i)!==m.desc&&vals.every(Boolean)&&new Set(vals).size===vals.length) m.ref=String(i);
+  }
+  // American Express writes spending without a minus (ML227): known by its
+  // headings, or by the account being called American Express or Amex.
+  const a=accOf(IMPORT.acc)||{};
+  if(h.some(x=>/appears on your statement|extended details/i.test(x))
+     ||/american express|\bamex\b/i.test(a.name||'')) m.flip='1';
+  return m;
+}
+
+/* ---------- Remembering each account's layout (ML227) ----------
+   Since 9 Nov 2026 the choices made for a file are kept for that account,
+   with the file's headings, every time something is brought in, and come back
+   by themselves when a file with the same headings is read into it. (The old
+   "Remember this layout as" box saved them but nothing ever read them back.)
+   One saved before then, without headings, is used only if it fits. */
+const sameHeads=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length
+  &&a.every((x,i)=>String(x).trim().toLowerCase()===String(b[i]).trim().toLowerCase());
+async function importMaps(acc){
+  const {data,error}=await sb.from('import_maps').select('*').eq('account_id',acc)
+    .order('created_at',{ascending:false});
+  if(error){ console.error(error); return null; }
+  return data||[];
+}
+async function useRemembered(){
+  const acc=IMPORT.acc, head=IMPORT.head;
+  if(!acc||!IMPORT.rows.length) return;
+  const maps=await importMaps(acc);
+  if(!maps||IMPORT.acc!==acc||IMPORT.head!==head) return;
+  const first=IMPORT.rows[1]||[];
+  const fits=m=>['date','desc','amount','in','out'].every(k=>m[k]===''||m[k]===undefined
+      ||Number(m[k])<head.length) && m.date!==undefined&&m.date!==''
+    && !!parseDate(first[Number(m.date)],m.fmt);
+  const hit=maps.find(x=>x.map&&sameHeads(x.map.heads,head))
+    || maps.find(x=>x.map&&!x.map.heads&&fits(x.map));
+  if(!hit) return;
+  const {heads,...m}=hit.map;
+  IMPORT.map={...IMPORT.map,...m};
+  IMPORT.used=hit.name||'last time';
   renderImport();
-  setTimeout(()=>{ const o=$('impOut'); if(o) o.innerHTML=''; },0);
+  const o=$('impOut'); if(o) o.innerHTML='';
+}
+// Called once the transactions are in, so nothing here may stop the import
+// finishing: any trouble is noted and passed over.
+async function rememberLayout(){
+  try{
+    const acc=IMPORT.acc, head=IMPORT.head;
+    if(!acc||!Array.isArray(head)||!head.length||!IMPORT.map) return;
+    const map={...IMPORT.map, heads:head};
+    const maps=await importMaps(acc);
+    if(!maps) return;
+    const old=maps.find(x=>x.map&&sameHeads(x.map.heads,head));
+    const {error}=old
+      ? await sb.from('import_maps').update({map}).eq('id',old.id)
+      : await sb.from('import_maps').insert({account_id:acc, name:'Last used', map, created_by:ME.id});
+    if(error) console.error(error);   // the transactions are in; this is only a convenience
+  }catch(e){ console.error(e); }
 }
 
 /* ---------- Settings: accounts, categories, payees, who can see ---------- */
@@ -20231,16 +20523,48 @@ document.addEventListener('visibilitychange',async()=>{
 // A page shared to the app from Chrome's Share menu arrives as
 // index.html?share_url=...&share_title=...&share_text=... (see manifest.json).
 // It is taken off the address at once, so a refresh cannot add it twice.
-let SHARED_IN=null;
+// Since 9 Nov 2026 (ML226) the share is a POST that sw.js turns into that
+// address. A picture shared in (a screenshot, say) adds share_pics=N, and the
+// pictures themselves wait in the service worker until asked for; they go on
+// a new idea in the Wishlist.
+let SHARED_IN=null, SHARED_PICS=null;
 (function(){
   try{
     const p=new URLSearchParams(location.search);
-    if(!['share_url','share_text','share_title'].some(k=>p.has(k))) return;
-    SHARED_IN={url:findUrl(p.get('share_url'))||findUrl(p.get('share_text')),
+    if(!['share_url','share_text','share_title','share_pics'].some(k=>p.has(k))) return;
+    if(p.has('share_pics'))
+      SHARED_PICS={text:[p.get('share_text'),p.get('share_url')].filter(Boolean)
+        .filter((v,i,a)=>a.indexOf(v)===i).join('\n').trim(), files:sharedPicsFetch()};
+    else SHARED_IN={url:findUrl(p.get('share_url'))||findUrl(p.get('share_text')),
                title:(p.get('share_title')||'').trim()};
     history.replaceState(null,'',location.pathname);
   }catch(e){}
 })();
+// Ask the service worker for the pictures. The page only got here through it,
+// so it is the one looking after the page; with none, there is nothing to ask.
+// Never waits more than a few seconds.
+function sharedPicsFetch(){
+  return new Promise(res=>{
+    const sw=navigator.serviceWorker, c=sw&&sw.controller;
+    if(!c){ res([]); return; }
+    const t=setTimeout(()=>res([]),8000);
+    const on=ev=>{ if(!ev.data||!Array.isArray(ev.data.shared)) return;
+      clearTimeout(t); sw.removeEventListener('message',on); res(ev.data.shared); };
+    sw.addEventListener('message',on);
+    try{ sw.startMessages(); }catch(e){}
+    c.postMessage({want:'shared'});
+  });
+}
+async function sharedPicsIn(s){
+  await openWish();
+  if(s.text&&$('wNotes')) $('wNotes').value=s.text;
+  const files=(await s.files).filter(f=>f&&/^image\//.test(f.type||''));
+  if(!files.length){ toast('The picture did not come through: add it with Choose'); return; }
+  await dphAdd(files);
+  toast(files.length>1 ? files.length+' pictures added: now fill in the two boxes'
+    : 'Picture added: now fill in the two boxes');
+  try{ $('wTitle').focus(); }catch(e){}
+}
 
 async function start(){
   const {data:{user}}=await sb.auth.getUser();
@@ -20257,7 +20581,10 @@ async function start(){
   await loadAll();
   $('app').classList.remove('hidden');
   showHome();            // the front door, with the contacts list waiting behind it
-  if(SHARED_IN){          // something shared from Chrome comes first
+  if(SHARED_PICS){        // a picture shared in goes on a new Wishlist idea
+    const s=SHARED_PICS; SHARED_PICS=null;
+    sharedPicsIn(s);
+  } else if(SHARED_IN){   // something shared from Chrome comes first
     const s=SHARED_IN; SHARED_IN=null;
     sharedIn(s);
   } else maybeBrief();    // what the day has in it, once a day

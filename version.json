@@ -1,6 +1,16 @@
 {
-  "version": "2026.11.09.1",
+  "version": "2026.11.09.2",
   "history": [
+    {
+      "version": "2026.11.09.2",
+      "changes": [
+        "Wishlist: Copy notes has gone (Copy idea copies both boxes), and Share idea sends the words and photos together, to Claude or anywhere.",
+        "Wishlist: share a screenshot to MY life from the phone's Share list and it lands on a new idea, ready to fill in.",
+        "Finances: American Express statements come in the right way round, and no longer leave rows out by mistake.",
+        "Finances: what you choose when bringing in a file is remembered for that account, and Take an import out again undoes a whole file.",
+        "Finances: when nothing comes in from a file, it now says why. And the bottom row of tiles scrolls clear of the Wishlist/Help strip."
+      ]
+    },
     {
       "version": "2026.11.09.1",
       "changes": [

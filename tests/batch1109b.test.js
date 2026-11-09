@@ -50,11 +50,12 @@ const PLAIN = 'Date,Description,Amount\n03/11/2026,TESCO STORES,-12.50\n04/11/20
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  ok('the page and version.json are 2026.11.09.2', appVer === '2026.11.09.2' && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
-  const said = VJ.history[0].changes.join(' ');
+  const V92 = VJ.history.find(h => h.version === '2026.11.09.2');
+  ok('2026.11.09.2 is in version.json, and the page is the newest', !!V92 && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
+  const said = V92 ? V92.changes.join(' ') : '';
   ok('  saying what changed', /Share idea/.test(said) && /screenshot/.test(said) && /American Express/.test(said)
     && /Take an import out again/.test(said) && /says why/.test(said) && /tiles/.test(said), said);
-  ok('  each line short enough for the What\'s new list', VJ.history[0].changes.every(c => c.length < 160));
+  ok('  each line short enough for the What\'s new list', !!V92 && V92.changes.every(c => c.length < 160));
 
   // ---------------------------------------------------------------
   console.log('\nWishlist: Copy notes gone, Share idea in (ML225)');

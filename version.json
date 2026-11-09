@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.09.2",
+  "version": "2026.11.09.3",
   "history": [
+    {
+      "version": "2026.11.09.3",
+      "changes": [
+        "Finances: Monzo files exported from a search now come in. The app knows their Created column is the date and Title is what it was.",
+        "Finances: moves between a Monzo account and its pots, which that file lists twice, are left out, since together they make no difference."
+      ]
+    },
     {
       "version": "2026.11.09.2",
       "changes": [

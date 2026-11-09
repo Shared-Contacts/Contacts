@@ -5082,6 +5082,12 @@ function openHelp(where){
   <p>If nothing comes through, the app says why: no date it could read, no
   money in the amount column, or <strong>Only rows where</strong> leaving them
   all out.</p>
+  <p>A <strong>Monzo</strong> file exported from a search has the account and
+  its pots together, so every move between them is in it twice: out of one and
+  into the other. Together they make no difference, so the app leaves those
+  pairs out and says how many. <strong>Bring them in too</strong> has them
+  anyway. Any other file with money going out and straight back in at the same
+  minute, under the same name, is treated the same way.</p>
   <p><strong>Take an import out again</strong>, at the bottom of the same page,
   lists what each file brought into the account chosen at the top. Take out
   removes exactly those rows (and the statement file kept with them), so a file
@@ -14538,7 +14544,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.09.2';
+const APP_VERSION='2026.11.09.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -18724,6 +18730,26 @@ function matchInBooks(x,claimed){
   return near[0];
 }
 
+/* Monzo's export from a search holds the current account and its pots
+   together, so every move between them is in it twice: out of one and into
+   the other, same name, same minute (ML235). Each pair cancels out, so they
+   are left out unless asked for. (Revolut's "Balance migration" out and back
+   in is the same.) Only rows whose date carries a time, and
+   that have a name, are paired, so two ordinary payments on the same day are
+   never taken for one. */
+function cancelPairs(list){
+  const open=new Map(), pairs=new Set();
+  list.forEach(x=>{
+    if(!x.amount||x.fee||!x.desc||!/\d:\d\d/.test(x.raw.date)) return;
+    const k=x.raw.date+'|'+x.desc.toLowerCase()+'|';
+    const other=open.get(k+(-x.amount).toFixed(2));
+    if(other&&other.length){ pairs.add(other.shift()); pairs.add(x); return; }
+    const mk=k+x.amount.toFixed(2);
+    open.set(mk,[...(open.get(mk)||[]),x]);
+  });
+  return pairs;
+}
+
 function importPreview(keepTicks){
   const m=IMPORT.map||{};
   const body=IMPORT.rows.slice(m.head?1:0);
@@ -18799,31 +18825,44 @@ function importPreview(keepTicks){
     const n=(repeats.get(r)||0)+1; repeats.set(r,n);
     x.bref=n>1?r+'|'+n:r;
   });
+  // Moves between the account and its pots, left out unless asked for
+  // (ML235). Left out before the matching below, so they never claim
+  // something already in your books.
+  const pairs=cancelPairs(mine);
+  mine.forEach(x=>{ x.pot=pairs.has(x); });
+  const list=IMPORT.potsIn?mine:mine.filter(x=>!x.pot);
   /* Then the exact match: a row whose reference is already in this account
      came in from the bank before, whatever has happened to it since - its
      amount split or changed, its date moved. Matching on amount alone missed
      those, so they stayed ticked and the database refused the file (ML91). */
   const byRef=new Map((IMPORT.have||[]).filter(t=>t.bank_ref).map(t=>[t.bank_ref,t]));
   const claimed=new Set();
-  mine.forEach(x=>{
+  list.forEach(x=>{
     const t=byRef.get(x.bref);
     x.was=t&&!claimed.has(t.id)?t:null;
     if(x.was) claimed.add(t.id);
   });
-  mine.forEach(x=>{
+  list.forEach(x=>{
     if(!x.was){ const hit=matchInBooks(x,claimed); if(hit){ claimed.add(hit.id); x.was=hit; } }
     x.dup=!!x.was;
     x.take = was&&was.has(x.key) ? was.get(x.key) : !x.dup;
   });
-  IMPORT.ready=mine;
+  IMPORT.ready=list;
 
-  const take=mine.filter(x=>x.take).length;
-  const dups=mine.filter(x=>x.dup).length;
+  const take=list.filter(x=>x.take).length;
+  const dups=list.filter(x=>x.dup).length;
   const curs=[...new Set(otherCur.map(x=>x.cur))];
 
   $('impOut').innerHTML=`
-  <p class="dsec">${mine.length} row${mine.length===1?'':'s'} for this account${
+  <p class="dsec">${list.length} row${list.length===1?'':'s'} for this account${
     dups?`, ${dups} already in your books`:''}</p>
+  ${pairs.size?`<div class="card" id="impPotNote"><div class="field"><dd style="color:var(--muted);font-size:15px">
+    <strong>${pairs.size} rows ${IMPORT.potsIn?'brought in':'left out'}</strong>: money moving
+    within the bank, such as between this account and its pots. Each move is in
+    the file twice, out and back in at the same minute, so together they make no
+    difference.</dd>
+    <button type="button" class="btn" id="impPots" style="margin-top:10px">${
+      IMPORT.potsIn?'Leave them out':'Bring them in too'}</button></div></div>`:''}
   ${dups?`<div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
     A bank rarely agrees with you about the date, so anything of the same amount
     within ${MATCH_DAYS} days of something already in this account is taken to be
@@ -18835,18 +18874,19 @@ function importPreview(keepTicks){
     ${esc(curs.join('/'))} account${curs.length===1?'':'s'}. Import the same file
     again with that account chosen and they will come in then.</dd></div></div>`:''}
   <div class="card">
-    ${mine.map(x=>`<button class="txn rec ${x.take?'on':''}" data-imp="${esc(x.key)}">
+    ${list.map(x=>`<button class="txn rec ${x.take?'on':''}" data-imp="${esc(x.key)}">
       <span class="tick ${x.take?'on':''}">${x.take?'&#10003;':''}</span>
       <span class="td wide">${esc(fullDate(x.date))}</span>
       <span class="tn"><b>${esc(x.desc||'—')}</b>${
         x.dup?`<span>already here as &ldquo;${esc((IMPORT.labels||{})[x.was.id]||'one you entered')}&rdquo;${
           x.was.tdate!==x.date?' on '+esc(shortDate(x.was.tdate)):''}</span>`
-        :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`:''}</span>
+        :x.fee?`<span>includes a ${esc(money(-x.fee,cur))} fee, kept as its own line</span>`
+        :x.pot?'<span>half of a move within the bank</span>':''}</span>
       <span class="ta ${x.amount<0?'neg':''}">${money(x.amount,cur)}</span></button>`).join('')
-      ||`<div class="field"><dd style="color:var(--muted)">Nothing in this file for this account.${
+      ||`<div class="field"><dd style="color:var(--muted)">Nothing ${pairs.size?'else ':''}in this file for this account.${
         whyNone()?'<br><br>'+whyNone():''}</dd></div>`}
   </div>
-  ${mine.length?`<button class="btn primary" id="impGo" ${take?'':'disabled'}>Import ${
+  ${list.length?`<button class="btn primary" id="impGo" ${take?'':'disabled'}>Import ${
     take} transaction${take===1?'':'s'}</button>`:''}
   <p class="coords" style="text-align:center;margin-top:10px">
     Tap any row to leave it out &mdash; useful for anything still pending.
@@ -19305,6 +19345,7 @@ $('impBody').addEventListener('click',ev=>{
     return;
   }
   if(ev.target.id==='impGo'){ doMoneyImport(); return; }
+  if(ev.target.id==='impPots'){ IMPORT.potsIn=!IMPORT.potsIn; importPreview(true); return; }
   const u=ev.target.closest('[data-impundo]');
   if(u){ const g=(IMPORT.groups||[])[Number(u.dataset.impundo)]; if(g) undoImport(g); return; }
 });
@@ -19315,7 +19356,7 @@ function takeCSV(text){
   IMPORT.rows=rows;
   IMPORT.head=rows[0].map(h=>String(h).trim());
   IMPORT.map=guessMap(IMPORT.head);
-  IMPORT.used=''; IMPORT.ready=null;
+  IMPORT.used=''; IMPORT.ready=null; IMPORT.potsIn=false;
   renderImport();
   setTimeout(()=>{ const o=$('impOut'); if(o) o.innerHTML=''; },0);
   useRemembered();      // a layout kept from last time beats the guess
@@ -19339,6 +19380,23 @@ function guessMap(h){
     // that kept only one shop's rows (ML227).
     only:(i=>i<0?'':String(i))(h.findIndex(x=>/\b(state|status)\b/i.test(x))),
     fmt:'dmy', flip:'' };
+  // Monzo's export from a search calls the date Created and the description
+  // Title, so neither was found and every row was left out as having no date
+  // (ML229). Failing the usual names, the date is the column where every
+  // filled-in value looks like a date, and the description one called just
+  // Title, Name, Merchant or Counterparty.
+  if(m.date===''){
+    const looks=v=>/^(\d{1,2}\D\d{1,2}\D\d{2,4}|\d{4}\D\d{1,2}\D\d{1,2})/.test(v);
+    const i=h.findIndex((x,k)=>{
+      const vals=body.map(r=>String(r[k]??'').trim()).filter(Boolean);
+      return vals.length*2>=body.length && vals.length>0 && vals.every(looks);
+    });
+    if(i>=0) m.date=String(i);
+  }
+  if(m.desc===''){
+    const i=h.findIndex(x=>/^(title|name|merchant|counterparty)$/i.test(x));
+    if(i>=0) m.desc=String(i);
+  }
   // A status column almost always means some rows are not settled yet. Pick
   // the one that looks completed, so pending rows stay out by default.
   if(m.only!==''){

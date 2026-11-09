@@ -1,4 +1,5 @@
-// Version 2026.11.09.3, driven through the real page on a phone-sized screen:
+// Versions 2026.11.09.3 and .4, driven through the real page on a phone-sized
+// screen (and the note about pairs at laptop width too):
 //   ML229 Finances: Monzo's export from a search (headings ID, Created, Title,
 //         Subtitle, Amount, Currency, Categories) said "Nothing in this file
 //         for this account", because no column is called Date or Description.
@@ -49,9 +50,11 @@ const PLAIN = 'Date,Description,Amount\n03/11/2026,TESCO STORES,-12.50\n04/11/20
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  ok('the page and version.json are 2026.11.09.3', appVer === '2026.11.09.3' && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
-  ok('  saying Monzo files now come in, without the moves to and from pots', /Monzo/.test(VJ.history[0].changes.join(' ')) && /pots/.test(VJ.history[0].changes.join(' ')));
-  ok('  each line short enough for the What\'s new list', VJ.history[0].changes.every(c => c.length < 160));
+  const V93 = VJ.history.find(h => h.version === '2026.11.09.3');
+  ok('the page and version.json are 2026.11.09.4, with 2026.11.09.3 before it', appVer === '2026.11.09.4' && VJ.version === appVer && VJ.history[0].version === appVer && !!V93, appVer + ' / ' + VJ.version);
+  ok('  saying Monzo files now come in, without the moves to and from pots', !!V93 && /Monzo/.test(V93.changes.join(' ')) && /pots/.test(V93.changes.join(' ')));
+  ok('  and that the note about them reads across the screen', /note about rows left out/.test(VJ.history[0].changes.join(' ')));
+  ok('  each line short enough for the What\'s new list', [...VJ.history[0].changes, ...(V93 ? V93.changes : [])].every(c => c.length < 160));
 
   // ---------------------------------------------------------------
   console.log('\nA Monzo file exported from a search (ML229)');
@@ -83,6 +86,16 @@ const PLAIN = 'Date,Description,Amount\n03/11/2026,TESCO STORES,-12.50\n04/11/20
   ok('  not "Nothing in this file"', !/Nothing in this file/.test(out));
   ok('the move to the pot, in the file twice, is left out and it says so', /2 rows left out: money moving within the bank, such as between this account and its pots/.test(out), out.slice(0, 400));
   ok('  with Bring them in too', await ev(() => !!$('impPots') && $('impPots').textContent.trim() === 'Bring them in too'));
+  // The first build put the button beside the words, in a row, and the words
+  // were squeezed into a column one letter wide (seen on the laptop).
+  for (const width of [390, 1280]) {
+    await p.setViewportSize({ width, height: 844 }); await settle(200);
+    const box = await ev(() => { const c = $('impPotNote').getBoundingClientRect(), t = $('impPotNote').querySelector('dd').getBoundingClientRect(),
+      b = $('impPots').getBoundingClientRect(); return { card: c.width, text: t.width, high: t.height, under: b.top >= t.bottom - 1, btn: b.width }; });
+    ok(`at ${width}px wide the note reads across the card, a few lines deep, with the button under it`,
+      box.text > box.card * 0.7 && box.high < 140 && box.under && box.btn > box.card * 0.7, JSON.stringify(box));
+  }
+  await p.setViewportSize({ width: 390, height: 844 }); await settle(200);
   let rows = await ev(() => IMPORT.ready.map(x => [x.date, x.desc, x.amount, x.bref, x.take]));
   ok('dates read day first, with the time ignored', rows.map(r => r[0]).join() === '2026-10-24,2026-10-23,2026-09-01,2026-09-12', rows.map(r => r[0]).join());
   ok('the shop is money out, the interest money in', rows[0][2] === -6.45 && rows[2][2] === 1.25 && rows[1][2] === 20, JSON.stringify(rows));

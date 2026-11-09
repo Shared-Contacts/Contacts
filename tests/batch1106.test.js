@@ -56,9 +56,12 @@ addEventListener('pointerdown', e => say({ x: e.clientX, y: e.clientY }));
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  ok('the page and version.json are 2026.11.06.1', appVer === '2026.11.06.1' && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
-  ok('  saying what changed: jigsaws, people, Loxx', /Jigsaws/.test(VJ.history[0].changes.join(' ')) && /search/i.test(VJ.history[0].changes.join(' '))
-    && /Undo last move/.test(VJ.history[0].changes.join(' ')), JSON.stringify(VJ.history[0]));
+  // A later version is on top now (batch1109.test.js checks that one); this
+  // one stays in the list.
+  const V6 = VJ.history.find(h => h.version === '2026.11.06.1');
+  ok('2026.11.06.1 is in version.json, and the page is the newest', !!V6 && VJ.version === appVer && VJ.history[0].version === appVer, appVer + ' / ' + VJ.version);
+  ok('  saying what changed: jigsaws, people, Loxx', V6 && /Jigsaws/.test(V6.changes.join(' ')) && /search/i.test(V6.changes.join(' '))
+    && /Undo last move/.test(V6.changes.join(' ')), JSON.stringify(V6));
 
   // ---------------------------------------------------------------
   console.log('\nA landscape jigsaw, on a phone turned sideways (ML210)');
@@ -66,7 +69,11 @@ addEventListener('pointerdown', e => say({ x: e.clientX, y: e.clientY }));
   ok('there are landscape puzzles and upright ones', wideAt >= 0 && tallAt >= 0, wideAt + ' ' + tallAt);
   await ev(() => openJig()); await settle(300);
   await p.click(`[data-jig="${wideAt}"]`); await settle(700);
-  ok('tap a landscape picture: its puzzle opens full screen straight away', await ev(() => $('jigPlay').classList.contains('jigfull')) && await top() === 'jigPlay');
+  // Since ML218 (9 Nov 2026) it opens on its page first, with the button.
+  ok('tap a landscape picture: its page opens first, not full screen', await ev(() => !$('jigPlay').classList.contains('jigfull')
+    && !!document.querySelector('.jigpic')) && await top() === 'jigPlay' && (await turns()).length === 0, (await turns()).join());
+  await ev(() => $('jigGoFull').click()); await settle(500);
+  ok('Play full screen, on its side: the puzzle fills the screen', await ev(() => $('jigPlay').classList.contains('jigfull')) && await top() === 'jigPlay');
   ok('  asking the phone to turn on its side', (await turns()).join() === 'landscape', (await turns()).join());
   const full = await ev(() => { const st = document.querySelector('.jigstage').getBoundingClientRect(), fr = document.querySelector('.jigframe').getBoundingClientRect(),
     x = $('jigAll').getBoundingClientRect(), i = $('jigAbout').getBoundingClientRect();
@@ -115,6 +122,7 @@ addEventListener('pointerdown', e => say({ x: e.clientX, y: e.clientY }));
 
   await ev(() => { window.__turns.length = 0; });
   await p.click(`[data-jig="${wideAt}"]`); await settle(500);
+  await ev(() => $('jigGoFull').click()); await settle(300);
   await ev(() => { $('jigPlay').classList.add('hidden'); lockBackground(); }); await settle(200);
   ok('put away by something else (Home, say): the phone goes back upright too', (await turns()).join() === 'landscape,unlock'
     && await ev(() => !JIG_TURNED), (await turns()).join());
@@ -125,7 +133,8 @@ addEventListener('pointerdown', e => say({ x: e.clientX, y: e.clientY }));
   await p.setViewportSize({ width: 390, height: 844 }); await settle(300);
   await ev(() => { window.__canTurn = false; window.__said.length = 0; });
   await ev(() => openJig()); await settle(300);
-  await ev(i => document.querySelector(`[data-jig="${i}"]`).click(), wideAt); await settle(700);
+  await ev(i => document.querySelector(`[data-jig="${i}"]`).click(), wideAt); await settle(500);
+  await ev(() => $('jigGoFull').click()); await settle(500);
   const up = await ev(() => { const st = document.querySelector('.jigstage'), r = st.getBoundingClientRect();
     return { tf: getComputedStyle(st).transform, r: r.toJSON(), iw: innerWidth, ih: innerHeight,
       side: document.querySelector('.jigside').offsetWidth, x: $('jigAll').getBoundingClientRect().toJSON() }; });

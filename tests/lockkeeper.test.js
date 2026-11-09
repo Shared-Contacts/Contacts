@@ -7,6 +7,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
+const { answerLkAsks } = require('./lkask');
 const errors = []; let pass = 0, fail = 0;
 const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); }
   else { fail++; console.log('  ✗ ' + w + (e ? '  <- ' + e : '')); } };
@@ -22,6 +23,8 @@ const ROOT = path.join(__dirname, '..');
   p.on('dialog', d => { asked.push(d.message()); return answer ? d.accept() : d.dismiss(); });
   await p.goto('file://' + path.join(__dirname, 'boot.html'));
   await p.waitForTimeout(900);
+  // Since ML219 the game's questions are on the sheet, not the phone's own box.
+  await answerLkAsks(p, m => { asked.push(m); return answer; });
   if (await p.$('#noticeX')) { await p.click('#noticeX'); await p.waitForTimeout(300); }
   await p.addScriptTag({ path: path.join(__dirname, 'lkfake.js') });
   const ev = (f, a) => p.evaluate(f, a);
@@ -178,7 +181,7 @@ const ROOT = path.join(__dirname, '..');
   answer = false; asked.length = 0; await clear();
   await p.click('#lkDone'); await settle(300);
   ok('neither number taken on your own roll: Done asks about two penalties', asked.length === 1
-    && /took neither number/.test(asked[0]) && /two penalties: minus 10/.test(asked[0]) && /Take them\?/.test(asked[0]), asked.join(' | '));
+    && /took neither number/.test(asked[0]) && /two penalties: minus 10/.test(asked[0]) && /Take them, or go back and mark something\?/.test(asked[0]), asked.join(' | '));
   ok('  Cancel goes back to marking, nothing sent', (await rpcs('finish_turn')).length === 0 && (await mine()).pen === 0);
   answer = true; asked.length = 0;
   await p.click('#lkDone'); await settle(400);

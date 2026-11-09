@@ -53,7 +53,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     await p.focus(box);
     await p.setViewportSize({ width: 390, height: 420 });      // the keyboard comes up
     await settle(900);
-    ok('typing in ' + (box === '#wTitle' ? 'What would be good' : 'Anything worth explaining')
+    ok('typing in ' + (box === '#wTitle' ? 'Tile/Area' : 'Description of idea/change')
       + ': Add it is in sight', await addSeen(),
       JSON.stringify(await ev(() => [$('wAdd').getBoundingClientRect().bottom, visualViewport.height])));
     ok('  and the box being typed in is still there to see', await ev(sel => {

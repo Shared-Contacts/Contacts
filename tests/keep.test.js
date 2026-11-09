@@ -47,7 +47,16 @@ const ok=(w,c,e='')=>{ if(c){pass++;console.log('  ✓ '+w);}else{fail++;console
   await p.waitForTimeout(300);
   const after=await p.evaluate(()=>$('setBody').scrollTop);
   ok('the screen was scrolled down to start with', before>300, String(before));
-  ok('it stays where it was when you let go', Math.abs(after-letGo)<5, before+' -> '+letGo+' -> '+after);
+  // Since 9 Nov 2026 the account boxes fold to their names while one moves
+  // and open out again when it is let go, keeping that one under the finger,
+  // so the place is the account itself rather than a scroll figure. (The
+  // stand-in database does not keep the new order, so after the redraw the
+  // two swap back: either of them in sight is the right place.)
+  const seen=await p.evaluate(()=>{ const top=$('setBody').getBoundingClientRect().top;
+    return {tops:[25,26].map(i=>document.querySelector('#setBody [data-hm="acc:'+i+'"]').getBoundingClientRect().top),
+      min:top, max:innerHeight-80}; });
+  ok('it stays where it was when you let go: the accounts you moved are still in sight', after>300
+    && seen.tops.some(t=>t>=seen.min-30&&t<seen.max), before+' -> '+letGo+' -> '+after+' '+JSON.stringify(seen));
   // The stand-in database only records writes, so look at what was written.
   ok('the account was moved down', await p.evaluate(()=>{
      const w=window.__writes.filter(x=>x.op==='update'&&x.table==='accounts');

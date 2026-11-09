@@ -58,7 +58,8 @@ const pic = n => ({ name: 'photo' + n + '.png', mimeType: 'image/png', buffer: P
   ok('and Copy notes only where there are notes', await ev(() =>
     [...$('wishBody').querySelectorAll('[data-wfield="n"]')].map(b => b.dataset.wcopy).join()) === '1');
   await p.click('[data-wcopy="1"][data-wfield="t"]'); await settle(200);
-  ok('Copy idea puts the idea on the clipboard', await ev(() => window.__copied) === 'Copy buttons on the Wishlist');
+  // Since ML220 (9 Nov 2026) Copy idea gives both boxes, the Tile/Area then the description.
+  ok('Copy idea puts the idea and its notes on the clipboard', await ev(() => window.__copied) === 'Copy buttons on the Wishlist\nSo ideas can go into Claude');
   ok('and says so', /Copied/.test(await ev(() => $('toasts') ? $('toasts').textContent : '')));
   await p.click('[data-wcopy="1"][data-wfield="n"]'); await settle(200);
   ok('Copy notes puts the notes on it', await ev(() => window.__copied) === 'So ideas can go into Claude');

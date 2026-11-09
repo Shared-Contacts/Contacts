@@ -12,11 +12,13 @@ async function holdSlide(page, from, to, { below = true, hold = 650 } = {}) {
   await page.$eval(from, e => e.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(150);
   const a = await at(from);
-  const t = await page.$eval(to, e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; });
-  const y = below ? t.bottom + 6 : t.top - 6;
   await page.mouse.move(a.x, a.y);
   await page.mouse.down();
   await page.waitForTimeout(hold);
+  // Where to go is measured once the row has lifted: some lists (the accounts,
+  // since 9 Nov 2026) fold down to their names when one is held.
+  const t = await page.$eval(to, e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; });
+  const y = below ? t.bottom + 6 : t.top - 6;
   await page.mouse.move(a.x, (a.y + y) / 2, { steps: 6 });
   await page.mouse.move(a.x, y, { steps: 6 });
   // Where the screen was when the finger came off: dragging near the top or

@@ -159,7 +159,13 @@ const ROOT = path.join(__dirname, '..');
   ok('Done tells the game you have finished with roll 1', r.length === 1 && r[0].args.at_turn === 1 && r[0].args.move_on === false, JSON.stringify(r));
   ok('  no penalty asked: you marked something', asked.length === 0, asked.join(' | '));
   ok('  now it waits for Sandra', /Waiting for Sandra/.test(await status()), await status());
-  ok('  you rolled, so you can carry on without her', !!(await p.$('#lkOn')) && !(await p.$('#lkDone')));
+  ok('  you rolled, so you can carry on without her: beside Stop game, not where Done is (ML241)', await ev(() => !!$('lkOn')
+    && !!$('lkOn').closest('.lkends') && !$('lkOn').closest('.lkbar') && $('lkOn').nextElementSibling === $('lkStop')));
+  ok('  and Done stays put, greyed, until Sandra has tapped hers', await ev(() => !!$('lkDone') && $('lkDone').disabled
+    && /Done ✓/.test($('lkDone').textContent)));
+  const ends = await ev(() => { const w = document.querySelector('.lkwho').getBoundingClientRect(), o = $('lkOn').getBoundingClientRect(),
+    s = $('lkStop').getBoundingClientRect(); return { w: w.right, o: [o.left, o.right, o.width], s: [s.left, s.right] }; });
+  ok('  both fit on the line, side by side', ends.o[2] > 100 && ends.o[1] <= ends.s[0] + 1 && ends.s[1] <= ends.w + 1, JSON.stringify(ends));
   await tap('blue', 12);
   ok('  your marks for that roll are finished', /finished with this roll/.test(await toasts()), await toasts());
   await as('sandra', 'finish_turn', { g: G1, at_turn: 1 });
@@ -219,7 +225,7 @@ const ROOT = path.join(__dirname, '..');
     && /mine/.test(document.querySelector('[data-lkgate="red"]').className)));
   ok('  it counts as a seventh mark: 28 points', await ev(() => document.querySelector('[data-lkrow="red"] .lkcount').textContent === '7'
     && document.querySelector('.lkfoot .lkbox').textContent === '28'));
-  ok('  and says to put the red die aside', /put that die aside/.test(await toasts()), await toasts());
+  ok('  and says to put the red die aside', /Put that die aside/.test(await toasts()), await toasts());
   answer = false; asked.length = 0; await clear();
   await tap('red', 12);
   ok('tap the 12 again on the same roll: it asks before opening the lock again for everyone', asked.length === 1
@@ -426,10 +432,17 @@ const ROOT = path.join(__dirname, '..');
     s.sheet = { red: [2, 3, 4, 5, 6, 12], locked: ['red'] }; });
   await clearToasts(); asked.length = 0;
   await p.click('#lkUndo'); await settle(400);
-  ok('Sandra closed it too: Undo takes back your 12, and red stays closed', asked.length === 1 && !/\bon\b/.test(await cell('red', 12))
-    && !(await mine()).locked.includes('red') && (await game()).closed.red === 3 && /stays closed: someone else closed it on this roll too/.test(await toasts()), await toasts());
+  ok('Sandra closed it too: Undo asks, saying the lock and its bonus go to her', asked.length === 1
+    && /Take back the 12\? The red lock stays closed, and it and its bonus go to Sandra\./.test(asked[0]), asked.join(' | '));
+  ok('  takes back your 12, and red stays closed: it is hers', !/\bon\b/.test(await cell('red', 12))
+    && !(await mine()).locked.includes('red') && (await game()).closed.red === 3 && /stays closed: it is Sandra’s/.test(await toasts()), await toasts());
+  asked.length = 0; await clearToasts();
   await tap('red', 12);
-  ok('  you can still take the 12 again on this roll, closing it with her', /\bon\b/.test(await cell('red', 12)) && (await mine()).locked.includes('red'));
+  ok('  taking the 12 again on your roll asks: it is your roll, so the lock will be yours', asked.length === 1
+    && /Sandra has closed the red lock, but it is your roll, so the lock and its bonus will be yours, and Sandra’s 12 counts as a mark/.test(asked[0]), asked.join(' | '));
+  ok('  marked, and the lock is yours again', /\bon\b/.test(await cell('red', 12)) && (await mine()).locked.includes('red')
+    && await ev(() => /mine/.test(document.querySelector('[data-lkgate="red"]').className))
+    && /closed and it is yours: Sandra’s 12 counts as a mark/.test(await toasts()), await toasts());
 
   console.log('\nBefore step 58 is run');
   await ev(() => { window.__lkReal = window.__rpc; window.__rpc = (n, a) => n === 'reopen_row'
@@ -442,6 +455,146 @@ const ROOT = path.join(__dirname, '..');
   await p.click('#lkUndo'); await settle(300);
   ok('  with step 58 run, it works again', !/\bon\b/.test(await cell('red', 12)) && !(await mine()).locked.includes('red') && (await game()).closed.red === 3);
   await ev(() => lkBackToList()); await settle(300);
+
+  // ---------------------------------------------------------------
+  console.log('\nOne lock, one holder: the roller first, then round in turn (ML240)');
+  // Seats: you 0, Sandra 1, Someone Else 2. Sandra rolls first, so on roll 1
+  // she is first in line for a lock, Someone Else second and you third.
+  await ev(async () => { window.__rpc('new_game', { players: ['me', 'sandra', 'other'], first_seat: 1 }); await lkReload(); });
+  const G5 = await ev(() => Math.max(...GAMES.map(g => g.id)));
+  await ev(async id => { window.__rows.game_players.filter(x => x.game_id === id).forEach(x => { x.sheet = { red: [2, 3, 4, 5, 6], pen: 0 }; });
+    await lkReload(id); await lkOpen(id); }, G5); await settle(300);
+  const claim = (who, c, n) => ev(([w, id, c, n]) => { const s = window.__rows.game_players.find(x => x.game_id === id && x.user_id === w);
+    s.sheet = { ...s.sheet, [c]: [...(s.sheet[c] || []), n], locked: [...((s.sheet.locked) || []), c] }; }, [who, G5, c, n]);
+  const unclaim = (who, c) => ev(([w, id, c]) => { const s = window.__rows.game_players.find(x => x.game_id === id && x.user_id === w);
+    s.sheet = { ...s.sheet, [c]: s.sheet[c].slice(0, -1), locked: s.sheet.locked.filter(x => x !== c) }; }, [who, G5, c]);
+  const holder = c => ev(c => { const h = lkHolder(lkGame(LK_CUR), c); return h ? h.user_id : null; }, c);
+  const redCount = () => ev(() => document.querySelector('[data-lkrow="red"] .lkcount').textContent);
+  const redMine = () => ev(() => /mine/.test(document.querySelector('[data-lkgate="red"]').className));
+  answer = true; asked.length = 0; await clearToasts();
+  await tap('red', 12);
+  ok('you close red first, on Sandra’s roll: it warns the roller, or anyone before you, would take it', asked.length === 1
+    && /close the red lock\?/.test(asked[0]) && /If the roller, or anyone before you in turn, closes it on this roll too, the lock and its bonus go to them/.test(asked[0]), asked.join(' | '));
+  ok('  for now it is yours: 7 marks, the gate yours', await holder('red') === 'me' && await redCount() === '7' && await redMine());
+  await clearToasts();
+  await claim('other', 'red', 12); await as('other', 'close_row', { g: G5, colour: 'red' });
+  ok('Someone Else closes it too: they come before you, so it goes to them, and you are told', await holder('red') === 'other'
+    && /Someone Else comes before you in turn, so the red lock and its bonus go to Someone Else\. Your 12 still scores as a mark\./.test(await toasts()), await toasts());
+  ok('  your 12 is a plain mark now: 6 marks, 21 points, the gate not yours', await redCount() === '6' && !(await redMine())
+    && await ev(() => document.querySelector('.lkfoot .lkbox').textContent === '21'));
+  await clearToasts();
+  await claim('sandra', 'red', 12); await as('sandra', 'close_row', { g: G5, colour: 'red' });
+  ok('Sandra, the roller, closes it as well, after both of you: it is hers', await holder('red') === 'sandra'
+    && !/red lock/.test(await toasts()), await toasts());
+  ok('  only she scores the lock: 28 for her, 21 each for you and Someone Else', await ev(id => {
+    const g = lkGame(id); return lkPlayers(id).map(p => p.user_id + ':' + lkScore(lkSheet(p.sheet), lkLocksOf(g, p)).total).join(); }, G5)
+    === 'me:21,sandra:28,other:21');
+  ok('  and the scores along the top say so', await ev(() => [...document.querySelectorAll('.lkwho span b')].map(b => b.textContent).join() === '21,28,21'));
+  await unclaim('sandra', 'red'); await as('sandra', 'reopen_row', { g: G5, colour: 'red' });
+  ok('Sandra takes hers back: red stays closed, and it goes to Someone Else, next in turn', await holder('red') === 'other'
+    && (await game()).closed.red === 1);
+  await clearToasts();
+  await unclaim('other', 'red'); await as('other', 'reopen_row', { g: G5, colour: 'red' });
+  ok('  Someone Else takes theirs back: it comes back to you, and you are told', await holder('red') === 'me'
+    && /The red lock and its bonus are yours now/.test(await toasts()) && await redCount() === '7', await toasts());
+  await claim('other', 'red', 12); await as('other', 'close_row', { g: G5, colour: 'red' });
+  answer = false; asked.length = 0;
+  await p.click('#lkUndo'); await settle(300);
+  ok('Undo on your 12 when someone nearer the roller has it: it stays with them', asked.length === 1
+    && /Take back the 12\? The red lock stays closed, and it and its bonus stay with Someone Else\./.test(asked[0]), asked.join(' | '));
+  answer = true; asked.length = 0; await clearToasts();
+  await p.click('#lkUndo'); await settle(400);
+  ok('  taken back: red closed, Someone Else’s', !/\bon\b/.test(await cell('red', 12)) && await holder('red') === 'other'
+    && /stays closed: it is Someone Else’s/.test(await toasts()), await toasts());
+  answer = false; asked.length = 0;
+  await tap('red', 12);
+  ok('your 12 again, with Someone Else holding it: it says the lock is theirs, the 12 a plain mark', asked.length === 1
+    && /Someone Else has closed the red lock and comes before you in turn, so the lock and its bonus are theirs\. Your 12 scores as a mark/.test(asked[0]), asked.join(' | '));
+  answer = true; asked.length = 0; await clearToasts();
+  await tap('red', 12);
+  ok('  Mark it: marked, Someone Else keeps the lock', /\bon\b/.test(await cell('red', 12)) && await holder('red') === 'other'
+    && /Marked\. The red lock and its bonus are Someone Else’s, and your 12 counts as a mark/.test(await toasts()) && await redCount() === '6', await toasts());
+  await clearToasts();
+  await p.click('[data-lkgate="red"]'); await settle(150);
+  ok('  tapping the red gate says whose lock it is', /The red lock is closed: it is Someone Else’s/.test(await toasts()), await toasts());
+  await p.click('#lkDone'); await settle(300);
+  await as('other', 'finish_turn', { g: G5, at_turn: 1 }); await as('sandra', 'finish_turn', { g: G5, at_turn: 1 });
+  ok('after the roll, red is closed for good, still Someone Else’s', (await game()).turn_no === 2 && await holder('red') === 'other'
+    && await ev(id => lkRollerSeatAt(lkGame(id), 1) === 1 && lkRollerSeatAt(lkGame(id), 2) === 2 && lkRollerSeatAt(lkGame(id), 4) === 1, G5));
+  // Roll 2 is Someone Else's; roll 3 yours.
+  await p.click('#lkDone'); await settle(200);
+  await as('other', 'finish_turn', { g: G5, at_turn: 2 }); await as('sandra', 'finish_turn', { g: G5, at_turn: 2 });
+  await ev(async id => { window.__rows.game_players.filter(x => x.game_id === id).forEach(x => { x.sheet = { ...x.sheet, yellow: [2, 3, 4, 5, 6] }; });
+    await lkReload(id); lkPaint(); }, G5); await settle(200);
+  await claim('sandra', 'yellow', 12); await as('sandra', 'close_row', { g: G5, colour: 'yellow' });
+  ok('roll 3, yours: Sandra closes yellow first, and holds it for now', /Your roll/.test(await status()) && await holder('yellow') === 'sandra');
+  answer = true; asked.length = 0; await clearToasts();
+  await tap('yellow', 12);
+  ok('  you take the 12 with five marks: it is your roll, so the lock and its bonus are yours', asked.length === 1
+    && /Sandra has closed the yellow lock, but it is your roll, so the lock and its bonus will be yours/.test(asked[0])
+    && await holder('yellow') === 'me' && /closed and it is yours: Sandra’s 12 counts as a mark/.test(await toasts()), asked.join(' | ') + ' / ' + await toasts());
+  await ev(() => lkBackToList()); await settle(300);
+
+  console.log('\nGames finished before the change keep the scores they had');
+  const oldNew = await ev(() => {
+    const mk = (ended) => { window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 0 });
+      const g = window.__rows.games[window.__rows.games.length - 1];
+      Object.assign(g, { status: 'ended', ended_at: ended, end_reason: 'Two rows closed', closed: { red: 1 } });
+      window.__rows.game_players.filter(x => x.game_id === g.id).forEach(x => { x.sheet = { red: [2, 3, 4, 5, 6, 12], locked: ['red'] }; });
+      return g.id; };
+    return [mk('2026-11-08T20:00:00Z'), mk('2026-11-10T20:00:00Z')]; });
+  await ev(async () => { await lkReload(); });
+  ok('a game that ended on 8 Nov: both of you still score red’s lock (28 each)', await ev(id => lkResults(lkGame(id)).list.map(x => x.total).join(), oldNew[0]) === '28,28');
+  ok('  one that ended from 10 Nov: only the roller does (28 to 21)', await ev(id => lkResults(lkGame(id)).list.map(x => x.total).join(), oldNew[1]) === '28,21');
+  await ev(ids => { window.__rows.games = window.__rows.games.filter(g => !ids.includes(g.id));
+    window.__rows.game_players = window.__rows.game_players.filter(p => !ids.includes(p.game_id)); }, oldNew);
+  await ev(async () => { await lkReload(); });
+
+  // ---------------------------------------------------------------
+  console.log('\nOnly one of you starts a game (ML239)');
+  await ev(async () => { if (!lkSameGame(['me', 'sandra'])) window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 0 }); await lkReload(); });
+  const dupId = await ev(() => Number(lkSameGame(['me', 'sandra']).id));
+  await ev(() => openGames()); await settle(400);
+  await clear(); await p.click('#lkNew'); await settle(300);
+  ok('Who is playing says only one of you starts it, and where the others find it', await ev(() =>
+    /Only one of you starts the game: it appears on the\s+others’ phones, under Games › Going on/.test($('lkWho').textContent)));
+  await ev(() => document.querySelector('#lkWho input[value="sandra"]').click());
+  await p.click('#lkwGo'); await settle(400);
+  ok('a game already going with Sandra: it asks before starting another', await ev(() => !!$('lkAlready') && !$('lkFirst')
+    && /You already have a game going with Sandra,\s+started by/.test($('lkAlready').textContent)
+    && /Only one of you needs to start a game/.test($('lkAlready').textContent)));
+  await p.click('#lkaCancel'); await settle(200);
+  ok('  Cancel: nothing started', await ev(() => !$('lkAlready') && !$('lkFirst')) && (await rpcs('new_game')).length === 0);
+  await p.click('#lkNew'); await settle(300);
+  await ev(() => document.querySelector('#lkWho input[value="sandra"]').click());
+  await p.click('#lkwGo'); await settle(400);
+  await p.click('#lkaOpen'); await settle(500);
+  ok('  Open that game: it opens the one already going, and starts nothing', await top() === 'lkPlay' && await ev(() => LK_CUR) === dupId
+    && (await rpcs('new_game')).length === 0);
+  await ev(() => lkBackToList()); await settle(300);
+  await p.click('#lkNew'); await settle(300);
+  await ev(() => document.querySelector('#lkWho input[value="sandra"]').click());
+  await p.click('#lkwGo'); await settle(400);
+  await p.click('#lkaNew'); await settle(300);
+  ok('  Start another: on to who rolls first, as before', await ev(() => !!$('lkFirst')));
+  await p.click('#lkfCancel'); await settle(200);
+  await p.click('#lkNew'); await settle(300);
+  await ev(() => { document.querySelector('#lkWho input[value="other"]').click(); });
+  await p.click('#lkwGo'); await settle(400);
+  ok('different people (just Someone Else): no question, straight to who rolls first', await ev(() => !$('lkAlready') && !!$('lkFirst')));
+  await p.click('#lkfCancel'); await settle(200);
+  ok('Help says the others don’t start one of their own', await ev(() => /They don’t start one of their own: that would make two\s+games, each waiting for the other/.test($('h-games').parentElement.textContent)
+    && /stays greyed until all of you have/.test($('h-games').parentElement.textContent)
+    && /Only one player gets the lock/.test($('h-games').parentElement.textContent)));
+  // Someone starts a game with you while your phone is put away: picking it up catches up.
+  const before = await ev(() => GAMES.length);
+  await ev(() => { window.__who = 'sandra'; window.__rpc('new_game', { players: ['sandra', 'me', 'other'], first_seat: 0 }); window.__who = null; });
+  await ev(() => { AWAY = Date.now(); Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+    document.dispatchEvent(new Event('visibilitychange')); });
+  await settle(400);
+  ok('picking the phone up again fetches the games: the new one is there, and the tile counts it', await ev(n => GAMES.length === n + 1, before)
+    && await ev(() => lkWaitingCount() >= 1));
+  await ev(() => { delete document.hidden; });
 
   // ---------------------------------------------------------------
   console.log('\nWhen the games cannot be fetched');

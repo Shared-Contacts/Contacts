@@ -50,11 +50,11 @@ const PLAIN = 'Date,Description,Amount\n03/11/2026,TESCO STORES,-12.50\n04/11/20
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  const V93 = VJ.history.find(h => h.version === '2026.11.09.3');
-  ok('the page and version.json are 2026.11.09.4, with 2026.11.09.3 before it', appVer === '2026.11.09.4' && VJ.version === appVer && VJ.history[0].version === appVer && !!V93, appVer + ' / ' + VJ.version);
+  const V93 = VJ.history.find(h => h.version === '2026.11.09.3'), V94 = VJ.history.find(h => h.version === '2026.11.09.4');
+  ok('2026.11.09.3 and .4 are in version.json, and the page is the newest', VJ.version === appVer && VJ.history[0].version === appVer && !!V93 && !!V94, appVer + ' / ' + VJ.version);
   ok('  saying Monzo files now come in, without the moves to and from pots', !!V93 && /Monzo/.test(V93.changes.join(' ')) && /pots/.test(V93.changes.join(' ')));
-  ok('  and that the note about them reads across the screen', /note about rows left out/.test(VJ.history[0].changes.join(' ')));
-  ok('  each line short enough for the What\'s new list', [...VJ.history[0].changes, ...(V93 ? V93.changes : [])].every(c => c.length < 160));
+  ok('  and that the note about them reads across the screen', !!V94 && /note about rows left out/.test(V94.changes.join(' ')));
+  ok('  each line short enough for the What\'s new list', [...VJ.history[0].changes, ...(V93 ? V93.changes : []), ...(V94 ? V94.changes : [])].every(c => c.length < 160));
 
   // ---------------------------------------------------------------
   console.log('\nA Monzo file exported from a search (ML229)');

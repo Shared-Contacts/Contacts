@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.10.1",
+  "version": "2026.11.10.2",
   "history": [
+    {
+      "version": "2026.11.10.2",
+      "changes": [
+        "Settings: the accounts under Finances show just their names. Tap one to open it out; its ▾ folds it away again.",
+        "Contacts: when two people share a line at the top of a contact, as in Son of John and Mary Smith, each name opens its own page.",
+        "Today: Tonight’s idea now picks at random from all your Mains, leaving out any cooked in the last fortnight."
+      ]
+    },
     {
       "version": "2026.11.10.1",
       "changes": [

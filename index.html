@@ -406,6 +406,9 @@ details#dtFormer .multi{padding:0 12px 12px}
 .pin{display:flex;gap:8px;align-items:baseline;font-size:16px}
 .pin .pk{color:var(--muted);font-size:15px}
 .pin .pv{font-weight:700;color:var(--hull);padding:0;text-align:left}
+.pin .pvs{min-width:0}
+.pin .pvs .pv{display:inline}
+.pin .pand{color:var(--muted);white-space:pre}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
 .tag{background:#E8EFEA;color:var(--hull);border-radius:999px;padding:4px 11px;font-size:14px;font-weight:600}
 
@@ -1229,6 +1232,15 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .hmfolding>[data-hmfold]>:not(.grip):not(.hmkeep){display:none!important}
 .hmfolding>[data-hmfold] .hmkeep{pointer-events:none}
 .hmfolding>.setrow.fieldrow.accbox{margin-top:6px}
+/* Each account stays folded down to its name, the same size as while one is
+   moving, until it is tapped; the ▾ folds it away again (ML244). */
+.setrow.fieldrow.accbox.accmini{margin-top:6px;padding-top:6px;padding-bottom:6px;cursor:pointer}
+.accbox.accmini>:not(.grip):not(.hmkeep):not(.accfold){display:none!important}
+.accbox.accmini .accname{pointer-events:none}
+.accbox .accname{flex-basis:calc(100% - 88px)}
+.accfold{flex:0 0 auto;width:36px;height:36px;margin:-4px -6px -4px 0;border-radius:50%;
+  color:var(--hull);font-size:20px;line-height:1;transition:transform .15s}
+.accbox:not(.accmini) .accfold{transform:rotate(180deg)}
 /* Still waiting for a category. A brass edge down the left, so a column of
    them is obvious at arm's length without shouting. */
 .txn.nocat{border-left:4px solid var(--brass);padding-left:10px}
@@ -2219,6 +2231,24 @@ function joinNames(names){
           : bits.slice(0,-1).join(', ')+' and '+bits[bits.length-1]) + tail;
 }
 
+// The same words as joinNames, with each name a button to that person's own
+// page: John goes to John, Mary Smith to Mary (ML245). Somebody you
+// cannot see stays as plain words.
+function joinNamesHtml(people){
+  const one=(p,t)=>CONTACTS.some(c=>c.id===p.id)
+    ? `<button class="pv" data-go="${p.id}">${esc(t)}</button>`
+    : `<span class="pv">${esc(t)}</span>`;
+  if(people.length<2) return people.map(p=>one(p,p.name)).join('');
+  const parts=people.map(p=>p.name.trim().split(/\s+/));
+  const surnames=parts.map(p=>p[p.length-1]);
+  const same=surnames.every(x=>x.toLowerCase()===surnames[0].toLowerCase())
+             && parts.every(p=>p.length>1);
+  const last=people.length-1;
+  return people.map((p,i)=>
+    (i===0?'':`<span class="pand">${i===last?' and ':', '}</span>`)
+    +one(p, same&&i<last ? parts[i].slice(0,-1).join(' ') : p.name)).join('');
+}
+
 function mergeByKind(entries){
   const order=[], byKind={};
   entries.forEach(e=>{
@@ -3087,13 +3117,14 @@ async function openDetail(id, keepPlace){
     const o=CONTACTS.find(x=>x.id===l.other);
     return {kind:l.label, name:o?fullName(o):'(hidden)', id:l.other};
   });
-  const pinned=mergeByKind(pinnedRaw).map(x=>{
-    const only=pinnedRaw.filter(p=>p.kind===x.kind);
-    const rest=x.text.slice(x.kind.length).trim();
-    return `<span class="pin"><span class="pk">${esc(x.kind)}</span>
-      ${only.length===1
-        ? `<button class="pv" data-go="${only[0].id}">${esc(rest)}</button>`
-        : `<span class="pv">${esc(rest)}</span>`}</span>`;
+  // Two people under one heading read as one line, "Child of John and Mary
+  // Smith", but each name still goes to its own page (ML245).
+  const kinds=[...new Set(pinnedRaw.map(p=>p.kind))];
+  const pinned=kinds.map(k=>{
+    const them=pinnedRaw.filter((p,i,all)=>p.kind===k
+      &&all.findIndex(q=>q.kind===k&&q.id===p.id)===i);
+    return `<span class="pin"><span class="pk">${esc(k)}</span>
+      <span class="pvs">${joinNamesHtml(them)}</span></span>`;
   }).join('');
 
   const tagNames=(TAGS[c.id]||[]).map(i=>GROUPS.find(g=>g.id===i)).filter(Boolean);
@@ -4377,6 +4408,9 @@ async function saveSections(secs){
 
 let SET_OPEN={};
 try{ SET_OPEN=JSON.parse(localStorage.getItem('setopen')||'{}'); }catch(e){}
+// The accounts opened out in Settings > Finances > Accounts (ML244). Kept
+// while Settings is redrawn after a change, folded away again when it opens.
+const ACCBOX_OPEN=new Set();
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
@@ -4504,6 +4538,8 @@ async function openSettings(goTo){
   if(!HANDOVER) await loadHandover();
   if(!RCP_LOADED) await loadRecipes();
   if(!MENU_LOADED) await loadMenu();
+  // Opened afresh, every account in Settings starts folded to its name.
+  if($('settings').classList.contains('hidden')) ACCBOX_OPEN.clear();
   const rows=(table,one,list,fields,hint,extra)=>`
       ${hint?`<div class="field"><dd style="color:var(--muted);font-size:15px">${hint}</dd></div>`:''}
       ${list.map((r,i)=>`<div class="setrow" data-hm="row:${table}:${r.id}">
@@ -4619,8 +4655,9 @@ async function openSettings(goTo){
         Show the weather on Today</label></div>
       ${menuChoiceRows()}
       <div class="field"><dd style="color:var(--muted);font-size:15px">
-        <strong>Tonight&rsquo;s idea</strong>: a recipe from the family cookbook at the
-        bottom of Today, one you have not cooked lately. It stays away on days when
+        <strong>Tonight&rsquo;s idea</strong>: a main course from the family cookbook at the
+        bottom of Today, picked at random from everything in Mains, leaving out any
+        you cooked in the last fortnight. It stays away on days when
         the week&rsquo;s menu has a dinner planned.</dd></div>
       <div class="checks" style="padding:0 14px 14px"><label>
         <input type="checkbox" id="rcpTodayOn" ${RCP_PREFS.today?'checked':''}>
@@ -4937,7 +4974,9 @@ function openHelp(where){
   Revolut, Cash, Premium Bonds &mdash; and the ones sharing a group fold
   together on this screen with a total of their own. Whether you leave a group
   open or folded away is remembered.</p>
-  <p>Each account in Settings has its own box, with room for its
+  <p>In Settings the accounts show just their names, so the list is short:
+  tap one to open it out, and the &#9662; beside its name folds it away again.
+  Each account has its own box, with room for its
   <strong>sort code</strong>, <strong>account number</strong> and
   <strong>international number (IBAN)</strong>. Type them any way you like:
   they're put into the usual layout when you move on (20-00-00, an 8-figure
@@ -5407,7 +5446,8 @@ function openHelp(where){
   rings even on Silent but cannot vibrate, and its sound follows the volume buttons pressed
   while the app is open. <strong>I cooked
   this</strong>, under Cook mode, keeps count, and <strong>Tonight&rsquo;s idea</strong> on Today picks
-  from the ones you have not cooked lately (&#8635; for another).</p>
+  at random from everything in Mains, leaving out any you cooked in the last
+  fortnight (&#8635; for another; it goes through them all before one comes round again).</p>
   <p><strong>Week&rsquo;s menu</strong>, at the top of Recipes, plans breakfast, lunch
   and dinner for today and the six days after. Tap a meal to pick a recipe (ones filed
   under that meal&rsquo;s name come first) or type a few words, like Out or Leftovers;
@@ -12188,24 +12228,47 @@ function briefMenuHtml(){
 const menuHasDinner = () => MENU_LOADED && !MENU_WHY && !!mealOf(menuOwner(),briefDay(),'dinner');
 
 /* ---------- Today: an idea for tonight ----------
-   The same one all day, changing when Today's day does, and picked from the
-   half of the cookbook you have cooked least lately. ↻ moves on to another. */
+   A main course (anything in Mains; the whole cookbook if nothing is), the
+   same one all day, changing when Today's day does. Any you cooked in the
+   last fortnight sit out. ↻ moves on to another.
+   Until 10 Nov 2026 (ML246) it stepped through the cookbook in the order the
+   recipes were added, one place a day, from every category and only the
+   first half of it, so it kept showing the same few. Now each day has its own
+   shuffle of every main, and ↻ goes round all of them before any comes back. */
+const RCP_MAIN=/^(mains?|main (course|dish|meal)s?)$/i;
+const rcpIsMain = r => arr(r.categories).some(c=>RCP_MAIN.test(String(c).trim()));
 let RCP_SPIN={day:'', n:0};
+function rcpTodayPool(){
+  const all=rcpVisible();
+  const mains=all.filter(rcpIsMain);
+  const pool=mains.length?mains:all;
+  const since=isoDay(new Date(Date.now()-14*864e5));
+  const fresh=pool.filter(r=>((RCP_PREFS.cooked[r.id]||{}).last||'')<since);
+  return fresh.length?fresh:pool;
+}
+// A shuffle that is the same all day: the day's date is the seed.
+function rcpDayShuffle(list,day){
+  let s=2166136261>>>0;
+  for(const ch of day) s=Math.imul(s^ch.charCodeAt(0),16777619)>>>0;
+  const rnd=()=>{ s=(s+0x6D2B79F5)>>>0; let t=s;
+    t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61);
+    return ((t^(t>>>14))>>>0)/4294967296; };
+  const out=list.slice().sort((a,b)=>a.id-b.id);
+  for(let i=out.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [out[i],out[j]]=[out[j],out[i]]; }
+  return out;
+}
 function rcpTodayPick(){
-  const pool=rcpVisible(); if(!pool.length) return null;
-  const last=r=>(RCP_PREFS.cooked[r.id]||{}).last||'';
-  const sorted=pool.slice().sort((a,b)=>last(a).localeCompare(last(b))||a.id-b.id);
+  const pool=rcpTodayPool(); if(!pool.length) return null;
   const day=briefDay(); if(RCP_SPIN.day!==day) RCP_SPIN={day, n:0};
-  let h=0; for(const ch of day) h=(h*31+ch.charCodeAt(0))>>>0;
-  const half=Math.max(1,Math.ceil(sorted.length/2));
-  return sorted[((h%half)+RCP_SPIN.n)%sorted.length];
+  const order=rcpDayShuffle(pool,day);
+  return order[RCP_SPIN.n%order.length];
 }
 function briefRecipeHtml(){
   if(!RCP_PREFS.today||!RCP_LOADED||RCP_WHY) return '';
   const r=rcpTodayPick(); if(!r) return '';
   return `<p class="dsec">Tonight&rsquo;s idea</p>
     <div class="card rcpidea">${rcpRow(r)}
-      ${rcpVisible().length>1?'<button class="rcpspin" data-briefspin="1" aria-label="Another idea" title="Another idea">&#8635;</button>':''}</div>`;
+      ${rcpTodayPool().length>1?'<button class="rcpspin" data-briefspin="1" aria-label="Another idea" title="Another idea">&#8635;</button>':''}</div>`;
 }
 function paintBriefRecipe(){
   const slot=$('briefRecipe'); if(!slot) return;
@@ -14706,7 +14769,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.10.1';
+const APP_VERSION='2026.11.10.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -19638,6 +19701,17 @@ async function rememberLayout(){
 }
 
 /* ---------- Settings: accounts, categories, payees, who can see ---------- */
+// The accounts opened out in Settings (ML244, ACCBOX_OPEN beside SET_OPEN).
+function accBoxOpen(row,on){
+  const id=Number(row.dataset.arow);
+  if(on) ACCBOX_OPEN.add(id); else ACCBOX_OPEN.delete(id);
+  row.classList.toggle('accmini',!on);
+  const n=row.querySelector('.accname');
+  if(n){ n.readOnly=!on; n.tabIndex=on?0:-1; }
+  const f=row.querySelector('[data-afold]');
+  if(f){ f.setAttribute('aria-expanded',String(on));
+    f.setAttribute('aria-label',on?'Fold it away':'Open it out'); }
+}
 function finAccountRows(){
   if(!MONEY_ON) return `<div class="field"><dd style="color:var(--muted)">${
     MONEY_WHY==='notset'
@@ -19653,14 +19727,18 @@ function finAccountRows(){
     together on the Finances screen with a total of their own, and each group
     remembers whether you left it open.</dd></div>
   <div class="field"><dd style="color:var(--muted);font-size:15px">
-    To put them in order, hold the &#10303; beside a name and slide it. The
-    boxes fold down to just their names while one is moving.</dd></div>
+    Each account shows just its name: tap it to open it out, and the &#9662;
+    folds it away again.
+    To put them in order, hold the &#10303; beside a name and slide it.</dd></div>
   <datalist id="dlAccGroups">${[...new Set(ACCOUNTS.map(a=>(a.group_name||'').trim())
     .filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
-  ${ACCOUNTS.map((a,i)=>`<div class="setrow fieldrow accbox" data-arow="${a.id}" data-hm="acc:${a.id}" data-hmfold>
+  ${ACCOUNTS.map((a,i)=>{ const big=ACCBOX_OPEN.has(a.id);
+    return `<div class="setrow fieldrow accbox${big?'':' accmini'}" data-arow="${a.id}" data-hm="acc:${a.id}" data-hmfold>
     <span class="grip" aria-hidden="true">&#10303;</span>
     <input class="accname hmkeep" data-afield="${a.id}:name" value="${esc(a.name)}"
-      aria-label="Account name">
+      aria-label="Account name" ${big?'':'readonly tabindex="-1"'}>
+    <button class="accfold" data-afold="${a.id}" aria-expanded="${big}"
+      aria-label="${big?'Fold it away':'Open it out'}">&#9662;</button>
     <input data-afield="${a.id}:group_name" value="${esc(a.group_name||'')}"
       list="dlAccGroups" placeholder="Group" style="flex:0 1 120px"
       aria-label="Which bank it belongs to">
@@ -19686,7 +19764,7 @@ function finAccountRows(){
         value="${esc(a.iban||'')}" placeholder="GB00 ABCD 0000 0000 0000 00"
         autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
     </div>
-    ${shareRow(a)}${filesRow(a)}</div>`).join('')}
+    ${shareRow(a)}${filesRow(a)}</div>`; }).join('')}
   <div class="setadd">
     <input data-anew="name" placeholder="New account">
     <button class="btn primary" data-aadd="1">Add account</button>
@@ -19914,10 +19992,23 @@ function wireFinance(){
     if(!name){ toast('Type a name first'); return; }
     const rec={name, created_by:ME.id};
     if(table==='accounts'){ rec.currency='GBP'; rec.opening_date=isoDay(new Date()); }
+    const was=new Set(ACCOUNTS.map(x=>x.id));
     const {error}=await sb.from(table).insert(rec);
     if(error) return fail(error,'Could not add that — the name may already be in use');
+    // A new account opens out, ready for its details.
+    if(table==='accounts'){ await loadMoney();
+      ACCOUNTS.forEach(x=>{ if(!was.has(x.id)) ACCBOX_OPEN.add(x.id); });
+      openSettings('Finances'); toast(what+' added'); return; }
     await after(what+' added');
   };
+  // Tapping a folded account opens it out; its ▾ folds it away again.
+  body.querySelectorAll('[data-arow]').forEach(row=>row.addEventListener('click',ev=>{
+    if(row.classList.contains('accmini')){
+      if(!ev.target.closest('.grip')) accBoxOpen(row,true);
+      return;
+    }
+    if(ev.target.closest('[data-afold]')) accBoxOpen(row,false);
+  }));
   const a=body.querySelector('[data-aadd]'); if(a) a.onclick=()=>addRow('accounts','[data-anew]','Account');
   const c=body.querySelector('[data-cadd]'); if(c) c.onclick=()=>addRow('categories','[data-cnew]','Category');
   const p=body.querySelector('[data-padd]'); if(p) p.onclick=()=>addRow('payees','[data-pnew]','Payee');

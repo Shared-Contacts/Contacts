@@ -958,6 +958,76 @@ body.vbtyping #verBar{display:none}
     padding:0 16px calc(20px + env(safe-area-inset-left,0px))}
 }
 body:has(#lkPlay:not(.hidden)) #verBar{display:none}
+/* ---------- MY Games: Pounds ----------
+   Upright, like any other screen: the dice on a felt table at the top,
+   the card in two columns underneath, so a turn needs no scrolling. */
+.pdlogo svg{width:34px;height:34px}
+#pdBody{padding:10px 12px calc(16px + env(safe-area-inset-bottom,0px))}
+.pdwho{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.pdwho button{display:inline-flex;align-items:center;gap:.35em;max-width:100%;padding:5px 11px;border-radius:99px;
+  background:#fff;border:1.5px solid var(--rule);font-size:14px;color:var(--ink)}
+.pdwho button.roll{background:#FFF3C4}
+.pdwho button.view{border-color:var(--hull);box-shadow:0 0 0 1.5px var(--hull) inset}
+.pdwho i{font-style:normal;font-size:18px;line-height:1}
+.pdwho .pdnm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:9em}
+.pdstatus{font-size:15px;line-height:1.35;margin:0 2px 8px}
+.pdround{color:var(--muted);font-size:13px;white-space:nowrap}
+.pdtable{background:radial-gradient(ellipse at 50% 25%,#3D7A58,#24523B);border-radius:16px;
+  padding:14px 10px 12px;margin-bottom:10px;box-shadow:inset 0 2px 10px rgba(0,0,0,.35)}
+.pddice{display:flex;justify-content:center;gap:clamp(6px,2.6vw,12px);padding-bottom:16px}
+.pddie{position:relative;flex:0 0 auto;width:clamp(46px,14.5vw,64px);height:clamp(46px,14.5vw,64px);padding:0;
+  border-radius:14%;background:#FBFAF5;color:#1E2A24;box-shadow:0 3px 0 #C9C4B3,0 5px 10px rgba(0,0,0,.35);
+  transition:transform .15s,box-shadow .15s}
+.pddie svg{display:block;width:100%;height:100%;fill:currentColor}
+.pddie.blank{background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.pddie.held{transform:translateY(-5px);box-shadow:0 0 0 3px #E8BE2E,0 8px 12px rgba(0,0,0,.35)}
+.pddie.held::after{content:'Kept';position:absolute;left:0;right:0;bottom:-19px;font-size:12px;font-weight:800;
+  color:#FFE38A;text-align:center;letter-spacing:.02em}
+.pddie.tumble{animation:pdtumble .45s ease-out}
+@keyframes pdtumble{0%{transform:rotate(-28deg) translateY(-10px)}35%{transform:rotate(20deg) translateY(-4px)}
+  70%{transform:rotate(-8deg)}100%{transform:none}}
+.pdctl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:6px}
+.pdroll{min-height:46px;padding:0 22px;border-radius:12px;background:#F2EFE4;color:#1E2A24;font-weight:800;font-size:17px}
+.pdroll:disabled{opacity:.5}
+.pdleft{color:#E6EFE8;font-size:14px}
+.pdpad{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:4px 0 8px}
+.pdpad button{min-height:44px;border-radius:10px;background:#F2EFE4;color:#1E2A24;font-weight:800;font-size:19px;padding:0}
+.pdpad button:disabled{opacity:.4}
+.pdwatch{margin:2px 0 0;color:#E6EFE8;text-align:center;font-size:14px}
+.pdcardhd{margin:2px 2px 6px;color:var(--muted);font-size:14px;font-weight:700}
+.pdcard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start}
+.pdcol{background:#fff;border:1.5px solid var(--rule);border-radius:12px;overflow:hidden}
+.pdbox{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;min-height:40px;
+  padding:0 10px;border:0;border-bottom:1px solid var(--rule);background:none;text-align:left;font-size:14.5px;color:var(--ink)}
+.pdlab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdv{flex:0 0 auto;min-width:2em;text-align:right;font-weight:800;font-size:16px}
+.pdbox.pot .pdv{color:#2E7D46;font-weight:700;font-style:italic}
+.pdbox.pot.zero .pdv{color:var(--muted);font-weight:500}
+.pdbox.pick{background:#FFF3C4;box-shadow:inset 4px 0 0 var(--hull)}
+.pdbox.pick .pdv{color:var(--ink);font-style:normal;font-weight:800}
+.pdsum{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:34px;padding:0 10px;
+  background:#F6F3EA;border-bottom:1px solid var(--rule);font-size:13.5px;color:var(--muted)}
+.pdsum:last-child{border-bottom:0}
+.pdsum b{color:var(--ink);font-size:15px}
+.pdsum small{font-size:12px}
+.pdsum.pot b{color:#2E7D46;font-style:italic}
+.pdtotal{display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px;padding:10px 14px;
+  border-radius:12px;background:var(--hull);color:#F2EFE4;font-size:16px}
+.pdtotal b{font-size:22px}
+.pdends{display:flex;justify-content:flex-end}
+.pdgo{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:3;display:block;width:100%;
+  min-height:52px;margin-top:8px;border-radius:14px;background:var(--hull);color:#F2EFE4;font-weight:800;font-size:18px;
+  box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.pdover{padding:14px 16px;margin-bottom:10px}
+.pdover h3{margin:0 0 4px;font-size:22px}
+.pdover .lkoverbtns .btn{flex:0 0 auto;border:1.5px solid var(--rule)}
+.pdover .lkoverbtns .btn.primary{border-color:transparent}
+.pdrealsw{display:flex;gap:10px;align-items:flex-start;margin:12px 0 4px;padding:10px 12px;border:1.5px solid var(--rule);
+  border-radius:10px;background:#fff}
+.pdrealsw input{width:22px;height:22px;flex:0 0 auto;margin:1px 0 0}
+.pdrealsw span{display:flex;flex-direction:column;gap:2px}
+.pdrealsw small{color:var(--muted);font-size:13.5px;line-height:1.35}
+#pdPlay .lkask{position:fixed;padding:24px 16px}
 /* Hold a row (or the grip) and slide it, instead of up and down arrows */
 .grip{flex:0 0 auto;color:var(--muted);font-size:22px;line-height:1;padding:6px 4px;
   cursor:grab;touch-action:none}
@@ -1631,6 +1701,12 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="lkstage" id="lkStage"></div>
 </div>
 
+<div id="pdPlay" class="sheet hidden" aria-label="Pounds">
+  <div class="sheetbar"><button id="pdBack">Back</button>
+    <span class="title">Pounds</span><span class="bartools"><button class="bt" id="pdHelp" aria-label="How to play Pounds" title="How to play"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.3-2.7 4"/><circle cx="12" cy="17.5" r=".7" fill="currentColor"/></svg></button></span></div>
+  <div class="sheetbody" id="pdBody"></div>
+</div>
+
 <div id="stuff" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="stuff" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="stuffMenu" data-menu="stuff" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">My Stuff</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -1900,7 +1976,7 @@ const arr = v => Array.isArray(v) ? v : [];
 const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','invite','diary','itemEd','rtEd','log',
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
-  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','stuff','stuffView','stuffEd'];
+  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2616,8 +2692,8 @@ async function refreshAll(){
   if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
     if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
   if(!$('reports').classList.contains('hidden')) await repLoad();
-  if(!$('games').classList.contains('hidden')||LK_CUR!=null){ await lkReload(LK_CUR==null?undefined:LK_CUR);
-    if(!$('games').classList.contains('hidden')) renderGames(); if(LK_CUR!=null) lkPaint(); }
+  if(!$('games').classList.contains('hidden')||LK_CUR!=null||PD_CUR!=null){ await lkReload();
+    if(!$('games').classList.contains('hidden')) renderGames(); if(LK_CUR!=null) lkPaint(); if(PD_CUR!=null) pdPaint(); }
   if(!$('stuff').classList.contains('hidden')){ await loadStuff(); renderStuff();
     if(!$('stuffView').classList.contains('hidden')) renderStuffThing(); }
   toast('Up to date');
@@ -4868,7 +4944,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
-  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['lkPlay','games'],['games','games'],
+  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
@@ -4884,7 +4960,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
-  brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', recipes:'h-recipes', stuff:'h-stuff'};
+  brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -5528,6 +5604,43 @@ function openHelp(where){
   than the last, up to 78 for 12. Penalties take 5 each. The scores add themselves
   up along the bottom, and the highest wins. <strong>Stop game</strong> ends one
   early for everyone, keeping the scores.</p>
+
+  <h4 id="h-pounds">MY Games: Pounds</h4>
+  <p><strong>Pounds</strong> is a five-dice game for 1 to 6 players: on your own,
+  or with others, each on their own phone. The phone rolls the dice, or you can roll
+  real dice on the table and type in what they show: tick <strong>Real dice</strong>
+  when you start the game.</p>
+  <p><strong>Starting:</strong> Games &rsaquo; <strong>New game</strong> under
+  Pounds. Tick who is playing (nobody, for a game on your own), then choose who goes
+  first. As with Loxx, only one of you starts it: it appears on the others&rsquo;
+  phones under Games &rsaquo; Going on.</p>
+  <p><strong>Your turn:</strong> tap <strong>Roll the dice</strong>. You can roll up
+  to three times. Between rolls, tap any dice you want to keep (they lift up and say
+  Kept), and Roll again rolls the rest. Tap a kept die again to roll it after all.
+  Whenever you like, tap a box on your card: it shows what each box would score in
+  green. Then tap <strong>Put &hellip; in &hellip;</strong> at the bottom. Every turn
+  fills one box, even if it scores nothing, and then the dice pass on.</p>
+  <p><strong>With real dice:</strong> roll them on the table, then tap the numbers
+  they show, in any order; &#9003; takes the last one back. Tap the dice on the
+  screen you are keeping, set them aside, then tap <strong>Roll again</strong> and
+  type in the new ones.</p>
+  <p><strong>The boxes:</strong> <em>Ones</em> to <em>Sixes</em> add up the dice
+  showing that number. Once those six come to 63 or more (three of each would do it),
+  there is a <strong>bonus of 35</strong>. <em>Three of a kind</em> and <em>Four of a
+  kind</em> add up all five dice, with at least three (or four) the same.
+  <em>Full house</em>, three of one number and two of another, is 25. <em>Short
+  run</em>, four in a row such as 2 3 4 5, is 30. <em>Long run</em>, all five in a
+  row, is 40. <em>Five of a kind</em> is 50. <em>Chance</em> adds up any five
+  dice.</p>
+  <p><strong>Extra fives:</strong> once Five of a kind has its 50, every other five
+  of a kind you roll is <strong>100 more</strong>. And any five of a kind, once that
+  box is filled, can go in any box you like: Full house and the runs score in full.</p>
+  <p><strong>Watching:</strong> everyone sees the dice as they are rolled and kept,
+  and the card of whoever&rsquo;s turn it is. Tap a name at the top to look at
+  someone else&rsquo;s card. The Games tile shows a number when it is your turn.</p>
+  <p><strong>The end:</strong> after 13 turns each every box is filled, and the
+  highest total wins. On your own, it tells you your best so far.
+  <strong>Stop game</strong> ends one early for everyone, keeping the scores.</p>
 
   <h4 id="h-deceased">Those who have died</h4>
   <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
@@ -13125,9 +13238,12 @@ async function lkReload(id){
   }
   return true;
 }
-// Games where you have something to do: your roll, or a mark to make.
+// Games where you have something to do: your roll, or a mark to make. In
+// Pounds, your turn, in a game with others (on your own, nobody is waiting).
 function lkWaitingCount(){
-  return GAMES.filter(g=>g.status==='playing'&&lkMe(g.id)&&!lkDoneThisRoll(g,lkMe(g.id))).length;
+  return GAMES.filter(g=>g.status==='playing'&&lkMe(g.id)&&(pdIs(g)
+    ?lkRoller(g)===ME.id&&lkPlayers(g.id).length>1
+    :!lkDoneThisRoll(g,lkMe(g.id)))).length;
 }
 
 /* ---------- the list of games ---------- */
@@ -13144,6 +13260,7 @@ async function openGames(){
 }
 
 function lkGameLine(g){
+  if(pdIs(g)) return pdGameLine(g);
   const ps=lkPlayers(g.id), me=lkMe(g.id); if(!me) return '';
   const others=lkAnd(ps.filter(p=>p.user_id!==ME.id).map(p=>lkWho(p.user_id)));
   let sub;
@@ -13159,8 +13276,24 @@ function lkGameLine(g){
       .toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
   }
   return `<button class="pplrow lkgrow" data-lkgame="${esc(g.id)}">
-    <span class="pplwho"><b>With ${esc(others)}</b><small>${sub}</small></span>
+    <span class="pplwho"><b>Loxx with ${esc(others)}</b><small>${sub}</small></span>
     <span class="lkpts">${lkScore(lkSheet(me.sheet),lkLocksOf(g,me)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
+}
+function pdGameLine(g){
+  const ps=lkPlayers(g.id), me=lkMe(g.id); if(!me) return '';
+  const others=lkAnd(ps.filter(p=>p.user_id!==ME.id).map(p=>lkWho(p.user_id)));
+  let sub;
+  if(g.status==='playing'){
+    const r=lkRoller(g), rp=ps.find(p=>p.user_id===r);
+    const round=' · round '+Math.min(13,(rp?pdFilled(pdSheet(rp.sheet)):0)+1)+' of 13';
+    sub=(r===ME.id?(ps.length>1?'<b>Your turn</b>':'Your turn'):'<b>'+esc(lkWho(r))+'’s turn</b>')+round;
+  } else {
+    sub=esc(pdResults(g).line)+' · '+esc(new Date(g.ended_at||g.created_at)
+      .toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
+  }
+  return `<button class="pplrow lkgrow" data-lkgame="${esc(g.id)}" data-pounds="1">
+    <span class="pplwho"><b>${others?'Pounds with '+esc(others):'Pounds on your own'}</b><small>${sub}</small></span>
+    <span class="lkpts">${pdTotals(pdSheet(me.sheet)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function renderGames(){
@@ -13176,6 +13309,13 @@ function renderGames(){
         step 57 run in Supabase first.</dd></div>`}
       <div class="setadd lkbtns"><button class="btn primary" id="lkNew">New game</button>
         <button class="btn" id="lkHow" style="border:1.5px solid var(--rule)">How to play</button></div></div>
+    <div class="card lkintro">
+      <div class="lkhead"><span class="lklogo pdlogo">${PD_LOGO}</span>
+        <div><h2>Pounds</h2><p>Five dice, up to three rolls a turn, and 13 boxes to
+        fill. For 1 to 6 players, on your own or a phone each, with the phone's
+        dice or real ones.</p></div></div>
+      <div class="setadd lkbtns"><button class="btn primary" id="pdNew">New game</button>
+        <button class="btn" id="pdHow" style="border:1.5px solid var(--rule)">How to play</button></div></div>
     ${GAMES_FAILED?`<div class="card"><div class="field"><dd style="color:var(--red)">Could not
       fetch the games just now. Nothing is lost: try the refresh button.</dd></div></div>`:''}
     ${going.length?`<p class="dsec">Going on</p><div class="card">${going.map(lkGameLine).join('')}</div>`:''}
@@ -13183,7 +13323,10 @@ function renderGames(){
     ${GAMES_READY&&!GAMES_FAILED&&!mine.length?'<p class="empty">No games yet. New game starts one.</p>':''}`;
   $('lkNew').onclick=()=>lkNewGame();
   $('lkHow').onclick=()=>openHelp('games');
-  b.querySelectorAll('[data-lkgame]').forEach(x=>x.onclick=()=>lkOpen(Number(x.dataset.lkgame)));
+  $('pdNew').onclick=()=>pdNewGame();
+  $('pdHow').onclick=()=>openHelp('pounds');
+  b.querySelectorAll('[data-lkgame]').forEach(x=>x.onclick=()=>{
+    const id=Number(x.dataset.lkgame); if(pdIs(lkGame(id))) pdOpen(id); else lkOpen(id); });
 }
 
 /* ---------- starting one ---------- */
@@ -13212,14 +13355,14 @@ function lkPickPlayers(){
     };
   });
 }
-function lkPickFirst(players){
+function lkPickFirst(players,words){
+  const w=words||{title:'Who rolls first?', note:'Everyone rolls one die: the first to roll a 6 starts. The dice then go round in this order.'};
   return new Promise(resolve=>{
     const box=document.createElement('div');
     box.className='daypick'; box.id='lkFirst';
     box.innerHTML=`<div class="inner">
-      <p class="dsec" style="padding-top:0">Who rolls first?</p>
-      <p class="coords" style="margin:0 0 10px">Everyone rolls one die: the first to
-        roll a 6 starts. The dice then go round in this order.</p>
+      <p class="dsec" style="padding-top:0">${esc(w.title)}</p>
+      <p class="coords" style="margin:0 0 10px">${esc(w.note)}</p>
       ${players.map((id,i)=>`<button class="pplrow" data-lkfirst="${i}"><span class="pplwho"><b>${
         esc(id===ME.id?'Me':lkWho(id))}</b></span><span aria-hidden="true">&rsaquo;</span></button>`).join('')}
       <div class="pfoot" style="margin-top:8px"><button id="lkfCancel">Cancel</button></div></div>`;
@@ -13230,9 +13373,10 @@ function lkPickFirst(players){
     box.querySelectorAll('[data-lkfirst]').forEach(b=>b.onclick=()=>done(Number(b.dataset.lkfirst)));
   });
 }
-// A game going on with exactly these people, the newest, or null.
-function lkSameGame(players){
-  return GAMES.filter(g=>g.status==='playing'&&lkMe(g.id)).find(g=>{
+// A game going on with exactly these people, the newest, or null. Loxx
+// unless kind says 'pounds'.
+function lkSameGame(players,kind){
+  return GAMES.filter(g=>g.status==='playing'&&lkMe(g.id)&&pdIs(g)===(kind==='pounds')).find(g=>{
     const ids=lkPlayers(g.id).map(p=>p.user_id);
     return ids.length===players.length&&players.every(x=>ids.includes(x)); })||null;
 }
@@ -13246,9 +13390,10 @@ function lkAlready(g){
     box.className='daypick'; box.id='lkAlready';
     box.innerHTML=`<div class="inner">
       <p class="dsec" style="padding-top:0">Already playing</p>
-      <p style="margin:0 0 10px">You already have a game going with ${esc(others)},
+      <p style="margin:0 0 10px">${others?`You already have ${pdIs(g)?'a game of Pounds':'a game'} going with ${esc(others)},
         started by ${esc(by)} on ${esc(on)}. Only one of you needs to start a game:
-        the others play it from Games &rsaquo; Going on.</p>
+        the others play it from Games &rsaquo; Going on.`:`You already have a game of Pounds going on
+        your own, started on ${esc(on)}.`}</p>
       <button class="pplrow" id="lkaOpen"><span class="pplwho"><b>Open that game</b></span>
         <span aria-hidden="true">&rsaquo;</span></button>
       <div class="pfoot" style="margin-top:8px"><button id="lkaCancel">Cancel</button>
@@ -13330,6 +13475,7 @@ function lkUnwatch(){
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden||!ME||!GAMES_READY) return;
   if(LK_CUR!=null){ const id=LK_CUR; lkReload(id).then(()=>{ if(Number(LK_CUR)===Number(id)) lkPaint(); }); return; }
+  if(PD_CUR!=null){ const id=PD_CUR; pdReload(id).then(()=>{ if(Number(PD_CUR)===Number(id)) pdPaint(); }); return; }
   lkReload().then(ok=>{ if(!ok) return;
     if($('games')&&!$('games').classList.contains('hidden')) renderGames();
     if($('home')&&!$('home').classList.contains('hidden')) renderHome(); });
@@ -13691,6 +13837,539 @@ async function lkStop(){
   if(error){ console.error(error); toast('Could not stop the game'); return; }
   await lkReload(g.id); lkPaint();
 }
+
+/* ============================================================
+   MY Games: Pounds (ML250, step 60)
+
+   A five-dice game for 1 to 6 people, each on their own phone, or on
+   your own. Whoever's turn it is rolls five dice up to three times,
+   keeping any they like between rolls, then fills one of the 13 boxes on
+   their card, even with nothing, and the dice pass on. Thirteen turns
+   each and the best total wins.
+
+   The boxes: Ones to Sixes (the dice showing that number, added), with
+   35 more once those six come to 63; Three and Four of a kind (all five
+   dice added, with three or four the same); Full house 25 (three of one,
+   two of another); Short run 30 (four in a row); Long run 40 (five in a
+   row); Five of a kind 50; Chance (all five added). Barry's extra: once
+   Five of a kind holds 50, every other five of a kind is 100 more, and
+   any five of a kind with that box filled can go in any box, Full house
+   and the runs scoring in full.
+
+   The phone rolls the dice, or real dice are rolled on the table and
+   typed in (chosen when a game starts). It uses Loxx's two tables:
+   step 60 adds the kind, a dice column everyone watches as the dice are
+   rolled, and three functions that check it is your game and your turn,
+   and that a turn fills one box. Stop game and Clear it away are
+   Loxx's own. The phone works out what each box scores.
+   ============================================================ */
+const PD_BOXES=[
+  {k:'u1', name:'Ones'}, {k:'u2', name:'Twos'}, {k:'u3', name:'Threes'},
+  {k:'u4', name:'Fours'}, {k:'u5', name:'Fives'}, {k:'u6', name:'Sixes'},
+  {k:'k3', name:'Three of a kind'}, {k:'k4', name:'Four of a kind'},
+  {k:'fh', name:'Full house'}, {k:'ss', name:'Short run'}, {k:'ls', name:'Long run'},
+  {k:'five', name:'Five of a kind'}, {k:'ch', name:'Chance'}];
+const PD_UPPER=PD_BOXES.slice(0,6), PD_LOWER=PD_BOXES.slice(6);
+const pdName = k => (PD_BOXES.find(b=>b.k===k)||{}).name||k;
+let PD_CUR=null, PD_SUB=null, PD_POLL=null, PD_SOON=null, PD_DICE=null, PD_TYPED=[],
+    PD_PICK=null, PD_VIEW=null, PD_BUSY=false, PD_SENDING=false, PD_AGAIN=false, PD_PUSHT=null, PD_PENDING=false,
+    PD_ROLLING=null, PD_TUMBLE=null, PD_SEEN=null;
+const pdIs = g => !!g && g.kind==='pounds';
+const pdReal = g => !!(g&&g.dice&&g.dice.real===true);
+
+// A card as it was saved, tidied: known boxes only, each a whole number.
+function pdSheet(raw){
+  const s=raw&&typeof raw==='object'?raw:{}, b=s.box&&typeof s.box==='object'?s.box:{}, box={};
+  PD_BOXES.forEach(x=>{ const n=parseInt(b[x.k],10); if(b[x.k]!=null&&isFinite(n)) box[x.k]=Math.max(0,n); });
+  return {box, extra:Math.max(0,parseInt(s.extra,10)||0)};
+}
+const pdFilled = s => Object.keys(s.box).length;
+const pdFull = v => Array.isArray(v) && v.length===5 && v.every(n=>n>=1&&n<=6);
+function pdCounts(v){ const c=[0,0,0,0,0,0,0]; v.forEach(n=>{ if(n>=1&&n<=6) c[n]++; }); return c; }
+const pdIsFive = v => pdFull(v) && v.every(n=>n===v[0]);
+function pdRun(v,len){
+  const has=new Set(v);
+  for(let a=1;a+len-1<=6;a++){ let all=true; for(let i=0;i<len;i++) if(!has.has(a+i)) all=false; if(all) return true; }
+  return false;
+}
+// What box k would score with these dice, on card s.
+function pdPoints(k,v,s){
+  if(!pdFull(v)) return 0;
+  const c=pdCounts(v), sum=v.reduce((a,b)=>a+b,0), most=Math.max(...c);
+  // A five of a kind with Five of a kind already filled goes anywhere (Barry's rule).
+  const joker=most===5&&s&&s.box.five!=null;
+  if(/^u[1-6]$/.test(k)){ const n=Number(k[1]); return c[n]*n; }
+  if(k==='k3') return most>=3?sum:0;
+  if(k==='k4') return most>=4?sum:0;
+  if(k==='fh') return joker||(c.includes(3)&&c.includes(2))?25:0;
+  if(k==='ss') return joker||pdRun(v,4)?30:0;
+  if(k==='ls') return joker||pdRun(v,5)?40:0;
+  if(k==='five') return most===5?50:0;
+  if(k==='ch') return sum;
+  return 0;
+}
+// 100 more for this five of a kind: Five of a kind already holds 50.
+const pdExtraDue = (v,s) => pdIsFive(v) && s.box.five===50;
+function pdTotals(s){
+  const add=list=>list.reduce((a,x)=>a+(s.box[x.k]||0),0);
+  const upper=add(PD_UPPER), bonus=upper>=63?35:0, lower=add(PD_LOWER), extra=s.extra*100;
+  return {upper, bonus, lower, extra, total:upper+bonus+lower+extra};
+}
+function pdResults(g){
+  const list=lkPlayers(g.id).map(p=>({id:p.user_id, who:lkWho(p.user_id),
+    total:pdTotals(pdSheet(p.sheet)).total})).sort((a,b)=>b.total-a.total);
+  const best=list.length?list[0].total:0, tops=list.filter(x=>x.total===best);
+  const line=list.length===1 ? 'You scored '+best
+    : tops.length>1 ? 'A draw on '+best
+    : (tops[0].id===ME.id?'You won':tops[0].who+' won')+(list[1]?', '+best+' to '+list[1].total:'');
+  return {list, best, line};
+}
+// Your best game of Pounds on your own, every box filled, leaving out game id.
+function pdBestSolo(id){
+  const t=GAMES.filter(g=>pdIs(g)&&Number(g.id)!==Number(id)&&g.status!=='playing'
+      &&g.end_reason==='Every box filled'&&lkMe(g.id)&&lkPlayers(g.id).length===1)
+    .map(g=>pdTotals(pdSheet(lkMe(g.id).sheet)).total);
+  return t.length?Math.max(...t):null;
+}
+// A fair die: 1 to 6.
+function pdRand(){
+  try{ const b=new Uint8Array(1);
+    do{ crypto.getRandomValues(b); }while(b[0]>=252);
+    return b[0]%6+1;
+  }catch(e){ return 1+Math.floor(Math.random()*6); }
+}
+
+/* ---------- the dice ---------- */
+const PD_BLANK = () => ({v:[0,0,0,0,0], held:[false,false,false,false,false], rolls:0});
+// The dice on the table this turn, as the game row has them (or as you have
+// rolled them, on your own turn, while they are on their way).
+function pdDiceOf(g){
+  if(PD_DICE&&Number(PD_DICE.id)===Number(g.id)&&PD_DICE.at===g.turn_no) return PD_DICE;
+  const d=(g&&g.dice)||{};
+  if(Number(d.at)!==Number(g.turn_no)||!Array.isArray(d.v)) return PD_BLANK();
+  return {v:[0,1,2,3,4].map(i=>{ const n=parseInt(d.v[i],10); return n>=1&&n<=6?n:0; }),
+    held:[0,1,2,3,4].map(i=>arr(d.held)[i]===true),
+    rolls:Math.max(0,Math.min(3,parseInt(d.rolls,10)||0))};
+}
+// Your own turn's dice, to change.
+function pdMyDice(g){
+  if(!(PD_DICE&&Number(PD_DICE.id)===Number(g.id)&&PD_DICE.at===g.turn_no)){
+    const d=pdDiceOf(g);
+    PD_DICE={id:Number(g.id), at:g.turn_no, v:d.v.slice(), held:d.held.slice(), rolls:d.rolls};
+    PD_TYPED=[];
+  }
+  return PD_DICE;
+}
+// Everyone else sees the dice as they are rolled: one save at a time, the
+// newest dice going once the one before is back.
+async function pdPush(){
+  clearTimeout(PD_PUSHT); PD_PENDING=false;
+  if(PD_SENDING){ PD_AGAIN=true; return; }
+  const d=PD_DICE; if(!d) return;
+  PD_SENDING=true;
+  const {data,error}=await sb.rpc('pounds_dice',{g:d.id, at_turn:d.at,
+    d:{v:d.v.slice(), held:d.held.slice(), rolls:d.rolls}});
+  PD_SENDING=false;
+  if(error){ console.error(error); toast(pdErr(error,'The others can’t see your dice just now: check your signal')); }
+  else if(data==='moved'||data==='ended'){ PD_AGAIN=false; await pdReload(d.id); pdPaint(); return; }
+  if(PD_AGAIN){ PD_AGAIN=false; pdPush(); }
+}
+const pdPushSoon = () => { clearTimeout(PD_PUSHT); PD_PENDING=true; PD_PUSHT=setTimeout(pdPush,350); };
+function pdErr(e,other){
+  const t=((e&&e.message)||'')+' '+((e&&e.code)||'');
+  if(/new_pounds|pounds_dice|pounds_score|PGRST202|games_kind_check|23514/i.test(t)) return 'Pounds needs step 60 run in Supabase first';
+  if(/not your turn/i.test(t)) return 'It is not your turn';
+  if(/One box a turn/i.test(t)) return 'That box has been filled already';
+  return other;
+}
+
+// Pips on a face of 100 by 100.
+const PD_PIPS={1:[[50,50]], 2:[[27,27],[73,73]], 3:[[27,27],[50,50],[73,73]],
+  4:[[27,27],[73,27],[27,73],[73,73]], 5:[[27,27],[73,27],[50,50],[27,73],[73,73]],
+  6:[[28,25],[72,25],[28,50],[72,50],[28,75],[72,75]]};
+const pdFace = n => `<svg viewBox="0 0 100 100" aria-hidden="true">${(PD_PIPS[n]||[])
+  .map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9.5"/>`).join('')}</svg>`;
+const PD_LOGO=`<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="5" width="30" height="30" rx="7"
+  fill="none" stroke="currentColor" stroke-width="3"/><g fill="currentColor"><circle cx="13.5" cy="13.5" r="3"/>
+  <circle cx="26.5" cy="13.5" r="3"/><circle cx="20" cy="20" r="3"/><circle cx="13.5" cy="26.5" r="3"/>
+  <circle cx="26.5" cy="26.5" r="3"/></g></svg>`;
+
+// The dice tumble for a moment when they are rolled, on every phone.
+function pdTumble(which){
+  clearInterval(PD_TUMBLE);
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){ PD_ROLLING=null; pdPaint(); return; }
+  PD_ROLLING=which; pdPaint();
+  let n=0;
+  PD_TUMBLE=setInterval(()=>{
+    n++;
+    document.querySelectorAll('#pdBody [data-pddie]').forEach(el=>{
+      if(PD_ROLLING&&PD_ROLLING[Number(el.dataset.pddie)]) el.innerHTML=pdFace(1+Math.floor(Math.random()*6)); });
+    if(n>=6){ clearInterval(PD_TUMBLE); PD_ROLLING=null; pdPaint(); }
+  },75);
+}
+
+/* ---------- a turn ---------- */
+function pdRoll(){
+  const g=lkGame(PD_CUR); if(!g||!lkMyRoll(g)||PD_BUSY||PD_ROLLING) return;
+  const d=pdMyDice(g);
+  if(d.rolls>=3){ toast('Three rolls is the most: tap a box to score'); return; }
+  if(d.rolls>0&&d.held.every(Boolean)){ toast('Every die is kept: tap one to roll it again'); return; }
+  const first=d.rolls===0;
+  const which=d.held.map(h=>first||!h);
+  if(first) d.held=[false,false,false,false,false];
+  d.v=d.v.map((n,i)=>which[i]?pdRand():n);
+  d.rolls++; PD_PICK=null;
+  PD_SEEN={id:d.id, at:d.at, rolls:d.rolls};
+  pdPush();
+  pdTumble(which);
+}
+// Real dice: the numbers typed in fill the empty dice, left to right. 0 is ⌫.
+function pdType(n){
+  const g=lkGame(PD_CUR); if(!g||!lkMyRoll(g)||PD_BUSY) return;
+  const d=pdMyDice(g);
+  if(n===0){
+    let i=PD_TYPED.length?PD_TYPED.pop():-1;
+    if(i<0||!d.v[i]||d.held[i]){ i=-1; for(let j=4;j>=0;j--) if(d.v[j]&&!d.held[j]){ i=j; break; } }
+    if(i<0) return;
+    d.v[i]=0; PD_PICK=null; pdPaint(); pdPushSoon(); return;
+  }
+  const i=d.v.findIndex((x,j)=>!x&&!d.held[j]);
+  if(i<0){ toast(d.rolls>=3?'All five are in: tap a box to score':'All five are in: tap a box to score, or Roll again'); return; }
+  if(!d.rolls) d.rolls=1;
+  d.v[i]=n; PD_TYPED.push(i); pdPaint(); pdPushSoon();
+}
+function pdAgain(){
+  const g=lkGame(PD_CUR); if(!g||!lkMyRoll(g)||PD_BUSY) return;
+  const d=pdMyDice(g);
+  if(d.rolls>=3){ toast('Three rolls is the most: tap a box to score'); return; }
+  if(!pdFull(d.v)){ toast('Type in all five dice first'); return; }
+  if(d.held.every(Boolean)){ toast('Every die is kept: tap one to roll it again'); return; }
+  d.v=d.v.map((x,i)=>d.held[i]?x:0); d.rolls++; PD_TYPED=[]; PD_PICK=null;
+  pdPaint(); pdPush();
+}
+function pdTapDie(i){
+  const g=lkGame(PD_CUR); if(!g||PD_BUSY||PD_ROLLING) return;
+  if(g.status!=='playing') return;
+  if(!lkMyRoll(g)){ toast('These are '+lkWho(lkRoller(g))+'’s dice'); return; }
+  const d=pdMyDice(g), real=pdReal(g);
+  if(!d.rolls){ toast(real?'Type in what the dice show first':'Roll the dice first'); return; }
+  if(real&&!pdFull(d.v)){ toast('Type in all five first, then tap any to keep'); return; }
+  if(d.rolls>=3){ toast('That was the last roll: tap a box to score'); return; }
+  d.held[i]=!d.held[i]; pdPaint(); pdPushSoon();
+}
+function pdTapBox(k){
+  const g=lkGame(PD_CUR), me=g&&lkMe(g.id); if(!g||!me||PD_BUSY) return;
+  if(PD_VIEW&&PD_VIEW.uid!==ME.id){ const p=lkPlayers(g.id).find(x=>x.user_id===PD_VIEW.uid);
+    const v=p&&pdSheet(p.sheet).box[k];
+    toast(v!=null?lkWho(PD_VIEW.uid)+' has '+v+' in '+pdName(k):'This is '+lkWho(PD_VIEW.uid)+'’s card'); return; }
+  const s=pdSheet(me.sheet);
+  if(s.box[k]!=null){ toast(pdName(k)+' is filled: '+s.box[k]); return; }
+  if(g.status!=='playing'){ toast('This game has ended'); return; }
+  if(!lkMyRoll(g)){ toast('Wait for your turn'); return; }
+  const d=pdMyDice(g);
+  if(!d.rolls||!pdFull(d.v)){ toast(pdReal(g)?'Type in all five dice first':'Roll the dice first'); return; }
+  PD_PICK=PD_PICK&&PD_PICK.id===d.id&&PD_PICK.at===d.at&&PD_PICK.k===k?null:{id:d.id, at:d.at, k};
+  pdPaint();
+  const go=$('pdGo'); if(go&&go.scrollIntoView) try{ go.scrollIntoView({block:'nearest'}); }catch(e){}
+}
+async function pdScore(){
+  const g=lkGame(PD_CUR), me=g&&lkMe(g.id); if(!g||!me||!PD_PICK||PD_BUSY) return;
+  if(!lkMyRoll(g)||PD_PICK.at!==g.turn_no){ PD_PICK=null; pdPaint(); return; }
+  const d=pdMyDice(g), s=pdSheet(me.sheet), k=PD_PICK.k;
+  if(s.box[k]!=null||!pdFull(d.v)){ PD_PICK=null; pdPaint(); return; }
+  const extra=pdExtraDue(d.v,s);
+  const ns={box:{...s.box, [k]:pdPoints(k,d.v,s)}, extra:s.extra+(extra?1:0)};
+  clearTimeout(PD_PUSHT); PD_PENDING=false;
+  PD_BUSY=true; const was=me.sheet; me.sheet=ns; PD_PICK=null; pdPaint();
+  const {data,error}=await sb.rpc('pounds_score',{g:g.id, at_turn:g.turn_no, s:ns});
+  PD_BUSY=false;
+  if(error){
+    console.error(error); me.sheet=was;
+    toast(pdErr(error,'Could not score that: check your signal')); pdPaint(); return;
+  }
+  if(data==='moved'){ me.sheet=was; toast('The game moved on: have another look'); }
+  else if(extra) toast('Another five of a kind: 100 more');
+  if(data==='ended') toast('That is the end of the game');
+  PD_DICE=null; PD_TYPED=[];
+  await pdReload(g.id); pdPaint();
+}
+
+/* ---------- fetching and watching ---------- */
+async function pdReload(id){
+  const was=lkGame(id), turn=was&&was.turn_no;
+  const ok=await lkReload(id);
+  const now=lkGame(id);
+  if(ok&&was&&now&&Number(PD_CUR)===Number(id)&&now.status==='playing'&&now.turn_no!==turn
+     &&lkRoller(now)===ME.id&&lkPlayers(id).length>1){
+    toast('Your turn');
+    try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){}
+  }
+  return ok;
+}
+function pdWatch(id){
+  pdUnwatch();
+  const soon=()=>{ clearTimeout(PD_SOON);
+    PD_SOON=setTimeout(async()=>{ if(Number(PD_CUR)!==Number(id)) return;
+      await pdReload(id); pdPaint(); },200); };
+  if(sb.channel){
+    try{
+      PD_SUB=sb.channel('pounds'+id)
+        .on('postgres_changes',{event:'*',schema:'public',table:'games',filter:'id=eq.'+id},soon)
+        .on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'game_id=eq.'+id},soon)
+        .subscribe();
+    }catch(e){ /* no live link: the fetch below keeps up */ }
+  }
+  PD_POLL=setInterval(()=>{ if(!document.hidden) soon(); },10000);
+}
+function pdUnwatch(){
+  if(PD_SUB&&sb.removeChannel){ try{ sb.removeChannel(PD_SUB); }catch(e){} }
+  PD_SUB=null; clearInterval(PD_POLL); PD_POLL=null; clearTimeout(PD_SOON);
+}
+async function pdOpen(id){
+  if(LK_CUR!=null) lkShut();
+  PD_CUR=Number(id); PD_PICK=null; PD_VIEW=null; PD_SEEN=null;
+  showSheet('pdPlay'); $('pdBody').scrollTop=0; lockBackground();
+  pdPaint();
+  pdWatch(id);
+  await pdReload(id);
+  pdPaint();
+}
+function pdShut(){
+  pdAskShut(); pdUnwatch();
+  if(PD_PENDING) pdPush();          // dice kept or typed in just now still reach the others
+  clearInterval(PD_TUMBLE); PD_ROLLING=null;
+  if($('pdPlay')) $('pdPlay').classList.add('hidden');
+  PD_CUR=null; PD_PICK=null; PD_VIEW=null;
+}
+function pdBackToList(){
+  pdShut(); lockBackground();
+  if(!$('games').classList.contains('hidden')) renderGames();
+  else openGames();
+}
+
+/* ---------- starting one ---------- */
+// Who is playing, and with which dice. Nobody ticked is a game on your own.
+function pdPickPlayers(){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick pplbox'; box.id='pdWho';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Who is playing with you?</p>
+      <p class="coords" style="margin:0 0 10px">Up to five others, each on their own
+        phone, or nobody for a game on your own. Only one of you starts the game: it
+        appears on the others’ phones, under Games &rsaquo; Going on.</p>
+      ${USERS.length?`<div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
+        value="${esc(u.id)}"> ${pplWho(u)}</label>`).join('')}</div>`:''}
+      <label class="pdrealsw"><input type="checkbox" id="pdwReal">
+        <span><b>Real dice</b><small>Roll them on the table and type in what they
+        show. Left off, the phone rolls them.</small></span></label>
+      <div class="pfoot"><button id="pdwCancel">Cancel</button>
+        <button id="pdwGo" class="go">Next</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#pdwCancel').onclick=()=>done(null);
+    box.querySelector('#pdwGo').onclick=()=>{
+      const who=[...box.querySelectorAll('.ppl input:checked')].map(i=>i.value);
+      if(who.length>5){ toast('Up to five others: Pounds is for 1 to 6 players'); return; }
+      done({who, real:box.querySelector('#pdwReal').checked});
+    };
+  });
+}
+async function pdNewGame(same,realWas){
+  if(!GAMES_READY){ toast('Pounds needs steps 57 and 60 run in Supabase first'); return; }
+  const pick=same!=null?{who:same, real:!!realWas}:await pdPickPlayers(); if(!pick) return;
+  const players=[ME.id].concat(pick.who.filter(x=>x!==ME.id));
+  await lkReload();
+  const dup=lkSameGame(players,'pounds');
+  if(dup){
+    const v=await lkAlready(dup); if(!v) return;
+    if(v==='open'){ if(PD_CUR!=null) pdShut(); pdOpen(Number(dup.id)); return; }
+  }
+  let first=0;
+  if(players.length>1){
+    first=await lkPickFirst(players,{title:'Who goes first?',
+      note:'The dice then go round in this order.'});
+    if(first==null) return;
+  }
+  const {data,error}=await sb.rpc('new_pounds',{players, first_seat:first, real_dice:!!pick.real});
+  if(error){ console.error(error); toast(pdErr(error,'Could not start the game')); return; }
+  const id=Number(data);
+  await lkReload(id);
+  if(PD_CUR!=null) pdShut();
+  pdOpen(id);
+}
+
+/* ---------- the screen ---------- */
+function pdStatus(g,d){
+  if(g.status!=='playing') return 'Game over';
+  const ps=lkPlayers(g.id), r=lkRoller(g), rp=ps.find(p=>p.user_id===r);
+  const round=Math.min(13,(rp?pdFilled(pdSheet(rp.sheet)):0)+1), real=pdReal(g), full=pdFull(d.v);
+  const at=' <span class="pdround">Round '+round+' of 13</span>';
+  if(r!==ME.id){
+    const who=esc(lkWho(r));
+    if(!d.rolls) return '<b>'+who+'’s turn.</b> Waiting for them to roll.'+at;
+    return '<b>'+who+'’s turn:</b> roll '+d.rolls+' of 3.'+(real&&!full?' Typing in the dice…':'')+at;
+  }
+  const you=ps.length>1?'<b>Your turn.</b> ':'';
+  if(!d.rolls) return you+(real?'Roll the five dice on the table, then tap the numbers they show.'
+    :'Roll the dice.')+at;
+  if(real&&!full) return you+'Roll '+d.rolls+' of 3: tap what the dice show ('+d.v.filter(Boolean).length+' of 5 in).'+at;
+  if(d.rolls>=3) return you+'That was your last roll: tap a box to score.'+at;
+  return you+'Roll '+d.rolls+' of 3. Tap any dice to keep them and roll again, or tap a box to score.'+at;
+}
+function pdOverHtml(g){
+  const res=pdResults(g), solo=res.list.length===1;
+  let more=g.end_reason==='Stopped'?'The game was stopped.':'Every box is filled.';
+  if(solo&&g.end_reason!=='Stopped'){
+    const b=pdBestSolo(g.id);
+    more+=b==null?' Your first full game on your own.'
+      :res.best>b?' Your best yet: the best before was '+b+'.'
+      :' Your best on your own is '+b+'.';
+  }
+  return `<div class="card pdover" role="status">
+    <h3>${esc(res.line)}</h3><p class="coords">${esc(more)}</p>
+    ${solo?'':`<ol class="lkres">${res.list.map(x=>`<li class="${x.total===res.best?'win':''}">${
+      esc(x.who)}<b>${x.total}</b></li>`).join('')}</ol>`}
+    <div class="lkoverbtns"><button class="btn primary" id="pdPlayAgain">Play again</button>
+      <button class="btn" id="pdOverBack">Back to games</button>
+      ${g.created_by===ME.id?'<button class="btn" id="pdClear">Clear it away</button>':''}</div></div>`;
+}
+function pdPaint(){
+  const b=$('pdBody'); if(!b||$('pdPlay').classList.contains('hidden')) return;
+  const g=lkGame(PD_CUR), me=g&&lkMe(g.id);
+  const ask=b.querySelector('.lkask');
+  if(!g||!me){
+    b.innerHTML=`<p class="empty">${GAMES_FAILED?'Could not fetch this game just now. Nothing is lost: try the refresh button.':'Fetching the game…'}</p>`;
+    if(ask) b.appendChild(ask);
+    return;
+  }
+  const ps=lkPlayers(g.id), playing=g.status==='playing', roller=playing?lkRoller(g):null;
+  const mine=playing&&roller===ME.id, real=pdReal(g);
+  const d=playing?(mine?pdMyDice(g):pdDiceOf(g)):PD_BLANK(), full=pdFull(d.v);
+  // Whose card: whoever's turn it is, until you tap someone else's name.
+  if(!PD_VIEW||PD_VIEW.id!==Number(g.id)||PD_VIEW.at!==g.turn_no||!ps.some(p=>p.user_id===PD_VIEW.uid))
+    PD_VIEW={id:Number(g.id), at:g.turn_no, uid:roller&&ps.some(p=>p.user_id===roller)?roller:ME.id};
+  const view=ps.find(p=>p.user_id===PD_VIEW.uid)||me, vs=pdSheet(view.sheet), vt=pdTotals(vs);
+  const showPot=playing&&view.user_id===roller&&full&&d.rolls>0&&!PD_ROLLING;
+  const pick=mine&&PD_PICK&&PD_PICK.id===Number(g.id)&&PD_PICK.at===g.turn_no?PD_PICK.k:null;
+  if(PD_PICK&&!pick) PD_PICK=null;
+  const tumble=PD_ROLLING||[];
+
+  const chips=ps.length>1?`<div class="pdwho">${ps.map(p=>{
+    const nm=p.user_id===ME.id?'You':lkWho(p.user_id), t=pdTotals(pdSheet(p.sheet)).total;
+    return `<button class="${p.user_id===ME.id?'me':''}${p.user_id===roller?' roll':''}${p.user_id===view.user_id?' view':''}"
+      data-pdwho="${esc(p.user_id)}" aria-label="${esc(nm)}, ${t}${p.user_id===roller?', their turn':''}: show this card">${
+      p.user_id===roller?'<i aria-hidden="true">⚄</i>':''}<span class="pdnm">${esc(nm)}</span> <b>${t}</b></button>`;
+  }).join('')}</div>`:'';
+  const dice=d.v.map((n,i)=>{
+    const held=d.held[i]&&d.rolls>0, roll=tumble[i];
+    return `<button class="pddie${n?'':' blank'}${held?' held':''}${roll?' tumble':''}" data-pddie="${i}"
+      aria-label="Die ${i+1}: ${n?n:'not rolled'}${held?', kept':''}">${pdFace(roll?1+Math.floor(Math.random()*6):n)}</button>`;
+  }).join('');
+  let ctl='';
+  if(mine&&!real) ctl=`<div class="pdctl"><button class="pdroll" id="pdRoll" ${d.rolls>=3?'disabled':''}>${
+      d.rolls===0?'Roll the dice':d.rolls>=3?'No rolls left':'Roll again'}</button>
+      <span class="pdleft">${3-d.rolls} roll${3-d.rolls===1?'':'s'} left</span></div>`;
+  else if(mine&&real) ctl=`<div class="pdpad" role="group" aria-label="What the dice show">${
+      [1,2,3,4,5,6].map(n=>`<button data-pdn="${n}" ${full?'disabled':''}>${n}</button>`).join('')}
+      <button data-pdn="0" aria-label="Take the last number back" ${d.v.some((x,i)=>x&&!d.held[i])?'':'disabled'}>&#9003;</button></div>
+      <div class="pdctl"><button class="pdroll" id="pdAgain" ${full&&d.rolls<3?'':'disabled'}>Roll again</button>
+      <span class="pdleft">${3-d.rolls} roll${3-d.rolls===1?'':'s'} left</span></div>`;
+  else if(playing) ctl=`<p class="pdwatch">${real?'Real dice: ':''}${esc(lkWho(roller))}’s dice${d.rolls?'':', not rolled yet'}</p>`;
+
+  const box=x=>{
+    const v=vs.box[x.k], filled=v!=null, pot=!filled&&showPot?pdPoints(x.k,d.v,vs):null;
+    const isPick=pick===x.k&&view.user_id===ME.id;
+    return `<button class="pdbox${filled?' done':''}${pot!=null?' pot':''}${pot===0?' zero':''}${isPick?' pick':''}"
+      data-pdbox="${x.k}" aria-label="${esc(x.name)}${filled?', '+v:pot!=null?', would score '+pot:', empty'}">
+      <span class="pdlab">${esc(x.name)}</span><span class="pdv">${filled?v:pot!=null?pot:''}</span></button>`;
+  };
+  const toGo=Math.max(0,63-vt.upper);
+  const potExtra=showPot&&pdExtraDue(d.v,vs);
+  const card=`<div class="pdcardhd">${view.user_id===ME.id?'Your card':esc(lkWho(view.user_id))+'’s card'}</div>
+    <div class="pdcard">
+      <div class="pdcol">${PD_UPPER.map(box).join('')}
+        <div class="pdsum"><span>Top six</span><b>${vt.upper}</b></div>
+        <div class="pdsum"><span>Bonus${vt.bonus?'':' <small>'+toGo+' to go</small>'}</span><b>${vt.bonus||'–'}</b></div></div>
+      <div class="pdcol">${PD_LOWER.map(box).join('')}
+        <div class="pdsum${potExtra?' pot':''}"><span>Extra fives${vs.extra?' ×'+vs.extra:''}</span><b>${
+          vt.extra||(potExtra?'+100':'–')}</b></div></div>
+    </div>
+    <div class="pdtotal"><span>${view.user_id===ME.id?'Your total':esc(lkWho(view.user_id))+'’s total'}</span><b>${vt.total}</b></div>`;
+  const go=pick?(()=>{ const s=pdSheet(me.sheet), n=pdPoints(pick,d.v,s);
+    return `<button class="pdgo" id="pdGo">Put ${n} in ${esc(pdName(pick))}${pdExtraDue(d.v,s)?', and 100 more':''}</button>`; })():'';
+
+  b.innerHTML=`${playing?'':pdOverHtml(g)}
+    ${chips}
+    ${playing?`<div class="pdstatus" id="pdStatus">${pdStatus(g,d)}</div>
+    <div class="pdtable${real?' real':''}"><div class="pddice">${dice}</div>${ctl}</div>`:''}
+    ${card}
+    ${playing?'<div class="pdends"><button class="lkstop" id="pdStop">Stop game</button></div>':''}
+    ${go}`;
+  if(ask) b.appendChild(ask);
+  b.querySelectorAll('[data-pdwho]').forEach(x=>x.onclick=()=>{
+    PD_VIEW={id:Number(g.id), at:g.turn_no, uid:x.dataset.pdwho}; PD_PICK=null; pdPaint(); });
+  b.querySelectorAll('[data-pddie]').forEach(x=>x.onclick=()=>pdTapDie(Number(x.dataset.pddie)));
+  b.querySelectorAll('[data-pdn]').forEach(x=>x.onclick=()=>pdType(Number(x.dataset.pdn)));
+  b.querySelectorAll('[data-pdbox]').forEach(x=>x.onclick=()=>pdTapBox(x.dataset.pdbox));
+  const on=(id,f)=>{ const e=$(id); if(e) e.onclick=f; };
+  on('pdRoll',pdRoll); on('pdAgain',pdAgain); on('pdGo',pdScore); on('pdStop',pdStop);
+  on('pdOverBack',pdBackToList); on('pdClear',()=>pdClearAway(g.id));
+  on('pdPlayAgain',()=>pdNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id),real));
+  // Someone else has just rolled: their dice tumble here too.
+  if(playing&&!mine&&!real&&!PD_ROLLING){
+    const seen=PD_SEEN&&PD_SEEN.id===Number(g.id)&&PD_SEEN.at===g.turn_no?PD_SEEN.rolls:null;
+    PD_SEEN={id:Number(g.id), at:g.turn_no, rolls:d.rolls};
+    if(seen!=null&&d.rolls>seen&&full) pdTumble(d.held.map(h=>d.rolls===1||!h));
+  }
+}
+
+/* Questions during a game, on the game's own screen, as Loxx's are
+   (answered the same way). Resolves true or false. */
+function pdAsk(msg,yes,no){
+  const b=$('pdBody');
+  if(!b||$('pdPlay').classList.contains('hidden')) return Promise.resolve(confirm(msg));
+  pdAskShut();
+  return new Promise(res=>{
+    const box=document.createElement('div');
+    box.className='lkask pdask'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true');
+    box.innerHTML=`<div class="lkaskin"><p>${esc(msg)}</p><div class="lkaskbtns">
+      <button type="button" class="lkback" data-ask="0">${esc(no||'Cancel')}</button>
+      <button type="button" class="lkdone" data-ask="1">${esc(yes||'OK')}</button></div></div>`;
+    const done=v=>{ box.__done=null; box.remove(); res(v); };
+    box.__done=done;
+    box.querySelectorAll('[data-ask]').forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); done(x.dataset.ask==='1'); });
+    box.onclick=ev=>{ if(ev.target===box) done(false); };
+    b.appendChild(box);
+  });
+}
+function pdAskShut(){
+  const a=$('pdBody')&&$('pdBody').querySelector('.lkask');
+  if(a&&a.__done) a.__done(false);
+}
+async function pdStop(){
+  const g=lkGame(PD_CUR); if(!g||g.status!=='playing') return;
+  const solo=lkPlayers(g.id).length===1;
+  if(!await pdAsk(solo?'Stop this game? The score so far is kept.'
+    :'Stop this game for everyone? The scores so far are kept.','Stop the game')) return;
+  if(Number(PD_CUR)!==Number(g.id)) return;
+  const {error}=await sb.rpc('stop_game',{g:g.id});
+  if(error){ console.error(error); toast('Could not stop the game'); return; }
+  PD_DICE=null;
+  await pdReload(g.id); pdPaint();
+}
+async function pdClearAway(id){
+  const solo=lkPlayers(id).length===1;
+  if(!await pdAsk(solo?'Clear this game away?':'Clear this game away, for everyone who played it?','Clear it away')) return;
+  const {error}=await sb.rpc('delete_game',{g:id});
+  if(error){ console.error(error); toast('Could not clear it away'); return; }
+  GAMES=GAMES.filter(x=>Number(x.id)!==Number(id));
+  GAME_PLAYERS=GAME_PLAYERS.filter(x=>Number(x.game_id)!==Number(id));
+  pdBackToList();
+}
+$('pdBack').onclick=pdBackToList;
+$('pdHelp').onclick=()=>openHelp('pounds');
 
 
 
@@ -14501,7 +15180,7 @@ function shade(hex,amt){
 const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd','rtEd'],
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
-  settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay'],
+  settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
@@ -14769,7 +15448,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.10.2';
+const APP_VERSION='2026.11.10.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -16520,7 +17199,7 @@ $('trayHelp').onclick=()=>openHelp();
 // The strip steps out of the way while you are typing into a form, and while
 // you are ticking contacts, where the bottom of the screen is already spoken for.
 function paintTray(){
-  const busy=['editor','logEd','itemEd','chat','recipeEd','cook','lkPlay'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
+  const busy=['editor','logEd','itemEd','chat','recipeEd','cook','lkPlay','pdPlay'].some(id=>$(id)&&!$(id).classList.contains('hidden'));
   // A jigsaw full screen on its side has the whole phone. Put away by anything
   // else (Home, another screen), the phone goes back upright too.
   const jp=$('jigPlay');
@@ -20628,7 +21307,7 @@ const AREA_SHUT={
   recipes:()=>{ if(COOK&&!shutCook()) return;
     ['recipes','recipe','recipeEd','ideas','weekMenu'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
-  games:()=>{ lkShut(); $('games').classList.add('hidden'); },
+  games:()=>{ lkShut(); pdShut(); $('games').classList.add('hidden'); },
   stuff:()=>{ if(!$('stuffEd').classList.contains('hidden')){ dphCancel(); stfCancelPdfs(); }
               ['stuff','stuffView','stuffEd'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
@@ -20670,7 +21349,8 @@ function areaItems(area){
   if(area==='shop') return [
     it('Start another list',      ()=>{ shutMenu(); newShopList(); })];
   if(area==='games') return [
-    it('New game of Loxx',  ()=>{ shutMenu(); lkNewGame(); })];
+    it('New game of Loxx',  ()=>{ shutMenu(); lkNewGame(); }),
+    it('New game of Pounds', ()=>{ shutMenu(); pdNewGame(); })];
   if(area==='chats') return [
     it('Start a message',         ()=>{ shutMenu(); newChat(); })];
   if(area==='home') return [

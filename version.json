@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.10.2",
+  "version": "2026.11.10.3",
   "history": [
+    {
+      "version": "2026.11.10.3",
+      "changes": [
+        "Games: Pounds, a new five-dice game for 1 to 6 players, on your own or a phone each. Up to three rolls a turn and 13 boxes to fill; Help has the rules.",
+        "Pounds: the phone rolls the dice, or tick Real dice when you start and type in what the real ones show. Everyone sees the dice as they are rolled.",
+        "Games: each game in the list now says which game it is, Loxx or Pounds."
+      ]
+    },
     {
       "version": "2026.11.10.2",
       "changes": [

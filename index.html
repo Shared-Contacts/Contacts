@@ -887,6 +887,16 @@ body.vbtyping #verBar{display:none}
 .lkwho i{font-style:normal}
 .lkwho em{font-style:normal;color:var(--red);letter-spacing:-1px}
 .lkstop{margin-left:auto;color:var(--muted);text-decoration:underline;font-size:14px;padding:4px 6px;min-height:32px}
+/* Carry on without them sits beside Stop game, away from Done (ML241). */
+.lkends{margin-left:auto;display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.lkends .lkstop{margin-left:0}
+.lkstop.lkon{color:var(--hull);font-weight:700}
+/* With five players and long names, the names give way (cut short with …,
+   only names longer than six letters, and not below seven or so)
+   rather than pushing Carry on and Stop game off the edge. */
+.lkwho > span{display:inline-flex;align-items:center;gap:.3em;flex:0 1 auto;min-width:0}
+.lkwho > span > *{flex:0 0 auto}
+.lkwho .lknm{font-size:inherit;flex:0 1 auto;min-width:1.6em;max-width:7.5em;overflow:hidden;text-overflow:ellipsis}
 .lkrows{flex:1 1 auto;display:flex;flex-direction:column;gap:1.2cqh;min-height:0}
 .lkrow{flex:1 1 0;min-height:0;display:grid;align-items:stretch;
   grid-template-columns:minmax(24px,.55fr) repeat(11,minmax(0,1fr)) minmax(42px,1.15fr);
@@ -5436,14 +5446,19 @@ function openHelp(where){
   their own phone, and the phones keep each other up to date. The sheet fills the
   phone turned on its side; if your phone keeps the screen upright, the sheet turns
   itself round, so turn the phone to the left to read it.</p>
-  <p><strong>Starting:</strong> Games &rsaquo; <strong>New game</strong>, tick who
-  is playing, then choose who rolls first (everyone rolls one die: the first 6
-  starts). The game appears on their phones under Games.</p>
+  <p><strong>Starting:</strong> one of you starts the game: Games &rsaquo;
+  <strong>New game</strong>, tick who is playing, then choose who rolls first
+  (everyone rolls one die: the first 6 starts). The game appears on the others&rsquo;
+  phones under Games &rsaquo; Going on (the Games tile shows a number), and they
+  tap it to play. They don&rsquo;t start one of their own: that would make two
+  games, each waiting for the other. New game asks first if you already have a
+  game going with the same people.</p>
   <p><strong>Each roll:</strong> whoever is rolling throws all six dice. Everyone
   may mark the total of the two white dice, in any one row. The roller may also
   add one white die to one coloured die and mark that in the row of that colour.
-  Then everyone taps <strong>Done</strong>, and when all of you have, the dice pass
-  on. If someone has wandered off, the roller can carry on without them.</p>
+  Then everyone taps <strong>Done</strong>. It stays greyed until all of you have,
+  and then the dice pass on. If someone has wandered off, the roller can tap
+  <strong>Carry on without them</strong>, beside Stop game.</p>
   <p><strong>Left to right:</strong> red and yellow go 2 up to 12, green and blue
   12 down to 2. Marks go left to right; anything you pass is crossed out and cannot
   be marked later. The number at the left of each row is how many marks it has.
@@ -5458,11 +5473,15 @@ function openHelp(where){
   marked at any time. With five marks already in the row, marking it closes that
   row&rsquo;s lock: the lock counts as one more mark for you, and nobody can mark
   that colour after that roll, so put that die aside. Everyone else can still mark
-  that colour on the same roll, the white dice total included, and anyone with five
-  marks there who takes its last number closes it too. With fewer than five marks,
-  the 12 (or 2) is just a mark: the lock stays open, and you can&rsquo;t mark that
-  row again. Undo last move opens a lock you closed again, until you tap Done;
-  after that roll it is closed for good.</p>
+  that colour on the same roll, the white dice total included.</p>
+  <p><strong>Only one player gets the lock</strong> and its bonus mark: the roller,
+  if they take the last number with five marks; if not, the next player round who
+  does, and so on, whoever taps first. Anyone else who takes it scores it as a plain
+  mark. With fewer than five marks, the 12 (or 2) is just a mark: the lock stays
+  open, and you can&rsquo;t mark that row again. Undo last move opens a lock you
+  closed again, until you tap Done (if someone else took its last number with five
+  marks on that roll too, it stays closed and goes to them); after that roll it is
+  closed for good.</p>
   <p><strong>The end:</strong> when two locks are closed, or someone has four
   penalties, the game ends once that roll is finished. Each row scores by its marks:
   1 mark is 1 point, 2 are 3, 3 are 6, and so on, each extra mark adding one more
@@ -12861,7 +12880,10 @@ $('jigBack').onclick=()=>{ shutJigPlay(); lockBackground(); };
    time (ML212), but only with five marks already in the row does it close
    that row's lock: it counts as one more mark, and nobody marks that
    colour after the roll. Undo last move takes back marks until Done, and
-   opens a lock again through step 58's reopen_row (ML213). Whoever is rolling takes a penalty
+   opens a lock again through step 58's reopen_row (ML213). Only one player
+   holds each lock and gets its bonus: the roller first, then round in turn
+   (ML240, lkHolder). Done stays greyed until everyone has tapped it; Carry
+   on without them sits beside Stop game (ML241). Whoever is rolling takes a penalty
    for each of their two numbers not taken (Barry's rule, ML207: the
    printed rules give one for taking neither). Two locks closed, or four
    penalties, and the game
@@ -12898,9 +12920,11 @@ function lkSheet(raw){
   });
   return out;
 }
-const lkRowCount = (s,c) => arr(s[c]).length + (arr(s.locked).includes(c)?1:0);
-function lkScore(s){
-  const rows=LK_ROWS.map(r=>lkTri(lkRowCount(s,r.c)));
+// locks: the rows whose lock this player holds, each one more mark. Left
+// out, every lock on the sheet counts (lkLocksOf says which really do).
+const lkRowCount = (s,c,locks) => arr(s[c]).length + (arr(locks||s.locked).includes(c)?1:0);
+function lkScore(s,locks){
+  const rows=LK_ROWS.map(r=>lkTri(lkRowCount(s,r.c,locks)));
   return {rows, pen:s.pen*5, total:rows.reduce((a,b)=>a+b,0)-s.pen*5};
 }
 
@@ -12923,6 +12947,45 @@ const lkTurnMarks = (s,g) => s.turn.no===g.turn_no ? s.turn.marks : [];
 const lkClosedBefore = (g,c) => g.closed && g.closed[c]!=null && Number(g.closed[c])<g.turn_no;
 const lkClosed = (g,c) => !!(g.closed && g.closed[c]!=null);
 const lkDoneThisRoll = (g,p) => !!p && p.done_turn>=g.turn_no;
+
+/* One lock, one holder (ML240, Barry's rule, 10 Nov 2026). Everyone who
+   takes a row's last number with five marks there claims its lock (their
+   sheet's locked), but only one of them gets the lock and its bonus mark:
+   the roller of the roll it closed on if they claimed it, otherwise the
+   next player round from the roller who did, and so on. Who pressed first
+   makes no difference. The others' 12 (or 2) is a plain mark. It is worked
+   out from the sheets, so it follows claims made and taken back (Undo)
+   during that roll, with no change to step 57's functions. Games that
+   finished before 10 Nov 2026 keep the rule they were played by: every
+   claim scored. */
+const LK_ONE_LOCK_FROM='2026-11-10';
+const lkOneLock = g => !!g && (g.status==='playing' || String(g.ended_at||g.created_at||'')>=LK_ONE_LOCK_FROM);
+// The seat that rolled on roll k: the dice move one seat with every roll.
+function lkRollerSeatAt(g,k){
+  const n=lkPlayers(g.id).length||1;
+  return (((g.turn-(g.turn_no-k))%n)+n)%n;
+}
+// How far round from the roller a player sits, on the roll colour c's lock
+// closed on (this roll, if it is still open): 0 is the roller.
+function lkRank(g,p,c){
+  const n=lkPlayers(g.id).length||1;
+  const k=lkClosed(g,c)?Number(g.closed[c]):g.turn_no;
+  return ((p.seat-lkRollerSeatAt(g,k))%n+n)%n;
+}
+// Who holds colour c's lock: the claim nearest the roller. Null while it is
+// open, or if no sheet claims it yet (a save still on its way).
+function lkHolder(g,c){
+  if(!g||!lkClosed(g,c)) return null;
+  return lkPlayers(g.id).filter(p=>lkSheet(p.sheet).locked.includes(c))
+    .sort((a,b)=>lkRank(g,a,c)-lkRank(g,b,c))[0]||null;
+}
+function lkHasLock(g,p,c){
+  if(!p||!lkSheet(p.sheet).locked.includes(c)) return false;
+  // An old game; or a claim whose lock did not reach everyone (no signal).
+  if(!lkOneLock(g)||!lkClosed(g,c)) return true;
+  const h=lkHolder(g,c); return !!h&&h.user_id===p.user_id;
+}
+const lkLocksOf = (g,p) => LK_ROWS.map(r=>r.c).filter(c=>lkHasLock(g,p,c));
 
 // Why a number cannot be marked now, or '' when it can.
 function lkWhyNot(g,s,r,n){
@@ -12963,6 +13026,8 @@ async function lkReload(id){
   }
   GAMES_READY=true; GAMES_FAILED=false;
   const was=one?lkGame(id):null;
+  // Who held each lock before this fetch (ML240), to tell you if yours moves.
+  const held=was?LK_ROWS.map(r=>{ const h=lkHolder(was,r.c); return h?h.user_id:null; }):null;
   // A mark of yours still on its way: keep it rather than the copy from before it.
   const keep=LK_SAVING&&one?lkMe(id):null;
   if(one){
@@ -12978,8 +13043,17 @@ async function lkReload(id){
   // Someone else closed a lock on this roll, or opened it again with Undo.
   if(was&&now&&now.turn_no===was.turn_no&&now.status==='playing'&&Number(LK_CUR)===Number(id)){
     const me=lkMe(id), mine=me?lkSheet(me.sheet).locked:[];
-    LK_ROWS.forEach(r=>{
+    LK_ROWS.forEach((r,i)=>{
       const a=lkClosed(was,r.c), b=lkClosed(now,r.c), n=r.name.toLowerCase();
+      // Your claim on a lock: someone nearer the roller has claimed it too,
+      // or the one who was has taken theirs back (ML240).
+      if(mine.includes(r.c)&&held&&lkOneLock(now)){
+        const h=lkHolder(now,r.c), h0=held[i], h1=h?h.user_id:null;
+        if(h0===ME.id&&h1&&h1!==ME.id) toast((lkRank(now,h,r.c)===0
+            ?'It is '+lkWho(h1)+'’s roll':lkWho(h1)+' comes before you in turn')
+          +', so the '+n+' lock and its bonus go to '+lkWho(h1)+'. Your '+(r.up?12:2)+' still scores as a mark.');
+        else if(h0&&h0!==ME.id&&h1===ME.id) toast('The '+n+' lock and its bonus are yours now');
+      }
       if(mine.includes(r.c)||a===b) return;
       if(b) toast(lkDoneThisRoll(now,me)?'The '+n+' lock has been closed'
         :'The '+n+' lock has been closed. You can still mark '+n+' on this roll, until you tap Done.');
@@ -13023,7 +13097,7 @@ function lkGameLine(g){
   }
   return `<button class="pplrow lkgrow" data-lkgame="${esc(g.id)}">
     <span class="pplwho"><b>With ${esc(others)}</b><small>${sub}</small></span>
-    <span class="lkpts">${lkScore(lkSheet(me.sheet)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
+    <span class="lkpts">${lkScore(lkSheet(me.sheet),lkLocksOf(g,me)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
 function renderGames(){
@@ -13057,7 +13131,8 @@ function lkPickPlayers(){
     box.innerHTML=`<div class="inner">
       <p class="dsec" style="padding-top:0">Who is playing with you?</p>
       <p class="coords" style="margin:0 0 10px">Up to four others. Each of them plays
-        on their own phone.</p>
+        on their own phone. Only one of you starts the game: it appears on the
+        others’ phones, under Games &rsaquo; Going on.</p>
       <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
         value="${esc(u.id)}"> ${pplWho(u)}</label>`).join('')}</div>
       <div class="pfoot"><button id="lkwCancel">Cancel</button>
@@ -13092,11 +13167,50 @@ function lkPickFirst(players){
     box.querySelectorAll('[data-lkfirst]').forEach(b=>b.onclick=()=>done(Number(b.dataset.lkfirst)));
   });
 }
+// A game going on with exactly these people, the newest, or null.
+function lkSameGame(players){
+  return GAMES.filter(g=>g.status==='playing'&&lkMe(g.id)).find(g=>{
+    const ids=lkPlayers(g.id).map(p=>p.user_id);
+    return ids.length===players.length&&players.every(x=>ids.includes(x)); })||null;
+}
+// 'open' that game, 'new' to start another anyway, or null.
+function lkAlready(g){
+  return new Promise(resolve=>{
+    const others=lkAnd(lkPlayers(g.id).filter(p=>p.user_id!==ME.id).map(p=>lkWho(p.user_id)));
+    const by=g.created_by===ME.id?'you':lkWho(g.created_by);
+    const on=new Date(g.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='lkAlready';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Already playing</p>
+      <p style="margin:0 0 10px">You already have a game going with ${esc(others)},
+        started by ${esc(by)} on ${esc(on)}. Only one of you needs to start a game:
+        the others play it from Games &rsaquo; Going on.</p>
+      <button class="pplrow" id="lkaOpen"><span class="pplwho"><b>Open that game</b></span>
+        <span aria-hidden="true">&rsaquo;</span></button>
+      <div class="pfoot" style="margin-top:8px"><button id="lkaCancel">Cancel</button>
+        <button id="lkaNew" class="go">Start another</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#lkaCancel').onclick=()=>done(null);
+    box.querySelector('#lkaOpen').onclick=()=>done('open');
+    box.querySelector('#lkaNew').onclick=()=>done('new');
+  });
+}
 async function lkNewGame(same){
   if(!GAMES_READY){ toast('Loxx needs step 57 run in Supabase first'); return; }
   if(!USERS.length){ toast('Nobody else has an account yet'); return; }
   const who=same||await lkPickPlayers(); if(!who) return;
   const players=[ME.id].concat(who.filter(x=>x!==ME.id));
+  // One game, started by one of you (ML239). Each starting their own left
+  // both phones waiting, each for the other, in two different games.
+  await lkReload();
+  const dup=lkSameGame(players);
+  if(dup){
+    const v=await lkAlready(dup); if(!v) return;
+    if(v==='open'){ if(LK_CUR!=null) lkShut(); lkOpen(Number(dup.id)); return; }
+  }
   const first=await lkPickFirst(players); if(first==null) return;
   const {data,error}=await sb.rpc('new_game',{players, first_seat:first});
   if(error){
@@ -13148,10 +13262,19 @@ function lkUnwatch(){
   if(LK_SUB&&sb.removeChannel){ try{ sb.removeChannel(LK_SUB); }catch(e){} }
   LK_SUB=null; clearInterval(LK_POLL); LK_POLL=null; clearTimeout(LK_SOON);
 }
+// Back to the phone (ML239): the game, or the list of games and the Games
+// tile, catch up at once, so a game someone has just started shows.
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden||!ME||!GAMES_READY) return;
+  if(LK_CUR!=null){ const id=LK_CUR; lkReload(id).then(()=>{ if(Number(LK_CUR)===Number(id)) lkPaint(); }); return; }
+  lkReload().then(ok=>{ if(!ok) return;
+    if($('games')&&!$('games').classList.contains('hidden')) renderGames();
+    if($('home')&&!$('home').classList.contains('hidden')) renderHome(); });
+});
 
 function lkResults(g){
   const list=lkPlayers(g.id).map(p=>({id:p.user_id, who:lkWho(p.user_id),
-    total:lkScore(lkSheet(p.sheet)).total})).sort((a,b)=>b.total-a.total);
+    total:lkScore(lkSheet(p.sheet),lkLocksOf(g,p)).total})).sort((a,b)=>b.total-a.total);
   const best=list.length?list[0].total:0, tops=list.filter(x=>x.total===best);
   const line=tops.length>1
     ? 'A draw on '+best
@@ -13185,24 +13308,26 @@ function lkPaint(){
     if(ask) st.appendChild(ask);
     $('lkBack').onclick=lkBackToList; return;
   }
-  const s=lkSheet(me.sheet), sc=lkScore(s), ps=lkPlayers(g.id), roller=lkRoller(g);
+  const s=lkSheet(me.sheet), myLocks=lkLocksOf(g,me), sc=lkScore(s,myLocks), ps=lkPlayers(g.id), roller=lkRoller(g);
   const turn=lkTurnMarks(s,g), done=lkDoneThisRoll(g,me), playing=g.status==='playing';
   const waiting=ps.filter(p=>!lkDoneThisRoll(g,p));
   const canCarryOn=playing&&done&&roller===ME.id&&waiting.length>0;
   const row=r=>{
     const order=lkNums(r), marked=s[r.c], last=marked.length?order.indexOf(marked[marked.length-1]):-1;
+    // mineShut: you took its last number; held: and the lock is yours (ML240).
     const shutAll=lkClosedBefore(g,r.c), mineShut=s.locked.includes(r.c), shut=lkClosed(g,r.c)||mineShut;
+    const held=myLocks.includes(r.c);
     return `<div class="lkrow${shut?' shut':''}" style="--rc:${r.bg};--ri:${r.ink};--rs:${r.soft};--rf:${r.fg}"
         data-lkrow="${r.c}" aria-label="${r.name} row, ${r.up?'2 up to 12':'12 down to 2'}">
-      <span class="lkcount" title="Marks in this row">${lkRowCount(s,r.c)}</span>
+      <span class="lkcount" title="Marks in this row">${lkRowCount(s,r.c,myLocks)}</span>
       ${order.map((n,i)=>{
         const on=marked.includes(n), now=on&&turn.some(m=>m[0]===r.c&&m[1]===n);
         const gone=!on&&(i<last||shutAll||mineShut);
         return `<button class="lkn${on?' on':''}${now?' now':''}${gone?' gone':''}" data-lk="${r.c}:${n}"
           aria-label="${r.name} ${n}${on?', marked':gone?', crossed out':''}"><span>${n}</span></button>`;
       }).join('')}
-      <button class="lkgate${shut?' shut':''}${mineShut?' mine':''}" data-lkgate="${r.c}"
-        aria-label="${r.name} lock${mineShut?', closed by you':shut?', closed':', open'}">${LK_GATES(shut)}</button>
+      <button class="lkgate${shut?' shut':''}${held?' mine':''}" data-lkgate="${r.c}"
+        aria-label="${r.name} lock${held?', closed by you':shut?', closed':', open'}">${LK_GATES(shut)}</button>
     </div>`;
   };
   st.innerHTML=`
@@ -13211,16 +13336,17 @@ function lkPaint(){
       <div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>
       ${playing?`<button class="lkback lkundo" id="lkUndo" ${lkCanUndo(g,me,s)?'':'disabled'}
         aria-label="Undo last move: take back your newest mark on this roll">&#8630; Undo last move</button>`:''}
-      ${playing?(canCarryOn
-        ?'<button class="lkdone" id="lkOn">Carry on without them</button>'
-        :`<button class="lkdone" id="lkDone" ${done?'disabled':''}>${done?'Done ✓':'Done'}</button>`):''}
+      ${playing?`<button class="lkdone" id="lkDone" ${done?'disabled':''}>${done?'Done ✓':'Done'}</button>`:''}
     </div>
     <div class="lkwho">${ps.map(p=>{
-      const t=lkScore(lkSheet(p.sheet)).total, pen=lkSheet(p.sheet).pen;
-      return `<span class="${p.user_id===ME.id?'me':''}${playing&&p.user_id===roller?' roll':''}">${
-        playing&&p.user_id===roller?'<i aria-label="rolling">⚄</i> ':''}${esc(lkWho(p.user_id))} <b>${t}</b>${
+      const t=lkScore(lkSheet(p.sheet),lkLocksOf(g,p)).total, pen=lkSheet(p.sheet).pen;
+      // Only names longer than six letters give way when the line is full.
+      const nm=lkWho(p.user_id), give=Math.max(0,nm.length-6);
+      return `<span class="${p.user_id===ME.id?'me':''}${playing&&p.user_id===roller?' roll':''}" style="flex-shrink:${give}">${
+        playing&&p.user_id===roller?'<i aria-label="rolling">⚄</i> ':''}<small class="lknm" style="min-width:${Math.min(7,nm.length+1)}ch">${esc(nm)}</small> <b>${t}</b>${
         pen?' <em>'+'✕'.repeat(pen)+'</em>':''}${playing&&lkDoneThisRoll(g,p)?' ✓':''}</span>`;
-    }).join('')}${playing?'<button class="lkstop" id="lkStop">Stop game</button>':''}</div>
+    }).join('')}${playing?`<div class="lkends">${canCarryOn
+      ?'<button class="lkstop lkon" id="lkOn">Carry on without them</button>':''}<button class="lkstop" id="lkStop">Stop game</button></div>`:''}</div>
     <div class="lkrows">${LK_ROWS.map(row).join('')}</div>
     <div class="lkfoot">
       ${LK_ROWS.map((r,i)=>`<span class="lkbox" style="--bc:${r.bg}" aria-label="${r.name} row points">${sc.rows[i]}</span>`)
@@ -13240,8 +13366,9 @@ function lkPaint(){
     const [c,n]=b.dataset.lk.split(':'); lkTap(c,Number(n)); });
   st.querySelectorAll('[data-lkgate]').forEach(b=>b.onclick=()=>{
     const r=LK_ROWS.find(x=>x.c===b.dataset.lkgate);
+    const h=lkOneLock(g)&&lkHolder(g,r.c);
     toast(lkClosed(g,r.c)||s.locked.includes(r.c)
-      ?'The '+r.name.toLowerCase()+' lock is closed'
+      ?'The '+r.name.toLowerCase()+' lock is closed'+(h?(h.user_id===ME.id?': it is yours':': it is '+lkWho(h.user_id)+'’s'):'')
       :'Five marks, then the '+(r.up?12:2)+', closes the '+r.name.toLowerCase()+' lock'); });
   const again=$('lkAgain');
   if(again) again.onclick=()=>lkNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id));
@@ -13325,8 +13452,16 @@ async function lkSave(g,s){
   return true;
 }
 
+// Fetches the game before a question about a lock, so it names whoever
+// really holds it (ML240). False, with a word, if the roll moved on meanwhile.
+async function lkFresh(g){
+  await lkReload(g.id);
+  const now=lkGame(g.id);
+  if(now&&now.status==='playing'&&now.turn_no===g.turn_no) return true;
+  toast('The game moved on: have another look'); lkPaint(); return false;
+}
 async function lkTap(c,n){
-  const g=lkGame(LK_CUR), me=g&&lkMe(g.id); if(!me) return;
+  let g=lkGame(LK_CUR); const me=g&&lkMe(g.id); if(!me) return;
   const r=LK_ROWS.find(x=>x.c===c); if(!r) return;
   const s=lkSheet(me.sheet);
   if(s.turn.no!==g.turn_no) s.turn={no:g.turn_no, marks:[], pen:false};
@@ -13348,9 +13483,23 @@ async function lkTap(c,n){
   if(why){ toast(why); return; }
   const order=lkNums(r), last=order.indexOf(n)===order.length-1, name=r.name.toLowerCase();
   const closing=last&&marked.length>=5;
-  if(closing&&!await lkAskNow(g.id,'Mark the '+n+' and close the '+name+' lock? '
-      +'Nobody can mark '+name+' after this roll. Undo last move opens it again, until you tap Done.',
+  if(closing){ if(!await lkFresh(g)) return; g=lkGame(g.id); }
+  // Only one player gets the lock and its bonus (ML240): the roller first,
+  // then round in turn. Someone may hold it already, on this roll.
+  const h=closing&&lkOneLock(g)?lkHolder(g,c):null, hw=h?lkWho(h.user_id):'';
+  const beat=!!h&&lkRank(g,me,c)<lkRank(g,h,c);
+  if(closing&&!h&&!await lkAskNow(g.id,'Mark the '+n+' and close the '+name+' lock? '
+      +'Nobody can mark '+name+' after this roll. Undo last move opens it again, until you tap Done.'
+      +(lkMyRoll(g)?'':' If the roller, or anyone before you in turn, closes it on this roll too, the lock and its bonus go to them, and your '+n+' counts as a mark.'),
       'Close the lock')) return;
+  if(closing&&beat&&!await lkAskNow(g.id,hw+' has closed the '+name+' lock, but '
+      +(lkMyRoll(g)?'it is your roll':'you come before '+hw+' in turn')
+      +', so the lock and its bonus will be yours, and '+hw+'’s '+n+' counts as a mark. Mark the '+n+'?',
+      'Take the lock')) return;
+  if(closing&&h&&!beat&&!await lkAskNow(g.id,hw+' has closed the '+name+' lock'
+      +(lkRank(g,h,c)===0?' on their own roll':' and comes before you in turn')
+      +', so the lock and its bonus are theirs. Your '+n+' scores as a mark, and you can’t mark '+name+' again after it. Mark it?',
+      'Mark it')) return;
   if(last&&!closing&&!await lkAskNow(g.id,'Mark the '+n+' in '+name+'? You have fewer than five '+name
       +' marks, so it scores as a mark but does not close the lock, and you can’t mark '+name+' again after it.',
       'Mark it')) return;
@@ -13359,9 +13508,12 @@ async function lkTap(c,n){
   if(!await lkSave(g,s)) return;
   if(closing){
     const {error}=await sb.rpc('close_row',{g:g.id, colour:c});
-    if(error){ console.error(error); toast('Could not close the lock for everyone: check your signal'); }
-    else toast('The '+r.name.toLowerCase()+' lock is closed: put that die aside');
     await lkReload(g.id); lkPaint();
+    if(error){ console.error(error); toast('Could not close the lock for everyone: check your signal'); return; }
+    const g2=lkGame(g.id), h2=g2&&lkOneLock(g2)?lkHolder(g2,c):null;
+    toast(!h2||h2.user_id===ME.id
+      ?'The '+name+' lock is closed'+(beat?' and it is yours: '+hw+'’s '+n+' counts as a mark':'')+'. Put that die aside'
+      :'Marked. The '+name+' lock and its bonus are '+lkWho(h2.user_id)+'’s, and your '+n+' counts as a mark');
   }
 }
 
@@ -13376,8 +13528,17 @@ async function lkTakeBack(g,s,c,n){
   const lock=s.locked.includes(c);
   let kept=false;
   if(lock){
-    if(!await lkAskNow(g.id,'Take back the '+n+' and open the '+name+' lock again, for everyone?',
-      'Open it again')) return;
+    if(!await lkFresh(g)) return; g=lkGame(g.id);
+    // Others who took its last number too keep it closed, and the nearest
+    // of them to the roller has it next (ML240).
+    const others=lkPlayers(g.id).filter(p=>p.user_id!==ME.id&&lkSheet(p.sheet).locked.includes(c))
+      .sort((a,b)=>lkRank(g,a,c)-lkRank(g,b,c));
+    const nw=others.length?lkWho(others[0].user_id):'';
+    if(!await lkAskNow(g.id,others.length
+        ?'Take back the '+n+'? The '+name+' lock stays closed, and it and its bonus '
+          +(lkHasLock(g,lkMe(g.id),c)?'go to ':'stay with ')+nw+'.'
+        :'Take back the '+n+' and open the '+name+' lock again, for everyone?',
+      others.length?'Take it back':'Open it again')) return;
     const {data,error}=await sb.rpc('reopen_row',{g:g.id, colour:c});
     if(error){
       console.error(error);
@@ -13393,9 +13554,10 @@ async function lkTakeBack(g,s,c,n){
   s[c].pop(); s.turn.marks.splice(i,1);
   if(!await lkSave(g,s)) return;
   if(lock){
-    toast(kept?'Taken back. The '+name+' lock stays closed: someone else closed it on this roll too'
-      :'The '+name+' lock is open again: put that die back');
     await lkReload(g.id); lkPaint();
+    const g2=lkGame(g.id), h2=g2?lkHolder(g2,c):null;
+    toast(kept?'Taken back. The '+name+' lock stays closed'+(h2?': it is '+lkWho(h2.user_id)+'’s':': someone else closed it on this roll too')
+      :'The '+name+' lock is open again: put that die back');
   }
 }
 async function lkUndo(){
@@ -14544,7 +14706,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.09.4';
+const APP_VERSION='2026.11.10.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

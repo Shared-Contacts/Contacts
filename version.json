@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.09.4",
+  "version": "2026.11.10.1",
   "history": [
+    {
+      "version": "2026.11.10.1",
+      "changes": [
+        "Loxx: only one player gets a lock and its bonus: the roller first, then the next player round who closes it. Anyone else's 12 (or 2) is a plain mark.",
+        "Loxx: Done stays greyed until everyone has tapped it. Carry on without them is now beside Stop game, so a second tap can't hit it.",
+        "Loxx: one person starts a game and the others play it from Games, Going on. New game asks first if you already have one going with the same people."
+      ]
+    },
     {
       "version": "2026.11.09.4",
       "changes": [

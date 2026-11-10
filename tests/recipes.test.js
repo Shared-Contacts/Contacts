@@ -489,22 +489,28 @@ const seed = () => {
   await ev(() => { $('recipe').classList.add('hidden'); lockBackground(); });
 
   console.log('\nTonight’s idea on Today');
-  await ev(async () => { await loadRecipes(); RCP_PREFS.hide = []; openBrief(); }); await settle(500);
+  // Since 2026.11.10.2 (ML246) it picks from Mains, so a second main is
+  // added for ↻ to move on to (more in batch1110.test.js).
+  await ev(async () => { window.__rows.recipes.push({ id:399, created_by:'me', title:'Fish pie', categories:['Mains'],
+      serves:4, ingredients:[], cook_steps:[], photos:[] });
+    await loadRecipes(); RCP_PREFS.hide = []; openBrief(); }); await settle(500);
   const idea1 = await ev(() => { const b = document.querySelector('#briefRecipe [data-ropen]'); return b && +b.dataset.ropen; });
   ok('Today suggests one of the cookbook', !!idea1 && /Tonight.s idea/.test(await p.textContent('#briefBody')));
   ok('never one waiting in To try', await ev(id => !RECIPES.find(r => r.id === id).to_try, idea1));
+  ok('  and it is a main', idea1 === 302 || idea1 === 399, idea1);
   const again = await ev(() => { const r = rcpTodayPick(); return r && r.id; });
   ok('the same one all day', again === idea1);
   await p.click('[data-briefspin]'); await settle(200);
   const idea2 = await ev(() => +document.querySelector('#briefRecipe [data-ropen]').dataset.ropen);
-  ok('↻ shows another', idea2 !== idea1);
+  ok('↻ shows another', idea2 !== idea1 && (idea2 === 302 || idea2 === 399), idea1 + ' / ' + idea2);
   await p.click('#briefRecipe [data-ropen]'); await settle(500);
   // Since 5 Nov 2026 it opens on its own over Today, so Back comes straight back.
   ok('tapping it opens the recipe, over Today', await p.isVisible('#recipe')
      && await p.isVisible('#brief') && await ev(() => SHEET_STACK.slice(-2).join() === 'brief,recipe'));
   await ev(() => { RCP_PREFS.today = false; openBrief(); }); await settle(300);
   ok('switched off in Settings, it is not there', !/Tonight.s idea/.test(await p.textContent('#briefBody')));
-  await ev(() => { RCP_PREFS.today = true; shutBrief(); });
+  await ev(async () => { RCP_PREFS.today = true; shutBrief();
+    window.__rows.recipes = window.__rows.recipes.filter(r => r.id !== 399); await loadRecipes(); });
 
   console.log('\nSettings');
   await ev(() => openSettings('Recipes')); await settle(500);

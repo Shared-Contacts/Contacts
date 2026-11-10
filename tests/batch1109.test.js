@@ -60,8 +60,11 @@ const NAMES = ['Barclays Everyday Saver', 'Barclays ISA Issue 1', 'Barclays BBA 
   await ev(names => { window.__rows.accounts = names.map((n, i) => ({ id: i + 1, name: n, group_name: n.split(' ')[0], kind: 'savings',
     currency: 'GBP', opening_balance: 100, opening_date: '2026-08-31', active: true, sort: (i + 1) * 10, created_by: 'me',
     sort_code: i === 0 ? '20-00-00' : null })); }, NAMES);
+  // Since 2026.11.10.2 (ML244) each account starts folded to its name: these
+  // checks are about the opened-out boxes, so every one is opened first.
   const openFin = async () => { await ev(async () => { await loadMoney(); openSettings('Finances'); }); await settle(500);
-    await ev(() => document.querySelectorAll('.card.logsec').forEach(d => d.open = true)); await settle(150); };
+    await ev(() => { document.querySelectorAll('.card.logsec').forEach(d => d.open = true);
+      document.querySelectorAll('[data-arow].accmini').forEach(r => accBoxOpen(r, true)); }); await settle(150); };
   await openFin();
   const box = await ev(() => {
     const r = document.querySelector('[data-hm="acc:1"]'), n = r.querySelector('.accname'), cs = getComputedStyle(r), ns = getComputedStyle(n);
@@ -76,7 +79,8 @@ const NAMES = ['Barclays Everyday Saver', 'Barclays ISA Issue 1', 'Barclays BBA 
   ok('  with a wash of colour of its own', box.bg !== box.cardBg && box.bg !== 'rgba(0, 0, 0, 0)', box.bg + ' / ' + box.cardBg);
   ok('  and a gap between one box and the next', box.gap >= 8, box.gap);
   ok('the name is bold and bigger', box.weight >= 700 && box.size >= 18, box.weight + ' ' + box.size);
-  ok('  on a line of its own, nearly the width of the box', box.nameW >= box.rowW - 70 && box.groupTop > box.nameTop + 20, JSON.stringify(box));
+  // Less the ▾ that folds it away (ML244, 2026.11.10.2).
+  ok('  on a line of its own, nearly the width of the box', box.nameW >= box.rowW - 110 && box.groupTop > box.nameTop + 20, JSON.stringify(box));
   const labels = await ev(() => [...document.querySelectorAll('[data-hm="acc:1"] .accbank label')].map(l => l.firstChild.textContent.trim()));
   ok('three new boxes: Sort code, Account number, International number (IBAN)',
     labels.join('|') === 'Sort code|Account number|International number (IBAN)', labels.join('|'));

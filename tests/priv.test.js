@@ -135,8 +135,10 @@ const ok = (what, cond, extra='') => {
   await page.evaluate(() => { openSettings('Finances'); });
   await page.waitForTimeout(500);
   // The settings cards start folded up, as they do for him.
-  const unfold = () => page.evaluate(() =>
-    document.querySelectorAll('.card.logsec').forEach(d => d.open = true));
+  // The cards, and since 2026.11.10.2 (ML244) each account folded to its name.
+  const unfold = () => page.evaluate(() => {
+    document.querySelectorAll('.card.logsec').forEach(d => d.open = true);
+    document.querySelectorAll('[data-arow].accmini').forEach(r => accBoxOpen(r, true)); });
   await unfold();
   ok('every account can be held and moved', (await page.$$('[data-hm^="acc:"] > .grip')).length === 3);
   ok('no arrows left', (await page.$$('[data-amv]')).length === 0);

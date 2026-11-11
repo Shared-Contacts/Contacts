@@ -185,11 +185,12 @@ window.supabase={createClient:()=>({
     remove:paths=>{ window.__writes.push({op:'rmfile',bucket,paths});
       return Promise.resolve({}); },
     // A photo fetched to share it (Share idea, 9 Nov 2026). A suite can make
-    // one go missing by setting window.__noPhoto to its path.
+    // one go missing by setting window.__noPhoto to its path, or hand back a
+    // real picture by setting window.__photoBlob.
     download:path=>{ window.__writes.push({op:'download',bucket,path});
       return Promise.resolve(window.__noPhoto===path
         ? {data:null, error:{message:'Object not found'}}
-        : {data:new Blob([new Uint8Array(500)],{type:'image/jpeg'}), error:null}); },
+        : {data:window.__photoBlob||new Blob([new Uint8Array(500)],{type:'image/jpeg'}), error:null}); },
     copy:(from,to)=>{ window.__writes.push({op:'copyfile',bucket,from,to});
       return Promise.resolve({data:{path:to},error:null}); }})},
   // Database functions. Until a suite sets window.__rpc they are missing, as

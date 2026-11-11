@@ -53,6 +53,8 @@ const server = http.createServer((req, res) => {
   ok('  taking pictures as share_files', Array.isArray(st.params.files) && st.params.files[0].name === 'share_files'
     && st.params.files[0].accept.includes('image/*'));
   ok('  and the words with the names the page reads', st.params.url === 'share_url' && st.params.title === 'share_title' && st.params.text === 'share_text');
+  ok('  and contacts (a .vcf file) as well (ML256)', ['text/vcard', 'text/x-vcard', '.vcf'].every(x => st.params.files[0].accept.includes(x)),
+    JSON.stringify(st.params.files[0].accept));
 
   await p.goto(base + 'index.html');
   await p.evaluate(() => window.__ready);
@@ -71,7 +73,8 @@ const server = http.createServer((req, res) => {
           files.forEach(([n, size, type]) => dt.items.add(new File([new Uint8Array(size)], n, { type })));
           i.files = dt.files; f.append(i);
         }
-        Object.entries(words).forEach(([k, v]) => { const t = document.createElement('input'); t.name = k; t.value = v; f.append(t); });
+        // A text box, not a one-line input, so words over several lines keep them.
+        Object.entries(words).forEach(([k, v]) => { const t = document.createElement('textarea'); t.name = k; t.value = v; f.append(t); });
         document.body.append(f); f.submit();
       }, { files, words })]);
     await p.evaluate(() => window.__ready);
@@ -96,6 +99,19 @@ const server = http.createServer((req, res) => {
   ok('  with no pictures', !at.searchParams.has('share_pics'));
   at = await share({ words: { share_text: 'see https://example.org/page', share_title: '   ' } });
   ok('words with nothing in them are left off', at.searchParams.get('share_text') === 'see https://example.org/page' && !at.searchParams.has('share_title'), at.href);
+
+  console.log('\nA contact shared to the app (ML256)');
+  at = await share({ files: [['Kate Lock.vcf', 120, 'text/x-vcard']] });
+  ok('a contact file arrives the same way as a picture', at.searchParams.get('share_pics') === '1', at.href);
+  let card = await p.evaluate(() => sharedPicsFetch().then(fs => fs.map(f => [f.name, f.size, f.type])));
+  ok('  and the page collects it whole', JSON.stringify(card) === JSON.stringify([['Kate Lock.vcf', 120, 'text/x-vcard']]), JSON.stringify(card));
+  const VC = 'BEGIN:VCARD\nVERSION:3.0\nN:Lock;Kate;;;\nTEL;TYPE=CELL:+44 7700 900111\nEND:VCARD';
+  at = await share({ words: { share_text: VC, share_title: 'Kate Lock' } });
+  ok('a contact shared as words is made into a .vcf file', at.searchParams.get('share_pics') === '1', at.href);
+  ok('  so it never travels in the address', !at.searchParams.has('share_text') && !/VCARD/.test(at.href), at.href);
+  card = await p.evaluate(() => sharedPicsFetch().then(fs => Promise.all(fs.map(async f => [f.name, f.type, await f.text()]))));
+  ok('  and the page collects it, every word', card.length === 1 && card[0][0] === 'contact.vcf' && card[0][1] === 'text/vcard'
+    && card[0][2].replace(/\r\n/g, '\n') === VC, JSON.stringify(card));
 
   console.log('\nEverything else still goes straight to the website');
   ok('no share ever reached the website (which cannot take one)', posts.length === 0, JSON.stringify(posts));

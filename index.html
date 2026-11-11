@@ -1558,6 +1558,44 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   border:1.5px solid var(--rule);border-radius:8px;background:#fff;color:var(--hull)}
 .stfwho.none{color:var(--muted)}
 .stflink{color:var(--hull);text-decoration:underline;font:inherit;padding:0;text-align:left}
+/* Books (ML257) */
+.bkrow{align-items:center}
+.bkcover{flex:0 0 44px;width:44px;height:66px;object-fit:cover;border-radius:4px;background:#F0EEE7;
+  box-shadow:0 1px 3px rgba(16,35,28,.25)}
+.bkcover.none{display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:none}
+.bkstars{color:#B8860B;letter-spacing:1px}
+.bkstars.big{font-size:20px}
+.bkwords{display:block;white-space:pre-wrap}
+.bkhero{max-height:45vh}
+.bkstarpick{display:flex;gap:2px;margin-top:4px}
+.bkstarpick button{font-size:32px;line-height:1;padding:4px 6px;color:#D8D3C4}
+.bkstarpick button[aria-pressed="true"]{color:#D99A00}
+.bklabel{margin:12px 0 0;font-size:15px;color:var(--muted)}
+.rcpnums label.bkno{flex:0 0 30%}
+.bklink{position:relative;border:1px solid var(--rule);border-radius:10px;padding:0 44px 12px 12px;margin:10px 0}
+.bklink .del{position:absolute;top:6px;right:4px;width:36px;height:36px;font-size:24px;color:var(--red)}
+.bklinkout{color:inherit;text-decoration:none}
+.bklinkout .t{color:var(--hull);text-decoration:underline}
+.bkquick{display:flex;flex-direction:column;gap:8px;margin:0 0 16px}
+.bkquick .btn{border:1.5px solid var(--hull);color:var(--hull);padding:12px}
+.bkrev{padding:10px 14px 12px}
+.bkrev textarea{display:block;width:100%;margin-top:8px;padding:11px 12px;border:1.5px solid var(--rule);
+  border-radius:8px;background:#fff}
+.bkrev .setadd{padding:10px 0 0}
+.bkrev .coords{margin:8px 0 0}
+.bkway{border:1px solid var(--rule);border-radius:10px;margin-bottom:8px}
+.bkerr{margin:0 0 8px;color:var(--red);font-weight:600}
+/* The barcode scanner, over everything */
+.bkscan{position:fixed;inset:0;z-index:100;background:#000}
+.bkscan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bkscanframe{position:absolute;left:10%;right:10%;top:34%;height:20%;border:3px solid #fff;border-radius:12px;
+  box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+.bkscansay{position:absolute;left:16px;right:16px;top:calc(18px + env(safe-area-inset-top));margin:0;
+  color:#fff;font-size:18px;text-align:center;text-shadow:0 1px 3px #000}
+.bkscanbtns{position:absolute;left:16px;right:16px;bottom:calc(20px + env(safe-area-inset-bottom));
+  display:flex;gap:10px}
+.bkscanbtns button{flex:1;padding:14px 8px;border-radius:10px;background:rgba(255,255,255,.92);
+  color:var(--ink);font-size:16px;font-weight:600}
 #reBody .ulrow{display:flex;gap:8px;margin-top:4px}
 #reBody .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff;font-size:16px}
@@ -1764,6 +1802,25 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbar"><button id="stfEdCancel">Cancel</button>
     <span class="title" id="stfEdTitle">New</span><button id="stfSave">Save</button></div>
   <div class="sheetbody" id="stfEdBody"></div>
+</div>
+
+<div id="books" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="books" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="booksMenu" data-menu="books" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Books</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="bkBody"></div>
+  <button class="fab sheetfab" id="bkAdd" aria-label="Add a book">+</button>
+</div>
+
+<div id="bookView" class="sheet hidden">
+  <div class="sheetbar"><button id="bkBack">Back</button>
+    <span class="title" id="bkViewTitle">Books</span><span id="bkViewBar" style="min-width:56px;text-align:right"></span></div>
+  <div class="sheetbody" id="bkView"></div>
+</div>
+
+<div id="bookEd" class="sheet hidden">
+  <div class="sheetbar"><button id="bkEdCancel">Cancel</button>
+    <span class="title" id="bkEdTitle">New book</span><button id="bkSave">Save</button></div>
+  <div class="sheetbody" id="bkEdBody"></div>
 </div>
 
 <div id="shop" class="sheet hidden">
@@ -2016,7 +2073,8 @@ const arr = v => Array.isArray(v) ? v : [];
 const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','invite','diary','itemEd','rtEd','log',
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
-  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd'];
+  'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
+  'books','bookView','bookEd'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2736,6 +2794,8 @@ async function refreshAll(){
     if(!$('games').classList.contains('hidden')) renderGames(); if(LK_CUR!=null) lkPaint(); if(PD_CUR!=null) pdPaint(); }
   if(!$('stuff').classList.contains('hidden')){ await loadStuff(); renderStuff();
     if(!$('stuffView').classList.contains('hidden')) renderStuffThing(); }
+  if(!$('books').classList.contains('hidden')){ await loadBooks(); renderBooks();
+    if(!$('bookView').classList.contains('hidden')) renderBook(); }
   toast('Up to date');
 }
 
@@ -4985,7 +5045,8 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
-  ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
+  ['bookEd','books'],['bookView','books'],['books','books'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
   // where you are.
@@ -5000,7 +5061,8 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
-  brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff'};
+  brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff',
+  books:'h-books'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -5526,6 +5588,33 @@ function openHelp(where){
   <p><strong>Choosing a date.</strong> Type it in the box at the top (just the
   numbers: 15062024 becomes 15/06/2024) and press <em>Go</em>, or tap the month's
   name to choose the year, then the month. The same works in the Calendar.</p>
+
+  <h4 id="h-books">Books</h4>
+  <p><strong>Books</strong> keeps your favourite books, the ones you are reading and
+  the ones you want to read next. Press the round red <em>+</em> and choose
+  <strong>Scan the barcode</strong> (on the phone: hold the barcode on the back,
+  the one with 978 under it, inside the box), <strong>Type the ISBN</strong> (the
+  number by the barcode, or on the page inside with the publisher's details) or
+  <strong>Fill it in yourself</strong> for a book with no ISBN.</p>
+  <p>Scanning or typing the ISBN looks the book up on Open Library, which fills in
+  the title, the author and, when it has one, the cover. Anything it doesn't know,
+  you type in. Scanning needs the phone's camera; on the laptop, type the ISBN.</p>
+  <p>Each book can have its series and number, the format, whether you've
+  <em>Read</em> it (and the day you finished), are <em>Reading</em> it or
+  <em>Want to read</em> it, your stars and notes, the price, and who you bought it
+  from, borrowed it from or lent it to, from your Contacts. Under <em>Reviews
+  elsewhere</em> keep links to reviews online, with a line from each. Photos go
+  under <em>Photos</em>; the first is the cover.</p>
+  <p>The buttons at the top show <em>Read</em>, <em>Reading</em> and <em>Want to
+  read</em>, with how many are in each. Read books come with the most stars first.
+  The search box looks through all three, by title, author, series or ISBN.</p>
+  <p>On a book's own screen, one tap moves it on: <em>I'm reading it now</em>,
+  <em>I've finished it</em> (today becomes the day you finished) or <em>It's come
+  back</em> for a book you lent.</p>
+  <p><strong>Who sees it.</strong> Your books are yours alone unless you tick people
+  under <em>Share with</em>. They can see the book and add their own stars and a few
+  words under <em>What you thought</em>, which you and everyone else it's shared
+  with can see. Only you can change the book itself.</p>
 
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
@@ -15412,6 +15501,519 @@ async function stfAfterChange(id){
 
 
 /* ============================================================
+   Books (ML257, 11 Nov 2026)
+   ------------------------------------------------------------
+   Favourite books, the ones being read and the ones still to read: title,
+   author, series, ISBN, format, read / reading / want to read and when it
+   was finished, your stars and notes, price, bought from, borrowed from,
+   lent to, links to reviews elsewhere, and photos (the cover first).
+   Shared like My Stuff: the people ticked can see a book and add their own
+   stars and a few words; only whoever added it can change it (step 61).
+   A book is found by its barcode, where the phone's camera can read one,
+   or by typing its ISBN, and Open Library fills in the title, author and
+   cover. Anything it does not know is typed in.
+   ============================================================ */
+const BK_FORMATS=[['hardback','Hardback'],['paperback','Paperback'],['ebook','Ebook'],
+  ['audiobook','Audiobook'],['other','Other']];
+const BK_STATUS=[['read','Read'],['reading','Reading'],['want','Want to read']];
+let BOOKS=[], BK_REVIEWS=[], BK_LOADED=false, BK_WHY='';
+let BK_LIST='read', BK_Q='', BK_VIEW=null, BK_EDIT=null;
+let BK_STARS=0, BK_FMT='', BK_STAT='read', BK_RSTARS=0, BK_SCAN_STOP=null;
+
+async function loadBooks(){
+  const [b,r]=await Promise.all([
+    sb.from('books').select('*').order('title'),
+    sb.from('book_reviews').select('*')]);
+  BK_LOADED=true;
+  const err=b.error||r.error;
+  if(err){
+    BK_WHY=/relation|does not exist|schema cache/i.test(err.message||'') ? 'notset' : 'error';
+    console.error(err); return false;
+  }
+  BK_WHY=''; BOOKS=b.data||[]; BK_REVIEWS=r.data||[];
+  await signPaths(BOOKS.flatMap(x=>arr(x.photos).map(p=>p&&p.path)).filter(Boolean));
+  return true;
+}
+
+const bkStars = n => n ? '★'.repeat(n)+'☆'.repeat(5-n) : '';
+const bkSeries = b => b.series ? b.series+(b.series_no?', book '+b.series_no:'') : '';
+const bkFormat = k => (BK_FORMATS.find(x=>x[0]===k)||[])[1]||'';
+const bkStatus = k => (BK_STATUS.find(x=>x[0]===k)||[])[1]||'';
+// "The Thursday Murder Club" files under T, for Thursday.
+const bkSortKey = t => String(t||'').toLowerCase().replace(/^(the|a|an)\s+/,'');
+const bkByTitle = (a,b) => bkSortKey(a.title).localeCompare(bkSortKey(b.title));
+// Favourites first: the most stars at the top, then A to Z.
+const bkByStars = (a,b) => (b.stars||0)-(a.stars||0) || bkByTitle(a,b);
+const bkCover = b => arr(b.photos).find(p=>p&&p.path);
+const bkMine = b => !!b && b.created_by===ME.id;
+
+/* ---------- the ISBN ---------- */
+function bkIsbnOk(s){
+  s=String(s||'').replace(/[\s-]/g,'').toUpperCase();
+  // A 13-figure ISBN always starts 978 or 979; any other barcode is not a book.
+  if(/^97[89]\d{10}$/.test(s)){ let t=0; for(let i=0;i<12;i++) t+=Number(s[i])*(i%2?3:1);
+    return (10-t%10)%10===Number(s[12]); }
+  if(/^\d{9}[\dX]$/.test(s)){ let t=0; for(let i=0;i<10;i++) t+=(s[i]==='X'?10:Number(s[i]))*(10-i);
+    return t%11===0; }
+  return false;
+}
+// The 13-figure form, so a 10-figure ISBN on an older book is the same book.
+function bkIsbn13(s){
+  s=String(s||'').replace(/[\s-]/g,'').toUpperCase();
+  if(!/^\d{9}[\dX]$/.test(s)) return s;
+  const b='978'+s.slice(0,9); let t=0;
+  for(let i=0;i<12;i++) t+=Number(b[i])*(i%2?3:1);
+  return b+((10-t%10)%10);
+}
+
+/* ---------- the list ---------- */
+async function openBooks(){
+  showSheet('books'); lockBackground();
+  if(!BK_LOADED) $('bkBody').innerHTML='<p class="empty">Fetching your books…</p>';
+  await loadBooks();
+  // A list with nothing in it gives way to one that has something.
+  const n=k=>BOOKS.filter(b=>b.status===k).length;
+  if(!n(BK_LIST)){ const any=BK_STATUS.find(([k])=>n(k)); if(any) BK_LIST=any[0]; }
+  renderBooks(); $('bkBody').scrollTop=0;
+}
+function bkWhyHtml(){
+  return `<div class="card"><div class="field"><dd style="color:${
+    BK_WHY==='notset'?'var(--muted)':'var(--red)'}">${BK_WHY==='notset'
+    ? 'Books needs its place in the database first. Run the step 61 file in '
+      +'Supabase, then press refresh at the top.'
+    : 'Could not load your books just now. Nothing has been lost &mdash; check '
+      +'your signal and press refresh at the top.'}</dd></div></div>`;
+}
+function renderBooks(){
+  const body=$('bkBody'); if(!body) return;
+  // A failed load says so, rather than an empty list that looks like nothing is kept.
+  if(BK_WHY){ body.innerHTML=bkWhyHtml(); return; }
+  const n=k=>BOOKS.filter(b=>b.status===k).length;
+  body.innerHTML=`
+    <div class="card msearch"><div class="mqrow">
+      <input id="bkQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="Search title, author, series" value="${esc(BK_Q)}" aria-label="Search books"></div></div>
+    <div class="chips lnkchips" id="bkChips">${BK_STATUS.map(([k,l])=>`<button class="chip" data-bklist="${k}"
+      aria-pressed="${BK_LIST===k}">${l} ${n(k)}</button>`).join('')}</div>
+    <div id="bkList"></div>`;
+  paintBookList();
+  const q=$('bkQ');
+  q.oninput=()=>{ BK_Q=q.value; paintBookList(); };
+  body.querySelectorAll('[data-bklist]').forEach(b=>b.onclick=()=>{
+    BK_LIST=b.dataset.bklist; BK_Q=''; renderBooks(); });
+}
+// Typing searches every list; the list buttons step aside while it does.
+function paintBookList(){
+  const box=$('bkList'); if(!box) return;
+  const words=BK_Q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  document.querySelectorAll('#bkChips [data-bklist]').forEach(b=>
+    b.setAttribute('aria-pressed',String(!words.length&&BK_LIST===b.dataset.bklist)));
+  let rows=words.length
+    ? BOOKS.filter(b=>{ const hay=[b.title,b.author,b.series,b.isbn].join(' ').toLowerCase();
+        return words.every(w=>hay.includes(w)); }).sort(bkByTitle)
+    : BOOKS.filter(b=>b.status===BK_LIST).sort(BK_LIST==='read'?bkByStars:bkByTitle);
+  box.innerHTML = !BOOKS.length ? `<div class="card"><div class="field"><dd>
+      No books yet. Press the red + to scan a book's barcode, type its ISBN, or
+      fill one in yourself.</dd></div></div>`
+    : rows.length ? `<div class="card">${rows.map(b=>bkRow(b,!!words.length)).join('')}</div>`
+    : `<div class="card"><div class="field"><dd>${words.length?'No book matches that.'
+      :'None here yet.'}</dd></div></div>`;
+  box.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>openBook(Number(b.dataset.bk)));
+}
+function bkRow(b,withList){
+  const pic=bkCover(b);
+  const sub=[b.author,bkSeries(b)].filter(Boolean).join(' · ');
+  const more=[withList?bkStatus(b.status):'',
+    b.status==='read'&&b.finished_on?'Finished '+stfDay(b.finished_on):'', bkFormat(b.format)]
+    .filter(Boolean).join(' · ');
+  return `<button class="item bkrow" data-bk="${b.id}">
+    ${pic?`<img class="bkcover" src="${esc(SIGNED[pic.path]||'')}" alt="">`
+      :'<span class="bkcover none" aria-hidden="true">&#128214;</span>'}
+    <span class="mid"><span class="t">${esc(b.title)}</span>
+      ${sub?`<span class="w">${esc(sub)}</span>`:''}
+      ${b.stars?`<span class="w bkstars" aria-label="${b.stars} star${b.stars>1?'s':''}">${bkStars(b.stars)}</span>`:''}
+      ${more?`<span class="w">${esc(more)}</span>`:''}
+      ${b.lent_to?`<span class="w late">Lent to ${esc(stfWhoName(b.lent_to,b.lent_to_id))}${
+        b.lent_on?' since '+esc(stfDay(b.lent_on)):''}</span>`:''}
+      ${bkMine(b)?'':`<span class="w">from ${esc(whoWrote(b.created_by))}</span>`}
+    </span></button>`;
+}
+$('bkAdd').onclick=()=>bkAdd();
+
+/* ---------- one book ---------- */
+function openBook(id){
+  if(!BOOKS.some(x=>x.id===id)) return;
+  BK_VIEW=id; renderBook();
+  showSheet('bookView'); $('bkView').scrollTop=0; lockBackground();
+}
+// Stars to tap: the same star again takes them off.
+function bkStarPick(id,n){
+  return `<div class="bkstarpick" id="${id}" role="group" aria-label="Stars">${[1,2,3,4,5].map(i=>
+    `<button type="button" data-star="${i}" aria-pressed="${i<=n}" aria-label="${i} star${i>1?'s':''}">&#9733;</button>`).join('')}</div>`;
+}
+function bkWireStars(el,get,set){
+  if(!el) return;
+  el.querySelectorAll('[data-star]').forEach(b=>b.onclick=()=>{
+    const i=Number(b.dataset.star), v=get()===i?0:i; set(v);
+    el.querySelectorAll('[data-star]').forEach(x=>x.setAttribute('aria-pressed',String(Number(x.dataset.star)<=v)));
+  });
+}
+function renderBook(){
+  const b=BOOKS.find(x=>x.id===BK_VIEW); if(!b) return;
+  const mine=bkMine(b);
+  $('bkViewTitle').textContent=b.title;
+  $('bkViewBar').innerHTML=mine?'<button id="bkEditBtn">Edit</button>':'';
+  const R=(l,v)=>v?`<div class="field"><dt>${esc(l)}</dt><dd style="white-space:pre-wrap">${v}</dd></div>`:'';
+  const photos=arr(b.photos).filter(x=>x&&x.path);
+  const said=BK_REVIEWS.filter(r=>r.book_id===b.id&&r.user_id!==b.created_by&&r.user_id!==ME.id&&(r.stars||r.words));
+  const mineSaid=BK_REVIEWS.find(r=>r.book_id===b.id&&r.user_id===ME.id);
+  const who=whoWrote(b.created_by);
+  const state=bkStatus(b.status)+(b.status==='read'&&b.finished_on?', finished '+stfDay(b.finished_on):'');
+  const links=arr(b.links).filter(x=>x&&x.url);
+  const quick=mine?[
+    b.status==='reading'?'<button class="btn" data-bkdo="finished">I&rsquo;ve finished it</button>':'',
+    b.status==='want'?'<button class="btn" data-bkdo="reading">I&rsquo;m reading it now</button>':'',
+    b.lent_to?'<button class="btn" data-bkdo="back">It&rsquo;s come back</button>':''].join(''):'';
+  $('bkView').innerHTML=`
+    ${photos.length?`<img class="stfhero bkhero" src="${esc(SIGNED[photos[0].path]||'')}" alt="Cover" data-bkpic="0">`:''}
+    <div class="card">${R('Title',esc(b.title))}${R('Author',esc(b.author||''))}${R('Series',esc(bkSeries(b)))}
+      ${R(mine?'Your stars':who+'’s stars',b.stars?`<span class="bkstars big">${bkStars(b.stars)}</span>`:'')}
+      ${R('Reading',esc(state))}${R('Format',esc(bkFormat(b.format)))}
+      ${R('Price',esc(stfMoney(b.price)))}${R('Bought from',stfWhoHtml(b.bought_from,b.bought_from_id))}
+      ${R('Borrowed from',stfWhoHtml(b.borrowed_from,b.borrowed_from_id))}
+      ${R('Lent to',b.lent_to?stfWhoHtml(b.lent_to,b.lent_to_id)+(b.lent_on?' since '+esc(stfDay(b.lent_on)):''):'')}
+      ${R('ISBN',esc(b.isbn||''))}${R(mine?'Your notes':who+'’s notes',esc(b.notes||''))}
+      ${mine?R('Shared with',esc(namesOf(arr(b.shared_with)).join(', '))):R('Shared by',esc(who))}</div>
+    ${quick?`<div class="bkquick">${quick}</div>`:''}
+    ${links.length?`<p class="dsec">Reviews elsewhere</p><div class="card">${links.map(x=>
+      `<a class="item bklinkout" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="mid">
+        <span class="t">${esc(bkHost(x.url))}</span>${x.quote?`<span class="w">&ldquo;${esc(x.quote)}&rdquo;</span>`:''}
+      </span></a>`).join('')}</div>`:''}
+    ${said.length?`<p class="dsec">What others thought</p><div class="card">${said.map(r=>
+      `<div class="field"><dt>${esc(whoWrote(r.user_id))}</dt><dd>${r.stars?`<span class="bkstars">${bkStars(r.stars)}</span>`:''}${
+        r.words?`<span class="bkwords">${esc(r.words)}</span>`:''}</dd></div>`).join('')}</div>`:''}
+    ${mine?'':`<p class="dsec">What you thought</p><div class="card bkrev">
+      ${bkStarPick('bkRevStars',(mineSaid&&mineSaid.stars)||0)}
+      <textarea id="bkRevWords" rows="3" placeholder="A few words, if you like">${esc((mineSaid&&mineSaid.words)||'')}</textarea>
+      <div class="setadd"><button class="btn primary" id="bkRevSave">Save what you thought</button></div>
+      <p class="coords">${esc(who)} and everyone else it&rsquo;s shared with will see it.</p></div>`}
+    ${photos.length>1?`<p class="dsec">More photos</p>${mine?`<p class="coords" style="margin:0 2px">
+      Tap &#9733; on one to make it the cover.</p>`:''}<div class="rcpthumbs">${photos.map((x,i)=>
+      i?`<span class="stfthumb"><img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-bkpic="${i}">${
+        mine?`<button class="mk1" data-bkmain="${i}" aria-label="Make this the cover" title="Make this the cover">&#9733;</button>`:''}</span>`:'').join('')}</div>`:''}`;
+  const v=$('bkView');
+  v.querySelectorAll('[data-bkpic]').forEach(i=>i.onclick=()=>lightbox(SIGNED[photos[Number(i.dataset.bkpic)].path]));
+  v.querySelectorAll('[data-bkmain]').forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); bkMainPhoto(b,Number(x.dataset.bkmain)); });
+  v.querySelectorAll('[data-bkdo]').forEach(x=>x.onclick=()=>bkQuick(b,x.dataset.bkdo));
+  stfWireContacts(v);
+  BK_RSTARS=(mineSaid&&mineSaid.stars)||0;
+  bkWireStars($('bkRevStars'),()=>BK_RSTARS,n=>{ BK_RSTARS=n; });
+  const rs=$('bkRevSave'); if(rs) rs.onclick=()=>bkSaveReview(b);
+  const e=$('bkEditBtn'); if(e) e.onclick=()=>openBookEd(b);
+}
+const bkHost = u => { try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; } };
+$('bkBack').onclick=()=>{ BK_VIEW=null; $('bookView').classList.add('hidden'); lockBackground(); };
+
+// Finished, started, or back from whoever borrowed it: one tap.
+async function bkQuick(b,what){
+  const today=isoDay(new Date());
+  const patch=what==='finished'?{status:'read', finished_on:today}
+    : what==='reading'?{status:'reading'} : {lent_to:null, lent_to_id:null, lent_on:null};
+  const {error}=await sb.from('books').update({...patch, updated_at:new Date().toISOString()}).eq('id',b.id);
+  if(error){ toast('Could not change it'); console.error(error); return; }
+  await bkAfterChange(b.id);
+  toast(what==='finished'?'Well done: it’s on your Read list':what==='reading'?'Moved to Reading':'Back on the shelf');
+}
+async function bkMainPhoto(b,i){
+  const all=arr(b.photos), kept=all.filter(x=>x&&x.path), pick=kept[i];
+  if(!pick||i<1) return;
+  const {error}=await sb.from('books').update({photos:[pick,...all.filter(x=>x!==pick)]}).eq('id',b.id);
+  if(error){ toast('Could not change the cover'); console.error(error); return; }
+  await bkAfterChange(b.id); toast('That is now the cover');
+}
+async function bkSaveReview(b){
+  const words=String(($('bkRevWords')||{}).value||'').trim();
+  const had=BK_REVIEWS.find(r=>r.book_id===b.id&&r.user_id===ME.id);
+  let error;
+  if(!BK_RSTARS&&!words){
+    if(!had){ toast('Tap some stars or write a few words first'); return; }
+    ({error}=await sb.from('book_reviews').delete().eq('id',had.id));
+  } else ({error}=await sb.from('book_reviews').upsert({book_id:b.id, user_id:ME.id,
+      stars:BK_RSTARS||null, words:words||null, updated_at:new Date().toISOString()},
+      {onConflict:'book_id,user_id'}));
+  if(error){ toast('Could not save it'); console.error(error); return; }
+  await bkAfterChange(b.id);
+  toast(!BK_RSTARS&&!words?'Taken off':'Saved');
+}
+async function bkAfterChange(id){
+  await loadBooks();
+  if(!$('books').classList.contains('hidden')) renderBooks();
+  if(BK_VIEW!=null){
+    if(BOOKS.some(x=>x.id===BK_VIEW)) renderBook();
+    else { BK_VIEW=null; $('bookView').classList.add('hidden'); lockBackground(); }
+  }
+}
+
+/* ---------- adding one ---------- */
+const bkCanScan = () => !!(window.BarcodeDetector && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+function bkAdd(){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='bkAddBox';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Add a book</p>
+    ${bkCanScan()?`<button class="item bkway" data-bkway="scan"><span class="mid"><span class="t">&#128247; Scan the barcode</span>
+      <span class="w">The one on the back, with 978 under it</span></span></button>`:''}
+    <button class="item bkway" data-bkway="isbn"><span class="mid"><span class="t">Type the ISBN</span>
+      <span class="w">The number by the barcode, or inside the front</span></span></button>
+    <button class="item bkway" data-bkway="hand"><span class="mid"><span class="t">Fill it in yourself</span>
+      <span class="w">For a book with no ISBN</span></span></button>
+    <div class="pfoot"><button id="bkAddNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#bkAddNo').onclick=close;
+  box.querySelectorAll('[data-bkway]').forEach(b=>b.onclick=()=>{ close();
+    const w=b.dataset.bkway; if(w==='scan') bkScan(); else if(w==='isbn') bkAskIsbn(); else openBookEd(null); });
+}
+function bkAskIsbn(why){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='bkIsbnBox';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">The book&rsquo;s ISBN</p>
+    <p class="bkerr" id="bkIsbnSay"${why?'':' hidden'}>${esc(why||'')}</p>
+    <input id="bkIsbnIn" inputmode="numeric" placeholder="e.g. 978 0 241 98826 8"${NOFIX}
+      style="width:100%;padding:12px;border:1.5px solid var(--rule);border-radius:8px;font-size:18px">
+    <p class="coords">10 or 13 figures, by the barcode or on the page with the
+    publisher&rsquo;s details. Spaces and dashes don&rsquo;t matter.</p>
+    <div class="pfoot"><button id="bkIsbnNo">Cancel</button><button class="go" id="bkIsbnGo">Find it</button></div></div>`;
+  document.body.appendChild(box);
+  const inp=box.querySelector('#bkIsbnIn'), close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#bkIsbnNo').onclick=close;
+  const go=()=>{ const s=inp.value.replace(/[\s-]/g,'').toUpperCase();
+    if(!bkIsbnOk(s)){ const say=box.querySelector('#bkIsbnSay');
+      say.textContent='That doesn’t look like an ISBN: check the number'; say.hidden=false; inp.focus(); return; }
+    close(); bkFind(s); };
+  box.querySelector('#bkIsbnGo').onclick=go;
+  inp.onkeydown=ev=>{ if(ev.key==='Enter') go(); };
+  setTimeout(()=>{ try{ inp.focus(); }catch(e){} },50);
+}
+// The camera, reading barcodes as it goes. Only a book's (978 or 979) counts.
+async function bkScan(){
+  let det;
+  try{
+    const f=await BarcodeDetector.getSupportedFormats();
+    if(!f.includes('ean_13')) throw new Error('no ean_13');
+    det=new BarcodeDetector({formats:['ean_13']});
+  }catch(e){ bkAskIsbn('This phone can’t read barcodes, so type the number instead.'); return; }
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false}); }
+  catch(e){ bkAskIsbn(e&&e.name==='NotAllowedError'?'The camera wasn’t allowed, so type the number instead.'
+      :'Could not start the camera, so type the number instead.'); return; }
+  const box=document.createElement('div');
+  box.className='bkscan'; box.id='bkScan';
+  box.innerHTML=`<video playsinline muted autoplay></video><div class="bkscanframe"></div>
+    <p class="bkscansay">Hold the barcode on the back inside the box</p>
+    <div class="bkscanbtns"><button id="bkScanType">Type it instead</button><button id="bkScanNo">Cancel</button></div>`;
+  document.body.appendChild(box);
+  const v=box.querySelector('video'); v.srcObject=stream;
+  try{ await v.play(); }catch(e){}
+  let done=false, warned=0;
+  const stop=()=>{ if(done) return; done=true; BK_SCAN_STOP=null;
+    stream.getTracks().forEach(t=>t.stop()); box.remove(); };
+  BK_SCAN_STOP=stop;
+  box.querySelector('#bkScanNo').onclick=stop;
+  box.querySelector('#bkScanType').onclick=()=>{ stop(); bkAskIsbn(); };
+  const look=async()=>{
+    if(done) return;
+    try{
+      if(v.readyState>=2){
+        const codes=await det.detect(v);
+        const c=codes.map(x=>String(x.rawValue||'')).find(x=>/^97[89]\d{10}$/.test(x)&&bkIsbnOk(x));
+        if(c){ stop(); try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){} bkFind(c); return; }
+        if(codes.length&&Date.now()-warned>4000){ warned=Date.now();
+          box.querySelector('.bkscansay').textContent='That isn’t a book’s barcode: look for the one with 978 under it'; }
+      }
+    }catch(e){ console.warn(e); }
+    setTimeout(look,200);
+  };
+  look();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&BK_SCAN_STOP) BK_SCAN_STOP(); });
+
+// Open Library: the title, the author and the cover, or null if it has none.
+async function bkLookup(isbn){
+  const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch('https://openlibrary.org/api/books?bibkeys=ISBN:'+encodeURIComponent(isbn)
+      +'&format=json&jscmd=data',{signal:ctl.signal});
+    if(!r.ok) throw new Error('Open Library said '+r.status);
+    const j=await r.json(), x=j&&j['ISBN:'+isbn];
+    if(!x||!x.title) return null;
+    const out={title:String(x.title).trim(),
+      author:arr(x.authors).map(a=>a&&a.name).filter(Boolean).join(', ')};
+    const c=x.cover&&(x.cover.large||x.cover.medium);
+    if(c) try{
+      const cr=await fetch(String(c).replace(/^http:/,'https:'),{signal:ctl.signal});
+      const bl=cr.ok?await cr.blob():null;
+      if(bl&&bl.size>1000&&/^image\//.test(bl.type)) out.cover=bl;
+    }catch(e){ console.warn('no cover', e); }
+    return out;
+  } finally { clearTimeout(t); }
+}
+async function bkFind(isbn){
+  isbn=String(isbn).replace(/[\s-]/g,'').toUpperCase();
+  const had=BOOKS.find(b=>bkMine(b)&&b.isbn&&bkIsbn13(b.isbn)===bkIsbn13(isbn));
+  if(had&&confirm('"'+had.title+'" is already in your books. Open it?')){ openBook(had.id); return; }
+  toast('Looking it up…');
+  let found=null, failed=false;
+  try{ found=await bkLookup(isbn); }catch(e){ failed=true; console.warn(e); }
+  if(!found){
+    toast(failed?'Couldn’t reach Open Library: fill it in yourself':'Not found on Open Library: fill it in yourself');
+    openBookEd(null,{isbn}); return; }
+  openBookEd(null,{isbn, title:found.title, author:found.author, cover:found.cover});
+  toast(found.cover?'Found it, with its cover':'Found it: add a photo of the cover if you like');
+}
+
+/* ---------- adding and changing ---------- */
+function bkLinkRow(x){
+  return `<div class="bklink"><label>Link<input name="link_url" value="${esc(x.url||'')}" inputmode="url"
+      placeholder="https://"${NOFIX}></label>
+    <label>A line from it<input name="link_quote" value="${esc(x.quote||'')}"></label>
+    <button type="button" class="del" data-bklinkx aria-label="Remove this link">&times;</button></div>`;
+}
+function openBookEd(b,preset){
+  BK_EDIT=b||null;
+  const p=preset||{}, v=k=>b?(b[k]??''):(p[k]??'');
+  BK_STARS=(b&&b.stars)||0; BK_FMT=(b&&b.format)||''; BK_STAT=(b&&b.status)||'read';
+  $('bkEdTitle').textContent=b?'Change book':'New book';
+  $('bkEdBody').innerHTML=`<form id="bkForm" onsubmit="return false">
+    <fieldset><legend>The book</legend>
+      <label>Title<input name="title" value="${esc(v('title'))}"></label>
+      <label>Author<input name="author" value="${esc(v('author'))}"></label>
+      <div class="rcpnums"><label>Series<input name="series" value="${esc(v('series'))}"
+        placeholder="if it&rsquo;s one of a series"></label>
+        <label class="bkno">Number<input name="series_no" value="${esc(v('series_no'))}" inputmode="decimal"></label></div>
+      <label>ISBN<input name="isbn" value="${esc(v('isbn'))}" inputmode="numeric"${NOFIX}></label>
+    </fieldset>
+    <fieldset><legend>Reading</legend>
+      <div class="pickrow" id="bkStat">${BK_STATUS.map(([k,l])=>`<button type="button" data-bkstat="${k}"
+        aria-pressed="${BK_STAT===k}">${l}</button>`).join('')}</div>
+      <label id="bkFin" ${BK_STAT==='read'?'':'style="display:none"'}>Finished<input name="finished_on" value="${esc(v('finished_on'))}"></label>
+      <p class="bklabel">Your stars</p>${bkStarPick('bkStarPick',BK_STARS)}
+      <label>Your notes<textarea name="notes" rows="4">${esc(v('notes'))}</textarea></label>
+    </fieldset>
+    <fieldset><legend>Your copy</legend>
+      <div class="pickrow" id="bkFmt">${BK_FORMATS.map(([k,l])=>`<button type="button" data-bkfmt="${k}"
+        aria-pressed="${BK_FMT===k}">${l}</button>`).join('')}</div>
+      <label>Price<input name="price" inputmode="decimal" placeholder="0.00" value="${esc(v('price'))}"></label>
+      ${stfWhoBox('bought_from','Bought from',v('bought_from'),v('bought_from_id'))}
+      ${stfWhoBox('borrowed_from','Borrowed from',v('borrowed_from'),v('borrowed_from_id'))}
+      ${stfWhoBox('lent_to','Lent to',v('lent_to'),v('lent_to_id'))}
+      <label>Lent on<input name="lent_on" value="${esc(v('lent_on'))}"></label>
+      <p class="coords">A shop, or whoever you borrowed it from or lent it to, from Contacts.</p>
+    </fieldset>
+    <fieldset><legend>Reviews elsewhere</legend><div id="bkLinks">${arr(b&&b.links).filter(x=>x&&x.url).map(bkLinkRow).join('')}</div>
+      <button type="button" class="btn" id="bkLinkAdd" style="border:1.5px solid var(--rule)">+ Add a link</button>
+      <p class="coords">A review on Goodreads or in a newspaper, say, with a line from it.</p></fieldset>
+    <fieldset><legend>Photos</legend>${dphHtml('bkPics')}
+      <p class="coords">The first is the cover.</p></fieldset>
+    ${USERS.length?`<fieldset><legend>Share with</legend><div class="checks ppl">${USERS.map(u=>
+      `<label><input type="checkbox" name="share" value="${esc(u.id)}" ${
+      arr(b&&b.shared_with).includes(u.id)?'checked':''}> ${pplWho(u)}</label>`).join('')}</div>
+      <p class="coords">They can see it and add their own stars and a few words.
+      Only you can change it.</p></fieldset>`:''}
+    ${b?'<button type="button" class="btn danger" id="bkDelete">Delete this book</button>':''}
+  </form>`;
+  const f=$('bkForm');
+  useWhenPicker(f,['finished_on','lent_on'],{dateOnly:['finished_on','lent_on']});
+  stfWireWho(f,null);
+  f.querySelectorAll('[data-bkstat]').forEach(x=>x.onclick=()=>{
+    BK_STAT=x.dataset.bkstat;
+    f.querySelectorAll('[data-bkstat]').forEach(y=>y.setAttribute('aria-pressed',String(y===x)));
+    $('bkFin').style.display=BK_STAT==='read'?'':'none'; });
+  f.querySelectorAll('[data-bkfmt]').forEach(x=>x.onclick=()=>{
+    BK_FMT=BK_FMT===x.dataset.bkfmt?'':x.dataset.bkfmt;
+    f.querySelectorAll('[data-bkfmt]').forEach(y=>y.setAttribute('aria-pressed',String(y.dataset.bkfmt===BK_FMT))); });
+  bkWireStars($('bkStarPick'),()=>BK_STARS,n=>{ BK_STARS=n; });
+  const wireLinks=()=>$('bkLinks').querySelectorAll('[data-bklinkx]').forEach(x=>x.onclick=()=>x.closest('.bklink').remove());
+  $('bkLinkAdd').onclick=()=>{ $('bkLinks').insertAdjacentHTML('beforeend',bkLinkRow({})); wireLinks();
+    const l=$('bkLinks').lastElementChild.querySelector('input'); try{ l.focus(); }catch(e){} };
+  wireLinks();
+  dphStart('bkPics', b&&b.photos, 'bk', 61);
+  if(b) $('bkDelete').onclick=()=>bkDelete(b);
+  showSheet('bookEd'); $('bkEdBody').scrollTop=0; lockBackground();
+  // The cover Open Library had goes in as the first photo.
+  if(p.cover) dphAdd([new File([p.cover],'cover.jpg',{type:p.cover.type||'image/jpeg'})]);
+}
+dphWire($('bkEdBody'));
+const bkUrl = s => { s=String(s||'').trim(); if(!s) return '';
+  if(!/^https?:\/\//i.test(s)) s='https://'+s;
+  return /^https?:\/\/[^\s/]+\.[^\s]+/i.test(s)?s:null; };
+
+async function saveBook(){
+  const f=$('bkForm'); if(!f) return;
+  const g=n=>String(f.elements[n].value||'').trim();
+  const title=g('title');
+  if(!title){ toast('Give it a title'); return; }
+  const price=g('price').replace(/[£,\s]/g,'');
+  if(price&&!isFinite(Number(price))){ toast('The price needs to be a number'); return; }
+  const isbn=g('isbn').replace(/[\s-]/g,'').toUpperCase();
+  if(isbn&&!bkIsbnOk(isbn)){ toast('That ISBN doesn’t look right: check the number'); return; }
+  const links=[];
+  for(const r of f.querySelectorAll('.bklink')){
+    const u=bkUrl(r.querySelector('[name="link_url"]').value), qt=r.querySelector('[name="link_quote"]').value.trim();
+    if(u===null){ toast('One of the links isn’t a web address'); return; }
+    if(u) links.push({url:u, quote:qt});
+  }
+  const who=k=>{ const n=g(k), id=Number(g(k+'_id'))||null; return {[k]:n||null, [k+'_id']:n&&id?id:null}; };
+  const lent=who('lent_to');
+  const d={title, author:g('author')||null, series:g('series')||null, series_no:g('series_no')||null,
+    isbn:isbn||null, format:BK_FMT||null, status:BK_STAT, finished_on:g('finished_on')||null,
+    stars:BK_STARS||null, notes:g('notes')||null, price:price===''?null:Number(price),
+    ...who('bought_from'), ...who('borrowed_from'), ...lent,
+    // Lent with no day given: today.
+    lent_on:lent.lent_to?(g('lent_on')||isoDay(new Date())):null,
+    links, photos:dphNow(),
+    shared_with:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
+    updated_at:new Date().toISOString()};
+  $('bkSave').disabled=true;
+  let id=BK_EDIT&&BK_EDIT.id, error;
+  if(id) ({error}=await sb.from('books').update(d).eq('id',id));
+  else{
+    const r=await sb.from('books').insert({...d, created_by:ME.id}).select().single();
+    error=r.error; id=r.data&&r.data.id;
+  }
+  $('bkSave').disabled=false;
+  if(error){ toast(/relation|does not exist|schema cache/i.test(error.message||'')
+      ? 'Could not save: Books needs step 61 run in Supabase first' : 'Could not save'); console.error(error); return; }
+  await dphSaved();
+  BK_EDIT=null;
+  $('bookEd').classList.add('hidden'); lockBackground();
+  // A new book goes on the list it belongs to.
+  if($('bookView').classList.contains('hidden')) BK_LIST=d.status;
+  await bkAfterChange(id);
+  if(id && BOOKS.some(x=>x.id===id) && $('bookView').classList.contains('hidden')) openBook(id);
+  toast('Saved');
+}
+$('bkSave').onclick=saveBook;
+$('bkEdCancel').onclick=async()=>{
+  BK_EDIT=null; $('bookEd').classList.add('hidden'); lockBackground(); await dphCancel(); };
+
+async function bkDelete(b){
+  if(!confirm('Delete "'+b.title+'" for good?')) return;
+  const {error}=await sb.from('books').delete().eq('id',b.id);
+  if(error){ toast('Could not delete it'); console.error(error); return; }
+  await dphForget(b,'bk');
+  await dphCancel();
+  BK_EDIT=null; BK_VIEW=null;
+  ['bookEd','bookView'].forEach(id=>$(id).classList.add('hidden')); lockBackground();
+  await bkAfterChange(null);
+  toast('Deleted');
+}
+
+/* ============================================================
    The home screen — a tile for every part of the app
    ============================================================ */
 const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect x="48.8" y="286" width="414.5" height="26" fill="#D7A82E"/><path d="M 336.7,286 L 394.7,286 L 394.7,422 L 365.7,388 L 336.7,422 Z" fill="#D7A82E"/><path d="M92.91666666666667 286.0V98.30303030303028H140.12878787878788L170.0681818181818 181.78787878787878Q172.9469696969697 190.13636363636363 175.39393939393938 198.62878787878788Q177.8409090909091 207.12121212121212 180.4318181818182 216.33333333333331H181.58333333333334Q184.17424242424244 207.12121212121212 186.47727272727275 198.62878787878788Q188.78030303030306 190.13636363636363 191.65909090909093 181.78787878787878L221.02272727272728 98.30303030303028H268.2348484848485V286.0H229.37121212121212V217.1969696969697Q229.37121212121212 207.9848484848485 230.37878787878788 195.46212121212122Q231.38636363636365 182.93939393939394 232.6818181818182 170.41666666666666Q233.97727272727275 157.89393939393938 235.1287878787879 148.68181818181816H233.97727272727275L218.71969696969697 198.1969696969697L192.2348484848485 269.8787878787879H167.47727272727275L141.28030303030303 198.1969696969697L126.59848484848484 148.68181818181816H125.4469696969697Q126.59848484848484 157.89393939393938 127.89393939393939 170.41666666666666Q129.18939393939394 182.93939393939394 130.0530303030303 195.46212121212122Q130.91666666666669 207.9848484848485 130.91666666666669 217.1969696969697V286.0Z M344.5227272727273 286.0V219.2121212121212L288.0984848484849 98.30303030303028H333.29545454545456L349.99242424242425 141.48484848484847Q353.7348484848485 152.13636363636363 357.47727272727275 162.0681818181818Q361.219696969697 172.0 365.25 182.93939393939394H366.4015151515152Q370.719696969697 172.0 374.6060606060606 162.0681818181818Q378.49242424242425 152.13636363636363 382.2348484848485 141.48484848484847L398.9318181818182 98.30303030303028H443.2651515151515L386.8409090909091 219.2121212121212V286.0Z" fill="currentColor"/></svg>`;
@@ -15437,6 +16039,7 @@ const TILE_DEST={
   games:   {label:'Games',      go:openGames},
   recipes: {label:'Recipes',    go:openRecipes},
   stuff:   {label:'My Stuff',   go:openStuff},
+  books:   {label:'Books',      go:openBooks},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -15447,9 +16050,9 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C', games:'#6B3030'};
+  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','games','links','stuff','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','books','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -15469,7 +16072,8 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   shop:['shop'], where:['where'], io:['io'], offers:['offers'],
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
-  recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd']};
+  recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
+  books:['books','bookView','bookEd']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -15736,7 +16340,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.11.1';
+const APP_VERSION='2026.11.11.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -16910,6 +17514,9 @@ union all select 'meal_shares',          count(*), coalesce(jsonb_agg(t), '[]') 
 -- My Stuff
 union all select 'stuff',                count(*), coalesce(jsonb_agg(t), '[]') from stuff t
 union all select 'stuff_service',        count(*), coalesce(jsonb_agg(t), '[]') from stuff_service t
+-- Books
+union all select 'books',                count(*), coalesce(jsonb_agg(t), '[]') from books t
+union all select 'book_reviews',         count(*), coalesce(jsonb_agg(t), '[]') from book_reviews t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -21733,6 +22340,7 @@ const AREAS={
   jig:     {title:'Jigsaws',      set:null,        help:'jig'},
   games:   {title:'Games',        set:null,        help:'games'},
   stuff:   {title:'My Stuff',     set:null,        help:'stuff'},
+  books:   {title:'Books',        set:null,        help:'books'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
   home:    {title:'Menu',         set:null,        help:'home'}
@@ -21757,12 +22365,15 @@ const AREA_SHUT={
   games:()=>{ lkShut(); pdShut(); $('games').classList.add('hidden'); },
   stuff:()=>{ if(!$('stuffEd').classList.contains('hidden')){ dphCancel(); stfCancelPdfs(); }
               ['stuff','stuffView','stuffEd'].forEach(id=>$(id).classList.add('hidden')); },
+  books:()=>{ if(!$('bookEd').classList.contains('hidden')) dphCancel();
+              if(BK_SCAN_STOP) BK_SCAN_STOP(); BK_VIEW=null; BK_EDIT=null;
+              ['books','bookView','bookEd'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -21788,6 +22399,10 @@ function areaItems(area){
   if(area==='stuff') return [
     it('Add something',           ()=>{ shutMenu(); stfPickKind(); }),
     it('Change the lock password', ()=>{ shutMenu(); stfChangeLock(); })];
+  if(area==='books') return [
+    it('Add a book',              ()=>{ shutMenu(); bkAdd(); }),
+    ...(bkCanScan()?[it('Scan a barcode', ()=>{ shutMenu(); bkScan(); })]:[]),
+    it('Type an ISBN',            ()=>{ shutMenu(); bkAskIsbn(); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

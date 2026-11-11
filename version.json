@@ -1,6 +1,15 @@
 {
-  "version": "2026.11.11.1",
+  "version": "2026.11.11.2",
   "history": [
+    {
+      "version": "2026.11.11.2",
+      "changes": [
+        "Books: a new tile for your books, with Read, Reading and Want to read lists, your stars, notes, format, price and series.",
+        "Books: scan the barcode on the phone, or type the ISBN, and Open Library fills in the title, the author and the cover.",
+        "Books: keep who you bought it from, borrowed it from or lent it to, and links to reviews online with a line from each.",
+        "Books: share one and the people you tick can add their own stars and a few words. Only you can change the book."
+      ]
+    },
     {
       "version": "2026.11.11.1",
       "changes": [

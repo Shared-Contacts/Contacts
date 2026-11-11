@@ -1,6 +1,16 @@
 {
-  "version": "2026.11.10.3",
+  "version": "2026.11.11.1",
   "history": [
+    {
+      "version": "2026.11.11.1",
+      "changes": [
+        "Calendar: a new Days view, like a wall calendar: a line a day, weekends in red, bank holidays, birthdays and the moon’s quarters.",
+        "Days: today is shaded. Tap a day to see everything on it, and tap it again to fold it.",
+        "Wishlist: each photo on an idea has its own Copy button, so you can paste the idea and then its pictures into Claude.",
+        "Contacts: Import reads Google Contacts and Outlook files as they come, and a contact shared from Contacts or WhatsApp.",
+        "Contacts: for people already here, Import can fill in a missing phone number, email or birthday, and changes nothing already filled in."
+      ]
+    },
     {
       "version": "2026.11.10.3",
       "changes": [

@@ -762,6 +762,42 @@ i.key{vertical-align:middle}
 .dots i.a,i.key.a{background:#0F6E8C}
 .dots i.t,i.key.t{background:var(--brass)}
 .dots i.l,i.key.l{background:var(--red)}
+/* Calendar, day by day (ML254): like the wall calendar, a line a day with
+   the date in a dark strip, weekends in red, today on a washed colour. */
+#diaryBody .kindpick button{padding:12px 2px;font-size:15px;min-width:0}
+@media (max-width:340px){#diaryBody .kindpick button{padding:12px 0;font-size:13.5px}}
+.dnav{padding:2px 0 10px}
+.dnav .dmore{font-weight:700}
+.dnavend{display:flex;justify-content:center;padding:12px 0 4px}
+.dnavend .dmore{color:var(--hull);padding:8px 14px;border-radius:8px;font-size:16px}
+.dmonth{margin:10px 2px 6px;font-size:20px;font-weight:800;color:var(--ink)}
+.dday{background:var(--panel);border:1px solid var(--rule);border-left:0;border-radius:0 10px 10px 0;
+  margin-bottom:4px;overflow:hidden}
+.dhead{display:grid;grid-template-columns:44px 42px minmax(0,1fr) auto;align-items:stretch;width:100%;
+  min-height:50px;padding:0;text-align:left;background:none;color:var(--ink)}
+.dnum{display:flex;align-items:center;justify-content:center;background:#16191A;color:#fff;
+  font-size:20px;font-weight:600;border-radius:0}
+.dname{display:flex;align-items:center;padding-left:8px;font-size:16px;font-weight:500}
+.dday.wkend .dnum{color:#FF6B5E}
+.dday.wkend .dname{color:#C8322B}
+.dsum{display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0;padding:5px 6px 5px 2px}
+.dl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px;line-height:1.3}
+.dl b{font-weight:700}
+.dl.done{color:var(--muted);text-decoration:line-through}
+.dl.dmorel{color:var(--muted);font-size:13px}
+.dk{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dk.a{background:#0F6E8C}
+.dk.t{background:var(--brass)}
+.dk.l{background:var(--red)}
+.dhol{display:block;text-align:right;font-size:11.5px;color:var(--ink);opacity:.85;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dmoon{padding:4px 8px 0 2px;font-size:15px;line-height:1;color:var(--ink)}
+.dday.today{background:color-mix(in srgb,var(--hull) 13%,#fff);border-color:color-mix(in srgb,var(--hull) 45%,#fff)}
+.dday.today .dnum{background:var(--hull)}
+.dday.open .dhead{border-bottom:1px solid var(--rule)}
+.dfull .item{padding-left:12px}
+.dadd{padding:8px 12px 12px}
+.dadd .btn{width:100%;border:1.5px solid var(--rule)}
 .alarm{position:fixed;left:12px;right:12px;bottom:calc(20px + env(safe-area-inset-bottom));
   z-index:70;background:var(--hull);color:#F2EFE4;border-radius:12px;padding:16px 18px;
   box-shadow:0 6px 20px rgba(16,35,28,.4)}
@@ -1482,6 +1518,10 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .wpics .rcpthumbs .coords{display:none}
 .wpics .rcpthumbs:empty,.wpics .rcpthumbs:has(> .coords){padding:0}
 .wcopies{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 2px}
+/* A Copy button under each Wishlist photo (ML255): the clipboard holds one
+   picture, so each photo is copied on its own. */
+.wpic{flex:0 0 72px;display:flex;flex-direction:column;gap:4px}
+.wpcopy{padding:3px 0;font-size:13px;border:1.5px solid var(--rule);border-radius:12px;color:var(--hull)}
 .wcopies button{padding:5px 12px;font-size:14px;border:1.5px solid var(--rule);border-radius:16px;
   color:var(--hull);font-weight:600}
 .aislehd{margin:0;padding:9px 14px 5px;font-size:13px;font-weight:700;letter-spacing:.06em;
@@ -5378,7 +5418,10 @@ function openHelp(where){
   first line and the description underneath, ready to paste into Claude as a
   to-do. <strong>Share idea</strong> sends the words and the idea's photos
   together: it opens the phone's Share list, and you choose Claude (or anywhere
-  else). The clipboard can only hold one picture, so Copy idea is words only.</p>
+  else). The clipboard can only hold one picture, so Copy idea is words only;
+  each photo has its own <strong>Copy</strong> button underneath. To give Claude
+  an idea with its pictures, tap Copy idea and paste, then tap Copy under a
+  photo and paste that, and so on for each one.</p>
   <p><strong>A screenshot straight in.</strong> Take the screenshot, tap
   <em>Share</em> on the little picture that appears, and choose <strong>MY
   life</strong>. The Wishlist opens with the screenshot already on a new idea:
@@ -5681,16 +5724,30 @@ function openHelp(where){
   <h4 id="h-io">Bringing contacts in, and saving a copy</h4>
   <p>Menu &rsaquo; <strong>Import and export contacts</strong>. Download a copy of
   everything as a spreadsheet file whenever you like &mdash; worth doing monthly.</p>
-  <p>Two kinds of file work. A <strong>.vcf</strong> exported from your phone's
-  own contacts app comes across with names, numbers, emails, addresses and
-  birthdays, and needs no preparation &mdash; just export and choose the file.
-  For anything else, download the template first so the column names match,
-  fill it in, and choose the file. It tells you how many are
-  new and how many are already here before anything happens. Anyone already in the
-  database is left exactly as they are; only new names are added, so importing the
+  <p>These files work as they come, with names, numbers, emails, addresses and
+  birthdays:</p>
+  <ul>
+    <li>a <strong>.vcf</strong> exported from a phone's own contacts app (Android
+    or iPhone), or from iCloud on the laptop;</li>
+    <li>a <strong>CSV from Google Contacts</strong> (Export, then Google CSV or
+    Outlook CSV) or from <strong>Outlook</strong>;</li>
+    <li>for anything else, the <strong>template</strong>: download it first so
+    the column names match, fill it in, and choose it.</li>
+  </ul>
+  <p><strong>One contact straight from the phone.</strong> In the phone's
+  Contacts, or on a contact card in WhatsApp, tap <em>Share</em> and choose
+  <strong>MY life</strong>. It opens here with that contact ready to check. (A
+  phone can take a day or so to add MY life to its Share list for contacts
+  after an update.)</p>
+  <p>It tells you how many are new and how many are already here before
+  anything happens. New ones go into "Shared with me" for you to file (or into
+  the groups named in the template's groups column, separated by semicolons).
+  For anyone already here, it lists what the file has that their contact does
+  not: a new phone number, email or website is added alongside the ones there,
+  and a birthday, address or other detail only where it is empty. Nothing
+  already filled in is ever changed. Untick <em>Fill in what is missing</em> to
+  add only the new names. A birthday with no year is left out. Bringing in the
   same file twice does no harm.</p>
-  <p>Put group names in the groups column separated by semicolons. Anything it
-  does not recognise goes into "Shared with me" so you can file it yourself.</p>
 
   <h4 id="h-colours">Colours</h4>
   <p>Menu &rsaquo; <strong>Colours</strong> offers Canal, Serene, Sombre, Jazzy and
@@ -6017,6 +6074,17 @@ function openHelp(where){
   away blocks out the whole fortnight. Set <em>Away from home</em> on it
   (holiday, work, hospital, visiting or other) and those days are shaded in
   that reason's colour, with a key underneath.</p>
+  <p><strong>Days</strong> is laid out like a wall calendar: a line for each day,
+  the date down the left with weekends in red, and as much of the day's
+  appointments, to-dos and birthdays as fits on the line. Bank holidays (England
+  and Wales) are named in small print, and the moon's quarters are marked:
+  &#9679; new, &#9680; first quarter, &#9675; full, &#9681; last quarter. It opens
+  a few days before today and runs about ten days ahead, with today shaded;
+  <em>Earlier days</em> and <em>Later days</em> add more, and <em>Today</em> comes
+  back. Tap a day to open it out with everything on it, to tick off, open or put
+  back; <em>+ Add on this day</em> adds something there. Tap the day again to fold
+  it. Finished entries show too, crossed through, so the days gone by say what
+  happened.</p>
   <p><strong>Who else to remind</strong> puts the same entry in someone else's
   diary. They can tick it off or change it, so an appointment you are both going
   to only needs entering once.</p>
@@ -6277,17 +6345,19 @@ function tilePip(dest){
 
 /* ---------- the diary list ---------- */
 function openDiary(){
+  daysReset(); bankHolFetch();
   renderDiary();
   showSheet('diary'); $('diaryBody').scrollTop=0; lockBackground();
 }
 
 // An appointment occupies every day from its start to its end, so ten days
 // away shows on all ten and nothing gets booked over it.
-function itemsOn(day){
+// all: finished ones too, whichever the list is showing (Days, ML254).
+function itemsOn(day,all){
   const a=new Date(day.getFullYear(),day.getMonth(),day.getDate()).getTime();
   const b=a+86400000;
   return ITEMS.filter(it=>{
-    if(DIARY_DONE ? !it.done_at : it.done_at) return false;
+    if(!all&&(DIARY_DONE ? !it.done_at : it.done_at)) return false;
     if(it.kind==='appointment' && it.starts_at){
       const st=new Date(it.starts_at).getTime();
       const en=it.ends_at ? new Date(it.ends_at).getTime() : st;
@@ -6358,12 +6428,14 @@ function renderDiary(){
       <button data-dview="list"    aria-pressed="${DIARY_VIEW==='list'}">List</button>
       <button data-dview="week"    aria-pressed="${DIARY_VIEW==='week'}">Week</button>
       <button data-dview="month"   aria-pressed="${DIARY_VIEW==='month'}">Month</button>
+      <button data-dview="days"    aria-pressed="${DIARY_VIEW==='days'}">Days</button>
       <button data-dview="routine" aria-pressed="${DIARY_VIEW==='routine'}">Regular</button>
     </div>`;
 
   if(DIARY_VIEW==='list')         html+=diaryList();
   else if(DIARY_VIEW==='week')    html+=diaryWeek();
   else if(DIARY_VIEW==='routine') html+=diaryRoutine();
+  else if(DIARY_VIEW==='days')    html+=diaryDays();
   else                            html+=diaryMonth();
 
   if(DIARY_VIEW!=='routine') html+='<div id="pushSlot"></div>';
@@ -6377,6 +6449,7 @@ function renderDiary(){
     const rt=$('pushRetry'); if(rt) rt.onclick=()=>renderDiary();
   });
   wireRoutine();
+  if(DIARY_VIEW==='days') wireDays();
 
   $('diaryBody').querySelectorAll('[data-dview]').forEach(b=>b.onclick=()=>{
     DIARY_VIEW=b.dataset.dview;
@@ -7037,6 +7110,189 @@ function diaryWeek(){
         :'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing.</dd></div>'}</div>`;
   }
   return html;
+}
+
+/* ---------- day by day (ML254) ----------
+   Laid out like Barry's wall calendar: a line for each day, the date in a
+   dark strip down the left with weekends in red, a bank holiday's name and
+   the moon's quarters in small print, and as much of the day's
+   appointments, to-dos and birthdays as fits on the line. Tap a day to open
+   it out with everything (and add something on that day); tap again to fold
+   it. It opens three days before today and runs ten days ahead, today on a
+   washed colour; Earlier days and Later days add more either side. Finished
+   entries show too, ticked, so the days gone by say what happened. */
+let DAYS_FROM=null, DAYS_TO=null;
+const DAYS_OPEN=new Set();
+const dayPlus = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const dayOfKey = k => { const [y,m,d]=String(k).split('-').map(Number); return new Date(y,m-1,d); };
+function daysReset(){
+  const t=new Date();
+  DAYS_FROM=dayKeyOf(dayPlus(t,-3)); DAYS_TO=dayKeyOf(dayPlus(t,10)); DAYS_OPEN.clear();
+}
+
+/* Bank holidays in England and Wales: the government's list, fetched once a
+   day and kept on the phone. Years it doesn't cover, or before it has ever
+   been fetched, are worked out from the usual rules (which can't know of a
+   one-off, such as a coronation). */
+const BANKHOL_KEY='bankhols';
+let BANKHOL=null, BANKHOL_RULES={};
+try{ const c=JSON.parse(localStorage.getItem(BANKHOL_KEY)||'null'); if(c&&c.days&&Array.isArray(c.years)) BANKHOL=c; }catch(e){}
+async function bankHolFetch(){
+  if(BANKHOL&&BANKHOL.at===dayKeyOf(new Date())) return false;
+  try{
+    const r=await fetch('https://www.gov.uk/bank-holidays.json',{cache:'no-cache'});
+    if(!r.ok) return false;
+    const j=await r.json(), ev=arr(j&&j['england-and-wales']&&j['england-and-wales'].events);
+    const days={};
+    ev.forEach(e=>{ if(e&&/^\d{4}-\d\d-\d\d$/.test(e.date))
+      days[e.date]=String(e.title||'Bank holiday')+(/substitute/i.test(e.notes||'')?' (substitute day)':''); });
+    if(!Object.keys(days).length) return false;
+    BANKHOL={at:dayKeyOf(new Date()), days, years:[...new Set(Object.keys(days).map(k=>k.slice(0,4)))]};
+    try{ localStorage.setItem(BANKHOL_KEY,JSON.stringify(BANKHOL)); }catch(e){}
+    if(DIARY_VIEW==='days'&&$('diary')&&!$('diary').classList.contains('hidden')) renderDiary();
+    return true;
+  }catch(e){ return false; }
+}
+// Easter Sunday (the Gregorian calendar's rule).
+function easterSunday(y){
+  const a=y%19, b=Math.floor(y/100), c=y%100, d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25),
+    g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30, i=Math.floor(c/4), k=c%4,
+    l=(32+2*e+2*i-h-k)%7, m=Math.floor((a+11*h+22*l)/451), n=h+l-7*m+114;
+  return new Date(y,Math.floor(n/31)-1,n%31+1);
+}
+function bankHolRules(y){
+  if(BANKHOL_RULES[y]) return BANKHOL_RULES[y];
+  const out={}, put=(d,t)=>{ out[dayKeyOf(d)]=t; }, wd=d=>d.getDay(), sub=' (substitute day)';
+  const ny=new Date(y,0,1);
+  if(wd(ny)===6) put(new Date(y,0,3),'New Year’s Day'+sub);
+  else if(wd(ny)===0) put(new Date(y,0,2),'New Year’s Day'+sub);
+  else put(ny,'New Year’s Day');
+  const e=easterSunday(y); put(dayPlus(e,-2),'Good Friday'); put(dayPlus(e,1),'Easter Monday');
+  const firstMon=m=>{ const d=new Date(y,m,1); return dayPlus(d,(8-wd(d))%7); };
+  const lastMon=m=>{ const d=new Date(y,m+1,0); return dayPlus(d,-((wd(d)+6)%7)); };
+  put(firstMon(4),'Early May bank holiday'); put(lastMon(4),'Spring bank holiday'); put(lastMon(7),'Summer bank holiday');
+  const xmas=new Date(y,11,25), w=wd(xmas);
+  if(w===5){ put(xmas,'Christmas Day'); put(new Date(y,11,28),'Boxing Day'+sub); }
+  else if(w===6){ put(new Date(y,11,27),'Christmas Day'+sub); put(new Date(y,11,28),'Boxing Day'+sub); }
+  else if(w===0){ put(new Date(y,11,26),'Boxing Day'); put(new Date(y,11,27),'Christmas Day'+sub); }
+  else { put(xmas,'Christmas Day'); put(new Date(y,11,26),'Boxing Day'); }
+  return (BANKHOL_RULES[y]=out);
+}
+function bankHolOn(key){
+  const y=String(key).slice(0,4);
+  if(BANKHOL&&BANKHOL.years.includes(y)) return BANKHOL.days[key]||'';
+  return bankHolRules(Number(y))[key]||'';
+}
+
+/* The moon's four quarters, worked out on the phone (Meeus, Astronomical
+   Algorithms, chapter 49: right to a minute or two), on the day they fall
+   in this phone's own time. {day of month: 'new'|'fq'|'full'|'lq'}. */
+const MOON={new:['●','New moon'], fq:['◐','First quarter'], full:['○','Full moon'], lq:['◑','Last quarter']};
+function moonPhasesIn(y,m){
+  const out={}, rad=Math.PI/180, sin=x=>Math.sin(x*rad), cos=x=>Math.cos(x*rad);
+  const k0=Math.floor((y+(m-1)/12-2000)*12.3685)-1;
+  for(let k=k0;k<=k0+3;k++) [0,.25,.5,.75].forEach(q=>{
+    const kk=k+q, T=kk/1236.85;
+    let jde=2451550.09766+29.530588861*kk+0.00015437*T*T-0.00000015*T*T*T+0.00000000073*T*T*T*T;
+    const E=1-0.002516*T-0.0000074*T*T;
+    const M=2.5534+29.1053567*kk-0.0000014*T*T-0.00000011*T*T*T;
+    const Mp=201.5643+385.81693528*kk+0.0107582*T*T+0.00001238*T*T*T-0.000000058*T*T*T*T;
+    const F=160.7108+390.67050284*kk-0.0016118*T*T-0.00000227*T*T*T+0.000000011*T*T*T*T;
+    const O=124.7746-1.56375588*kk+0.0020672*T*T+0.00000215*T*T*T;
+    let c;
+    if(q===0||q===.5){
+      const n=q===0;
+      c=(n?-0.4072:-0.40614)*sin(Mp)+(n?0.17241:0.17302)*E*sin(M)+(n?0.01608:0.01614)*sin(2*Mp)
+        +(n?0.01039:0.01043)*sin(2*F)+(n?0.00739:0.00734)*E*sin(Mp-M)-(n?0.00514:0.00515)*E*sin(Mp+M)
+        +(n?0.00208:0.00209)*E*E*sin(2*M)-0.00111*sin(Mp-2*F)-0.00057*sin(Mp+2*F)+0.00056*E*sin(2*Mp+M)
+        -0.00042*sin(3*Mp)+0.00042*E*sin(M+2*F)+0.00038*E*sin(M-2*F)-0.00024*E*sin(2*Mp-M)-0.00017*sin(O);
+    } else {
+      c=-0.62801*sin(Mp)+0.17172*E*sin(M)-0.01183*E*sin(Mp+M)+0.00862*sin(2*Mp)+0.00804*sin(2*F)
+        +0.00454*E*sin(Mp-M)+0.00204*E*E*sin(2*M)-0.0018*sin(Mp-2*F)-0.0007*sin(Mp+2*F)-0.0004*sin(3*Mp)
+        -0.00034*E*sin(2*Mp-M)+0.00032*E*sin(M+2*F)+0.00032*E*sin(M-2*F)-0.00028*E*E*sin(Mp+2*M)
+        +0.00027*E*sin(2*Mp+M)-0.00017*sin(O);
+      const W=0.00306-0.00038*E*cos(M)+0.00026*cos(Mp)-0.00002*cos(Mp-M)+0.00002*cos(Mp+M)+0.00002*cos(2*F);
+      c+=q===.25?W:-W;
+    }
+    jde+=c;
+    const at=new Date((jde-2440587.5)*86400000-69000);      // less ΔT, about 69 seconds
+    if(at.getFullYear()===y&&at.getMonth()===m-1)
+      out[at.getDate()]=q===0?'new':q===.25?'fq':q===.5?'full':'lq';
+  });
+  return out;
+}
+
+function diaryDays(){
+  if(!DAYS_FROM||!DAYS_TO) daysReset();
+  const from=dayOfKey(DAYS_FROM), to=dayOfKey(DAYS_TO), today=dayKeyOf(new Date());
+  const months={}, monthOf=d=>{ const k=d.getFullYear()+'-'+(d.getMonth()+1);
+    return months[k]||(months[k]={cakes:monthBirthdays(d.getFullYear(),d.getMonth()+1),
+      moon:moonPhasesIn(d.getFullYear(),d.getMonth()+1)}); };
+  let html=`<div class="mnav dnav"><button class="dmore" data-dmore="-7">&#9650; Earlier days</button>
+      <button class="mtoday" id="dToday">Today</button></div>`;
+  for(let d=from;d<=to;d=dayPlus(d,1)){
+    const key=dayKeyOf(d), n=d.getDate(), mo=monthOf(d);
+    if(n===1||d.getTime()===from.getTime())
+      html+=`<p class="dmonth">${esc(d.toLocaleDateString('en-GB',{month:'long',year:'numeric'}))}</p>`;
+    const wkend=d.getDay()===0||d.getDay()===6, open=DAYS_OPEN.has(key), isToday=key===today;
+    const rows=itemsOn(d,true).sort((a,b)=>new Date(whenOf(a))-new Date(whenOf(b)));
+    const cakes=mo.cakes[n]||[], hol=bankHolOn(key), moon=mo.moon[n];
+    const lines=cakes.map(c=>`<span class="dl">&#127874; ${esc(fullName(c))}</span>`)
+      .concat(rows.map(it=>{
+        const w=whenOf(it), st=w?new Date(w):null;
+        const time=st&&!it.all_day&&dayKeyOf(st)===key?st.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'';
+        const away=it.kind==='appointment'&&awayColour(it.away);
+        return `<span class="dl${it.done_at?' done':''}"><i class="dk ${it.kind==='appointment'?'a':isLate(it)?'l':'t'}"${
+          away?` style="background:${away}"`:''}></i>${time?`<b>${esc(time)}</b> `:''}${esc(it.title)}</span>`;
+      }));
+    const shown=open?[]:lines.slice(0,2), more=open?0:lines.length-shown.length;
+    html+=`<div class="dday${wkend?' wkend':''}${isToday?' today':''}${open?' open':''}" data-dkey="${key}">
+      <button class="dhead" data-dopen="${key}" aria-expanded="${open}"
+        aria-label="${esc(d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}))}${isToday?', today':''}${
+          hol?', '+esc(hol):''}${moon?', '+MOON[moon][1]:''}: ${lines.length?lines.length+' thing'+(lines.length>1?'s':''):'nothing on'}">
+        <span class="dnum">${n}</span><span class="dname">${esc(d.toLocaleDateString('en-GB',{weekday:'short'}))}</span>
+        <span class="dsum">${shown.join('')}${more?`<span class="dl dmorel">+${more} more</span>`:''}${
+          hol?`<span class="dhol">${esc(hol)}</span>`:''}</span>
+        ${moon?`<span class="dmoon" title="${MOON[moon][1]}" aria-hidden="true">${MOON[moon][0]}</span>`:''}
+      </button>
+      ${open?`<div class="dfull">${cakes.map(c=>{ const age=d.getFullYear()-Number(String(c.birth_date).slice(0,4));
+          return `<button class="item" data-bdc="${c.id}"><span class="mid"><span class="t">&#127874; ${esc(fullName(c))}</span>
+            <span class="w">Birthday${age>0&&age<130?' &middot; '+age:''}</span></span></button>`; }).join('')}
+        ${rows.map(itemRow).join('')}
+        ${!rows.length&&!cakes.length?'<div class="field"><dd style="color:var(--muted);font-size:15px">Nothing that day.</dd></div>':''}
+        <div class="dadd"><button class="btn" data-dadd="${key}">+ Add on this day</button></div></div>`:''}
+    </div>`;
+  }
+  html+=`<div class="dnav dnavend"><button class="dmore" data-dmore="14">&#9660; Later days</button></div>`;
+  return html;
+}
+// Opening or folding a day, or adding days either side, keeps the day you
+// were looking at where it was on the screen.
+function daysKeepPlace(fn){
+  const b=$('diaryBody'), rows=[...b.querySelectorAll('.dday')];
+  const anchor=rows.find(r=>r.getBoundingClientRect().bottom>b.getBoundingClientRect().top+40)||rows[0];
+  const key=anchor&&anchor.dataset.dkey, was=anchor?anchor.getBoundingClientRect().top:0;
+  fn(); renderDiary();
+  const now=key&&b.querySelector(`.dday[data-dkey="${key}"]`);
+  if(now) b.scrollTop+=now.getBoundingClientRect().top-was;
+}
+function wireDays(){
+  const b=$('diaryBody');
+  b.querySelectorAll('[data-dopen]').forEach(x=>x.onclick=()=>{
+    const k=x.dataset.dopen;
+    const b0=$('diaryBody'), el=x.closest('.dday'), was=el.getBoundingClientRect().top;
+    if(DAYS_OPEN.has(k)) DAYS_OPEN.delete(k); else DAYS_OPEN.add(k);
+    renderDiary();
+    const now=b0.querySelector(`.dday[data-dkey="${k}"]`);
+    if(now) b0.scrollTop+=now.getBoundingClientRect().top-was;
+  });
+  b.querySelectorAll('[data-dmore]').forEach(x=>x.onclick=()=>daysKeepPlace(()=>{
+    const n=Number(x.dataset.dmore);
+    if(n<0) DAYS_FROM=dayKeyOf(dayPlus(dayOfKey(DAYS_FROM),n));
+    else DAYS_TO=dayKeyOf(dayPlus(dayOfKey(DAYS_TO),n));
+  }));
+  b.querySelectorAll('[data-dadd]').forEach(x=>x.onclick=()=>newItem(null,x.dataset.dadd));
+  const t=$('dToday'); if(t) t.onclick=()=>{ daysReset(); renderDiary(); $('diaryBody').scrollTop=0; };
 }
 
 /* ---------- month ---------- */
@@ -9853,6 +10109,34 @@ async function shareIdea(t,n,paths,btn){
   }
 }
 
+// Copy under a photo (ML255) puts that one picture on the clipboard, to paste
+// into Claude after Copy idea. Phones and browsers only take a PNG picture, so
+// the photo is fetched and redrawn as one. The fetch goes in as a promise so
+// the copy still counts as part of the tap, however long the photo takes.
+const canCopyPhoto=()=>!!(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem);
+async function photoPng(path){
+  const {data:blob,error}=await sb.storage.from('photos').download(path);
+  if(error||!blob) throw error||new Error('no photo');
+  if(blob.type==='image/png') return blob;
+  const url=URL.createObjectURL(blob);
+  try{
+    const img=await new Promise((ok,no)=>{
+      const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=url; });
+    const cv=document.createElement('canvas'); cv.width=img.width; cv.height=img.height;
+    cv.getContext('2d').drawImage(img,0,0);
+    return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('no png')),'image/png'));
+  } finally { URL.revokeObjectURL(url); }
+}
+function copyPhoto(path){
+  if(!canCopyPhoto()){ toast('This phone cannot copy pictures: use Share idea'); return; }
+  toast('Copying the photo…');
+  let p;
+  try{ p=navigator.clipboard.write([new ClipboardItem({'image/png':photoPng(path)})]); }
+  catch(e){ p=Promise.reject(e); }
+  p.then(()=>toast('Photo copied: now paste it in'))
+   .catch(e=>{ console.error(e); toast('Could not copy that photo'); });
+}
+
 // Your own ideas can be reworded, and given photos. Anybody can still move
 // any of them along. Photos half-added to a new idea wait while this is open.
 function editWish(id){
@@ -9934,8 +10218,10 @@ function renderWish(){
             mineW?` <button class="addmore" data-wedit="${w.id}"
               style="padding:0 0 0 6px;font-size:15px" aria-label="Change this">&#9998;</button>`:''}</span>
           ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
-          ${arr(w.photos).length?`<span class="rcpthumbs">${arr(w.photos).map(p=>`<img
-            src="${esc(SIGNED[p.path]||'')}" alt="Photo" data-wpic="${esc(p.path)}">`).join('')}</span>`:''}
+          ${arr(w.photos).length?`<span class="rcpthumbs">${arr(w.photos).map(p=>`<span class="wpic"><img
+            src="${esc(SIGNED[p.path]||'')}" alt="Photo" data-wpic="${esc(p.path)}">${canCopyPhoto()
+            ?`<button type="button" class="wpcopy" data-wpcopy="${esc(p.path)}"
+            aria-label="Copy this photo">Copy</button>`:''}</span>`).join('')}</span>`:''}
           ${wishCopyBtns('data-wcopy="'+w.id+'" data-wfield')}
           <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
             ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
@@ -9992,6 +10278,8 @@ function renderWish(){
   };
   $('wishBody').querySelectorAll('img[data-wpic]').forEach(i=>i.onclick=()=>
     lightbox(SIGNED[i.dataset.wpic]));
+  $('wishBody').querySelectorAll('[data-wpcopy]').forEach(b=>b.onclick=()=>
+    copyPhoto(b.dataset.wpcopy));
   $('wishBody').querySelectorAll('[data-wcopy]').forEach(b=>b.onclick=()=>{
     const w=WISHES.find(x=>x.id===Number(b.dataset.wcopy));
     if(!w) return;
@@ -15448,7 +15736,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.10.3';
+const APP_VERSION='2026.11.11.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -16501,7 +16789,7 @@ function parseVcards(text){
       if(!val) return;
 
       const label=(want)=>{
-        const m=params.match(/TYPE=([A-Z,]+)/);
+        const m=params.match(/TYPE="?([A-Z,]+)/);
         const t=m?m[1].split(',')[0]:'';
         return want[t]||want.DEFAULT;
       };
@@ -16521,14 +16809,14 @@ function parseVcards(text){
         case 'TITLE': c.job_title=val; break;
         case 'TEL':
           c.phones.push({label:label({CELL:'Mobile',MOBILE:'Mobile',HOME:'Home',
-            WORK:'Work',DEFAULT:'Other'}), value:val}); break;
+            WORK:'Work',DEFAULT:'Other'}), value:val.replace(/^tel:/i,'')}); break;
         case 'EMAIL':
           c.emails.push({label:label({WORK:'Work',DEFAULT:'Personal'}), value:val}); break;
         case 'URL':
           c.websites.push({label:'Website', value:val}); break;
-        case 'BDAY': {
-          const m=val.match(/(\d{4})-?(\d{2})-?(\d{2})/);
-          if(m) c.birth_date=`${m[1]}-${m[2]}-${m[3]}`;
+        case 'BDAY': {        // no year (--0312, or Apple's 1604): left out
+          const m=val.match(/^(\d{4})-?(\d{2})-?(\d{2})/);
+          if(m&&+m[1]>=1800) c.birth_date=`${m[1]}-${m[2]}-${m[3]}`;
           break;
         }
         case 'ADR': {
@@ -16913,17 +17201,20 @@ function openIO(){
 
     <div class="card"><h3>Bring contacts in</h3>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
-        Anyone already here is left exactly as they are &mdash; nothing is ever
-        overwritten. Only names that are new get added.</dd></div>
+        New names are added. For anyone already here you can fill in what is
+        missing, such as a new phone number, email or birthday; nothing already
+        filled in is ever changed.</dd></div>
       <div class="setadd">
         <button class="btn" id="ioTemplate" style="border:1.5px solid var(--rule)">
           Download the template first</button>
         <label class="btn" style="border:1.5px solid var(--rule);cursor:pointer">
-          Choose a file<input type="file" accept=".csv,.vcf,text/csv,text/vcard"
+          Choose a file<input type="file"
+            accept=".csv,.vcf,text/csv,text/comma-separated-values,text/vcard,text/x-vcard"
             id="ioFile" style="display:none">
         </label>
-        <p class="coords">A CSV from the template, or a .vcf file exported from
-        your phone's own contacts app.</p>
+        <p class="coords">A .vcf file from a phone's contacts app or iCloud, a CSV
+        saved from Google Contacts or Outlook, or the template. Or share a contact
+        straight to MY life from Contacts or WhatsApp.</p>
       </div>
       <div id="ioReport"></div>
     </div>`;
@@ -16931,7 +17222,7 @@ function openIO(){
   wireBackupCard();
   $('ioExport').onclick=exportContacts;
   $('ioTemplate').onclick=exportTemplate;
-  IMPORT_KIND='csv';
+  IMPORT_ROWS=[]; IMPORT_GAPS=[];
   $('ioFile').onchange=e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
@@ -16945,121 +17236,276 @@ function openIO(){
   showSheet('io'); $('ioBody').scrollTop=0; lockBackground();
 }
 
-let IMPORT_ROWS=[], IMPORT_KIND='csv';
+let IMPORT_ROWS=[], IMPORT_GAPS=[];
 
-function previewVcf(text){
-  const cards=parseVcards(text);
-  if(!cards.length){ toast('No contacts found in that file'); return; }
+/* Bringing contacts in (ML256, 11 Nov 2026). Whatever the file, it is turned
+   into contacts first, then sorted the same way: the new ones to add, and the
+   ones already here that the file has more on (a phone number, an email, a
+   birthday) to fill in if you say so. A contact is matched on first name,
+   last name and company, as it always has been. */
+const importKey=c=>[c.first_name,c.last_name,c.company]
+  .map(x=>String(x||'').trim().toLowerCase()).join('|');
 
-  const here=new Set(CONTACTS.map(c=>
-    ((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase()));
+// A date in any of the ways the files write one, as YYYY-MM-DD, or '' when
+// there is no year (a birthday with no year is left out rather than guessed).
+// 03/04/1985 is read the UK way, 3 April, unless it can only be American.
+function importDate(v){
+  v=String(v||'').trim(); if(!v) return '';
+  let y,m,d,x;
+  if((x=v.match(/^(\d{4})-?(\d{1,2})-?(\d{1,2})(?:$|T|\s)/))){ y=+x[1]; m=+x[2]; d=+x[3]; }
+  else if((x=v.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})$/))){
+    let a=+x[1], b=+x[2]; y=+x[3];
+    if(y<100){ const now=new Date().getFullYear()%100; y+=y>now?1900:2000; }
+    if(b>12&&a<=12){ m=a; d=b; } else { d=a; m=b; }
+  } else if(/\b\d{4}\b/.test(v)&&!isNaN(Date.parse(v))){
+    const t=new Date(v); y=t.getFullYear(); m=t.getMonth()+1; d=t.getDate();
+  } else return '';
+  if(!(y>=1800&&m>=1&&m<=12&&d>=1)) return '';
+  const t=new Date(y,m-1,d);
+  if(t.getMonth()!==m-1) return '';
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
 
-  IMPORT_KIND='vcf'; IMPORT_ROWS=[];
-  let skipped=0;
-  cards.forEach(c=>{
-    const key=((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase();
-    if(here.has(key)) skipped++; else { here.add(key); IMPORT_ROWS.push(c); }
+// A row of the template, as the contact it describes.
+const IMPORT_JSON=['phones','emails','websites','socials','pets','former_names'];
+function templateContact(rec){
+  const d={};
+  IO_COLS.forEach(k=>{
+    if(k==='groups') return;
+    const v=rec[k];
+    if(v===undefined||v==='') return;
+    if(IMPORT_JSON.includes(k)){
+      try{ d[k]=JSON.parse(v); }catch(e){ /* leave it out rather than corrupt it */ }
+    }else if(k==='is_organisation') d[k]=/^(true|yes|1)$/i.test(v);
+    else d[k]=v;
   });
+  const g=String(rec.groups||'').split(/[;,]/).map(x=>x.trim()).filter(Boolean);
+  if(g.length) d._groups=g;
+  return d;
+}
 
+// Google Contacts and Outlook both save contacts as a CSV with column names
+// of their own. Those are read as they come, with no template needed.
+// Anything else with a column the template knows (Town, Postcode) is read too.
+function foreignCsvContacts(rows){
+  const head=rows[0].map(h=>String(h).trim().toLowerCase());
+  const at=(...names)=>{ for(const n of names){ const i=head.indexOf(n); if(i>=0) return i; } return -1; };
+  const NAMES=['first name','given name','last name','family name','surname','name',
+    'organization name','organization 1 - name','company'];
+  if(at(...NAMES)<0) return null;
+  const many=v=>String(v||'').split(' ::: ').map(x=>x.trim()).filter(Boolean);
+  const tidy=l=>String(l||'').replace(/^\*\s*/,'').trim();
+  const phoneLabel=l=>{ l=tidy(l).toLowerCase();
+    if(/fax/.test(l)) return 'Fax';
+    if(/mobile|cell/.test(l)) return 'Mobile';
+    if(/home/.test(l)) return 'Home';
+    if(/work|business|company/.test(l)) return 'Work';
+    return l?l.charAt(0).toUpperCase()+l.slice(1):'Other'; };
+  const mailLabel=l=>/work|business/i.test(tidy(l))?'Work':'Personal';
+  // Each column that holds phones, emails or websites, with how to label it.
+  const lists=[];
+  head.forEach((h,i)=>{
+    let x;
+    if((x=h.match(/^(phone|e-mail|email|website) (\d+) - value$/))){
+      const kind=x[1]==='phone'?'phones':x[1]==='website'?'websites':'emails';
+      const li=at(`${x[1]} ${x[2]} - label`,`${x[1]} ${x[2]} - type`);
+      lists.push({i,kind,label:r=>{ const l=li>=0?r[li]:'';
+        return kind==='phones'?phoneLabel(l):kind==='emails'?mailLabel(l):'Website'; }});
+    } else if(/^e-?mail( \d)? address$/.test(h)||h==='email'||h==='e-mail')
+      lists.push({i,kind:'emails',label:()=> 'Personal'});
+    else if(/ phone( \d)?$|^pager$| fax$/.test(h)&&!/assistant|callback|radio|telex|tty/.test(h))
+      lists.push({i,kind:'phones',label:()=>phoneLabel(h.replace(/ phone( \d)?$/,''))});
+    else if(/^(personal |business )?web ?page$/.test(h))
+      lists.push({i,kind:'websites',label:()=> 'Website'});
+  });
+  const one={first_name:['first name','given name'], given_names:['middle name','additional name'],
+    last_name:['last name','family name','surname'], nickname:['nickname'],
+    company:['organization name','organization 1 - name','company','organisation'],
+    job_title:['organization title','organization 1 - title','job title'],
+    department:['organization department','organization 1 - department','department'],
+    partner_name:['spouse'], notes:['notes']};
+  const taken=new Set(lists.map(l=>l.i));
+  Object.values(one).flat().concat(['name','birthday']).forEach(n=>{ const i=at(n); if(i>=0) taken.add(i); });
+  // Template columns with spaces for underscores (Town, Post code), from a
+  // sheet made by hand, are read as words.
+  const plain=[];
+  head.forEach((h,i)=>{ const k=h.replace(/\s+/g,'_');
+    if(!taken.has(i)&&IO_COLS.includes(k)&&!IMPORT_JSON.includes(k)&&!['groups','is_organisation'].includes(k)
+      &&!(k in one)) plain.push([k,i]); });
+  // The first address with anything in it: Google's first, or Outlook's home,
+  // then work, then other.
+  const ADDR=[['address 1 - ',{address:'street',address_2:'extended address',town:'city',
+      county:'region',postcode:'postal code',country:'country'}]]
+    .concat(['home ','business ','other '].map(p=>[p,{address:'street',address_2:'street 2',
+      town:'city',county:'state',postcode:'postal code',country:['country/region','country']}]));
+
+  return rows.slice(1).map(r=>{
+    const c={};
+    const get=i=>i>=0?String(r[i]||'').trim():'';
+    Object.entries(one).forEach(([k,names])=>{ const v=get(at(...names)); if(v) c[k]=v; });
+    if(!c.first_name&&!c.last_name){
+      const p=get(at('name')).split(/\s+/).filter(Boolean);
+      if(p.length){ c.first_name=p.shift(); if(p.length) c.last_name=p.join(' '); }
+    }
+    const b=importDate(get(at('birthday'))); if(b) c.birth_date=b;
+    lists.forEach(l=>many(r[l.i]).forEach(v=>{
+      (c[l.kind]=c[l.kind]||[]).push({label:l.label(r), value:v}); }));
+    for(const [pre,map] of ADDR){
+      const a={};
+      Object.entries(map).forEach(([k,n])=>{ const v=get(at(...[].concat(n).map(x=>pre+x)));
+        if(v) a[k]=k==='address'?v.replace(/\s*\n\s*/g,', '):v; });
+      if(a.address||a.town||a.postcode){ Object.assign(c,a); break; }
+    }
+    if(!c.address&&!c.town&&!c.postcode){
+      const f=get(at('address 1 - formatted'));
+      if(f) c.address=f.replace(/\s*\n\s*/g,', ');
+    }
+    plain.forEach(([k,i])=>{ let v=get(i); if(/_date$/.test(k)) v=importDate(v); if(v&&!c[k]) c[k]=v; });
+    return c;
+  }).filter(c=>c.first_name||c.last_name||c.company);
+}
+
+// What a file has on someone already here that their contact does not:
+// phone numbers, emails and websites not there yet are added alongside, and
+// a birthday, address or other detail only where it is empty. Nothing that
+// is filled in is ever changed.
+const phoneKey=v=>String(v||'').replace(/\D/g,'').slice(-9);
+const webKey=v=>String(v||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/\/+$/,'');
+function importGap(have,c){
+  const patch={}, what=[];
+  [['phones',phoneKey,'phone number'],['emails',v=>String(v||'').trim().toLowerCase(),'email'],
+   ['websites',webKey,'website']].forEach(([k,key,word])=>{
+    const old=arr(have[k]), seen=new Set(old.map(x=>key(x&&x.value)).filter(Boolean));
+    const add=arr(c[k]).filter(x=>{ const kk=key(x&&x.value);
+      if(!kk||seen.has(kk)) return false; seen.add(kk); return true; });
+    if(add.length){ patch[k]=old.concat(add);
+      what.push(add.length>1?add.length+' '+word+'s':(word==='email'?'an ':'a ')+word); }
+  });
+  const fill=(k,word)=>{ if(c[k]&&!String(have[k]||'').trim()){ patch[k]=c[k]; if(word&&!what.includes(word)) what.push(word); } };
+  fill('birth_date','a birthday');
+  if(!['address','address_2','town','county','postcode'].some(k=>String(have[k]||'').trim()))
+    ['address','address_2','town','county','postcode','country'].forEach(k=>fill(k,'an address'));
+  [['given_names'],['nickname'],['partner_name'],['job_title'],['department'],['notes']]
+    .forEach(([k])=>fill(k,'other details'));
+  return Object.keys(patch).length?{patch,what}:null;
+}
+
+// Sorts the contacts from a file and shows what would happen, before
+// anything does.
+function previewContacts(list){
+  if(!list.length){ toast('No contacts found in that file'); return; }
+  const here=new Map();
+  CONTACTS.forEach(c=>{ const k=importKey(c); if(!here.has(k)) here.set(k,c); });
+  const seen=new Set();
+  IMPORT_ROWS=[]; IMPORT_GAPS=[];
+  let same=0;
+  list.forEach(c=>{
+    const key=importKey(c);
+    if(key==='||'||seen.has(key)){ same++; return; }
+    seen.add(key);
+    const have=here.get(key);
+    if(!have){ IMPORT_ROWS.push(c); return; }
+    const g=importGap(have,c);
+    if(g) IMPORT_GAPS.push({id:have.id, updated_at:have.updated_at, name:fullName(have), ...g});
+    else same++;
+  });
+  const nm=x=>[x.first_name,x.last_name].filter(Boolean).join(' ')||x.company||'(no name)';
+  const already=list.length-IMPORT_ROWS.length;
   $('ioReport').innerHTML=`
-    <div class="field"><dt>In the file</dt><dd>${cards.length}</dd></div>
+    <div class="field"><dt>In the file</dt><dd>${list.length}</dd></div>
     <div class="field"><dt>New</dt><dd>${IMPORT_ROWS.length}</dd></div>
-    <div class="field"><dt>Already here</dt><dd>${skipped}, left untouched</dd></div>
+    <div class="field"><dt>Already here</dt><dd>${already}${IMPORT_GAPS.length
+      ?`, ${IMPORT_GAPS.length} with more in the file`:', left untouched'}</dd></div>
     ${IMPORT_ROWS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
-        ${esc(IMPORT_ROWS.slice(0,8).map(x=>[x.first_name,x.last_name].filter(Boolean).join(' ')
-          ||x.company||'(no name)').join(', '))}${IMPORT_ROWS.length>8?'\u2026':''}</dd></div>
+        ${esc(IMPORT_ROWS.slice(0,8).map(nm).join(', '))}${IMPORT_ROWS.length>8?'…':''}</dd></div>
       <div class="field"><dd style="color:var(--muted);font-size:15px">
         Phone numbers, emails, addresses and birthdays come across where the file
-        has them. They will go into "Shared with me" for you to file.</dd></div>
-      <div class="setadd"><button class="btn primary" id="ioGo">
-        Add these ${IMPORT_ROWS.length}</button></div>`
+        has them. New ones go into "Shared with me" for you to file.</dd></div>`:''}
+    ${IMPORT_GAPS.length?`<label class="rcping"><input type="checkbox" id="ioGaps" checked>
+        <span>Fill in what is missing for the ${IMPORT_GAPS.length===1?'one':IMPORT_GAPS.length}
+        already here<br><small style="color:var(--muted)">${IMPORT_GAPS.slice(0,6).map(g=>
+          esc(g.name)+': '+esc(g.what.join(', '))).join('<br>')}${IMPORT_GAPS.length>6?'<br>…':''}<br>
+        Nothing already filled in is changed.</small></span></label>`:''}
+    ${IMPORT_ROWS.length||IMPORT_GAPS.length
+      ?'<div class="setadd"><button class="btn primary" id="ioGo"></button></div>'
       :'<div class="field"><dd>Nothing new to add.</dd></div>'}`;
+  const go=$('ioGo'), tick=$('ioGaps');
+  const label=()=>{
+    const fill=IMPORT_GAPS.length&&tick&&tick.checked;
+    const n=IMPORT_ROWS.length;
+    const bits=[n?'add '+(fill?n+' new':n===1?'this one':'these '+n):'',
+      fill?'fill in '+IMPORT_GAPS.length:''].filter(Boolean);
+    const t=bits.join(' and ');
+    go.textContent=t?t.charAt(0).toUpperCase()+t.slice(1):'Nothing to do';
+    go.disabled=!t;
+  };
+  if(go){ label(); go.onclick=doImport; }
+  if(tick) tick.onchange=label;
+}
 
-  const go=$('ioGo');
-  if(go) go.onclick=doImport;
+function previewVcf(text){
+  previewContacts(parseVcards(text));
 }
 
 function previewImport(text){
   const rows=parseCsv(text);
   if(rows.length<2){ toast('That file has no rows in it'); return; }
-  const head=rows[0].map(h=>h.trim().toLowerCase().replace(/\s+/g,'_'));
-  const known=head.filter(h=>IO_COLS.includes(h));
-  if(!known.includes('first_name')&&!known.includes('last_name')&&!known.includes('company')){
-    toast('No name column found. Use the template.');
+  rows[0][0]=String(rows[0][0]).replace(/^﻿/,'');
+  const raw=rows[0].map(h=>h.trim().toLowerCase());
+  // The template, or a sheet made from it, uses its own column names.
+  if(raw.some(h=>['first_name','last_name','phones','emails','birth_date'].includes(h))){
+    const head=raw.map(h=>h.replace(/\s+/g,'_'));
+    previewContacts(rows.slice(1).map(r=>{
+      const rec={};
+      head.forEach((h,i)=>{ if(IO_COLS.includes(h)) rec[h]=(r[i]||'').trim(); });
+      return templateContact(rec);
+    }).filter(c=>c.first_name||c.last_name||c.company));
     return;
   }
-
-  const here=new Set(CONTACTS.map(c=>
-    ((c.first_name||'')+'|'+(c.last_name||'')+'|'+(c.company||'')).toLowerCase()));
-
-  IMPORT_KIND='csv'; IMPORT_ROWS=[]; const skipped=[];
-  rows.slice(1).forEach(r=>{
-    const rec={};
-    head.forEach((h,i)=>{ if(IO_COLS.includes(h)) rec[h]=(r[i]||'').trim(); });
-    const key=((rec.first_name||'')+'|'+(rec.last_name||'')+'|'+(rec.company||'')).toLowerCase();
-    if(key==='||') return;
-    if(here.has(key)) skipped.push(rec); else IMPORT_ROWS.push(rec);
-  });
-
-  $('ioReport').innerHTML=`
-    <div class="field"><dt>New</dt><dd>${IMPORT_ROWS.length}</dd></div>
-    <div class="field"><dt>Already here</dt><dd>${skipped.length}, left untouched</dd></div>
-    ${IMPORT_ROWS.length?`<div class="field"><dd style="color:var(--muted);font-size:15px">
-        ${esc(IMPORT_ROWS.slice(0,6).map(x=>[x.first_name,x.last_name].filter(Boolean).join(' ')
-          ||x.company||'(no name)').join(', '))}${IMPORT_ROWS.length>6?'\u2026':''}</dd></div>
-      <div class="setadd"><button class="btn primary" id="ioGo">
-        Add these ${IMPORT_ROWS.length}</button></div>`
-      :'<div class="field"><dd>Nothing new to add.</dd></div>'}`;
-
-  const go=$('ioGo');
-  if(go) go.onclick=doImport;
+  const list=foreignCsvContacts(rows);
+  if(!list){ toast('No name column found. Use the template.'); return; }
+  previewContacts(list);
 }
 
 async function doImport(){
   const btn=$('ioGo'); btn.disabled=true;
+  const fill=!!($('ioGaps')&&$('ioGaps').checked);
   const box=GROUPS.find(g=>g.name==='Shared with me'&&g.owner_id===ME.id);
-  let added=0, failed=0;
+  let added=0, failed=0, filled=0, notFilled=0;
 
   for(const rec of IMPORT_ROWS){
-    if(IMPORT_KIND==='vcf'){
-      const d={...rec, created_by:ME.id};
-      const {data,error}=await sb.from('contacts').insert(d).select().single();
-      if(error||!data){ failed++; console.error(error); continue; }
-      added++;
-      if(box) await sb.from('contact_groups')
-        .insert([{contact_id:data.id,group_id:box.id,user_id:ME.id}]);
-      continue;
-    }
-    const d={created_by:ME.id};
-    IO_COLS.forEach(k=>{
-      if(k==='groups') return;
-      const v=rec[k];
-      if(v===undefined||v==='') return;
-      if(['phones','emails','websites','socials','pets','former_names'].includes(k)){
-        try{ d[k]=JSON.parse(v); }catch(e){ /* leave it out rather than corrupt it */ }
-      }else if(k==='is_organisation') d[k]=/^(true|yes|1)$/i.test(v);
-      else d[k]=v;
-    });
+    const {_groups,...d}=rec;
+    d.created_by=ME.id;
     if(!d.first_name&&!d.last_name&&!d.company){ failed++; continue; }
-
     const {data,error}=await sb.from('contacts').insert(d).select().single();
     if(error||!data){ failed++; console.error(error); continue; }
     added++;
-
-    const names=(rec.groups||'').split(/[;,]/).map(x=>x.trim()).filter(Boolean);
-    const ids=names.map(n=>{
+    const ids=(_groups||[]).map(n=>{
       const g=GROUPS.find(x=>x.name.toLowerCase()===n.toLowerCase()); return g?g.id:null;
     }).filter(Boolean);
     const use=ids.length?ids:(box?[box.id]:[]);
     if(use.length) await sb.from('contact_groups')
       .insert(use.map(gid=>({contact_id:data.id,group_id:gid,user_id:ME.id})));
   }
+  // Only if nobody has changed the contact since the file was read, so their
+  // change is never lost under this one.
+  if(fill) for(const g of IMPORT_GAPS){
+    let q=sb.from('contacts').update(g.patch).eq('id',g.id);
+    if(g.updated_at) q=q.eq('updated_at',g.updated_at);
+    const {data,error}=await q.select('id');
+    if(error||!data||!data.length){ notFilled++; if(error) console.error(error); continue; }
+    filled++;
+  }
 
   btn.disabled=false;
   await loadAll();
-  $('ioReport').innerHTML=`<div class="field"><dd><strong>${added} added.</strong>
-    ${failed?failed+' could not be read and were left out.':''}</dd></div>`;
-  toast(added+' contacts added');
+  const said=[added+' added'].concat(fill&&IMPORT_GAPS.length?[filled+' filled in']:[]);
+  $('ioReport').innerHTML=`<div class="field"><dd><strong>${said.join(', ')}.</strong>
+    ${failed?failed+' could not be read and were left out.':''}
+    ${notFilled?notFilled+' could not be filled in (changed meanwhile, or not yours to change): '
+      +'choose the file again to try those.':''}</dd></div>`;
+  IMPORT_ROWS=[]; IMPORT_GAPS=[];
+  toast(said.join(', '));
 }
 
 /* ============================================================
@@ -17165,7 +17611,8 @@ async function newShopList(){
   await loadShopping(); renderShop(); toast('List added');
 }
 $('logEdCancel').onclick=()=>{killMaps();$('logEd').classList.add('hidden');lockBackground();};
-$('diaryAdd').onclick=()=>newItem(null,DIARY_VIEW==='month'?DIARY_DAY:null);
+$('diaryAdd').onclick=()=>newItem(null,DIARY_VIEW==='month'?DIARY_DAY
+  :DIARY_VIEW==='days'&&DAYS_OPEN.size===1?[...DAYS_OPEN][0]:null);
 $('itCancel').onclick=()=>{dphCancel();$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
 $('rtCancel').onclick=()=>{dphCancel();shutRoutine();};
@@ -21518,12 +21965,17 @@ document.addEventListener('visibilitychange',async()=>{
 // address. A picture shared in (a screenshot, say) adds share_pics=N, and the
 // pictures themselves wait in the service worker until asked for; they go on
 // a new idea in the Wishlist.
+// A contact shared in (ML256, from Contacts or WhatsApp) comes the same way,
+// as a .vcf file, and goes to Bring contacts in instead.
 let SHARED_IN=null, SHARED_PICS=null;
 (function(){
   try{
     const p=new URLSearchParams(location.search);
     if(!['share_url','share_text','share_title','share_pics'].some(k=>p.has(k))) return;
-    if(p.has('share_pics'))
+    if(/BEGIN:VCARD/i.test(p.get('share_text')||''))
+      SHARED_PICS={text:'', files:Promise.resolve([new File([p.get('share_text')],'contact.vcf',
+        {type:'text/vcard'})])};
+    else if(p.has('share_pics'))
       SHARED_PICS={text:[p.get('share_text'),p.get('share_url')].filter(Boolean)
         .filter((v,i,a)=>a.indexOf(v)===i).join('\n').trim(), files:sharedPicsFetch()};
     else SHARED_IN={url:findUrl(p.get('share_url'))||findUrl(p.get('share_text')),
@@ -21546,15 +21998,27 @@ function sharedPicsFetch(){
     c.postMessage({want:'shared'});
   });
 }
+const isVcard=f=>!!f&&(/vcard|directory/i.test(f.type||'')||/\.vcf$/i.test(f.name||''));
 async function sharedPicsIn(s){
+  const all=await s.files;
+  if(all.some(isVcard)){ await sharedContactsIn(all.filter(isVcard)); return; }
   await openWish();
   if(s.text&&$('wNotes')) $('wNotes').value=s.text;
-  const files=(await s.files).filter(f=>f&&/^image\//.test(f.type||''));
+  const files=all.filter(f=>f&&/^image\//.test(f.type||''));
   if(!files.length){ toast('The picture did not come through: add it with Choose'); return; }
   await dphAdd(files);
   toast(files.length>1 ? files.length+' pictures added: now fill in the two boxes'
     : 'Picture added: now fill in the two boxes');
   try{ $('wTitle').focus(); }catch(e){}
+}
+async function sharedContactsIn(files){
+  let text='';
+  for(const f of files){ try{ text+=(await f.text())+'\n'; }catch(e){ console.warn(e); } }
+  openIO();
+  if(!/BEGIN:VCARD/i.test(text)){
+    toast('The contact did not come through: save it as a file and choose it here'); return; }
+  previewVcf(text);
+  try{ $('ioReport').scrollIntoView({block:'start'}); }catch(e){}
 }
 
 async function start(){

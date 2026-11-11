@@ -20,7 +20,8 @@
       "files": [
         {
           "name": "share_files",
-          "accept": ["image/*", ".png", ".jpg", ".jpeg", ".webp"]
+          "accept": ["image/*", ".png", ".jpg", ".jpeg", ".webp",
+                     "text/vcard", "text/x-vcard", "text/directory", ".vcf"]
         }
       ]
     }

@@ -21,6 +21,8 @@ self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
    they always have, and the app files a link as before. Any pictures are kept
    here, in memory only and never in a cache, until the page asks for them
    (the 'shared' message below), and the address says how many there are.
+   A contact (a .vcf file) shared in comes the same way (11 Nov 2026, ML256),
+   and the page sends it to Bring contacts in.
    The worker stays awake until then, or for a minute at most. */
 let SHARED = null;              // {files, give} until the page collects them
 
@@ -39,6 +41,13 @@ self.addEventListener('fetch', e => {
       if (typeof v === 'string' && v.trim()) q.set(k, v);
     }
     const files = form.getAll('share_files').filter(f => f && typeof f === 'object' && f.size);
+    // A contact shared as words rather than a file (ML256) is made into a
+    // .vcf file here, so it never travels in the address.
+    const said = q.get('share_text');
+    if (said && /BEGIN:VCARD/i.test(said)) {
+      files.push(new File([said], 'contact.vcf', { type: 'text/vcard' }));
+      q.delete('share_text');
+    }
     if (files.length) {
       q.set('share_pics', String(files.length));
       SHARED = { files, give };

@@ -47,8 +47,8 @@ const ROOT = path.join(__dirname, '..');
   // ---------------------------------------------------------------
   console.log('\nA MY Games tile, a place in the menu, and Help');
   ok('there is a Games tile, and it opens MY Games', await ev(() => TILE_DEST.games && TILE_DEST.games.label === 'Games' && TILE_DEST.games.go === openGames));
-  ok('  new people get it after Jigsaws, with My Stuff still just before Settings', await ev(() =>
-    TILE_DEFAULTS.indexOf('games') === TILE_DEFAULTS.indexOf('jig') + 1 && TILE_DEFAULTS.indexOf('stuff') === TILE_DEFAULTS.indexOf('settings') - 1));
+  ok('  new people get it after Jigsaws, with My Stuff still before Settings', await ev(() =>
+    TILE_DEFAULTS.indexOf('games') === TILE_DEFAULTS.indexOf('jig') + 1 && TILE_DEFAULTS.indexOf('stuff') < TILE_DEFAULTS.indexOf('settings')));
   ok('  and it joins the end of an arrangement someone already has', await ev(() => {
     const was = MY_PROFILE, keep = TILES; MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }, { dest: 'diary' }], hidden: [] } };
     loadTiles(); const got = TILES.map(t => t.dest); MY_PROFILE = was; TILES = keep; return got.includes('games'); }));

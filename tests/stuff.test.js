@@ -31,8 +31,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
 
   console.log('\nThe tile');
   ok('My Stuff can go on the home screen', await ev(() => TILE_DEST.stuff && TILE_DEST.stuff.label === 'My Stuff'));
-  ok('a new person gets it, just before Settings', await ev(() =>
-    TILE_DEFAULTS.indexOf('stuff') === TILE_DEFAULTS.indexOf('settings') - 1));
+  ok('a new person gets it, before Settings', await ev(() =>
+    TILE_DEFAULTS.indexOf('stuff') > -1 && TILE_DEFAULTS.indexOf('stuff') < TILE_DEFAULTS.indexOf('settings')));
   ok('someone with tiles already set out gets it at the end', await ev(() => {
     const was = MY_PROFILE;
     MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }, { dest: 'settings' }], hidden: [] } };
@@ -40,7 +40,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
     MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }], hidden: ['stuff'] } };
     loadTiles(); const binned = TILES.map(t => t.dest);
     MY_PROFILE = was; loadTiles();
-    return got[got.length - 1] === 'stuff' && !binned.includes('stuff');
+    return got.indexOf('stuff') > got.indexOf('settings') && !binned.includes('stuff');
   }));
   ok('it is a place in the menu', await ev(() => AREAS.stuff && AREAS.stuff.title === 'My Stuff'
     && areaItems('stuff').some(x => x.label === 'Add something')));

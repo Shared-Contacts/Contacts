@@ -349,8 +349,13 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   await ev(id => { window.__rows.games.find(g => g.id === id).status = 'ended'; window.__rows.games.find(g => g.id === id).end_reason = 'Stopped'; }, R);
   await ev(async () => { await pdReload(PD_CUR); pdPaint(); }); await settle(150);
   await clear();
-  await p.click('#pdPlayAgain'); await settle(600);
-  ok('Play again starts another the same way: on your own, real dice, no questions', await ev(() => !$('pdWho'))
+  await p.click('#pdPlayAgain'); await settle(400);
+  // ML267 (16 Nov 2026): Play again asks, with last game's choices ticked, so the dice can change.
+  ok('Play again asks first, with the same choices ticked: nobody else, real dice', await ev(() => !!$('pdWho')
+    && $('pdwReal').checked && !document.querySelector('#pdWho .ppl input:checked') && /Play again/.test($('pdWho').textContent))
+    && !(await rpcs('new_pounds')).length);
+  await p.click('#pdwGo'); await settle(600);
+  ok('  Next starts another the same way: on your own, real dice', await ev(() => !$('pdWho'))
     && JSON.stringify((await rpcs('new_pounds'))[0]) === JSON.stringify({ players: ['me'], first_seat: 0, real_dice: true })
     && await ev(r => PD_CUR !== r && pdReal(lkGame(PD_CUR)), R));
   await ev(() => pdBackToList()); await settle(300);

@@ -198,6 +198,25 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   ok('  Barry’s Games list shows both games going on with Sandra', await B.evaluate(() =>
     document.querySelectorAll('#gamesBody [data-lkgame]').length) === 2);
 
+  // ML268 (16 Nov 2026).
+  console.log('\nPlay again: Barry’s phone follows Sandra to the new game');
+  await openFromList(B, G2);
+  ok('Barry opens the second game', await cur(B) === G2, String(await cur(B)));
+  await S.click('#lkStop'); await both(1000);
+  ok('  Sandra stops it: both phones show the scores', await B.evaluate(() => !!document.querySelector('.lkover'))
+    && await S.evaluate(() => !!document.querySelector('.lkover')));
+  await clearToasts(B);
+  await S.click('#lkAgain'); await wait(S, 500);
+  if (await S.evaluate(() => !!$('lkAlready'))) { await S.click('#lkaNew'); await wait(S, 300); }
+  ok('  while Sandra is choosing, Barry’s phone stays on the scores', await cur(B) === G2);
+  await S.click('[data-lkfirst="0"]'); await wait(S, 800);
+  const G3 = await cur(S);
+  await both(1200);
+  ok('Sandra taps Play again: a new game, and Barry’s phone moves to it by itself', G3 !== G2 && G3 !== G && await cur(B) === G3,
+    `${G3} / ${await cur(B)}`);
+  ok('  telling him who started it', /Sandra has started a new game/.test(await toasts(B)), await toasts(B));
+  ok('  Sandra is rolling, on both phones', /Sandra is rolling/.test(await status(B)) && await cur(S) === G3, await status(B));
+
   console.log('\nErrors: ' + (errors.length ? errors.join('\n') : 'none'));
   ok('no page errors on either phone', errors.length === 0, errors.join(' | '));
   console.log(`\n${pass} passed, ${fail} failed`);

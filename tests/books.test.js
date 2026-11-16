@@ -466,8 +466,10 @@ const CORS = { 'access-control-allow-origin': '*' };
 
   console.log('\nThe version');
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
-  ok('the app and version.json agree', await ev(() => APP_VERSION) === vj.version && vj.version === '2026.11.11.2', vj.version);
-  ok('What’s new mentions Books', vj.history[0].version === vj.version && vj.history[0].changes.every(c => /^Books: /.test(c) && c.length < 160));
+  // No longer pinned to 2026.11.11.2 (16 Nov 2026): later versions keep the Books entry further down.
+  const vb = vj.history.find(h => h.version === '2026.11.11.2');
+  ok('the app and version.json agree', await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version, vj.version);
+  ok('What’s new mentions Books', !!vb && vb.changes.length > 0 && vb.changes.every(c => /^Books: /.test(c) && c.length < 160));
 
   console.log('\nErrors');
   ok('no errors on the page', errors.length === 0, errors.slice(0, 3).join(' | '));

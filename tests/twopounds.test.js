@@ -219,6 +219,36 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   const kinds = (await db.query(`select kind, count(*)::int as n from games group by kind order by kind`)).rows;
   ok('the database holds two games of Pounds, nothing else changed', JSON.stringify(kinds) === JSON.stringify([{ kind: 'pounds', n: 2 }]), JSON.stringify(kinds));
 
+  // ML267 and ML268 (16 Nov 2026).
+  console.log('\nPlay again: the dice can change, and Barry’s phone follows Sandra to the new game');
+  await clearToasts(B);
+  await S.click('#pdPlayAgain'); await wait(S, 400);
+  const again = await S.evaluate(() => {
+    const w = $('pdWho'); if (!w) return null;
+    const real = $('pdwReal'), ppl = w.querySelector('.ppl');
+    return { real: real.checked, ticked: [...w.querySelectorAll('.ppl input:checked')].map(i => i.value).join(),
+      first: !!(real.compareDocumentPosition(ppl) & Node.DOCUMENT_POSITION_FOLLOWING) }; });
+  ok('Sandra taps Play again: Barry and Real dice are ticked, as last game, Real dice first',
+    !!again && again.real && again.ticked === 'me' && again.first, JSON.stringify(again));
+  ok('  Barry’s phone stays on the scores while she chooses', await cur(B) === R && await B.evaluate(() => !!document.querySelector('.pdover')));
+  await S.click('#pdwReal'); await S.click('#pdwGo'); await wait(S, 400);
+  await S.click('[data-lkfirst="0"]'); await wait(S, 900);
+  const N = await cur(S);
+  await both(1200);
+  ok('she unticks Real dice: the new game has the phone’s dice', N !== R && N !== G
+    && (await db.query(`select dice->>'real' as r from games where id = ${N}`)).rows[0].r === 'false');
+  ok('Barry’s phone, still on the scores, goes straight to the new game', await cur(B) === N, `${await cur(B)} / ${N}`);
+  ok('  telling him Sandra started it', /Sandra has started a new game/.test(await toasts(B)), await toasts(B));
+  ok('  the same game on both phones: Sandra’s turn', /^Sandra’s turn\. Waiting for them to roll\./.test(await status(B)), await status(B));
+
+  console.log('\nAn old game’s scores pull nobody away');
+  await B.evaluate(() => pdBackToList()); await wait(B, 300);
+  await B.evaluate(id => pdOpen(id), G); await wait(B, 800);
+  ok('Barry opens the first game: its scores', await cur(B) === G && await B.evaluate(() => !!document.querySelector('.pdover')));
+  await B.evaluate(() => (window.__live || []).forEach(f => f())); await wait(B, 900);
+  await B.evaluate(() => (window.__live || []).forEach(f => f())); await wait(B, 900);
+  ok('  he stays there, although a game with Sandra is going on', await cur(B) === G, String(await cur(B)));
+
   console.log('\nErrors: ' + (errors.length ? errors.join('\n') : 'none'));
   ok('no page errors on either phone', errors.length === 0, errors.join(' | '));
   console.log(`\n${pass} passed, ${fail} failed`);

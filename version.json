@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.16.5",
+  "version": "2026.11.16.6",
   "history": [
+    {
+      "version": "2026.11.16.6",
+      "changes": [
+        "TV/Movies: a new tile for films and TV series, found by name, with your stars, each time you watched, how far into a series, and your DVDs."
+      ]
+    },
     {
       "version": "2026.11.16.5",
       "changes": [

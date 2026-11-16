@@ -1614,6 +1614,24 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   display:flex;gap:10px}
 .bkscanbtns button{flex:1;padding:14px 8px;border-radius:10px;background:rgba(255,255,255,.92);
   color:var(--ink);font-size:16px;font-weight:600}
+/* TV/Movies (ML276): Books' look, with these besides */
+#tvForm[data-kind="film"] .tvforseries,#tvForm[data-kind="series"] .tvforfilm{display:none}
+.tvhits{margin-top:10px}
+.tvhit{align-items:center}
+.tvhit img,.tvnopic{flex:0 0 40px;width:40px;height:60px;object-fit:cover;border-radius:4px;background:#F0EEE7}
+.tvnopic{display:flex;align-items:center;justify-content:center;font-size:20px}
+.tvep{font-style:italic}
+.tvaired{display:block;font-size:14px;color:var(--muted)}
+.tvprog .bkquick{margin:4px 14px 12px}
+.tveps{max-height:60vh;overflow:auto;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}
+.tveps .item[aria-pressed="true"]{background:#FFF4D4}
+.tvseason{margin:0;padding:10px 14px 4px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tvviewrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.tvviewrow span{flex:1;min-width:0;overflow-wrap:anywhere}
+.tvviewrow .del{flex:0 0 36px;width:36px;height:36px;font-size:24px;color:var(--red)}
+.tvbarrow{display:flex;gap:8px;align-items:flex-end}
+.tvbarrow label{flex:1;min-width:0}
+.tvbarrow .btn{flex:0 0 auto;width:auto;padding:11px 16px;border:1.5px solid var(--rule);margin-bottom:2px}
 #reBody .ulrow{display:flex;gap:8px;margin-top:4px}
 #reBody .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff;font-size:16px}
@@ -1849,6 +1867,25 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbar"><button id="bkEdCancel">Cancel</button>
     <span class="title" id="bkEdTitle">New book</span><button id="bkSave">Save</button></div>
   <div class="sheetbody" id="bkEdBody"></div>
+</div>
+
+<div id="tv" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="tv" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="tvMenu" data-menu="tv" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">TV/Movies</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="tvBody"></div>
+  <button class="fab sheetfab" id="tvAdd" aria-label="Add a film or series">+</button>
+</div>
+
+<div id="tvShow" class="sheet hidden">
+  <div class="sheetbar"><button id="tvBack">Back</button>
+    <span class="title" id="tvShowTitle">TV/Movies</span><span id="tvShowBar" style="min-width:56px;text-align:right"></span></div>
+  <div class="sheetbody" id="tvShowBody"></div>
+</div>
+
+<div id="tvEd" class="sheet hidden">
+  <div class="sheetbar"><button id="tvEdCancel">Cancel</button>
+    <span class="title" id="tvEdTitle">New</span><button id="tvSave">Save</button></div>
+  <div class="sheetbody" id="tvEdBody"></div>
 </div>
 
 <div id="shop" class="sheet hidden">
@@ -2102,7 +2139,7 @@ const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
-  'books','bookView','bookEd'];
+  'books','bookView','bookEd','tv','tvShow','tvEd'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2860,6 +2897,8 @@ async function refreshAll(){
     if(!$('stuffView').classList.contains('hidden')) renderStuffThing(); }
   if(!$('books').classList.contains('hidden')){ await loadBooks(); renderBooks();
     if(!$('bookView').classList.contains('hidden')) renderBook(); }
+  if(!$('tv').classList.contains('hidden')){ await loadShows(); renderShows();
+    if(!$('tvShow').classList.contains('hidden')) renderShow(); }
   toast('Up to date');
 }
 
@@ -5136,7 +5175,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
-  ['bookEd','books'],['bookView','books'],['books','books'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
   // where you are.
@@ -5152,7 +5191,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff',
-  books:'h-books'};
+  books:'h-books', tv:'h-tv'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -5707,6 +5746,40 @@ function openHelp(where){
   under <em>Share with</em>. They can see the book and add their own stars and a few
   words under <em>What you thought</em>, which you and everyone else it's shared
   with can see. Only you can change the book itself.</p>
+
+  <h4 id="h-tv">TV/Movies</h4>
+  <p><strong>TV/Movies</strong> keeps the films and TV series you&rsquo;ve watched,
+  the ones you&rsquo;re watching and the ones you want to watch. Press the round red
+  <em>+</em> and choose <strong>Find a film</strong> or <strong>Find a TV series</strong>,
+  type its name and tap the right one. A film comes from Wikipedia and Wikidata: what
+  it&rsquo;s about, the poster, the director, the actors, the genre, the year and how
+  long it runs. A series comes from TVmaze, with its channel, its actors and its
+  episodes. Anything they don&rsquo;t know, you type in, or choose <strong>Fill it in
+  yourself</strong>.</p>
+  <p><strong>Scan a DVD or Blu-ray</strong> reads the barcode on the back with the
+  phone&rsquo;s camera. Scan one you already have and it opens; a new one keeps its
+  barcode while you find which film it is (nothing free can tell from a barcode).</p>
+  <p>Each one has whether you&rsquo;ve <em>Watched</em> it, are <em>Watching</em> it or
+  <em>Want to watch</em> it, your stars and notes, and who recommended it, from your
+  Contacts. Under <em>Times watched</em> keep each time: when, where, how (Netflix, a
+  DVD, the cinema), who with and what it cost. Under <em>Your copy</em> tick DVD,
+  Blu-ray, 4K, Digital, VHS or Other for a copy you own, with its barcode, price, where
+  you bought it and who you&rsquo;ve lent it to. Links to reviews and photos go at the
+  bottom; the first photo is the poster.</p>
+  <p>The buttons at the top show <em>Watched</em>, <em>Watching</em>, <em>Want to
+  watch</em> and <em>On the shelf</em> (your DVDs and Blu-rays, with any lent out
+  saying who has them). Watched comes with the most stars first. The search box looks
+  through everything, by title, actor, director, genre, channel or barcode.</p>
+  <p>On a series&rsquo; own screen, <em>How far you are</em> says the last episode you
+  watched and what comes next. <strong>I&rsquo;ve watched the next episode</strong>
+  moves you on one; <strong>Choose from the episodes</strong> lists them all by season
+  to tap the one you&rsquo;re up to. One tap also covers <em>I&rsquo;ve watched it</em>,
+  <em>I&rsquo;ve finished it</em>, <em>Add a time I watched it</em> and <em>It&rsquo;s
+  come back</em> for a disc you lent.</p>
+  <p><strong>Who sees it.</strong> Yours alone unless you tick people under <em>Share
+  with</em>. They can see it and add their own stars and a few words under <em>What you
+  thought</em>, which you and everyone else it&rsquo;s shared with can see. Only you can
+  change it.</p>
 
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
@@ -16442,6 +16515,787 @@ async function bkDelete(b){
   toast('Deleted');
 }
 
+
+/* ============================================================
+   TV/Movies (ML276, 16 Nov 2026)
+   ------------------------------------------------------------
+   Films and TV series: watched, being watched and still to watch. Like
+   Books: your stars and notes, who recommended it, each time you watched
+   it (when, where, how, who with, what it cost), how far into a series
+   you are, your own copy (DVD, Blu-ray and so on) with its barcode,
+   price, where it was bought and who it is lent to, links to reviews,
+   and photos (the poster first). Shared like Books: the people ticked
+   see it and add their own stars and a few words; only whoever added it
+   can change it (step 63).
+   Found by name: TVmaze for a series (with its cast and its episodes),
+   Wikipedia and Wikidata for a film (what it is about, the poster,
+   director, cast, genre, running time). None of them needs a key. A
+   disc's barcode can be scanned and kept, so the same disc is known
+   again, but no free service says which film a barcode is.
+   ============================================================ */
+const TV_KINDS=[['film','Film'],['series','TV series']];
+const TV_STATUS=[['watched','Watched'],['watching','Watching'],['want','Want to watch']];
+const TV_COPIES=[['dvd','DVD'],['bluray','Blu-ray'],['uhd','4K'],['digital','Digital'],['vhs','VHS'],['other','Other']];
+let SHOWS=[], TV_REVIEWS=[], TV_LOADED=false, TV_WHY='';
+let TV_LIST='watched', TV_Q='', TV_VIEW=null, TV_EDIT=null;
+let TV_STARS=0, TV_KIND='film', TV_STAT='watched', TV_COPY='', TV_RSTARS=0;
+let TV_VIEWS=[], TV_REF={}, TV_EPS={};
+
+async function loadShows(){
+  const [s,r]=await Promise.all([
+    sb.from('shows').select('*').order('title'),
+    sb.from('show_reviews').select('*')]);
+  TV_LOADED=true;
+  const err=s.error||r.error;
+  if(err){
+    TV_WHY=/relation|does not exist|schema cache/i.test(err.message||'') ? 'notset' : 'error';
+    console.error(err); return false;
+  }
+  TV_WHY=''; SHOWS=s.data||[]; TV_REVIEWS=r.data||[];
+  await signPaths(SHOWS.flatMap(x=>arr(x.photos).map(p=>p&&p.path)).filter(Boolean));
+  return true;
+}
+
+const tvKind   = k => (TV_KINDS.find(x=>x[0]===k)||[])[1]||'';
+const tvStatus = k => (TV_STATUS.find(x=>x[0]===k)||[])[1]||'';
+const tvCopy   = k => (TV_COPIES.find(x=>x[0]===k)||[])[1]||'';
+const tvMine   = s => !!s && s.created_by===ME.id;
+// A disc you could hand to someone: anything but a digital copy.
+const tvOnShelf = s => !!s.copy && s.copy!=='digital';
+const tvByStars = (a,b) => (b.stars||0)-(a.stars||0) || bkByTitle(a,b);
+const tvMins = m => { m=Number(m); if(!m) return '';
+  const h=Math.floor(m/60), r=m%60; return (h?h+' hr'+(r?' ':''):'')+(r?r+' min':''); };
+const tvProgress = (s,short) => s.kind!=='series'||!s.at_season ? ''
+  : short ? 'Up to S'+s.at_season+' E'+s.at_episode
+  : 'Season '+s.at_season+', episode '+s.at_episode;
+const tvViewLine = v => [v.on?stfDay(v.on):'', v.where, v.how, v.with?'with '+v.with:'', stfMoney(v.cost)]
+  .filter(Boolean).join(' · ');
+const tvViewsNewest = s => arr(s.viewings).filter(v=>v&&typeof v==='object').slice()
+  .sort((a,b)=>String(b.on||'').localeCompare(String(a.on||'')));
+// What a page says in HTML, as plain words. DOMParser runs nothing and fetches nothing.
+const tvText = html => html ? new DOMParser().parseFromString(String(html),'text/html').body.textContent.replace(/\s+/g,' ').trim() : '';
+
+/* ---------- the list ---------- */
+async function openShows(){
+  showSheet('tv'); lockBackground();
+  if(!TV_LOADED) $('tvBody').innerHTML='<p class="empty">Fetching your films and series…</p>';
+  await loadShows();
+  // A list with nothing in it gives way to one that has something.
+  const n=k=>SHOWS.filter(s=>s.status===k).length;
+  if(TV_LIST!=='shelf'&&!n(TV_LIST)){ const any=TV_STATUS.find(([k])=>n(k)); if(any) TV_LIST=any[0]; }
+  renderShows(); $('tvBody').scrollTop=0;
+}
+function tvWhyHtml(){
+  return `<div class="card"><div class="field"><dd style="color:${
+    TV_WHY==='notset'?'var(--muted)':'var(--red)'}">${TV_WHY==='notset'
+    ? 'TV/Movies needs its place in the database first. Run the step 63 file in '
+      +'Supabase, then press refresh at the top.'
+    : 'Could not load your films and series just now. Nothing has been lost &mdash; '
+      +'check your signal and press refresh at the top.'}</dd></div></div>`;
+}
+function renderShows(){
+  const body=$('tvBody'); if(!body) return;
+  // A failed load says so, rather than an empty list that looks like nothing is kept.
+  if(TV_WHY){ body.innerHTML=tvWhyHtml(); return; }
+  const n=k=>k==='shelf'?SHOWS.filter(tvOnShelf).length:SHOWS.filter(s=>s.status===k).length;
+  body.innerHTML=`
+    <div class="card msearch"><div class="mqrow">
+      <input id="tvQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="Search title, actor, director, genre" value="${esc(TV_Q)}" aria-label="Search films and series"></div></div>
+    <div class="chips lnkchips" id="tvChips">${TV_STATUS.concat([['shelf','On the shelf']]).map(([k,l])=>`<button class="chip" data-tvlist="${k}"
+      aria-pressed="${TV_LIST===k}">${l} ${n(k)}</button>`).join('')}</div>
+    <div id="tvList"></div>`;
+  paintShowList();
+  const q=$('tvQ');
+  q.oninput=()=>{ TV_Q=q.value; paintShowList(); };
+  body.querySelectorAll('[data-tvlist]').forEach(b=>b.onclick=()=>{
+    TV_LIST=b.dataset.tvlist; TV_Q=''; renderShows(); });
+}
+// Typing searches every list; the list buttons step aside while it does.
+function paintShowList(){
+  const box=$('tvList'); if(!box) return;
+  const words=TV_Q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  document.querySelectorAll('#tvChips [data-tvlist]').forEach(b=>
+    b.setAttribute('aria-pressed',String(!words.length&&TV_LIST===b.dataset.tvlist)));
+  const rows=words.length
+    ? SHOWS.filter(s=>{ const hay=[s.title,s.year,s.director,s.actors,s.genre,s.channel,s.barcode].join(' ').toLowerCase();
+        return words.every(w=>hay.includes(w)); }).sort(bkByTitle)
+    : TV_LIST==='shelf' ? SHOWS.filter(tvOnShelf).sort(bkByTitle)
+    : SHOWS.filter(s=>s.status===TV_LIST).sort(TV_LIST==='watched'?tvByStars:bkByTitle);
+  box.innerHTML = !SHOWS.length ? `<div class="card"><div class="field"><dd>
+      Nothing here yet. Press the red + to find a film or series by its name,
+      scan a DVD, or fill one in yourself.</dd></div></div>`
+    : rows.length ? `<div class="card">${rows.map(s=>tvRow(s,!!words.length||TV_LIST==='shelf')).join('')}</div>`
+    : `<div class="card"><div class="field"><dd>${words.length?'Nothing matches that.'
+      :TV_LIST==='shelf'?'No DVDs or Blu-rays yet. Tick the kind of copy you have under Your copy.'
+      :'None here yet.'}</dd></div></div>`;
+  box.querySelectorAll('[data-tv]').forEach(b=>b.onclick=()=>openShow(Number(b.dataset.tv)));
+}
+function tvRow(s,withList){
+  const pic=bkCover(s);
+  const sub=[tvKind(s.kind)+(s.year?' · '+s.year:''), s.kind==='series'?s.channel:s.director]
+    .filter(Boolean).join(' · ');
+  const seen=arr(s.viewings).length;
+  const more=[withList?tvStatus(s.status):'', s.status==='watching'?tvProgress(s,true):'',
+    tvCopy(s.copy), seen>1?'Watched '+seen+' times':''].filter(Boolean).join(' · ');
+  return `<button class="item bkrow" data-tv="${s.id}">
+    ${pic?`<img class="bkcover" src="${esc(SIGNED[pic.path]||'')}" alt="">`
+      :'<span class="bkcover none" aria-hidden="true">&#127916;</span>'}
+    <span class="mid"><span class="t">${esc(s.title)}</span>
+      ${sub?`<span class="w">${esc(sub)}</span>`:''}
+      ${s.stars?`<span class="w bkstars" aria-label="${s.stars} star${s.stars>1?'s':''}">${bkStars(s.stars)}</span>`:''}
+      ${more?`<span class="w">${esc(more)}</span>`:''}
+      ${s.lent_to?`<span class="w late">Lent to ${esc(stfWhoName(s.lent_to,s.lent_to_id))}${
+        s.lent_on?' since '+esc(stfDay(s.lent_on)):''}</span>`:''}
+      ${tvMine(s)?'':`<span class="w">from ${esc(whoWrote(s.created_by))}</span>`}
+    </span></button>`;
+}
+$('tvAdd').onclick=()=>tvAdd();
+
+/* ---------- one film or series ---------- */
+function openShow(id){
+  if(!SHOWS.some(x=>x.id===id)) return;
+  TV_VIEW=id; renderShow();
+  showSheet('tvShow'); $('tvShowBody').scrollTop=0; lockBackground();
+}
+function renderShow(){
+  const s=SHOWS.find(x=>x.id===TV_VIEW); if(!s) return;
+  const mine=tvMine(s), series=s.kind==='series';
+  $('tvShowTitle').textContent=s.title;
+  $('tvShowBar').innerHTML=mine?'<button id="tvEditBtn">Edit</button>':'';
+  const R=(l,v)=>v?`<div class="field"><dt>${esc(l)}</dt><dd style="white-space:pre-wrap">${v}</dd></div>`:'';
+  const photos=arr(s.photos).filter(x=>x&&x.path);
+  const said=TV_REVIEWS.filter(r=>r.show_id===s.id&&r.user_id!==s.created_by&&r.user_id!==ME.id&&(r.stars||r.words));
+  const mineSaid=TV_REVIEWS.find(r=>r.show_id===s.id&&r.user_id===ME.id);
+  const who=whoWrote(s.created_by);
+  const links=arr(s.links).filter(x=>x&&x.url);
+  const views=tvViewsNewest(s);
+  const spent=views.reduce((t,v)=>t+(Number(v.cost)||0),0);
+  const quick=mine?[
+    s.status==='want'&&!series?'<button class="btn" data-tvdo="seen">I&rsquo;ve watched it</button>':'',
+    s.status==='want'&&series?'<button class="btn" data-tvdo="start">I&rsquo;ve started watching it</button>':'',
+    s.status==='watching'?'<button class="btn" data-tvdo="done">I&rsquo;ve finished it</button>':'',
+    s.status!=='want'?'<button class="btn" data-tvdo="view">Add a time I watched it</button>':'',
+    s.lent_to?'<button class="btn" data-tvdo="back">It&rsquo;s come back</button>':''].join(''):'';
+  $('tvShowBody').innerHTML=`
+    ${photos.length?`<img class="stfhero bkhero" src="${esc(SIGNED[photos[0].path]||'')}" alt="Poster" data-tvpic="0">`:''}
+    <div class="card">${R('Title',esc(s.title))}${R('Film or series',esc(tvKind(s.kind)+(s.year?', '+s.year:'')))}
+      ${R(mine?'Your stars':who+'’s stars',s.stars?`<span class="bkstars big">${bkStars(s.stars)}</span>`:'')}
+      ${R('Watching',esc(tvStatus(s.status)+(s.status==='watching'&&tvProgress(s)?', up to '+tvProgress(s).toLowerCase():'')))}
+      ${R('Recommended by',stfWhoHtml(s.recommended_by,s.recommended_by_id))}
+      ${R(mine?'Your notes':who+'’s notes',esc(s.notes||''))}
+      ${R('Director',esc(s.director||''))}${R(series?'Episodes':'Running time',esc(tvMins(s.running_mins)+(series&&s.running_mins?' each':'')))}
+      ${R('Seasons',series&&s.seasons?esc(String(s.seasons)):'')}
+      ${R('Genre',esc(s.genre||''))}${R(series?'Channel':'Channel or service',esc(s.channel||''))}
+      ${R('Actors',esc(s.actors||''))}
+      ${mine?R('Shared with',esc(namesOf(arr(s.shared_with)).join(', '))):R('Shared by',esc(who))}</div>
+    ${quick?`<div class="bkquick">${quick}</div>`:''}
+    ${series&&mine?`<p class="dsec">How far you are</p><div class="card tvprog" id="tvProg">${tvProgHtml(s)}</div>`:''}
+    ${s.synopsis?`<p class="dsec">What it&rsquo;s about</p><div class="card"><div class="field"><dd class="bkwords">${esc(s.synopsis)}</dd></div></div>`:''}
+    ${views.length?`<p class="dsec">Times watched<span class="lcount">${views.length}</span></p><div class="card">${views.map(v=>
+      `<div class="field"><dd>${esc(tvViewLine(v))}</dd></div>`).join('')}${views.length>1&&spent?
+      `<div class="field"><dd style="color:var(--muted)">${esc(stfMoney(spent))} in all</dd></div>`:''}</div>`:''}
+    ${s.copy||s.barcode||s.lent_to?`<p class="dsec">${mine?'Your copy':who+'’s copy'}</p><div class="card">
+      ${R('Copy',esc(tvCopy(s.copy)))}${R('Price',esc(stfMoney(s.price)))}${R('Bought from',stfWhoHtml(s.bought_from,s.bought_from_id))}
+      ${R('Lent to',s.lent_to?stfWhoHtml(s.lent_to,s.lent_to_id)+(s.lent_on?' since '+esc(stfDay(s.lent_on)):''):'')}
+      ${R('Barcode',esc(s.barcode||''))}</div>`:''}
+    ${links.length?`<p class="dsec">Reviews elsewhere</p><div class="card">${links.map(x=>
+      `<a class="item bklinkout" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="mid">
+        <span class="t">${esc(bkHost(x.url))}</span>${x.quote?`<span class="w">&ldquo;${esc(x.quote)}&rdquo;</span>`:''}
+      </span></a>`).join('')}</div>`:''}
+    ${said.length?`<p class="dsec">What others thought</p><div class="card">${said.map(r=>
+      `<div class="field"><dt>${esc(whoWrote(r.user_id))}</dt><dd>${r.stars?`<span class="bkstars">${bkStars(r.stars)}</span>`:''}${
+        r.words?`<span class="bkwords">${esc(r.words)}</span>`:''}</dd></div>`).join('')}</div>`:''}
+    ${mine?'':`<p class="dsec">What you thought</p><div class="card bkrev">
+      ${bkStarPick('tvRevStars',(mineSaid&&mineSaid.stars)||0)}
+      <textarea id="tvRevWords" rows="3" placeholder="A few words, if you like">${esc((mineSaid&&mineSaid.words)||'')}</textarea>
+      <div class="setadd"><button class="btn primary" id="tvRevSave">Save what you thought</button></div>
+      <p class="coords">${esc(who)} and everyone else it&rsquo;s shared with will see it.</p></div>`}
+    ${photos.length>1?`<p class="dsec">More photos</p>${mine?`<p class="coords" style="margin:0 2px">
+      Tap &#9733; on one to make it the poster.</p>`:''}<div class="rcpthumbs">${photos.map((x,i)=>
+      i?`<span class="stfthumb"><img src="${esc(SIGNED[x.path]||'')}" alt="Photo ${i+1}" data-tvpic="${i}">${
+        mine?`<button class="mk1" data-tvmain="${i}" aria-label="Make this the poster" title="Make this the poster">&#9733;</button>`:''}</span>`:'').join('')}</div>`:''}`;
+  const v=$('tvShowBody');
+  v.querySelectorAll('[data-tvpic]').forEach(i=>i.onclick=()=>lightbox(SIGNED[photos[Number(i.dataset.tvpic)].path]));
+  v.querySelectorAll('[data-tvmain]').forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); tvMainPhoto(s,Number(x.dataset.tvmain)); });
+  v.querySelectorAll('[data-tvdo]').forEach(x=>x.onclick=()=>tvQuick(s,x.dataset.tvdo));
+  stfWireContacts(v);
+  TV_RSTARS=(mineSaid&&mineSaid.stars)||0;
+  bkWireStars($('tvRevStars'),()=>TV_RSTARS,n=>{ TV_RSTARS=n; });
+  const rs=$('tvRevSave'); if(rs) rs.onclick=()=>tvSaveReview(s);
+  const e=$('tvEditBtn'); if(e) e.onclick=()=>openShowEd(s);
+  if(series&&mine) tvWireProg(s);
+}
+$('tvBack').onclick=()=>{ TV_VIEW=null; $('tvShow').classList.add('hidden'); lockBackground(); };
+
+/* ---------- how far into a series ---------- */
+// at_season and at_episode are the last one watched. TVmaze's list says what
+// comes next and when a season ends; without it, the next is one on.
+function tvProgHtml(s){
+  const eps=s.tvmaze_id?TV_EPS[s.tvmaze_id]:null;
+  const at=eps&&s.at_season?eps.find(x=>x.s===s.at_season&&x.e===s.at_episode):null;
+  const nx=tvNextEp(s,eps);
+  return `<div class="field"><dt>Watched up to</dt><dd>${s.at_season
+      ? esc(tvProgress(s))+(at&&at.name?` <span class="tvep">&ldquo;${esc(at.name)}&rdquo;</span>`:'')
+      : 'Not started yet'}</dd></div>
+    ${nx?`<div class="field"><dt>Next</dt><dd>Season ${nx.s}, episode ${nx.e}${nx.name?` <span class="tvep">&ldquo;${esc(nx.name)}&rdquo;</span>`:''}${
+      nx.on?`<span class="tvaired">First shown ${esc(stfDay(nx.on))}</span>`:''}</dd></div>`
+      : eps&&s.at_season?'<div class="field"><dd>That was the last episode there is.</dd></div>':''}
+    <div class="bkquick tvprogbtns">
+      ${nx||!eps?`<button class="btn" id="tvNext">I&rsquo;ve watched ${s.at_season?'the next episode':'the first episode'}</button>`:''}
+      <button class="btn" id="tvPickEp">${s.tvmaze_id?'Choose from the episodes':'Change where I&rsquo;m up to'}</button></div>`;
+}
+function tvNextEp(s,eps){
+  if(eps&&eps.length){
+    if(!s.at_season) return eps[0];
+    const i=eps.findIndex(x=>x.s===s.at_season&&x.e===s.at_episode);
+    return i>=0 ? eps[i+1]||null
+      : eps.find(x=>x.s>s.at_season||(x.s===s.at_season&&x.e>s.at_episode))||null;
+  }
+  return s.at_season ? {s:s.at_season, e:(s.at_episode||0)+1} : {s:1, e:1};
+}
+// The episodes of a series from TVmaze, once a visit; null when it has none.
+async function tvEpisodes(s){
+  if(!s.tvmaze_id) return null;
+  if(TV_EPS[s.tvmaze_id]) return TV_EPS[s.tvmaze_id];
+  const j=await tvGet('https://api.tvmaze.com/shows/'+encodeURIComponent(s.tvmaze_id)+'/episodes');
+  return TV_EPS[s.tvmaze_id]=arr(j).filter(e=>e&&e.season&&e.number)
+    .map(e=>({s:e.season, e:e.number, name:e.name||'', on:e.airdate||''}));
+}
+function tvWireProg(s){
+  const box=$('tvProg'); if(!box) return;
+  const wire=()=>{
+    const n=$('tvNext'); if(n) n.onclick=()=>tvNextDone(s);
+    const p=$('tvPickEp'); if(p) p.onclick=()=>tvPickEp(s);
+  };
+  wire();
+  // The list comes from TVmaze; the box is filled in again when it is here.
+  if(s.tvmaze_id&&!TV_EPS[s.tvmaze_id]) tvEpisodes(s).then(()=>{
+    if(TV_VIEW===s.id&&$('tvProg')){ $('tvProg').innerHTML=tvProgHtml(s); wire(); }
+  }).catch(e=>console.warn('TVmaze episodes',e));
+}
+async function tvSetProgress(s,at,extra){
+  const patch={at_season:at?at.s:null, at_episode:at?at.e:null, ...(extra||{}), updated_at:new Date().toISOString()};
+  if(at&&s.status==='want'&&!patch.status) patch.status='watching';
+  const {error}=await sb.from('shows').update(patch).eq('id',s.id);
+  if(error){ toast('Could not change it'); console.error(error); return false; }
+  await tvAfterChange(s.id); return true;
+}
+async function tvNextDone(s){
+  const eps=s.tvmaze_id?TV_EPS[s.tvmaze_id]:null, nx=tvNextEp(s,eps);
+  if(!nx) return;
+  if(!await tvSetProgress(s,nx)) return;
+  const after=tvNextEp({...s, at_season:nx.s, at_episode:nx.e},eps);
+  if(eps&&!after&&s.status!=='watched'&&confirm('That was the last episode there is. Move it to Watched?'))
+    await tvQuick(SHOWS.find(x=>x.id===s.id)||s,'done');
+  else toast('Up to season '+nx.s+', episode '+nx.e);
+}
+async function tvPickEp(s){
+  let eps=null;
+  if(s.tvmaze_id){ toast('Fetching the episodes…');
+    try{ eps=await tvEpisodes(s); }catch(e){ console.warn(e); toast('Couldn’t reach TVmaze: type where you are up to'); } }
+  const box=document.createElement('div');
+  box.className='daypick lnked'; box.id='tvEpBox';
+  const seasons=eps?[...new Set(eps.map(x=>x.s))]:[];
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Watched up to</p>
+    ${eps&&eps.length?`<p class="coords" style="margin:0 0 8px">Tap the last one you watched.</p>
+      <div class="tveps">${seasons.map(n=>`<p class="tvseason">Season ${n}</p>${eps.filter(x=>x.s===n).map(x=>
+        `<button class="item" data-tvep="${x.s}:${x.e}" aria-pressed="${s.at_season===x.s&&s.at_episode===x.e}"><span class="mid">
+          <span class="t">${x.e}. ${esc(x.name||'Episode '+x.e)}</span>${x.on?`<span class="w">${esc(stfDay(x.on))}</span>`:''}</span></button>`).join('')}`).join('')}</div>`
+    : `<div class="rcpnums"><label>Season<input id="tvEpS" inputmode="numeric" value="${esc(String(s.at_season||''))}"></label>
+        <label>Episode<input id="tvEpE" inputmode="numeric" value="${esc(String(s.at_episode||''))}"></label></div>`}
+    <div class="pfoot"><button id="tvEpNone">Not started</button>${eps&&eps.length?'':'<button class="go" id="tvEpGo">Save</button>'}<button id="tvEpNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#tvEpNo').onclick=close;
+  box.querySelector('#tvEpNone').onclick=async()=>{ close(); if(await tvSetProgress(s,null)) toast('Not started yet'); };
+  box.querySelectorAll('[data-tvep]').forEach(b=>b.onclick=async()=>{
+    const [n,e]=b.dataset.tvep.split(':').map(Number); close();
+    if(await tvSetProgress(s,{s:n,e})) toast('Up to season '+n+', episode '+e); });
+  const go=box.querySelector('#tvEpGo');
+  if(go) go.onclick=async()=>{
+    const n=Number(box.querySelector('#tvEpS').value), e=Number(box.querySelector('#tvEpE').value);
+    if(!(n>=1&&n<=99&&e>=1&&e<=999&&n===Math.floor(n)&&e===Math.floor(e))){ toast('A season and an episode, as numbers'); return; }
+    close(); if(await tvSetProgress(s,{s:n,e})) toast('Up to season '+n+', episode '+e); };
+  const cur=box.querySelector('[data-tvep][aria-pressed="true"]');
+  if(cur) setTimeout(()=>{ try{ cur.scrollIntoView({block:'center'}); }catch(e){} },30);
+}
+
+/* ---------- one tap ---------- */
+async function tvQuick(s,what){
+  if(what==='seen'||what==='view'){
+    const v=await tvViewBox(s,null); if(!v) return;
+    const patch={viewings:[...arr(s.viewings),v], updated_at:new Date().toISOString()};
+    if(what==='seen') patch.status='watched';
+    const {error}=await sb.from('shows').update(patch).eq('id',s.id);
+    if(error){ toast('Could not save it'); console.error(error); return; }
+    await tvAfterChange(s.id);
+    toast(what==='seen'?'On your Watched list':'Kept'); return;
+  }
+  const patch=what==='start'?{status:'watching'} : what==='done'?{status:'watched'}
+    : {lent_to:null, lent_to_id:null, lent_on:null};
+  const {error}=await sb.from('shows').update({...patch, updated_at:new Date().toISOString()}).eq('id',s.id);
+  if(error){ toast('Could not change it'); console.error(error); return; }
+  await tvAfterChange(s.id);
+  toast(what==='start'?'Moved to Watching':what==='done'?'Well done: it’s on your Watched list':'Back on the shelf');
+}
+// When, where, how, who with and what it cost. Gives back the viewing, or
+// nothing if it was cancelled.
+function tvViewBox(s,had){
+  return new Promise(resolve=>{
+    const v=had||{on:isoDay(new Date()), how:s.channel||tvCopy(s.copy)||''};
+    const box=document.createElement('div');
+    box.className='daypick lnked'; box.id='tvViewBox';
+    box.innerHTML=`<div class="inner"><form id="tvViewForm" onsubmit="return false">
+      <p class="dsec" style="padding-top:0">${had?'Change this time':'A time you watched it'}</p>
+      <label>When<input name="on" value="${esc(v.on||'')}"></label>
+      <label>Where<input name="where" value="${esc(v.where||'')}" placeholder="At home, at the Odeon"></label>
+      <label>How<input name="how" value="${esc(v.how||'')}" placeholder="Netflix, BBC iPlayer, DVD, the cinema"></label>
+      <label>Who with<input name="with" value="${esc(v.with||'')}" placeholder="Names, with commas between"></label>
+      <label>What it cost<input name="cost" inputmode="decimal" placeholder="0.00" value="${esc(v.cost==null?'':String(v.cost))}"></label>
+      <div class="pfoot"><button type="button" id="tvViewNo">Cancel</button><button type="button" class="go" id="tvViewGo">${had?'Change it':'Keep it'}</button></div>
+    </form></div>`;
+    document.body.appendChild(box);
+    const f=box.querySelector('form');
+    useWhenPicker(f,['on'],{dateOnly:['on']});
+    const done=x=>{ box.remove(); resolve(x); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#tvViewNo').onclick=()=>done(null);
+    box.querySelector('#tvViewGo').onclick=()=>{
+      const g=n=>String(f.elements[n].value||'').trim();
+      const cost=g('cost').replace(/[£,\s]/g,'');
+      if(cost&&!(isFinite(Number(cost))&&Number(cost)>=0)){ toast('What it cost needs to be a number'); return; }
+      const out={on:g('on')||isoDay(new Date())};
+      ['where','how','with'].forEach(k=>{ if(g(k)) out[k]=g(k); });
+      if(cost!=='') out.cost=Number(cost);
+      done(out);
+    };
+  });
+}
+async function tvMainPhoto(s,i){
+  const all=arr(s.photos), kept=all.filter(x=>x&&x.path), pick=kept[i];
+  if(!pick||i<1) return;
+  const {error}=await sb.from('shows').update({photos:[pick,...all.filter(x=>x!==pick)]}).eq('id',s.id);
+  if(error){ toast('Could not change the poster'); console.error(error); return; }
+  await tvAfterChange(s.id); toast('That is now the poster');
+}
+async function tvSaveReview(s){
+  const words=String(($('tvRevWords')||{}).value||'').trim();
+  const had=TV_REVIEWS.find(r=>r.show_id===s.id&&r.user_id===ME.id);
+  let error;
+  if(!TV_RSTARS&&!words){
+    if(!had){ toast('Tap some stars or write a few words first'); return; }
+    ({error}=await sb.from('show_reviews').delete().eq('id',had.id));
+  } else ({error}=await sb.from('show_reviews').upsert({show_id:s.id, user_id:ME.id,
+      stars:TV_RSTARS||null, words:words||null, updated_at:new Date().toISOString()},
+      {onConflict:'show_id,user_id'}));
+  if(error){ toast('Could not save it'); console.error(error); return; }
+  await tvAfterChange(s.id);
+  toast(!TV_RSTARS&&!words?'Taken off':'Saved');
+}
+async function tvAfterChange(id){
+  await loadShows();
+  if(!$('tv').classList.contains('hidden')) renderShows();
+  if(TV_VIEW!=null){
+    if(SHOWS.some(x=>x.id===TV_VIEW)) renderShow();
+    else { TV_VIEW=null; $('tvShow').classList.add('hidden'); lockBackground(); }
+  }
+}
+
+/* ---------- finding one ---------- */
+async function tvGet(url){
+  const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(url,{signal:ctl.signal});
+    if(!r.ok) throw new Error(new URL(url).hostname+' said '+r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+// A poster as a picture to keep, or null.
+async function tvPoster(url){
+  if(!url) return null;
+  const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(String(url).replace(/^http:/,'https:'),{signal:ctl.signal});
+    const bl=r.ok?await r.blob():null;
+    return bl&&bl.size>1000&&/^image\//.test(bl.type)?bl:null;
+  }catch(e){ console.warn('no poster',e); return null; }
+  finally { clearTimeout(t); }
+}
+// "Paddington (2014 film)" is called Paddington.
+const tvFilmTitle = t => String(t||'').replace(/\s*\([^)]*\bfilm\)$/i,'').trim();
+async function tvFindFilm(q){
+  const j=await tvGet('https://en.wikipedia.org/w/api.php?format=json&formatversion=2&origin=*'
+    +'&action=query&generator=search&gsrnamespace=0&gsrlimit=15&gsrsearch='+encodeURIComponent(q+' film')
+    +'&prop=pageimages%7Cdescription%7Cpageprops&ppprop=wikibase_item&piprop=thumbnail&pithumbsize=200&pilicense=any');
+  return arr(j&&j.query&&j.query.pages).slice().sort((a,b)=>a.index-b.index)
+    .filter(p=>p&&/\bfilm\b/i.test(p.description||'')
+      &&!/\b(score|soundtrack|series|franchise|festival|character|studio|company|award|director|actor|actress|producer)\b/i.test(p.description||''))
+    .slice(0,8).map(p=>({kind:'film', ref:p.title, title:tvFilmTitle(p.title),
+      line:p.description||'', thumb:(p.thumbnail&&p.thumbnail.source)||'',
+      wd:(p.pageprops&&p.pageprops.wikibase_item)||''}));
+}
+async function tvFindSeries(q){
+  const j=await tvGet('https://api.tvmaze.com/search/shows?q='+encodeURIComponent(q));
+  return arr(j).map(x=>x&&x.show).filter(Boolean).slice(0,8).map(s=>({kind:'series', ref:s.id, title:s.name||'',
+    line:['TV series', (s.premiered||'').slice(0,4), (s.network||s.webChannel||{}).name].filter(Boolean).join(' · '),
+    thumb:(s.image&&(s.image.medium||s.image.original))||''}));
+}
+// Everything TVmaze knows about a series, its cast and its episodes.
+async function tvSeriesDetails(id){
+  const s=await tvGet('https://api.tvmaze.com/shows/'+encodeURIComponent(id)+'?embed%5B%5D=cast&embed%5B%5D=episodes');
+  const eps=arr(s._embedded&&s._embedded.episodes).filter(e=>e&&e.season&&e.number);
+  TV_EPS[s.id]=eps.map(e=>({s:e.season, e:e.number, name:e.name||'', on:e.airdate||''}));
+  const cast=arr(s._embedded&&s._embedded.cast).map(c=>c&&c.person&&c.person.name).filter(Boolean);
+  return {kind:'series', title:s.name||'', year:Number((s.premiered||'').slice(0,4))||'',
+    running_mins:s.runtime||s.averageRuntime||'', seasons:eps.reduce((m,e)=>Math.max(m,e.season),0)||'',
+    genre:arr(s.genres).join(', '), channel:(s.network||s.webChannel||{}).name||'',
+    actors:[...new Set(cast)].slice(0,12).join(', '), synopsis:tvText(s.summary),
+    tvmaze_id:s.id, poster:(s.image&&(s.image.original||s.image.medium))||''};
+}
+// A film: what Wikipedia says it is about and its poster, then Wikidata
+// for the director, cast (in billing order), genre, running time and year.
+async function tvFilmDetails(pick){
+  const sum=await tvGet('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(String(pick.ref).replace(/ /g,'_')));
+  const out={kind:'film', title:tvFilmTitle(sum.title||pick.ref), synopsis:sum.extract||'',
+    year:Number(((pick.line||'').match(/\b(18|19|20)\d\d\b/)||[''])[0])||'',
+    poster:(sum.originalimage&&sum.originalimage.source)||(sum.thumbnail&&sum.thumbnail.source)||'',
+    wikidata_id:sum.wikibase_item||pick.wd||''};
+  if(out.wikidata_id) try{ Object.assign(out, await tvWikidata(out.wikidata_id)); }
+    catch(e){ console.warn('Wikidata',e); }
+  return out;
+}
+async function tvWikidata(q){
+  const WD='https://www.wikidata.org/w/api.php?format=json&origin=*&action=wbgetentities&languages=en';
+  const e=await tvGet(WD+'&props=claims&ids='+encodeURIComponent(q));
+  const c=(e&&e.entities&&e.entities[q]&&e.entities[q].claims)||{};
+  const vals=k=>arr(c[k]).filter(x=>x&&x.rank!=='deprecated')
+    .map(x=>x.mainsnak&&x.mainsnak.datavalue&&x.mainsnak.datavalue.value).filter(Boolean);
+  const ids=k=>vals(k).map(v=>v.id).filter(x=>/^Q\d+$/.test(x||''));
+  const dir=ids('P57').slice(0,3), cast=ids('P161').slice(0,12), gen=ids('P136').slice(0,5);
+  const out={};
+  const d=vals('P2047')[0];
+  if(d){ const n=Math.abs(parseFloat(d.amount)), m=Math.round(/Q25235$/.test(d.unit||'')?n*60:n);
+    if(m>0&&m<1000) out.running_mins=m; }
+  const yrs=vals('P577').map(v=>Number(String(v.time||'').slice(1,5))).filter(y=>y>1880&&y<2200);
+  if(yrs.length) out.year=Math.min(...yrs);
+  const all=[...new Set([...dir,...cast,...gen])].slice(0,50);
+  if(all.length){
+    const l=await tvGet(WD+'&props=labels&ids='+all.join('%7C'));
+    const name=id=>((((l&&l.entities)||{})[id]||{}).labels||{}).en;
+    const names=list=>list.map(id=>name(id)&&name(id).value).filter(Boolean);
+    out.director=names(dir).join(', '); out.actors=names(cast).join(', ');
+    // "comedy film" is Comedy here.
+    out.genre=names(gen).map(g=>g.replace(/\s+film$/i,'')).map(g=>g.charAt(0).toUpperCase()+g.slice(1)).join(', ');
+  }
+  return out;
+}
+
+/* ---------- adding one ---------- */
+function tvAdd(){
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='tvAddBox';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Add a film or series</p>
+    <button class="item bkway" data-tvway="film"><span class="mid"><span class="t">Find a film</span>
+      <span class="w">By its name, from Wikipedia</span></span></button>
+    <button class="item bkway" data-tvway="series"><span class="mid"><span class="t">Find a TV series</span>
+      <span class="w">By its name, from TVmaze, with its episodes</span></span></button>
+    ${bkCanScan()?`<button class="item bkway" data-tvway="scan"><span class="mid"><span class="t">&#128247; Scan a DVD or Blu-ray</span>
+      <span class="w">The barcode on the back; then find which film it is</span></span></button>`:''}
+    <button class="item bkway" data-tvway="hand"><span class="mid"><span class="t">Fill it in yourself</span>
+      <span class="w">For one no list knows</span></span></button>
+    <div class="pfoot"><button id="tvAddNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#tvAddNo').onclick=close;
+  box.querySelectorAll('[data-tvway]').forEach(b=>b.onclick=()=>{ close();
+    const w=b.dataset.tvway;
+    if(w==='scan') tvScan(tvByBarcode); else if(w==='hand') openShowEd(null); else tvAskName(w); });
+}
+// Type a name; tap the right one; the editor opens with all of it filled in.
+// A barcode scanned first comes along with it.
+function tvAskName(kind,barcode,said){
+  let k=kind==='series'?'series':'film', seq=0;
+  const box=document.createElement('div');
+  box.className='daypick lnked'; box.id='tvFindBox';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Find it by name</p>
+    ${said?`<p class="coords" style="margin:0 0 8px">${esc(said)}</p>`:''}
+    <div class="pickrow" id="tvFindKind" style="margin:0 0 10px">${TV_KINDS.map(([x,l])=>
+      `<button type="button" data-tvfk="${x}" aria-pressed="${x===k}">${l}</button>`).join('')}</div>
+    <div class="msearch" style="padding:0"><div class="mqrow"><input id="tvFindQ" type="search" enterkeyhint="search" autocomplete="off"
+      placeholder="${k==='series'?'e.g. Line of Duty':'e.g. Paddington 2'}" aria-label="Its name">
+      <button class="btn primary" id="tvFindGo">Find</button></div></div>
+    <div id="tvFindOut"></div>
+    <div class="pfoot"><button id="tvFindHand">Fill it in myself</button><button id="tvFindNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const q=box.querySelector('#tvFindQ'), out=box.querySelector('#tvFindOut'), close=()=>{ seq++; box.remove(); };
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#tvFindNo').onclick=close;
+  box.querySelector('#tvFindHand').onclick=()=>{ const t=q.value.trim(); close();
+    openShowEd(null,{kind:k, title:t, barcode:barcode||''}); };
+  box.querySelectorAll('[data-tvfk]').forEach(b=>b.onclick=()=>{ k=b.dataset.tvfk;
+    box.querySelectorAll('[data-tvfk]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    q.placeholder=k==='series'?'e.g. Line of Duty':'e.g. Paddington 2';
+    out.innerHTML=''; if(q.value.trim()) go(); else q.focus(); });
+  const note=t=>{ out.innerHTML=`<p class="coords" style="margin:10px 0 0">${t}</p>`; };
+  const go=async()=>{
+    const name=q.value.trim(); if(!name){ toast('Type its name first'); q.focus(); return; }
+    const my=++seq; q.blur();
+    note(k==='series'?'Asking TVmaze…':'Asking Wikipedia…');
+    let hits;
+    try{ hits=await (k==='series'?tvFindSeries(name):tvFindFilm(name)); }
+    catch(e){ console.warn(e); if(my===seq) note('Couldn’t reach '+(k==='series'?'TVmaze':'Wikipedia')
+      +' just now. Check your signal and press Find again, or fill it in yourself.'); return; }
+    if(my!==seq) return;
+    if(!hits.length){ note('Nothing found as a '+(k==='series'?'TV series':'film')
+      +' with that name. Try another way of writing it, '+(k==='series'?'look for it as a film':'look for it as a TV series')
+      +', or fill it in yourself.'); return; }
+    out.innerHTML=`<div class="card tvhits">${hits.map((h,i)=>`<button class="item tvhit" data-tvhit="${i}">
+      ${h.thumb?`<img src="${esc(h.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'<span class="tvnopic" aria-hidden="true">&#127916;</span>'}
+      <span class="mid"><span class="t">${esc(h.title)}</span>${h.line?`<span class="w">${esc(h.line)}</span>`:''}</span></button>`).join('')}</div>`;
+    out.querySelectorAll('[data-tvhit]').forEach(b=>b.onclick=()=>tvPicked(hits[Number(b.dataset.tvhit)],barcode,close));
+  };
+  box.querySelector('#tvFindGo').onclick=go;
+  q.onkeydown=ev=>{ if(ev.key==='Enter') go(); };
+  setTimeout(()=>{ try{ q.focus(); }catch(e){} },50);
+}
+async function tvPicked(h,barcode,close){
+  close();
+  toast('Fetching the details…');
+  let d=null;
+  try{ d=await (h.kind==='series'?tvSeriesDetails(h.ref):tvFilmDetails(h)); }
+  catch(e){ console.warn(e); }
+  if(!d){ toast('Couldn’t fetch the rest: fill in what you know');
+    openShowEd(null,{kind:h.kind, title:h.title, barcode:barcode||''}); return; }
+  const poster=await tvPoster(d.poster);
+  openShowEd(null,{...d, barcode:barcode||'', poster});
+  toast(poster?'Found it, with its poster':'Found it: add a photo of the poster if you like');
+}
+// The camera, reading the barcode on a box. Shares Books' stop switch, so
+// leaving the screen or the app turns the camera off.
+async function tvScan(then){
+  let det;
+  try{
+    const have=await BarcodeDetector.getSupportedFormats();
+    const want=['ean_13','upc_a','ean_8','upc_e'].filter(f=>have.includes(f));
+    if(!want.length) throw new Error('no formats');
+    det=new BarcodeDetector({formats:want});
+  }catch(e){ toast('This phone can’t read barcodes: type it in under Your copy instead'); return; }
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false}); }
+  catch(e){ toast(e&&e.name==='NotAllowedError'?'The camera wasn’t allowed':'Could not start the camera'); return; }
+  const box=document.createElement('div');
+  box.className='bkscan'; box.id='tvScan';
+  box.innerHTML=`<video playsinline muted autoplay></video><div class="bkscanframe"></div>
+    <p class="bkscansay">Hold the barcode on the back of the box inside the frame</p>
+    <div class="bkscanbtns"><button id="tvScanNo">Cancel</button></div>`;
+  document.body.appendChild(box);
+  const v=box.querySelector('video'); v.srcObject=stream;
+  try{ await v.play(); }catch(e){}
+  let done=false;
+  const stop=()=>{ if(done) return; done=true; BK_SCAN_STOP=null;
+    stream.getTracks().forEach(t=>t.stop()); box.remove(); };
+  BK_SCAN_STOP=stop;
+  box.querySelector('#tvScanNo').onclick=stop;
+  const look=async()=>{
+    if(done) return;
+    try{
+      if(v.readyState>=2){
+        const c=(await det.detect(v)).map(x=>String(x.rawValue||'')).find(x=>/^\d{6,14}$/.test(x));
+        if(c){ stop(); try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){} then(c); return; }
+      }
+    }catch(e){ console.warn(e); }
+    setTimeout(look,200);
+  };
+  look();
+}
+// A disc you have already is opened; a new one is kept while you find which film it is.
+function tvByBarcode(code){
+  const had=SHOWS.find(s=>tvMine(s)&&s.barcode===code);
+  if(had){ openShow(had.id); toast('You have this one already'); return; }
+  tvAskName('film',code,'Barcode '+code+' kept. Now find which film or series it is.');
+}
+
+/* ---------- adding and changing ---------- */
+function tvViewRows(){
+  const box=$('tvViews'); if(!box) return;
+  box.innerHTML=TV_VIEWS.length?TV_VIEWS.map((v,i)=>`<div class="tvviewrow"><span>${esc(tvViewLine(v)||'A time')}</span>
+      <button type="button" class="linkbtn" data-tvvch="${i}">Change</button>
+      <button type="button" class="del" data-tvvx="${i}" aria-label="Remove this one">&times;</button></div>`).join('')
+    : '<p class="coords" style="margin:4px 0 0">None yet.</p>';
+  box.querySelectorAll('[data-tvvx]').forEach(b=>b.onclick=()=>{ TV_VIEWS.splice(Number(b.dataset.tvvx),1); tvViewRows(); });
+  box.querySelectorAll('[data-tvvch]').forEach(b=>b.onclick=async()=>{
+    const i=Number(b.dataset.tvvch), v=await tvViewBox(tvFormGuess(),TV_VIEWS[i]);
+    if(v){ TV_VIEWS[i]=v; tvViewRows(); } });
+}
+// What the form says so far, for the How a new viewing starts with.
+function tvFormGuess(){
+  const f=$('tvForm'); return {channel:f?String(f.elements.channel.value||'').trim():'', copy:TV_COPY};
+}
+function openShowEd(s,preset){
+  TV_EDIT=s||null;
+  const p=preset||{}, v=k=>s?(s[k]??''):(p[k]??'');
+  TV_STARS=(s&&s.stars)||0; TV_KIND=(s&&s.kind)||p.kind||'film'; TV_STAT=(s&&s.status)||'watched';
+  TV_COPY=(s&&s.copy)||''; TV_VIEWS=arr(s&&s.viewings).filter(x=>x&&typeof x==='object').map(x=>({...x}));
+  TV_REF={tvmaze_id:v('tvmaze_id')||null, wikidata_id:v('wikidata_id')||null};
+  $('tvEdTitle').textContent=s?'Change':'New';
+  $('tvEdBody').innerHTML=`<form id="tvForm" onsubmit="return false" data-kind="${TV_KIND}">
+    <fieldset><legend>The film or series</legend>
+      <div class="pickrow" id="tvKind">${TV_KINDS.map(([k,l])=>`<button type="button" data-tvkind="${k}"
+        aria-pressed="${TV_KIND===k}">${l}</button>`).join('')}</div>
+      <label>Title<input name="title" value="${esc(v('title'))}"></label>
+      <div class="rcpnums"><label>Year<input name="year" inputmode="numeric" value="${esc(String(v('year')))}"></label>
+        <label><span class="tvforfilm">Running time</span><span class="tvforseries">Episode length</span> (minutes)<input name="running_mins" inputmode="numeric" value="${esc(String(v('running_mins')))}"></label></div>
+      <label class="tvforseries">Seasons<input name="seasons" inputmode="numeric" value="${esc(String(v('seasons')))}"></label>
+      <label>Director<input name="director" value="${esc(v('director'))}"></label>
+      <label>Genre<input name="genre" value="${esc(v('genre'))}" placeholder="Comedy, Drama"></label>
+      <label>Channel or service<input name="channel" value="${esc(v('channel'))}" placeholder="BBC One, Netflix, the cinema"></label>
+      <label>Actors<textarea name="actors" rows="3">${esc(v('actors'))}</textarea></label>
+      <label>What it&rsquo;s about<textarea name="synopsis" rows="5">${esc(v('synopsis'))}</textarea></label>
+    </fieldset>
+    <fieldset><legend>Watching</legend>
+      <div class="pickrow" id="tvStat">${TV_STATUS.map(([k,l])=>`<button type="button" data-tvstat="${k}"
+        aria-pressed="${TV_STAT===k}">${l}</button>`).join('')}</div>
+      <div class="rcpnums tvforseries"><label>Up to season<input name="at_season" inputmode="numeric" value="${esc(String(v('at_season')))}"></label>
+        <label>Episode<input name="at_episode" inputmode="numeric" value="${esc(String(v('at_episode')))}"></label></div>
+      <p class="bklabel">Your stars</p>${bkStarPick('tvStarPick',TV_STARS)}
+      <label>Your notes<textarea name="notes" rows="4">${esc(v('notes'))}</textarea></label>
+      ${stfWhoBox('recommended_by','Recommended by',v('recommended_by'),v('recommended_by_id'))}
+    </fieldset>
+    <fieldset><legend>Times watched</legend><div id="tvViews"></div>
+      <button type="button" class="btn" id="tvViewAdd" style="border:1.5px solid var(--rule)">+ Add a time</button>
+      <p class="coords">When, where, how (Netflix, a DVD, the cinema), who with and what it cost.</p></fieldset>
+    <fieldset><legend>Your copy</legend>
+      <div class="pickrow" id="tvCopy">${TV_COPIES.map(([k,l])=>`<button type="button" data-tvcopy="${k}"
+        aria-pressed="${TV_COPY===k}">${l}</button>`).join('')}</div>
+      <div class="tvbarrow"><label>Barcode<input name="barcode" value="${esc(v('barcode'))}" inputmode="numeric"${NOFIX}></label>
+        ${bkCanScan()?'<button type="button" class="btn" id="tvBarScan">Scan</button>':''}</div>
+      <label>Price<input name="price" inputmode="decimal" placeholder="0.00" value="${esc(String(v('price')))}"></label>
+      ${stfWhoBox('bought_from','Bought from',v('bought_from'),v('bought_from_id'))}
+      ${stfWhoBox('lent_to','Lent to',v('lent_to'),v('lent_to_id'))}
+      <label>Lent on<input name="lent_on" value="${esc(v('lent_on'))}"></label>
+      <p class="coords">Leave it unticked if you don&rsquo;t own a copy. A shop, or whoever you lent it to, from Contacts.</p>
+    </fieldset>
+    <fieldset><legend>Reviews elsewhere</legend><div id="tvLinks">${arr(s&&s.links).filter(x=>x&&x.url).map(bkLinkRow).join('')}</div>
+      <button type="button" class="btn" id="tvLinkAdd" style="border:1.5px solid var(--rule)">+ Add a link</button>
+      <p class="coords">A review in a newspaper or on a website, with a line from it.</p></fieldset>
+    <fieldset><legend>Photos</legend>${dphHtml('tvPics')}
+      <p class="coords">The first is the poster.</p></fieldset>
+    ${USERS.length?`<fieldset><legend>Share with</legend><div class="checks ppl">${USERS.map(u=>
+      `<label><input type="checkbox" name="share" value="${esc(u.id)}" ${
+      arr(s&&s.shared_with).includes(u.id)?'checked':''}> ${pplWho(u)}</label>`).join('')}</div>
+      <p class="coords">They can see it and add their own stars and a few words.
+      Only you can change it.</p></fieldset>`:''}
+    ${s?'<button type="button" class="btn danger" id="tvDelete">Delete this one</button>':''}
+  </form>`;
+  const f=$('tvForm');
+  useWhenPicker(f,['lent_on'],{dateOnly:['lent_on']});
+  stfWireWho(f,null);
+  f.querySelectorAll('[data-tvkind]').forEach(x=>x.onclick=()=>{
+    TV_KIND=x.dataset.tvkind; f.dataset.kind=TV_KIND;
+    f.querySelectorAll('[data-tvkind]').forEach(y=>y.setAttribute('aria-pressed',String(y===x))); });
+  f.querySelectorAll('[data-tvstat]').forEach(x=>x.onclick=()=>{
+    TV_STAT=x.dataset.tvstat;
+    f.querySelectorAll('[data-tvstat]').forEach(y=>y.setAttribute('aria-pressed',String(y===x))); });
+  f.querySelectorAll('[data-tvcopy]').forEach(x=>x.onclick=()=>{
+    TV_COPY=TV_COPY===x.dataset.tvcopy?'':x.dataset.tvcopy;
+    f.querySelectorAll('[data-tvcopy]').forEach(y=>y.setAttribute('aria-pressed',String(y.dataset.tvcopy===TV_COPY))); });
+  bkWireStars($('tvStarPick'),()=>TV_STARS,n=>{ TV_STARS=n; });
+  tvViewRows();
+  $('tvViewAdd').onclick=async()=>{ const nv=await tvViewBox(tvFormGuess(),null); if(nv){ TV_VIEWS.push(nv); tvViewRows(); } };
+  const bs=$('tvBarScan'); if(bs) bs.onclick=()=>tvScan(code=>{ f.elements.barcode.value=code; toast('Barcode '+code); });
+  const wireLinks=()=>$('tvLinks').querySelectorAll('[data-bklinkx]').forEach(x=>x.onclick=()=>x.closest('.bklink').remove());
+  $('tvLinkAdd').onclick=()=>{ $('tvLinks').insertAdjacentHTML('beforeend',bkLinkRow({})); wireLinks();
+    const l=$('tvLinks').lastElementChild.querySelector('input'); try{ l.focus(); }catch(e){} };
+  wireLinks();
+  dphStart('tvPics', s&&s.photos, 'tv', 63);
+  if(s) $('tvDelete').onclick=()=>tvDelete(s);
+  showSheet('tvEd'); $('tvEdBody').scrollTop=0; lockBackground();
+  // The poster that was found goes in as the first photo.
+  if(p.poster) dphAdd([new File([p.poster],'poster.jpg',{type:p.poster.type||'image/jpeg'})]);
+}
+dphWire($('tvEdBody'));
+
+async function saveShow(){
+  const f=$('tvForm'); if(!f) return;
+  const g=n=>String(f.elements[n].value||'').trim();
+  const title=g('title');
+  if(!title){ toast('Give it a title'); return; }
+  const whole=(n,lo,hi,say)=>{ const x=g(n); if(x==='') return null;
+    const v=Number(x); if(!(v>=lo&&v<=hi&&v===Math.floor(v))) throw say; return v; };
+  let year, mins, seasons, atS, atE;
+  try{
+    year=whole('year',1880,2200,'The year needs to be like 2017');
+    mins=whole('running_mins',1,999,'The running time is in minutes, as a number');
+    seasons=TV_KIND==='series'?whole('seasons',1,99,'Seasons needs to be a number'):null;
+    atS=TV_KIND==='series'?whole('at_season',1,99,'Up to season needs to be a number'):null;
+    atE=TV_KIND==='series'?whole('at_episode',1,999,'Up to episode needs to be a number'):null;
+  }catch(say){ toast(say); return; }
+  if((atS==null)!==(atE==null)){ toast('Give both the season and the episode you are up to, or neither'); return; }
+  const price=g('price').replace(/[£,\s]/g,'');
+  if(price&&!isFinite(Number(price))){ toast('The price needs to be a number'); return; }
+  const barcode=g('barcode').replace(/[\s-]/g,'');
+  if(barcode&&!/^\d{6,14}$/.test(barcode)){ toast('A barcode is the numbers under the lines'); return; }
+  const links=[];
+  for(const r of f.querySelectorAll('.bklink')){
+    const u=bkUrl(r.querySelector('[name="link_url"]').value), qt=r.querySelector('[name="link_quote"]').value.trim();
+    if(u===null){ toast('One of the links isn’t a web address'); return; }
+    if(u) links.push({url:u, quote:qt});
+  }
+  const who=k=>{ const n=g(k), id=Number(g(k+'_id'))||null; return {[k]:n||null, [k+'_id']:n&&id?id:null}; };
+  const lent=who('lent_to');
+  const d={title, kind:TV_KIND, year, director:g('director')||null, running_mins:mins, seasons,
+    genre:g('genre')||null, actors:g('actors')||null, synopsis:g('synopsis')||null, channel:g('channel')||null,
+    tvmaze_id:TV_KIND==='series'?TV_REF.tvmaze_id||null:null, wikidata_id:TV_REF.wikidata_id||null,
+    status:TV_STAT, stars:TV_STARS||null, notes:g('notes')||null, ...who('recommended_by'),
+    at_season:atS, at_episode:atE, viewings:TV_VIEWS,
+    copy:TV_COPY||null, barcode:barcode||null, price:price===''?null:Number(price),
+    ...who('bought_from'), ...lent,
+    // Lent with no day given: today.
+    lent_on:lent.lent_to?(g('lent_on')||isoDay(new Date())):null,
+    links, photos:dphNow(),
+    shared_with:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
+    updated_at:new Date().toISOString()};
+  $('tvSave').disabled=true;
+  let id=TV_EDIT&&TV_EDIT.id, error;
+  if(id) ({error}=await sb.from('shows').update(d).eq('id',id));
+  else{
+    const r=await sb.from('shows').insert({...d, created_by:ME.id}).select().single();
+    error=r.error; id=r.data&&r.data.id;
+  }
+  $('tvSave').disabled=false;
+  if(error){ toast(/relation|does not exist|schema cache/i.test(error.message||'')
+      ? 'Could not save: TV/Movies needs step 63 run in Supabase first' : 'Could not save'); console.error(error); return; }
+  await dphSaved();
+  TV_EDIT=null;
+  $('tvEd').classList.add('hidden'); lockBackground();
+  // A new one goes on the list it belongs to.
+  if($('tvShow').classList.contains('hidden')) TV_LIST=d.status;
+  await tvAfterChange(id);
+  if(id && SHOWS.some(x=>x.id===id) && $('tvShow').classList.contains('hidden')) openShow(id);
+  toast('Saved');
+}
+$('tvSave').onclick=saveShow;
+$('tvEdCancel').onclick=async()=>{
+  TV_EDIT=null; $('tvEd').classList.add('hidden'); lockBackground(); await dphCancel(); };
+
+async function tvDelete(s){
+  if(!confirm('Delete "'+s.title+'" for good?')) return;
+  const {error}=await sb.from('shows').delete().eq('id',s.id);
+  if(error){ toast('Could not delete it'); console.error(error); return; }
+  await dphForget(s,'tv');
+  await dphCancel();
+  TV_EDIT=null; TV_VIEW=null;
+  ['tvEd','tvShow'].forEach(id=>$(id).classList.add('hidden')); lockBackground();
+  await tvAfterChange(null);
+  toast('Deleted');
+}
+
 /* ============================================================
    The home screen — a tile for every part of the app
    ============================================================ */
@@ -16469,6 +17323,7 @@ const TILE_DEST={
   recipes: {label:'Recipes',    go:openRecipes},
   stuff:   {label:'My Stuff',   go:openStuff},
   books:   {label:'Books',      go:openBooks},
+  tv:      {label:'TV/Movies',  go:openShows},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -16479,9 +17334,9 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63'};
+  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','games','links','stuff','books','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','books','tv','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -16502,7 +17357,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
-  books:['books','bookView','bookEd']};
+  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -16769,7 +17624,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.16.5';
+const APP_VERSION='2026.11.16.6';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -17946,6 +18801,9 @@ union all select 'stuff_service',        count(*), coalesce(jsonb_agg(t), '[]') 
 -- Books
 union all select 'books',                count(*), coalesce(jsonb_agg(t), '[]') from books t
 union all select 'book_reviews',         count(*), coalesce(jsonb_agg(t), '[]') from book_reviews t
+-- TV/Movies
+union all select 'shows',                count(*), coalesce(jsonb_agg(t), '[]') from shows t
+union all select 'show_reviews',         count(*), coalesce(jsonb_agg(t), '[]') from show_reviews t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -22786,6 +23644,7 @@ const AREAS={
   games:   {title:'Games',        set:null,        help:'games'},
   stuff:   {title:'My Stuff',     set:null,        help:'stuff'},
   books:   {title:'Books',        set:null,        help:'books'},
+  tv:      {title:'TV/Movies',    set:null,        help:'tv'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
   home:    {title:'Menu',         set:null,        help:'home'}
@@ -22813,12 +23672,16 @@ const AREA_SHUT={
   books:()=>{ if(!$('bookEd').classList.contains('hidden')) dphCancel();
               if(BK_SCAN_STOP) BK_SCAN_STOP(); BK_VIEW=null; BK_EDIT=null;
               ['books','bookView','bookEd'].forEach(id=>$(id).classList.add('hidden')); },
+  tv:   ()=>{ if(!$('tvEd').classList.contains('hidden')) dphCancel();
+              if(BK_SCAN_STOP) BK_SCAN_STOP(); TV_VIEW=null; TV_EDIT=null;
+              document.querySelectorAll('#tvAddBox,#tvFindBox,#tvEpBox,#tvViewBox').forEach(x=>x.remove());
+              ['tv','tvShow','tvEd'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -22848,6 +23711,11 @@ function areaItems(area){
     it('Add a book',              ()=>{ shutMenu(); bkAdd(); }),
     ...(bkCanScan()?[it('Scan a barcode', ()=>{ shutMenu(); bkScan(); })]:[]),
     it('Type an ISBN',            ()=>{ shutMenu(); bkAskIsbn(); })];
+  if(area==='tv') return [
+    it('Find a film',             ()=>{ shutMenu(); tvAskName('film'); }),
+    it('Find a TV series',        ()=>{ shutMenu(); tvAskName('series'); }),
+    ...(bkCanScan()?[it('Scan a DVD or Blu-ray', ()=>{ shutMenu(); tvScan(tvByBarcode); })]:[]),
+    it('Fill one in yourself',    ()=>{ shutMenu(); openShowEd(null); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

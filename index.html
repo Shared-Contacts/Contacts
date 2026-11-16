@@ -2636,10 +2636,10 @@ function render(){
     html+=`<li><button class="grouphd ${gOpen?'open':''}" data-open="${gk}">
       <span class="caret">&#9656;</span>${esc(g.name)}<span class="n">${inG.length}</span></button></li>`;
     if(!gOpen)return;
-    const countries=[...new Set(inG.map(c=>c.country||'No country'))]
+    const countries=[...new Set(inG.map(c=>countryName(c.country)))]
       .sort((a,b)=>a==='No country'?1:b==='No country'?-1:a.localeCompare(b));
     countries.forEach(ct=>{
-      const inC=inG.filter(c=>(c.country||'No country')===ct).sort(byName);
+      const inC=inG.filter(c=>countryName(c.country)===ct).sort(byName);
       const ck=gk+'|'+ct, cOpen=OPEN.has(ck);
       html+=`<li><button class="countryhd ${cOpen?'open':''}" data-open="${esc(ck)}">
         <span class="caret">&#9656;</span>${esc(ct)}<span class="n">${inC.length}</span></button></li>`;
@@ -2656,6 +2656,20 @@ function render(){
   list.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
     const k=b.dataset.open;OPEN.has(k)?OPEN.delete(k):OPEN.add(k);render();});
   wireRows();
+}
+// One name per country in the Grouped list (ML264): UK and United Kingdom,
+// NZ and New Zealand, Aus and Australia and so on are counted together,
+// under the full name. What was typed on each contact is left as it is.
+const COUNTRY_SAME={
+  'uk':'United Kingdom','gb':'United Kingdom','great britain':'United Kingdom','united kingdom':'United Kingdom',
+  'nz':'New Zealand','new zealand':'New Zealand','aotearoa':'New Zealand',
+  'aus':'Australia','au':'Australia','australia':'Australia',
+  'usa':'United States','us':'United States','america':'United States',
+  'united states':'United States','united states of america':'United States'};
+function countryName(s){
+  const t=String(s||'').trim().replace(/\s+/g,' ');
+  if(!t) return 'No country';
+  return COUNTRY_SAME[t.toLowerCase().replace(/\./g,'').trim()]||t;
 }
 function wireRows(){
   $('list').querySelectorAll('.row').forEach(b=>b.onclick=()=>{
@@ -5736,12 +5750,15 @@ function openHelp(where){
   than the last, up to 78 for 12. Penalties take 5 each. The scores add themselves
   up along the bottom, and the highest wins. <strong>Stop game</strong> ends one
   early for everyone, keeping the scores.</p>
+  <p><strong>Playing again:</strong> one of you taps <strong>Play again</strong>.
+  Everyone else still looking at the scores is taken straight to the new game, with
+  a message saying who started it, so nobody has to go back to Games.</p>
 
   <h4 id="h-pounds">MY Games: Pounds</h4>
   <p><strong>Pounds</strong> is a five-dice game for 1 to 6 players: on your own,
   or with others, each on their own phone. The phone rolls the dice, or you can roll
-  real dice on the table and type in what they show: tick <strong>Real dice</strong>
-  when you start the game.</p>
+  real dice on the table and type in what they show: tick <strong>Real dice</strong>,
+  at the top, when you start the game.</p>
   <p><strong>Starting:</strong> Games &rsaquo; <strong>New game</strong> under
   Pounds. Tick who is playing (nobody, for a game on your own), then choose who goes
   first. As with Loxx, only one of you starts it: it appears on the others&rsquo;
@@ -5773,6 +5790,10 @@ function openHelp(where){
   <p><strong>The end:</strong> after 13 turns each every box is filled, and the
   highest total wins. On your own, it tells you your best so far.
   <strong>Stop game</strong> ends one early for everyone, keeping the scores.</p>
+  <p><strong>Playing again:</strong> one of you taps <strong>Play again</strong>. It
+  shows the same players and dice as last game, ticked, so you can change to real
+  dice or the phone&rsquo;s before Next. Everyone else still looking at the scores
+  is taken straight to the new game, with a message saying who started it.</p>
 
   <h4 id="h-deceased">Those who have died</h4>
   <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
@@ -13811,7 +13832,7 @@ async function lkNewGame(same){
 
 /* ---------- the sheet ---------- */
 async function lkOpen(id){
-  LK_CUR=id;
+  LK_CUR=id; gmSeen(id);
   showSheet('lkPlay'); lockBackground();
   // Sideways if the phone allows it (an installed app usually does). If not,
   // the sheet turns itself round for a phone held upright.
@@ -13832,12 +13853,14 @@ function lkWatch(id){
   lkUnwatch();
   const soon=()=>{ clearTimeout(LK_SOON);
     LK_SOON=setTimeout(async()=>{ if(Number(LK_CUR)!==Number(id)) return;
-      await lkReload(id); lkPaint(); },250); };
+      await lkReload(id); lkPaint(); gmFollow(id); },250); };
   if(sb.channel){
     try{
       LK_SUB=sb.channel('game'+id)
         .on('postgres_changes',{event:'*',schema:'public',table:'games',filter:'id=eq.'+id},soon)
         .on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'game_id=eq.'+id},soon)
+        // You put in a new game (ML268): the game here may be over, with the next one started.
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:'game_players',filter:'user_id=eq.'+ME.id},soon)
         .subscribe();
     }catch(e){ /* no live link: the fetch below keeps up */ }
   }
@@ -13847,12 +13870,48 @@ function lkUnwatch(){
   if(LK_SUB&&sb.removeChannel){ try{ sb.removeChannel(LK_SUB); }catch(e){} }
   LK_SUB=null; clearInterval(LK_POLL); LK_POLL=null; clearTimeout(LK_SOON);
 }
+
+/* ---------- on to the next game (ML268), Loxx and Pounds alike ----------
+   The game on screen is over, and another player in it has started the next
+   one with you in it: go straight there, rather than back to Games. Seen
+   ending on this screen, any game started after it ended (within half an
+   hour) counts. Opened when it was already over, only a game started while
+   it is on screen counts, so looking at an old game's scores never pulls
+   you into one that was already going on. Nothing moves while a question
+   or a choice is open: Play again asks first if the game already exists. */
+let GM_SEEN=null;
+function gmSeen(id){
+  const g=lkGame(id);
+  GM_SEEN={id:Number(id), live:!!g&&g.status==='playing', max:null};
+}
+async function gmFollow(id){
+  const g=lkGame(id); if(!g||!ME) return false;
+  if(!GM_SEEN||GM_SEEN.id!==Number(id)) gmSeen(id);
+  if(g.status==='playing'){ GM_SEEN.live=true; return false; }
+  if(document.querySelector('.daypick,.lkask')) return false;
+  const pd=pdIs(g), end=new Date(g.ended_at||g.updated_at||g.created_at).getTime();
+  const was=lkPlayers(id).map(p=>p.user_id);
+  if(!await lkReload()) return false;
+  if(Number(pd?PD_CUR:LK_CUR)!==Number(id)||document.querySelector('.daypick,.lkask')) return false;
+  if(!GM_SEEN.live&&GM_SEEN.max==null){
+    GM_SEEN.max=GAMES.reduce((m,x)=>Math.max(m,Number(x.id)||0),0); return false; }
+  const at=x=>new Date(x.created_at).getTime();
+  const n=GAMES.filter(x=>Number(x.id)!==Number(id)&&x.status==='playing'&&pdIs(x)===pd
+      &&x.created_by!==ME.id&&was.includes(x.created_by)&&lkMe(x.id)
+      &&(GM_SEEN.live?at(x)>=end-5000&&at(x)-end<=30*60*1000:Number(x.id)>GM_SEEN.max))
+    .sort((a,b)=>Number(b.id)-Number(a.id))[0];
+  if(!n) return false;
+  if(pd){ pdShut(); pdOpen(Number(n.id)); } else { lkShut(); lkOpen(Number(n.id)); }
+  toast(lkWho(n.created_by)+' has started a new game');
+  return true;
+}
+
 // Back to the phone (ML239): the game, or the list of games and the Games
 // tile, catch up at once, so a game someone has just started shows.
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden||!ME||!GAMES_READY) return;
-  if(LK_CUR!=null){ const id=LK_CUR; lkReload(id).then(()=>{ if(Number(LK_CUR)===Number(id)) lkPaint(); }); return; }
-  if(PD_CUR!=null){ const id=PD_CUR; pdReload(id).then(()=>{ if(Number(PD_CUR)===Number(id)) pdPaint(); }); return; }
+  if(LK_CUR!=null){ const id=LK_CUR; lkReload(id).then(()=>{ if(Number(LK_CUR)===Number(id)){ lkPaint(); gmFollow(id); } }); return; }
+  if(PD_CUR!=null){ const id=PD_CUR; pdReload(id).then(()=>{ if(Number(PD_CUR)===Number(id)){ pdPaint(); gmFollow(id); } }); return; }
   lkReload().then(ok=>{ if(!ok) return;
     if($('games')&&!$('games').classList.contains('hidden')) renderGames();
     if($('home')&&!$('home').classList.contains('hidden')) renderHome(); });
@@ -14487,12 +14546,14 @@ function pdWatch(id){
   pdUnwatch();
   const soon=()=>{ clearTimeout(PD_SOON);
     PD_SOON=setTimeout(async()=>{ if(Number(PD_CUR)!==Number(id)) return;
-      await pdReload(id); pdPaint(); },200); };
+      await pdReload(id); pdPaint(); gmFollow(id); },200); };
   if(sb.channel){
     try{
       PD_SUB=sb.channel('pounds'+id)
         .on('postgres_changes',{event:'*',schema:'public',table:'games',filter:'id=eq.'+id},soon)
         .on('postgres_changes',{event:'*',schema:'public',table:'game_players',filter:'game_id=eq.'+id},soon)
+        // You put in a new game (ML268): the game here may be over, with the next one started.
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:'game_players',filter:'user_id=eq.'+ME.id},soon)
         .subscribe();
     }catch(e){ /* no live link: the fetch below keeps up */ }
   }
@@ -14504,7 +14565,7 @@ function pdUnwatch(){
 }
 async function pdOpen(id){
   if(LK_CUR!=null) lkShut();
-  PD_CUR=Number(id); PD_PICK=null; PD_VIEW=null; PD_SEEN=null;
+  PD_CUR=Number(id); PD_PICK=null; PD_VIEW=null; PD_SEEN=null; gmSeen(id);
   showSheet('pdPlay'); $('pdBody').scrollTop=0; lockBackground();
   pdPaint();
   pdWatch(id);
@@ -14525,21 +14586,28 @@ function pdBackToList(){
 }
 
 /* ---------- starting one ---------- */
-// Who is playing, and with which dice. Nobody ticked is a game on your own.
-function pdPickPlayers(){
+// Which dice, then who is playing. Nobody ticked is a game on your own.
+// The dice come first, where they are seen without scrolling past everyone
+// (ML267). Play again comes here too, with last game's players and dice
+// already ticked, so the dice can be changed for the next one.
+function pdPickPlayers(was){
   return new Promise(resolve=>{
     const box=document.createElement('div');
+    const had=new Set((was&&was.who)||[]);
     box.className='daypick pplbox'; box.id='pdWho';
     box.innerHTML=`<div class="inner">
-      <p class="dsec" style="padding-top:0">Who is playing with you?</p>
+      ${was?`<p class="dsec" style="padding-top:0">Play again</p>
+      <p class="coords" style="margin:0">The same players and dice as last game are
+        ticked. Change anything you like, then Next.</p>`:''}
+      <label class="pdrealsw"${was?'':' style="margin-top:0"'}><input type="checkbox" id="pdwReal"${was&&was.real?' checked':''}>
+        <span><b>Real dice</b><small>Roll them on the table and type in what they
+        show. Left off, the phone rolls them.</small></span></label>
+      <p class="dsec">Who is playing with you?</p>
       <p class="coords" style="margin:0 0 10px">Up to five others, each on their own
         phone, or nobody for a game on your own. Only one of you starts the game: it
         appears on the others’ phones, under Games &rsaquo; Going on.</p>
       ${USERS.length?`<div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
-        value="${esc(u.id)}"> ${pplWho(u)}</label>`).join('')}</div>`:''}
-      <label class="pdrealsw"><input type="checkbox" id="pdwReal">
-        <span><b>Real dice</b><small>Roll them on the table and type in what they
-        show. Left off, the phone rolls them.</small></span></label>
+        value="${esc(u.id)}"${had.has(u.id)?' checked':''}> ${pplWho(u)}</label>`).join('')}</div>`:''}
       <div class="pfoot"><button id="pdwCancel">Cancel</button>
         <button id="pdwGo" class="go">Next</button></div></div>`;
     document.body.appendChild(box);
@@ -14555,7 +14623,7 @@ function pdPickPlayers(){
 }
 async function pdNewGame(same,realWas){
   if(!GAMES_READY){ toast('Pounds needs steps 57 and 60 run in Supabase first'); return; }
-  const pick=same!=null?{who:same, real:!!realWas}:await pdPickPlayers(); if(!pick) return;
+  const pick=await pdPickPlayers(same!=null?{who:same, real:!!realWas}:null); if(!pick) return;
   const players=[ME.id].concat(pick.who.filter(x=>x!==ME.id));
   await lkReload();
   const dup=lkSameGame(players,'pounds');
@@ -16340,7 +16408,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.11.2';
+const APP_VERSION='2026.11.16.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -20055,11 +20123,11 @@ function renderReports(){
         <label>To<input type="date" id="repTo" value="${esc(REP.to)}"></label></div>
       <div class="pickrow repquick">${REP_QUICK.map(([k,l])=>{ const [f,t]=repQuick(k);
         return `<button type="button" data-repquick="${k}" aria-pressed="${f===REP.from&&t===REP.to}">${esc(l)}</button>`; }).join('')}</div>
-      <details class="repaccs"${REP.accsOpen?' open':''}><summary>${esc(repAccLabel())}</summary>
-        <div class="checks">${accs}</div>
-        <div class="pickrow"><button type="button" id="repAll">Tick all</button>
-          <button type="button" id="repNone">Untick all</button></div></details>
       ${REP.busy?'':`<div class="pickrow"><button type="button" id="repFresh">&#8635; Refresh transactions</button></div>`}
+      <details class="repaccs"${REP.accsOpen?' open':''}><summary>${esc(repAccLabel())}</summary>
+        <div class="pickrow"><button type="button" id="repAll">Tick all</button>
+          <button type="button" id="repNone">Untick all</button></div>
+        <div class="checks">${accs}</div></details>
     </div>
     <h2 class="reptitle">${esc(kind.label)}</h2>
     <div id="repOut">${out}</div>`;

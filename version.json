@@ -1,6 +1,16 @@
 {
-  "version": "2026.11.11.2",
+  "version": "2026.11.16.1",
   "history": [
+    {
+      "version": "2026.11.16.1",
+      "changes": [
+        "Contacts: in Grouped, UK and United Kingdom are one country, under United Kingdom. The same for NZ, Aus and USA.",
+        "Reports: Tick all and Untick all are at the top of the list of accounts, and Refresh transactions sits above the list.",
+        "Pounds: Real dice is at the top when you start a game, where you see it without scrolling past everyone.",
+        "Pounds: Play again shows the same players and dice ticked, so you can change the dice before Next.",
+        "Pounds and Loxx: when someone taps Play again, everyone else still looking at the scores goes straight to the new game."
+      ]
+    },
     {
       "version": "2026.11.11.2",
       "changes": [

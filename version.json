@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.16.4",
+  "version": "2026.11.16.5",
   "history": [
+    {
+      "version": "2026.11.16.5",
+      "changes": [
+        "Recipes: in What can I make?, the first thing you type leads among recipes using one of your things, with Show more after five of them."
+      ]
+    },
     {
       "version": "2026.11.16.4",
       "changes": [

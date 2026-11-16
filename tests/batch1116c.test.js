@@ -60,9 +60,10 @@ const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.s
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  const V = VJ.history.find(h => h.version === '2026.11.16.3');
-  ok('2026.11.16.3 is in version.json, and the page is the newest', !!V && VJ.version === appVer && VJ.history[0].version === appVer, appVer);
-  ok('  saying what changed, in a line short enough', !!V && /What can I make\?/.test(V.changes.join(' ')) && V.changes.every(c => c.length < 160));
+  const V = VJ.history.find(h => h.version === '2026.11.16.3'), V4 = VJ.history.find(h => h.version === '2026.11.16.4');
+  ok('2026.11.16.3 and 2026.11.16.4 are in version.json, and the page is the newest', !!V && !!V4 && VJ.version === appVer && VJ.history[0].version === appVer, appVer);
+  ok('  saying what changed, in lines short enough', !!V && !!V4 && /What can I make\?/.test(V.changes.join(' ')) && /in gold/.test(V4.changes.join(' '))
+    && V.changes.concat(V4.changes).every(c => c.length < 160));
 
   // ---------------------------------------------------------------
   console.log('\nReading what you typed, and matching it');
@@ -106,10 +107,10 @@ const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.s
   await p.press('#rcpCanQ', 'Enter'); await settle(800);
   const mine = await ev(() => [...document.querySelectorAll('#rcpCanList [data-ropen]')].map(x => ({ id: +x.dataset.ropen,
     fit: x.querySelector('.rcpcanfit') ? x.querySelector('.rcpcanfit').textContent.trim() : '' })));
-  ok('your recipes, the ones needing least else first: Roast chicken, the pie, Leek tart, then the soup',
-    mine.map(x => x.id).join() === '504,501,505,502', JSON.stringify(mine));
-  ok('  Roast chicken: uses chicken, and you have everything (oil is in the cupboard)', mine[0] && mine[0].fit === 'Uses chicken. You have everything', mine[0] && mine[0].fit);
-  ok('  the pie uses both, and needs puff pastry (salt and pepper are in the cupboard)', mine[1] && mine[1].fit === 'Uses chicken and leeks. Needs 1 more: puff pastry', mine[1] && mine[1].fit);
+  ok('your recipes, using both first, then least else needed: the pie, Roast chicken, Leek tart, then the soup',
+    mine.map(x => x.id).join() === '501,504,505,502', JSON.stringify(mine));
+  ok('  the pie uses both, and needs puff pastry (salt and pepper are in the cupboard)', mine[0] && mine[0].fit === 'Uses both chicken and leeks. Needs 1 more: puff pastry', mine[0] && mine[0].fit);
+  ok('  Roast chicken: uses chicken, and you have everything (oil is in the cupboard)', mine[1] && mine[1].fit === 'Uses chicken. You have everything', mine[1] && mine[1].fit);
   ok('  the soup needs three more, the heading left out', mine[3] && mine[3].fit === 'Uses leeks. Needs 3 more: potatoes, butter, double cream', mine[3] && mine[3].fit);
   ok('  Leek tart, from To try, is there too', mine.some(x => x.id === 505));
   ok('  not Chickpea curry, nor a recipe you chose not to see', !mine.some(x => x.id === 503 || x.id === 506));
@@ -117,9 +118,26 @@ const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.s
     'filter.php?i=chicken', 'filter.php?i=chickens', 'lookup.php?i=1', 'lookup.php?i=2', 'lookup.php?i=3'].every(u => asked.includes(u)), asked.join(' '));
   const ideas = await ev(() => [...document.querySelectorAll('#rcpCanList [data-canidea]')].map(x => ({ id: x.dataset.canidea,
     t: x.querySelector('span').textContent, fit: x.querySelector('small').textContent.trim() })));
-  ok('its ideas, least else needed first: Leek pie, Roast bird, then Leek soup', ideas.map(x => x.t).join() === 'Leek pie,Roast bird,Leek soup', JSON.stringify(ideas));
-  ok('  each saying what it uses and needs', ideas[0] && ideas[0].fit === 'Uses chicken and leeks. Needs 1 more: Puff Pastry'
+  ok('its ideas, using both first, then least else needed: Leek pie, Roast bird, then Leek soup', ideas.map(x => x.t).join() === 'Leek pie,Roast bird,Leek soup', JSON.stringify(ideas));
+  ok('  each saying what it uses and needs', ideas[0] && ideas[0].fit === 'Uses both chicken and leeks. Needs 1 more: Puff Pastry'
     && ideas[2] && ideas[2].fit === 'Uses leeks. Needs 2 more: Potatoes, Chicken Stock', JSON.stringify(ideas.map(x => x.fit)));
+  const look = await ev(() => {
+    const row = id => document.querySelector('#rcpCanList [data-ropen="' + id + '"]');
+    const pie = row(501), probe = document.createElement('i'); probe.style.color = 'var(--brass)'; pie.appendChild(probe);
+    const gold = getComputedStyle(probe).color; probe.remove();
+    const hits = [...pie.querySelectorAll('strong.canhit')];
+    return { allRows: [...document.querySelectorAll('#rcpCanList .rcprow.canall')].map(x => x.dataset.ropen).join(),
+      allCards: [...document.querySelectorAll('#rcpCanList .idcard.canall')].map(x => x.dataset.canidea).join(),
+      hits: hits.map(h => h.textContent).join(), bold: hits.every(h => +getComputedStyle(h).fontWeight >= 700),
+      gold: hits.every(h => getComputedStyle(h).color === gold), notTitle: gold !== getComputedStyle(pie.querySelector('b')).color,
+      tinted: getComputedStyle(pie).backgroundColor !== getComputedStyle(row(504)).backgroundColor,
+      cardHits: [...document.querySelectorAll('[data-canidea="3"] strong.canhit')].map(h => h.textContent).join() };
+  });
+  ok('only the recipes using all of what you typed are picked out: the pie, and Leek pie', look.allRows === '501' && look.allCards === '1', JSON.stringify(look));
+  ok('  picked out with a tint of their own', look.tinted);
+  ok('  what you typed is in bold gold, a colour apart from the title; what else it needs is not', look.hits === 'chicken,leeks'
+    && look.bold && look.gold && look.notTitle, JSON.stringify(look));
+  ok('  the same in TheMealDB\'s ideas', look.cardHits === 'chicken');
   ok('  under their own headings, with how many', await ev(() => /Your recipes\s*4/.test($('rcpCanList').textContent)
     && /Ideas from TheMealDB\s*3/.test($('rcpCanList').textContent)));
   asked = [];
@@ -133,6 +151,18 @@ const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.s
   await ev(() => { $('recipe') && $('recipe').classList.add('hidden'); renderRecipes(); }); await settle(200);
   ok('  and coming back, what you typed and found are still there', await ev(() => $('rcpCanQ').value === 'chicken, leeks'
     && document.querySelectorAll('#rcpCanList [data-ropen]').length === 4));
+
+  await p.fill('#rcpCanQ', 'chicken, leeks, puff pastry'); await p.click('#rcpCanGo'); await settle(800);
+  const three = await ev(() => ({ rows: [...document.querySelectorAll('#rcpCanList [data-ropen]')].map(x => x.dataset.ropen + (x.classList.contains('canall') ? '*' : '')).join(),
+    pie: document.querySelector('#rcpCanList [data-ropen="501"] .rcpcanfit').textContent.trim(),
+    card: (document.querySelector('#rcpCanList .idcard.canall small') || {}).textContent }));
+  ok('three things: the pie uses all 3, so it is at the top and picked out', three.rows === '501*,504,505,502'
+    && three.pie === 'Uses all 3: chicken, leeks and puff pastry. You have everything', JSON.stringify(three));
+  ok('  and Leek pie the same', three.card === 'Uses all 3: chicken, leeks and puff pastry. You have everything', three.card);
+  await p.fill('#rcpCanQ', 'chicken'); await p.click('#rcpCanGo'); await settle(800);
+  ok('one thing typed: nothing picked out, as every one uses it', await ev(() => !document.querySelector('#rcpCanList .canall')
+    && document.querySelector('#rcpCanList [data-ropen="504"] .rcpcanfit').textContent.trim() === 'Uses chicken. You have everything'
+    && document.querySelectorAll('#rcpCanList strong.canhit').length > 0));
 
   console.log('\nNo signal, and nothing found');
   down = true;

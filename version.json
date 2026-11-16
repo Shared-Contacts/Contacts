@@ -1,6 +1,17 @@
 {
-  "version": "2026.11.16.1",
+  "version": "2026.11.16.2",
   "history": [
+    {
+      "version": "2026.11.16.2",
+      "changes": [
+        "Finances: each bank account has a SWIFT code under the IBAN, and the account number now sits beside the sort code.",
+        "Contacts: England, Scotland, Wales and Northern Ireland are saved as United Kingdom, with a Part of the UK box.",
+        "Contacts: UK, GB and Great Britain become United Kingdom as you type, and NZ, Aus and USA their full names.",
+        "Loxx: untick Real dice when you start, and the phone rolls the dice. Everyone sees the same six, and what they allow is ringed.",
+        "Loxx: Play again asks first, with the same players and dice ticked, so you can change them.",
+        "All of these need step 62 run in Supabase first."
+      ]
+    },
     {
       "version": "2026.11.16.1",
       "changes": [

@@ -451,6 +451,7 @@ details.buybox .bbin{padding:0 14px 14px}
 fieldset{border:1px solid var(--rule);border-radius:var(--radius);background:var(--panel);margin:0 0 16px;padding:6px 14px 14px}
 legend{font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 6px}
 label{display:block;margin-top:12px;font-size:15px;color:var(--muted)}
+#ukPartL[hidden]{display:none}
 label input,label textarea,label select{display:block;width:100%;margin-top:4px;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 label input:focus,label textarea:focus{border-color:var(--hull);outline:none}
@@ -918,6 +919,21 @@ body.vbtyping #verBar{display:none}
 .lkundo{white-space:nowrap}
 .lkundo:disabled{opacity:.45}
 .lkstatus{flex:1;min-width:0;font-size:clamp(13px,4.2cqh,17px);line-height:1.25}
+/* The phone's dice (ML203): two white, then red, yellow, green and blue,
+   in the bar beside the words. A closed colour's die is set aside, faded. */
+.lkdice{display:flex;gap:.7cqw;flex:0 0 auto;align-items:center}
+.lkdie{width:clamp(24px,8.6cqh,36px);height:clamp(24px,8.6cqh,36px);flex:0 0 auto;border-radius:16%;
+  background:var(--dc);color:var(--df);box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.18),0 2px 0 rgba(0,0,0,.22)}
+.lkdie svg{display:block;width:100%;height:100%;fill:currentColor}
+.lkdie.off{opacity:.22;box-shadow:none}
+.lkdie.blank{background:transparent;box-shadow:inset 0 0 0 2px var(--rule)}
+.lkdie.tumble{animation:pdtumble .45s ease-out}
+@media (prefers-reduced-motion:reduce){.lkdie.tumble{animation:none}}
+.lkbar .lkroll{background:#E0B21B;color:#3A2C00;min-width:96px;display:inline-flex;align-items:center;gap:8px}
+.lkroll svg{width:22px;height:22px}
+.lkroll:disabled{opacity:.5}
+/* What the dice let you mark: a white ring in the row's colour. */
+.lkn.hint{background:#fff;box-shadow:inset 0 0 0 3px var(--rc)}
 .lkwho{display:flex;gap:6px;align-items:center;flex:0 0 auto;overflow:hidden;white-space:nowrap}
 .lkwho span{padding:3px 10px;border-radius:99px;background:#fff;border:1px solid var(--rule);
   font-size:clamp(12px,3.8cqh,15px)}
@@ -1329,9 +1345,11 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .accbank label{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;
   font-weight:600;color:var(--muted)}
 .accbank input{width:100%;font-variant-numeric:tabular-nums;letter-spacing:.02em}
-.accbank .sc{flex:0 0 118px}
-.accbank .an{flex:1 1 150px}
-.accbank .ib{flex:1 1 100%}
+/* Sort code and account number side by side on any phone, then the IBAN,
+   then the SWIFT code (ML266). */
+.accbank .sc{flex:0 0 112px}
+.accbank .an{flex:1 1 0}
+.accbank .ib,.accbank .sw{flex:1 1 100%}
 /* While one is held and moving, every box folds down to its name, so a long
    list of tall boxes can be put in order without miles of sliding. */
 .hmfolding>[data-hmfold]{padding-top:6px;padding-bottom:6px}
@@ -2304,7 +2322,7 @@ function renderChips(){
 function matches(c,q){
   if(!q)return true;
   const bits=[c.first_name,c.last_name,c.given_names,c.nickname,c.boat_name,c.boat_number,
-    c.town,c.county,c.country,c.company,c.department,c.job_title,c.met_where,c.notes,
+    c.town,c.county,c.country,c.uk_part,c.company,c.department,c.job_title,c.met_where,c.notes,
     c.address,c.address_2,c.postcode,c.boat_notes];
   ['emails','phones','websites','socials','pets','former_names'].forEach(f=>
     arr(c[f]).forEach(e=>{bits.push(e.value);bits.push(e.label);}));
@@ -2657,19 +2675,41 @@ function render(){
     const k=b.dataset.open;OPEN.has(k)?OPEN.delete(k):OPEN.add(k);render();});
   wireRows();
 }
-// One name per country in the Grouped list (ML264): UK and United Kingdom,
-// NZ and New Zealand, Aus and Australia and so on are counted together,
-// under the full name. What was typed on each contact is left as it is.
+// One name per country (ML264): UK and United Kingdom, NZ and New Zealand,
+// Aus and Australia and so on are the same country, under the full name.
+// Keys: lower case, without spaces or full stops, so U.K. and u k match.
 const COUNTRY_SAME={
-  'uk':'United Kingdom','gb':'United Kingdom','great britain':'United Kingdom','united kingdom':'United Kingdom',
-  'nz':'New Zealand','new zealand':'New Zealand','aotearoa':'New Zealand',
-  'aus':'Australia','au':'Australia','australia':'Australia',
-  'usa':'United States','us':'United States','america':'United States',
-  'united states':'United States','united states of america':'United States'};
+  uk:'United Kingdom', gb:'United Kingdom', greatbritain:'United Kingdom', britain:'United Kingdom',
+  unitedkingdom:'United Kingdom',
+  nz:'New Zealand', newzealand:'New Zealand', aotearoa:'New Zealand',
+  aus:'Australia', au:'Australia', australia:'Australia',
+  usa:'United States', us:'United States', america:'United States',
+  unitedstates:'United States', unitedstatesofamerica:'United States'};
+// The four parts of the UK (ML271). The country is United Kingdom, as the
+// ISO list and Royal Mail have it; the part goes in a box of its own.
+const UK_PARTS=['England','Scotland','Wales','Northern Ireland'];
+const countryKey = s => String(s||'').toLowerCase().replace(/[.\s]/g,'');
+// What a typed country should be saved as: {country, part}. England, Wales
+// and the rest become United Kingdom with that part; UK, GB and Great Britain
+// United Kingdom, keeping any part already chosen. Anything else as typed.
+function countryFix(country,part){
+  const t=String(country||'').trim().replace(/\s+/g,' '), k=countryKey(t);
+  const asPart=UK_PARTS.find(p=>countryKey(p)===k);
+  const c=asPart?'United Kingdom':(COUNTRY_SAME[k]||t);
+  const p=c==='United Kingdom'?(asPart||UK_PARTS.find(x=>countryKey(x)===countryKey(part))||null):null;
+  return {country:c||null, part:p};
+}
+// A contact about to be saved from an import, tidied the same way. A part is
+// only written when there is one, so nothing breaks before step 62.
+function tidyCountry(d){
+  if(!d||!('country' in d||'uk_part' in d)) return d;
+  const t=countryFix(d.country,d.uk_part);
+  if('country' in d) d.country=t.country;
+  if(t.part) d.uk_part=t.part; else delete d.uk_part;
+  return d;
+}
 function countryName(s){
-  const t=String(s||'').trim().replace(/\s+/g,' ');
-  if(!t) return 'No country';
-  return COUNTRY_SAME[t.toLowerCase().replace(/\./g,'').trim()]||t;
+  return countryFix(s).country||'No country';
 }
 function wireRows(){
   $('list').querySelectorAll('.row').forEach(b=>b.onclick=()=>{
@@ -3113,6 +3153,9 @@ async function fullAddress(lat,lng){
     const out={address:[a.house_number,road].filter(Boolean).join(' ')||a.house_name||'',
       address_2:line2, town, county:a.county||a.state_district||a.state||'',
       postcode:a.postcode||'', country:a.country||''};
+    // In the UK the map gives England, Wales and so on as the state (ML271).
+    const cfx=countryFix(out.country,a.state);
+    out.country=cfx.country||''; out.uk_part=cfx.part||'';
     out.text=[out.address,out.address_2,out.town,out.postcode,out.country]
       .filter(Boolean).join(', ')||j.display_name||'';
     return out;
@@ -3237,7 +3280,8 @@ async function openDetail(id, keepPlace){
 
   const where=R('Address',[c.address,c.address_2].filter(Boolean).map(esc).join('<br>'))
     +R('Town',esc(c.town))+R('County',esc(c.county))
-    +R('Postcode',c.postcode?esc(c.postcode.toUpperCase()):'')+R('Country',esc(c.country))
+    +R('Postcode',c.postcode?esc(c.postcode.toUpperCase()):'')
+    +R('Country',esc([c.country&&c.uk_part?c.uk_part:'',c.country].filter(Boolean).join(', ')))
     +R('what3words',c.what3words
         ?link(w3wUrl(c.what3words),'///'+c.what3words.replace(/^\/+/,''))
         :'')
@@ -3658,6 +3702,8 @@ async function openEditor(c){
       <div class="two">${F('Postcode','postcode')}
         <label>Country<input name="country" list="dlCountry" autocomplete="off"></label>
       </div>
+      <label id="ukPartL" hidden>Part of the UK<select name="uk_part">
+        <option value="">Not said</option>${UK_PARTS.map(p=>`<option>${p}</option>`).join('')}</select></label>
       ${datalist('dlTown','town')}${datalist('dlCounty','county')}${datalist('dlCountry','country')}
       <label>what3words<input name="what3words" placeholder="///filled.count.soap"${NOFIX}></label>
       <div class="geo"><input id="geoQ" placeholder="Find an address"><button type="button" id="geoGo">Find</button></div>
@@ -3738,6 +3784,19 @@ async function openEditor(c){
   ['partner_name','first_name','last_name'].forEach(n=>f.elements[n].addEventListener('input',applyPartner));
   applyPartner();
 
+  // Part of the UK (ML271): shown when the country is the UK. Typing
+  // England, Wales and so on, or UK, GB or Great Britain, turns into United
+  // Kingdom when you move on, with the part chosen for you where it can be.
+  const ukPart=()=>{ $('ukPartL').hidden=countryFix(f.elements['country'].value).country!=='United Kingdom'; };
+  f.elements['country'].addEventListener('input',ukPart);
+  f.elements['country'].addEventListener('change',()=>{
+    const t=countryFix(f.elements['country'].value,f.elements['uk_part'].value);
+    if(t.country&&t.country!==f.elements['country'].value.trim()) f.elements['country'].value=t.country;
+    if(t.part) f.elements['uk_part'].value=t.part;
+    ukPart();
+  });
+  ukPart();
+
   // keep the address-search box in step with the address fields
   const addrParts=['address','address_2','town','county','postcode','country'];
   const buildAddr=()=>{
@@ -3796,8 +3855,9 @@ async function openEditor(c){
     // nothing is kept until Save.
     geoTools($('geoQ'),$('homeMap'),hm,a=>{
       if(!a) return null;
-      ['address','address_2','town','county','postcode','country'].forEach(k=>{
+      ['address','address_2','town','county','postcode','country','uk_part'].forEach(k=>{
         if(f.elements[k]) f.elements[k].value=a[k]||''; });
+      ukPart();
       return 'Address filled in from where you are. Save to keep it.';
     });
     geoTools($('metQ'),$('metEditMap'),mm);
@@ -3850,6 +3910,12 @@ async function saveContact(existing){
     data.company = emp===''?null:emp;
   }
   if(data.postcode) data.postcode=data.postcode.toUpperCase();
+  // United Kingdom for UK, GB, England and the rest, with the part of the UK
+  // (ML271). The part is only sent when there is one, or one to take away,
+  // so a contact still saves on a database that has not had step 62 yet.
+  const cfx=countryFix(data.country,f.elements['uk_part']?f.elements['uk_part'].value:'');
+  data.country=cfx.country;
+  if(cfx.part||(existing&&existing.uk_part)) data.uk_part=cfx.part||null;
   ['what3words','met_what3words'].forEach(k=>{
     if(data[k]) data[k]=data[k].replace(/^\/+/,'').trim()||null; });
   CAPS.forEach(k=>{ if(data[k]) data[k]=titleCase(data[k]); });
@@ -4099,7 +4165,7 @@ const BLEND_SKIP=['id','created_by','created_at','updated_at','contact_groups','
   'came_at','photos','avatar_path'];
 const BLEND_WHOLE=[
   {id:'home', label:'Address', keys:['address','address_2','town','county','postcode',
-    'country','what3words','latitude','longitude']},
+    'country','uk_part','what3words','latitude','longitude']},
   {id:'met', label:'Where we met', keys:['met_where','met_what3words','met_latitude','met_longitude']}];
 const BLEND_LABEL={status_id:'Status', mobile:'Mobile (old box)', phone:'Phone (old box)',
   email:'Email (old box)', website:'Website (old box)', employer:'Employer (old box)'};
@@ -5169,11 +5235,13 @@ function openHelp(where){
   <p>In Settings the accounts show just their names, so the list is short:
   tap one to open it out, and the &#9662; beside its name folds it away again.
   Each account has its own box, with room for its
-  <strong>sort code</strong>, <strong>account number</strong> and
-  <strong>international number (IBAN)</strong>. Type them any way you like:
+  <strong>sort code</strong> and <strong>account number</strong> side by side,
+  then the <strong>international number (IBAN)</strong> and the
+  <strong>SWIFT code</strong>. Type them any way you like:
   they're put into the usual layout when you move on (20-00-00, an 8-figure
   account number, a New Zealand one as 12-3456-1234567-00, the IBAN in groups
-  of four), and an IBAN that doesn't add up is pointed out. Anyone you share an
+  of four, the SWIFT code in capitals), and an IBAN that doesn't add up, or a
+  SWIFT code for a different country from the IBAN, is pointed out. Anyone you share an
   account with sees these too. To put the accounts in order, hold the
   &#10303; beside a name and slide it: the boxes fold down to their names while
   one is moving, and the screen moves along when you get near the top or
@@ -5703,14 +5771,16 @@ function openHelp(where){
   puzzles come from jigsawexplorer.com, so they need the internet.</p>
 
   <h4 id="h-games">MY Games: Loxx</h4>
-  <p><strong>Loxx</strong> is a dice game for 2 to 5 players. You need six
-  dice: two white, and one each of red, yellow, green and blue. Everyone plays on
+  <p><strong>Loxx</strong> is a dice game for 2 to 5 players, with six dice: two
+  white, and one each of red, yellow, green and blue. Roll real ones on the table,
+  or let the phone roll them (see below). Everyone plays on
   their own phone, and the phones keep each other up to date. The sheet fills the
   phone turned on its side; if your phone keeps the screen upright, the sheet turns
   itself round, so turn the phone to the left to read it.</p>
   <p><strong>Starting:</strong> one of you starts the game: Games &rsaquo;
-  <strong>New game</strong>, tick who is playing, then choose who rolls first
-  (everyone rolls one die: the first 6 starts). The game appears on the others&rsquo;
+  <strong>New game</strong>, leave <strong>Real dice</strong> ticked or untick it,
+  tick who is playing, then choose who rolls first (with real dice, everyone rolls
+  one die: the first 6 starts). The game appears on the others&rsquo;
   phones under Games &rsaquo; Going on (the Games tile shows a number), and they
   tap it to play. They don&rsquo;t start one of their own: that would make two
   games, each waiting for the other. New game asks first if you already have a
@@ -5721,6 +5791,13 @@ function openHelp(where){
   Then everyone taps <strong>Done</strong>. It stays greyed until all of you have,
   and then the dice pass on. If someone has wandered off, the roller can tap
   <strong>Carry on without them</strong>, beside Stop game.</p>
+  <p><strong>The phone&rsquo;s dice:</strong> with Real dice unticked, whoever is
+  rolling taps <strong>Roll</strong>, and the same six dice appear at the top of
+  everyone&rsquo;s sheet. The numbers they let you mark have a white ring: the white
+  dice total, and on your own roll a white and a colour too. Nothing can be marked,
+  and Done stays greyed, until the dice are rolled. A closed lock&rsquo;s die is set
+  aside, faded. <strong>Play again</strong> keeps the same dice, and lets you change
+  them.</p>
   <p><strong>Left to right:</strong> red and yellow go 2 up to 12, green and blue
   12 down to 2. Marks go left to right; anything you pass is crossed out and cannot
   be marked later. The number at the left of each row is how many marks it has.
@@ -13522,6 +13599,63 @@ const lkClosedBefore = (g,c) => g.closed && g.closed[c]!=null && Number(g.closed
 const lkClosed = (g,c) => !!(g.closed && g.closed[c]!=null);
 const lkDoneThisRoll = (g,p) => !!p && p.done_turn>=g.turn_no;
 
+/* The phone's dice (ML203, step 62). A game started with Real dice left
+   off has dice.real false: whoever is rolling taps Roll, the phone rolls
+   the six dice, and every phone shows the same ones (dice.v: white, white,
+   red, yellow, green, blue, 0 for a colour whose lock has closed; dice.at:
+   the roll they are for). Every other game, and every game from before
+   step 62, is played with real dice on the table, as before. The numbers
+   the dice allow are ringed on your sheet; nothing stops you marking
+   another, as with real dice. */
+let LK_ROLLING=false, LK_DICE_SEEN=null;
+const lkReal = g => !(g&&g.dice&&g.dice.real===false);
+function lkDice(g){
+  const d=g&&g.dice;
+  if(lkReal(g)||!d||Number(d.at)!==Number(g.turn_no)||!Array.isArray(d.v)||d.v.length!==6) return null;
+  return d.v.map(Number);
+}
+// Phone dice, and none rolled yet for this roll.
+const lkNoDice = g => !!g && g.status==='playing' && !lkReal(g) && !lkDice(g);
+// What the dice let you mark in colour c's row: the white total, and on
+// your own roll a white and that colour.
+function lkDiceNums(g,c){
+  const v=lkDice(g); if(!v) return [];
+  const out=[v[0]+v[1]], i=LK_ROWS.findIndex(r=>r.c===c), d=v[2+i];
+  if(lkMyRoll(g)&&d) out.push(v[0]+d, v[1]+d);
+  return out;
+}
+const LK_DIE_LOOK=[{bg:'#FBFAF5',fg:'#1E2A24',name:'white'},{bg:'#FBFAF5',fg:'#1E2A24',name:'white'}]
+  .concat(LK_ROWS.map(r=>({bg:r.bg,fg:r.fg,name:r.name.toLowerCase()})));
+function lkDiceHtml(g){
+  const v=lkDice(g);
+  if(!v) return `<span class="lkdice" aria-hidden="true">${LK_DIE_LOOK.map(()=>'<span class="lkdie blank"></span>').join('')}</span>`;
+  // They tumble once, the first time this phone shows them.
+  const k=g.id+':'+g.turn_no, spin=LK_DICE_SEEN!==k; LK_DICE_SEEN=k;
+  const said=v.map((n,i)=>n?LK_DIE_LOOK[i].name+' '+n:'').filter(Boolean).join(', ');
+  return `<span class="lkdice" id="lkDice" role="img" aria-label="The dice: ${esc(said)}">${v.map((n,i)=>
+    `<span class="lkdie${n?'':' off'}${spin&&n?' tumble':''}" style="--dc:${LK_DIE_LOOK[i].bg};--df:${LK_DIE_LOOK[i].fg}">${
+      n?pdFace(n):''}</span>`).join('')}</span>`;
+}
+async function lkRollDice(){
+  const g=lkGame(LK_CUR); if(!g||LK_ROLLING||g.status!=='playing') return;
+  if(!lkMyRoll(g)){ toast('It is '+lkWho(lkRoller(g))+'’s roll'); return; }
+  if(lkDice(g)){ toast('The dice are out for this roll'); return; }
+  const v=[pdRand(),pdRand()].concat(LK_ROWS.map(r=>lkClosed(g,r.c)?0:pdRand()));
+  const was=g.dice;
+  LK_ROLLING=true; g.dice={real:false, v, at:g.turn_no}; lkPaint();
+  const {data,error}=await sb.rpc('loxx_dice',{g:g.id, at_turn:g.turn_no, d:{v}});
+  LK_ROLLING=false;
+  if(error){
+    console.error(error); g.dice=was;
+    const m=(error.message||'')+(error.code||'');
+    toast(/loxx_dice|PGRST202/i.test(m)?'The phone’s dice need step 62 run in Supabase first'
+      :/lock has closed/i.test(m)?'A lock has closed meanwhile: tap Roll again'
+      :/not your roll/i.test(m)?'It is not your roll'
+      :'Could not roll: check your signal');
+  } else if(data==='rolled') toast('The dice were already out for this roll');
+  await lkReload(g.id); lkPaint();
+}
+
 /* One lock, one holder (ML240, Barry's rule, 10 Nov 2026). Everyone who
    takes a row's last number with five marks there claims its lock (their
    sheet's locked), but only one of them gets the lock and its bonus mark:
@@ -13610,8 +13744,10 @@ async function lkReload(id){
   } else { GAMES=g.data||[]; GAME_PLAYERS=p.data||[]; }
   if(keep){ const m=lkMe(id); if(m) m.sheet=keep.sheet; }
   const now=one?lkGame(id):null;
+  // Dice of yours still on their way (ML203): keep them on screen.
+  if(LK_ROLLING&&was&&now&&was.dice&&now.turn_no===was.turn_no&&!lkDice(now)) now.dice=was.dice;
   if(was&&now&&now.turn_no!==was.turn_no&&lkMyRoll(now)&&Number(LK_CUR)===Number(id)){
-    toast('Your roll');
+    toast(lkReal(now)?'Your roll':'Your roll: tap Roll');
     try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){}
   }
   // Someone else closed a lock on this roll, or opened it again with Undo.
@@ -13700,8 +13836,8 @@ function renderGames(){
   const going=mine.filter(g=>g.status==='playing'), over=mine.filter(g=>g.status!=='playing');
   b.innerHTML=`<div class="card lkintro">
       <div class="lkhead"><span class="lklogo">${LK_GATES(true)}</span>
-        <div><h2>Loxx</h2><p>A dice game for 2 to 5 players: real dice, and a
-        phone each to mark your sheet. Red and yellow climb the flight, green and blue
+        <div><h2>Loxx</h2><p>A dice game for 2 to 5 players: real dice or the
+        phone's, and a phone each to mark your sheet. Red and yellow climb the flight, green and blue
         come down, and closing a lock shuts that colour for everyone.</p></div></div>
       ${GAMES_READY?'':`<div class="field"><dd style="color:var(--red)">Loxx needs
         step 57 run in Supabase first.</dd></div>`}
@@ -13728,17 +13864,27 @@ function renderGames(){
 }
 
 /* ---------- starting one ---------- */
-function lkPickPlayers(){
+// Which dice, then who is playing, as in Pounds (ML203). Real dice starts
+// ticked, as Loxx has always been played. Play again comes here too, with
+// last game's players and dice already ticked.
+function lkPickPlayers(was){
   return new Promise(resolve=>{
     const box=document.createElement('div');
+    const had=new Set((was&&was.who)||[]), real=!was||was.real!==false;
     box.className='daypick pplbox'; box.id='lkWho';
     box.innerHTML=`<div class="inner">
-      <p class="dsec" style="padding-top:0">Who is playing with you?</p>
+      ${was?`<p class="dsec" style="padding-top:0">Play again</p>
+      <p class="coords" style="margin:0">The same players and dice as last game are
+        ticked. Change anything you like, then Next.</p>`:''}
+      <label class="pdrealsw"${was?'':' style="margin-top:0"'}><input type="checkbox" id="lkwReal"${real?' checked':''}>
+        <span><b>Real dice</b><small>Roll them on the table, as always. Left off, the
+        phone rolls them and everyone sees the same dice.</small></span></label>
+      <p class="dsec">Who is playing with you?</p>
       <p class="coords" style="margin:0 0 10px">Up to four others. Each of them plays
         on their own phone. Only one of you starts the game: it appears on the
         others’ phones, under Games &rsaquo; Going on.</p>
       <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox"
-        value="${esc(u.id)}"> ${pplWho(u)}</label>`).join('')}</div>
+        value="${esc(u.id)}"${had.has(u.id)?' checked':''}> ${pplWho(u)}</label>`).join('')}</div>
       <div class="pfoot"><button id="lkwCancel">Cancel</button>
         <button id="lkwGo" class="go">Next</button></div></div>`;
     document.body.appendChild(box);
@@ -13746,10 +13892,10 @@ function lkPickPlayers(){
     box.onclick=ev=>{ if(ev.target===box) done(null); };
     box.querySelector('#lkwCancel').onclick=()=>done(null);
     box.querySelector('#lkwGo').onclick=()=>{
-      const who=[...box.querySelectorAll('input:checked')].map(i=>i.value);
+      const who=[...box.querySelectorAll('.ppl input:checked')].map(i=>i.value);
       if(!who.length){ toast('Tick at least one person'); return; }
       if(who.length>4){ toast('Up to four others: Loxx is for 2 to 5 players'); return; }
-      done(who);
+      done({who, real:box.querySelector('#lkwReal').checked});
     };
   });
 }
@@ -13804,11 +13950,11 @@ function lkAlready(g){
     box.querySelector('#lkaNew').onclick=()=>done('new');
   });
 }
-async function lkNewGame(same){
+async function lkNewGame(same,realWas){
   if(!GAMES_READY){ toast('Loxx needs step 57 run in Supabase first'); return; }
   if(!USERS.length){ toast('Nobody else has an account yet'); return; }
-  const who=same||await lkPickPlayers(); if(!who) return;
-  const players=[ME.id].concat(who.filter(x=>x!==ME.id));
+  const pick=await lkPickPlayers(same!=null?{who:same, real:realWas!==false}:null); if(!pick) return;
+  const players=[ME.id].concat(pick.who.filter(x=>x!==ME.id));
   // One game, started by one of you (ML239). Each starting their own left
   // both phones waiting, each for the other, in two different games.
   await lkReload();
@@ -13817,12 +13963,17 @@ async function lkNewGame(same){
     const v=await lkAlready(dup); if(!v) return;
     if(v==='open'){ if(LK_CUR!=null) lkShut(); lkOpen(Number(dup.id)); return; }
   }
-  const first=await lkPickFirst(players); if(first==null) return;
-  const {data,error}=await sb.rpc('new_game',{players, first_seat:first});
+  const first=await lkPickFirst(players,pick.real?null:{title:'Who rolls first?',
+    note:'The phone rolls the dice, so pick anyone. They then go round in this order.'});
+  if(first==null) return;
+  // Real dice: step 57's new_game, as before. The phone's dice: step 62's new_loxx.
+  const {data,error}=pick.real?await sb.rpc('new_game',{players, first_seat:first})
+    :await sb.rpc('new_loxx',{players, first_seat:first, real_dice:false});
   if(error){
     console.error(error);
-    toast(/new_game|PGRST202/i.test((error.message||'')+(error.code||''))
-      ?'Loxx needs step 57 run in Supabase first':'Could not start the game');
+    const m=(error.message||'')+(error.code||'');
+    toast(!pick.real&&/new_loxx|PGRST202/i.test(m)?'The phone’s dice need step 62 run in Supabase first'
+      :/new_game|PGRST202/i.test(m)?'Loxx needs step 57 run in Supabase first':'Could not start the game');
     return;
   }
   const id=Number(data);
@@ -13933,11 +14084,17 @@ function lkStatus(g,me){
   const r=lkRoller(g), done=lkDoneThisRoll(g,me);
   const waiting=lkPlayers(g.id).filter(p=>!lkDoneThisRoll(g,p)&&p.user_id!==ME.id).map(p=>lkWho(p.user_id));
   if(done) return waiting.length?'Waiting for '+lkAnd(waiting):'Passing the dice on…';
+  // The phone's dice (ML203): short words, as the dice sit beside them.
+  if(lkNoDice(g)) return r===ME.id?'<b>Your roll.</b> Tap Roll.'
+    :'<b>'+esc(lkWho(r))+' is rolling.</b> Waiting for the dice.';
+  const v=lkDice(g);
   const s=lkSheet(me.sheet);
   const closing=LK_ROWS.filter(x=>lkClosed(g,x.c)&&!lkClosedBefore(g,x.c)&&!s.locked.includes(x.c))
     .map(x=>x.name.toLowerCase());
   const still=closing.length?' The '+lkAnd(closing)+' lock'+(closing.length>1?'s close':' closes')
     +' after this roll: you can still mark '+(closing.length>1?'them':closing[0])+' now.':'';
+  if(v) return (r===ME.id?'<b>Your roll.</b> White dice '+(v[0]+v[1])+', or a white and a colour.'
+    :'<b>'+esc(lkWho(r))+' is rolling.</b> White dice '+(v[0]+v[1])+': yours too.')+' Then Done.'+still;
   if(r===ME.id) return '<b>Your roll.</b> The white dice total in any row, a white and a colour in that colour’s row. Then Done.'+still;
   return '<b>'+esc(lkWho(r))+' is rolling.</b> The white dice total is yours too, in any row. Then Done.'+still;
 }
@@ -13957,19 +14114,23 @@ function lkPaint(){
   const turn=lkTurnMarks(s,g), done=lkDoneThisRoll(g,me), playing=g.status==='playing';
   const waiting=ps.filter(p=>!lkDoneThisRoll(g,p));
   const canCarryOn=playing&&done&&roller===ME.id&&waiting.length>0;
+  const real=lkReal(g), noDice=lkNoDice(g);
   const row=r=>{
     const order=lkNums(r), marked=s[r.c], last=marked.length?order.indexOf(marked[marked.length-1]):-1;
     // mineShut: you took its last number; held: and the lock is yours (ML240).
     const shutAll=lkClosedBefore(g,r.c), mineShut=s.locked.includes(r.c), shut=lkClosed(g,r.c)||mineShut;
     const held=myLocks.includes(r.c);
+    // The numbers the phone's dice allow, ringed (ML203).
+    const can=playing&&!done?lkDiceNums(g,r.c):[];
     return `<div class="lkrow${shut?' shut':''}" style="--rc:${r.bg};--ri:${r.ink};--rs:${r.soft};--rf:${r.fg}"
         data-lkrow="${r.c}" aria-label="${r.name} row, ${r.up?'2 up to 12':'12 down to 2'}">
       <span class="lkcount" title="Marks in this row">${lkRowCount(s,r.c,myLocks)}</span>
       ${order.map((n,i)=>{
         const on=marked.includes(n), now=on&&turn.some(m=>m[0]===r.c&&m[1]===n);
         const gone=!on&&(i<last||shutAll||mineShut);
-        return `<button class="lkn${on?' on':''}${now?' now':''}${gone?' gone':''}" data-lk="${r.c}:${n}"
-          aria-label="${r.name} ${n}${on?', marked':gone?', crossed out':''}"><span>${n}</span></button>`;
+        const hint=!on&&!gone&&can.includes(n)&&!lkWhyNot(g,s,r,n);
+        return `<button class="lkn${on?' on':''}${now?' now':''}${gone?' gone':''}${hint?' hint':''}" data-lk="${r.c}:${n}"
+          aria-label="${r.name} ${n}${on?', marked':gone?', crossed out':hint?', the dice allow it':''}"><span>${n}</span></button>`;
       }).join('')}
       <button class="lkgate${shut?' shut':''}${held?' mine':''}" data-lkgate="${r.c}"
         aria-label="${r.name} lock${held?', closed by you':shut?', closed':', open'}">${LK_GATES(shut)}</button>
@@ -13978,10 +14139,12 @@ function lkPaint(){
   st.innerHTML=`
     <div class="lkbar">
       <button class="lkback" id="lkBack">&lsaquo; Games</button>
+      ${playing&&!real?(noDice&&roller===ME.id
+        ?`<button class="lkroll" id="lkRoll" ${LK_ROLLING?'disabled':''}>${PD_LOGO} Roll</button>`:lkDiceHtml(g)):''}
       <div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>
       ${playing?`<button class="lkback lkundo" id="lkUndo" ${lkCanUndo(g,me,s)?'':'disabled'}
         aria-label="Undo last move: take back your newest mark on this roll">&#8630; Undo last move</button>`:''}
-      ${playing?`<button class="lkdone" id="lkDone" ${done?'disabled':''}>${done?'Done ✓':'Done'}</button>`:''}
+      ${playing?`<button class="lkdone" id="lkDone" ${done||noDice?'disabled':''}>${done?'Done ✓':'Done'}</button>`:''}
     </div>
     <div class="lkwho">${ps.map(p=>{
       const t=lkScore(lkSheet(p.sheet),lkLocksOf(g,p)).total, pen=lkSheet(p.sheet).pen;
@@ -14006,6 +14169,7 @@ function lkPaint(){
   $('lkBack').onclick=lkBackToList;
   const un=$('lkUndo'); if(un) un.onclick=lkUndo;
   const d=$('lkDone'); if(d) d.onclick=()=>lkDone(g.id);
+  const rl=$('lkRoll'); if(rl) rl.onclick=lkRollDice;
   const on=$('lkOn'); if(on) on.onclick=()=>lkCarryOn(g.id);
   st.querySelectorAll('[data-lk]').forEach(b=>b.onclick=()=>{
     const [c,n]=b.dataset.lk.split(':'); lkTap(c,Number(n)); });
@@ -14016,7 +14180,7 @@ function lkPaint(){
       ?'The '+r.name.toLowerCase()+' lock is closed'+(h?(h.user_id===ME.id?': it is yours':': it is '+lkWho(h.user_id)+'’s'):'')
       :'Five marks, then the '+(r.up?12:2)+', closes the '+r.name.toLowerCase()+' lock'); });
   const again=$('lkAgain');
-  if(again) again.onclick=()=>lkNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id));
+  if(again) again.onclick=()=>lkNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id),real);
   const clr=$('lkClear');
   if(clr) clr.onclick=()=>lkClearAway(g.id);
   const ob=$('lkOverBack'); if(ob) ob.onclick=lkBackToList;
@@ -14108,6 +14272,8 @@ async function lkFresh(g){
 async function lkTap(c,n){
   let g=lkGame(LK_CUR); const me=g&&lkMe(g.id); if(!me) return;
   const r=LK_ROWS.find(x=>x.c===c); if(!r) return;
+  // The phone's dice: nothing to mark until they are rolled (ML203).
+  if(lkNoDice(g)){ toast(lkMyRoll(g)?'Tap Roll first':'Wait for '+lkWho(lkRoller(g))+' to roll'); return; }
   const s=lkSheet(me.sheet);
   if(s.turn.no!==g.turn_no) s.turn={no:g.turn_no, marks:[], pen:false};
   // A penalty taken on this roll fixes its marks: no taking one back to
@@ -14218,6 +14384,7 @@ async function lkUndo(){
 
 async function lkDone(id){
   const g=lkGame(id), me=g&&lkMe(id); if(!me||g.status!=='playing') return;
+  if(lkNoDice(g)){ toast(lkMyRoll(g)?'Tap Roll first':'Wait for '+lkWho(lkRoller(g))+' to roll'); return; }
   const s=lkSheet(me.sheet);
   // On your own roll, a penalty for each of the two numbers not taken
   // (Barry's rule). Taken once: if Done then finds no signal, pressing it
@@ -16408,7 +16575,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.16.1';
+const APP_VERSION='2026.11.16.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -17174,7 +17341,7 @@ function renderOffers(){
 const FIELD_NAME={first_name:'First name',last_name:'Last name',
   given_names:'Given names',nickname:'Nickname',partner_name:'Partner\'s name',company:'Company',
   birth_date:'Born',death_date:'Died',address:'Address',address_2:'Address line 2',
-  town:'Town',county:'County',postcode:'Postcode',country:'Country',
+  town:'Town',county:'County',postcode:'Postcode',country:'Country',uk_part:'Part of the UK',
   boat_name:'Boat',boat_number:'Boat number',boat_notes:'Boat notes',
   job_title:'Job title',department:'Department',met_where:'Where we met',
   met_date:'When we met',what3words:'what3words',notes:'Notes',
@@ -18059,7 +18226,7 @@ function importGap(have,c){
   const fill=(k,word)=>{ if(c[k]&&!String(have[k]||'').trim()){ patch[k]=c[k]; if(word&&!what.includes(word)) what.push(word); } };
   fill('birth_date','a birthday');
   if(!['address','address_2','town','county','postcode'].some(k=>String(have[k]||'').trim()))
-    ['address','address_2','town','county','postcode','country'].forEach(k=>fill(k,'an address'));
+    ['address','address_2','town','county','postcode','country','uk_part'].forEach(k=>fill(k,'an address'));
   [['given_names'],['nickname'],['partner_name'],['job_title'],['department'],['notes']]
     .forEach(([k])=>fill(k,'other details'));
   return Object.keys(patch).length?{patch,what}:null;
@@ -18149,6 +18316,7 @@ async function doImport(){
   let added=0, failed=0, filled=0, notFilled=0;
 
   for(const rec of IMPORT_ROWS){
+    tidyCountry(rec);               // UK, Wales and so on as United Kingdom (ML271)
     const {_groups,...d}=rec;
     d.created_by=ME.id;
     if(!d.first_name&&!d.last_name&&!d.company){ failed++; continue; }
@@ -21564,6 +21732,9 @@ function finAccountRows(){
       <label class="ib">International number (IBAN)<input data-afield="${a.id}:iban"
         value="${esc(a.iban||'')}" placeholder="GB00 ABCD 0000 0000 0000 00"
         autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <label class="sw">SWIFT code (BIC)<input data-afield="${a.id}:swift"
+        value="${esc(a.swift||'')}" placeholder="ABCDGB22"
+        autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
     </div>
     ${shareRow(a)}${filesRow(a)}</div>`; }).join('')}
   <div class="setadd">
@@ -21600,7 +21771,11 @@ function ibanOk(v){
     m=(m*10+Number(ch))%97;
   return m===1;
 }
-const BANK_FMT={sort_code:fmtSortCode, account_number:fmtAccNo, iban:fmtIban};
+// SWIFT (BIC), ML266: capitals, no spaces. Four letters for the bank, two
+// for its country, two for the place, and three more for a branch, or not.
+const fmtSwift = v => String(v||'').replace(/\s+/g,'').toUpperCase();
+const swiftOk = v => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(fmtSwift(v));
+const BANK_FMT={sort_code:fmtSortCode, account_number:fmtAccNo, iban:fmtIban, swift:fmtSwift};
 
 /* Who else can see one account. Only its owner decides; everybody else is
    told who can see it and left at that. */
@@ -21769,14 +21944,22 @@ function wireFinance(){
     if(bank){ v=bank(v); el.value=v; if(!v) v=null; }
     const {error}=await sb.from(table).update({[field]:v}).eq('id',Number(id));
     if(error){
-      if(bank&&/sort_code|account_number|iban|PGRST204|42703/i.test((error.message||'')+(error.code||'')))
-        return fail(error,'Bank details need step 59 run in Supabase first');
+      if(bank&&/sort_code|account_number|iban|swift|PGRST204|42703/i.test((error.message||'')+(error.code||'')))
+        return fail(error,field==='swift'?'SWIFT codes need step 62 run in Supabase first'
+          :'Bank details need step 59 run in Supabase first');
       return fail(error,'Could not save that');
     }
     if(field==='sort_code'&&v&&!/^\d\d-\d\d-\d\d$/.test(v))
       toast('Saved. A UK sort code is six numbers, like 20-00-00');
     if(field==='iban'&&v&&!ibanOk(v))
       toast('Saved, but that IBAN doesn’t add up: worth checking it against the bank’s own paperwork');
+    if(field==='swift'&&v){
+      // The SWIFT code's 5th and 6th letters are the bank's country, as the IBAN's first two are.
+      const acc=ACCOUNTS.find(x=>Number(x.id)===Number(id)), ib=fmtSwift(acc&&acc.iban);
+      if(!swiftOk(v)) toast('Saved. A SWIFT code is 8 or 11 letters and numbers, like ABCDGB22');
+      else if(/^[A-Z]{2}/.test(ib)&&ib.slice(0,2)!==v.slice(4,6))
+        toast('Saved, but that SWIFT code is for '+v.slice(4,6)+' and the IBAN for '+ib.slice(0,2)+': worth checking');
+    }
     await loadMoney();
   };
 

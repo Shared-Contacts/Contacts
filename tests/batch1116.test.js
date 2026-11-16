@@ -36,8 +36,8 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
 
   // ---------------------------------------------------------------
   console.log('\nThis version');
-  ok('the app and version.json both say 2026.11.16.1', await ev(() => APP_VERSION) === '2026.11.16.1'
-    && VJ.version === '2026.11.16.1' && VJ.history[0].version === '2026.11.16.1' && VJ.history[0].changes.length === 5);
+  const V1116 = VJ.history.find(h => h.version === '2026.11.16.1');
+  ok('version.json still lists 2026.11.16.1, with its five changes', !!V1116 && V1116.changes.length === 5);
 
   // ---------------------------------------------------------------
   console.log('\nML264 Contacts: one name per country in Grouped');
@@ -48,7 +48,7 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
     && ['Aus', 'AUS', 'Australia'].every(x => countryName(x) === 'Australia')
     && ['USA', 'U.S.A.', 'US', 'United States of America', 'America'].every(x => countryName(x) === 'United States')));
   ok('anything else stays as typed (tidied of extra spaces), and nothing is No country', await ev(() =>
-    countryName('Wales') === 'Wales' && countryName('Isle Of Man') === 'Isle Of Man' && countryName(' New  Caledonia ') === 'New Caledonia'
+    countryName('Isle Of Man') === 'Isle Of Man' && countryName(' New  Caledonia ') === 'New Caledonia'
     && countryName('') === 'No country' && countryName(null) === 'No country' && countryName('  ') === 'No country'));
 
   const heads = () => ev(() => [...document.querySelectorAll('#list .countryhd')].map(b => {
@@ -65,11 +65,11 @@ const VJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));
   });
   await settle(150);
   ok('Family lists each country once, under its full name, with both spellings counted', JSON.stringify(await heads())
-    === JSON.stringify(['Australia:2', 'New Zealand:2', 'United Kingdom:3', 'Wales:1', 'No country:1']), JSON.stringify(await heads()));
+    === JSON.stringify(['Australia:2', 'New Zealand:2', 'United Kingdom:4', 'No country:1']), JSON.stringify(await heads()));
   await ev(() => { OPEN.add('g1|United Kingdom'); render(); }); await settle(150);
   const ukNames = await ev(() => [...document.querySelectorAll('#list li')].map(li => li.textContent).join(' | '));
-  ok('  United Kingdom opens to all three: the UK, the United Kingdom and the u.k. one', /Aardvark/.test(ukNames)
-    && /Badger/.test(ukNames) && /Ibis/.test(ukNames) && !/Coot|Dipper/.test(ukNames), ukNames.slice(0, 200));
+  ok('  United Kingdom opens to all four: the UK, the United Kingdom, the Wales and the u.k. one', /Aardvark/.test(ukNames)
+    && /Badger/.test(ukNames) && /Grebe/.test(ukNames) && /Ibis/.test(ukNames) && !/Coot|Dipper/.test(ukNames), ukNames.slice(0, 200));
   ok('  what each contact says is left alone', await ev(() => CONTACTS.find(c => c.id === 901).country === 'UK'
     && CONTACTS.find(c => c.id === 909).country === 'u.k.'));
   await ev(() => { const w = window.__was; CONTACTS = w.C; TAGS = w.T; VIEW = w.V; MODE = w.M; OPEN.clear(); render(); });

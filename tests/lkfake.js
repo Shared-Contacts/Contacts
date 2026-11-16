@@ -20,6 +20,28 @@ window.__lkFake = function(){
       ps.forEach((u, i) => P().push({ game_id: id, user_id: u, seat: i, sheet: {}, done_turn: 0 }));
       return { data: id, error: null };
     },
+    // Loxx with the phone's dice (step 62): the same rules as its functions.
+    new_loxx(a){
+      const r = fns.new_game(a); if (r.error) return r;
+      gm(r.data).dice = { real: a.real_dice !== false };
+      return r;
+    },
+    loxx_dice(a){
+      const g = gm(a.g); if (!g || !inG(a.g)) return bad('That game is not yours');
+      if (g.kind !== 'lockkeeper') return bad('That is not a game of Loxx');
+      if (!g.dice || g.dice.real !== false) return bad('This game is played with real dice');
+      if (g.status !== 'playing') return { data: 'ended', error: null };
+      if (a.at_turn !== g.turn_no) return { data: 'moved', error: null };
+      const me = P().find(p => p.game_id === a.g && p.user_id === who());
+      if (me.seat !== g.turn) return bad('It is not your roll');
+      if (Number(g.dice.at) === a.at_turn) return { data: 'rolled', error: null };
+      const v = (a.d || {}).v;
+      if (!Array.isArray(v) || v.length !== 6 || v.some(n => !(n >= 0 && n <= 6 && n === Math.floor(n)))) return bad('Six dice, each 1 to 6');
+      if (!v[0] || !v[1]) return bad('Both white dice are always rolled');
+      if (['red', 'yellow', 'green', 'blue'].some((c, i) => (g.closed[c] != null) !== (v[2 + i] === 0))) return bad('Only a colour whose lock has closed is left out');
+      g.dice = { real: false, v: v.slice(), at: a.at_turn };
+      return { data: 'ok', error: null };
+    },
     save_sheet(a){
       const p = P().find(x => x.game_id === a.g && x.user_id === who()), g = gm(a.g);
       if (!p || !g || g.status !== 'playing') return bad('That game is not running, or you are not in it');

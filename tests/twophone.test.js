@@ -7,7 +7,8 @@
 // (ML239): one shared game passes the dice correctly; each player starting a
 // game of their own left both phones waiting, each for the other, in two
 // different games. Also covers one holder per lock (ML240) and Done staying
-// greyed until everyone has tapped it (ML241).
+// greyed until everyone has tapped it (ML241), and, from 16 Nov 2026, Loxx
+// with the phone's dice against step 62's real SQL (ML203).
 //
 // Needs @electric-sql/pglite (npm install @electric-sql/pglite@0.2.17).
 // Without it this suite says it was skipped, rather than failing.
@@ -29,9 +30,9 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('app.uid', true),'')::uuid $$;
     create role authenticated; create role anon;
     create table profiles (id uuid primary key);
-    insert into profiles values ('${U.me}'), ('${U.sandra}');`);
-  await db.exec(fs.readFileSync(path.join(DB, 'contacts-step57.sql'), 'utf8'));
-  await db.exec(fs.readFileSync(path.join(DB, 'contacts-step58.sql'), 'utf8'));
+    insert into profiles values ('${U.me}'), ('${U.sandra}');
+    create table accounts (id bigserial primary key); create table contacts (id bigserial primary key, country text);`);
+  for (const n of [57, 58, 60, 62]) await db.exec(fs.readFileSync(path.join(DB, `contacts-step${n}.sql`), 'utf8'));
 
   const pages = {};
   const out = r => { const o = { ...r };
@@ -49,6 +50,8 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
         return { data: r.rows.map(out), error: null };
       }
       const sql = { new_game: ['select new_game($1::uuid[], $2) as v', a => [a.players.map(x => U[x] || x), a.first_seat]],
+        new_loxx: ['select new_loxx($1::uuid[], $2, $3) as v', a => [a.players.map(x => U[x] || x), a.first_seat, a.real_dice !== false]],
+        loxx_dice: ['select loxx_dice($1, $2, $3::jsonb) as v', a => [a.g, a.at_turn, JSON.stringify(a.d)]],
         save_sheet: ['select save_sheet($1, $2::jsonb) as v', a => [a.g, JSON.stringify(a.s)]],
         close_row: ['select close_row($1, $2) as v', a => [a.g, a.colour]],
         reopen_row: ['select reopen_row($1, $2) as v', a => [a.g, a.colour]],
@@ -114,10 +117,11 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   const scores = p => p.evaluate(() => [...document.querySelectorAll('.lkwho span b')].map(x => x.textContent).join());
   const holder = (p, c) => p.evaluate(c => { const h = lkHolder(lkGame(LK_CUR), c); return h ? h.user_id : null; }, c);
 
-  async function newGame(p, firstIsMe = true) {
+  async function newGame(p, phoneDice = false) {
     await p.evaluate(() => openGames()); await wait(p, 500);
     await p.click('#lkNew'); await wait(p, 300);
-    await p.evaluate(() => { $('lkWho').querySelector('input[type=checkbox]').click(); });
+    await p.evaluate(phoneDice => { $('lkWho').querySelector('.ppl input[type=checkbox]').click();
+      if (phoneDice) $('lkwReal').click(); }, phoneDice);
     await p.click('#lkwGo'); await wait(p, 600);
   }
   async function openFromList(p, id) {
@@ -207,6 +211,9 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
     && await S.evaluate(() => !!document.querySelector('.lkover')));
   await clearToasts(B);
   await S.click('#lkAgain'); await wait(S, 500);
+  ok('  Play again asks first, with Barry and Real dice ticked as last game (ML203)', await S.evaluate(() => !!$('lkWho')
+    && $('lkwReal').checked && [...$('lkWho').querySelectorAll('.ppl input:checked')].map(i => i.value).join() === 'me'));
+  await S.click('#lkwGo'); await wait(S, 500);
   if (await S.evaluate(() => !!$('lkAlready'))) { await S.click('#lkaNew'); await wait(S, 300); }
   ok('  while Sandra is choosing, Barry’s phone stays on the scores', await cur(B) === G2);
   await S.click('[data-lkfirst="0"]'); await wait(S, 800);
@@ -216,6 +223,68 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
     `${G3} / ${await cur(B)}`);
   ok('  telling him who started it', /Sandra has started a new game/.test(await toasts(B)), await toasts(B));
   ok('  Sandra is rolling, on both phones', /Sandra is rolling/.test(await status(B)) && await cur(S) === G3, await status(B));
+
+  // ML203 (16 Nov 2026).
+  console.log('\nThe phone’s dice: Barry starts a game with Real dice unticked');
+  const dbDice = async g => (await db.query(`select dice from games where id = ${Number(g)}`)).rows[0].dice;
+  const shown = p => p.evaluate(() => { const g = lkGame(LK_CUR); return lkDice(g); });
+  const hints = p => p.evaluate(() => [...document.querySelectorAll('.lkn.hint')].map(b => b.dataset.lk).sort().join());
+  await B.evaluate(() => lkBackToList()); await wait(B, 300);
+  await newGame(B, true);
+  if (await B.evaluate(() => !!$('lkAlready'))) { await B.click('#lkaNew'); await wait(B, 300); }
+  ok('who rolls first says the phone rolls the dice', await B.evaluate(() => /The phone rolls the dice/.test($('lkFirst').textContent)));
+  await B.click('[data-lkfirst="0"]'); await wait(B, 800);
+  const G4 = await cur(B);
+  ok('  a new game, saved as the phone’s dice', G4 !== G3 && (await dbDice(G4)).real === false, JSON.stringify(await dbDice(G4)));
+  ok('  Barry: Your roll. Tap Roll, with a Roll button, and Done greyed', /Your roll\. Tap Roll/.test(await status(B))
+    && await B.evaluate(() => !!$('lkRoll')) && await doneBtn(B) === 'greyed', await status(B));
+  await openFromList(S, G4);
+  ok('Sandra opens it: waiting for Barry’s dice, six empty dice, no Roll button, Done greyed', await cur(S) === G4
+    && /Barry is rolling\. Waiting for the dice/.test(await status(S)) && await S.evaluate(() => !$('lkRoll')
+    && document.querySelectorAll('.lkdie.blank').length === 6) && await doneBtn(S) === 'greyed', await status(S));
+  await tap(S, 'red', 7);
+  ok('  her tap on a number before the roll says to wait', /Wait for Barry to roll/.test(await toasts(S))
+    && await S.evaluate(() => lkSheet(lkMe(LK_CUR).sheet).red.length) === 0, await toasts(S));
+  await tap(B, 'red', 7);
+  ok('  and Barry’s says Tap Roll first', /Tap Roll first/.test(await toasts(B)), await toasts(B));
+  const sneak = await S.evaluate(g => sb.rpc('loxx_dice', { g, at_turn: 1, d: { v: [6, 6, 6, 6, 6, 6] } }), G4);
+  ok('  Sandra cannot roll Barry’s dice for him', !!sneak.error && /not your roll/.test(sneak.error.message), JSON.stringify(sneak));
+
+  await B.click('#lkRoll'); await both(900);
+  const v = await shown(B), W = v ? v[0] + v[1] : 0;
+  ok('Barry taps Roll: six dice, each 1 to 6, on his phone and saved', !!v && v.length === 6 && v.every(n => n >= 1 && n <= 6)
+    && JSON.stringify((await dbDice(G4)).v) === JSON.stringify(v), JSON.stringify(v));
+  ok('  Sandra sees the very same dice, without doing anything', JSON.stringify(await shown(S)) === JSON.stringify(v)
+    && await S.evaluate(() => document.querySelectorAll('#lkDice .lkdie:not(.off)').length) === 6, JSON.stringify(await shown(S)));
+  ok('  her words give the white dice total, as hers too', new RegExp('White dice ' + W + ': yours too').test(await status(S)), await status(S));
+  ok('  her ringed numbers: the white total in each row, and nothing else', await hints(S)
+    === ['red', 'yellow', 'green', 'blue'].map(c => c + ':' + W).sort().join(), await hints(S));
+  const mine = ['red', 'yellow', 'green', 'blue'].flatMap((c, i) => [W, v[0] + v[2 + i], v[1] + v[2 + i]].map(n => c + ':' + n));
+  ok('  Barry’s: the white total, and each white with each colour in its own row', await hints(B)
+    === [...new Set(mine)].sort().join(), await hints(B) + ' / ' + [...new Set(mine)].sort().join());
+  ok('  both phones’ Done ready now, and no Roll button left', await doneBtn(B) === 'ready' && await doneBtn(S) === 'ready'
+    && await B.evaluate(() => !$('lkRoll')));
+  await clearToasts(B);
+  await B.evaluate(() => lkRollDice()); await wait(B, 400);
+  ok('  rolling again is refused: the dice are out for this roll', /dice are out/.test(await toasts(B))
+    && JSON.stringify((await dbDice(G4)).v) === JSON.stringify(v), await toasts(B));
+  await tap(S, 'red', W); await tap(B, 'yellow', W);
+  ok('Both mark the white total (nothing stops another number, as with real dice)', await S.evaluate(W =>
+    lkSheet(lkMe(LK_CUR).sheet).red.includes(W), W) && await B.evaluate(W => lkSheet(lkMe(LK_CUR).sheet).yellow.includes(W), W));
+  await S.click('#lkDone'); await wait(S, 300);
+  B.asked.length = 0;
+  await B.click('#lkDone'); await both(900);
+  ok('  Done on both: Sandra’s roll, her Roll button, and Barry waiting for her dice', /Your roll\. Tap Roll/.test(await status(S))
+    && await S.evaluate(() => !!$('lkRoll')) && /Sandra is rolling\. Waiting for the dice/.test(await status(B))
+    && !(await shown(B)), await status(S) + ' / ' + await status(B));
+  await S.click('#lkRoll'); await both(900);
+  ok('  she rolls, and Barry sees her dice', !!(await shown(S)) && JSON.stringify(await shown(B)) === JSON.stringify(await shown(S))
+    && (await dbDice(G4)).at === 2, JSON.stringify(await dbDice(G4)));
+  await S.click('#lkStop'); await both(1000);
+  await S.click('#lkAgain'); await wait(S, 500);
+  ok('Play again after it: Real dice left unticked, as last game', await S.evaluate(() => !!$('lkWho') && !$('lkwReal').checked
+    && [...$('lkWho').querySelectorAll('.ppl input:checked')].map(i => i.value).join() === 'me'));
+  await S.click('#lkwCancel'); await wait(S, 200);
 
   console.log('\nErrors: ' + (errors.length ? errors.join('\n') : 'none'));
   ok('no page errors on either phone', errors.length === 0, errors.join(' | '));

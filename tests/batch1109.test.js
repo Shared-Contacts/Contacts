@@ -82,8 +82,9 @@ const NAMES = ['Barclays Everyday Saver', 'Barclays ISA Issue 1', 'Barclays BBA 
   // Less the ▾ that folds it away (ML244, 2026.11.10.2).
   ok('  on a line of its own, nearly the width of the box', box.nameW >= box.rowW - 110 && box.groupTop > box.nameTop + 20, JSON.stringify(box));
   const labels = await ev(() => [...document.querySelectorAll('[data-hm="acc:1"] .accbank label')].map(l => l.firstChild.textContent.trim()));
-  ok('three new boxes: Sort code, Account number, International number (IBAN)',
-    labels.join('|') === 'Sort code|Account number|International number (IBAN)', labels.join('|'));
+  // Since 2026.11.16.2 (ML266) the SWIFT code follows the IBAN.
+  ok('three new boxes: Sort code, Account number, International number (IBAN), and since step 62 the SWIFT code',
+    labels.join('|') === 'Sort code|Account number|International number (IBAN)|SWIFT code (BIC)', labels.join('|'));
   ok('  a sort code already saved shows', box.sc === '20-00-00', box.sc);
 
   const put = async (field, id, v) => { await clearToasts(); await clear();

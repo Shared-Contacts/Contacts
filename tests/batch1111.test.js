@@ -409,7 +409,7 @@ const VCF_GAPS = ['BEGIN:VCARD', 'VERSION:3.0', 'N:Deal;Dickie;;;', 'FN:Dickie D
   ok('  both emails, but not the display name', JSON.stringify(C.emails) === JSON.stringify([{ label: 'Personal', value: 'cara@example.org' },
     { label: 'Personal', value: 'cara.work@example.org' }]), JSON.stringify(C.emails));
   ok('  the home address rather than the office', C.address === '2 Home St' && C.town === 'Middlewich' && C.postcode === 'CW10 9AA'
-    && C.county === 'Cheshire' && C.country === 'UK', JSON.stringify(C));
+    && C.county === 'Cheshire' && C.country === 'United Kingdom', JSON.stringify(C));   // UK in the file: United Kingdom since ML271
   ok('  an American date read the American way, and the web page', C.birth_date === '1980-04-23'
     && JSON.stringify(C.websites) === JSON.stringify([{ label: 'Website', value: 'www.example.com' }]), JSON.stringify(C));
   const dates = await ev(() => ['1985-03-12', '19850312', '--03-12', '0/0/00', '3/4/1985', '4/23/1980', '12 March 1985',

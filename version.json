@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.16.2",
+  "version": "2026.11.16.3",
   "history": [
+    {
+      "version": "2026.11.16.3",
+      "changes": [
+        "Recipes: What can I make? Type what you have in, and see your recipes and ideas from TheMealDB that use it, with what else each needs."
+      ]
+    },
     {
       "version": "2026.11.16.2",
       "changes": [

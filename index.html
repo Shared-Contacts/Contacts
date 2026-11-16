@@ -1625,6 +1625,11 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;color:inherit}
 .idcard img{width:100%;aspect-ratio:1;object-fit:cover;background:#F0EEE7}
 .idcard span{padding:8px 10px;font-weight:600;color:var(--hull);overflow-wrap:anywhere}
+/* What can I make? (ML275): what each recipe uses, and what else it needs */
+.rcpwhat .rcpcanfit{color:var(--ink);font-size:14px}
+.rcpcanfit em,.idcard small em{font-style:normal;font-weight:700;color:var(--hull)}
+.idcard small{padding:0 10px 9px;margin-top:-4px;font-size:13px;line-height:1.3;color:var(--muted);overflow-wrap:anywhere}
+.rcpcan .mqrow .btn.primary{color:#F2EFE4}
 .idings{margin:6px 0 10px;padding-left:20px;font-size:15px}
 .lnked .rcpcover{max-height:28vh}
 .cookcount{font-size:15px;min-width:56px;text-align:right}
@@ -5720,6 +5725,12 @@ function openHelp(where){
   will not let their recipes be read; then the title and the link are saved and you can
   add the rest. <strong>Ideas</strong> shows recipes from TheMealDB, a free collection,
   without leaving the app.</p>
+  <p><strong>What can I make?</strong> finds recipes for what you have in. Type a few
+  things, with commas between (chicken, leeks, cream), and press Find. Your own recipes
+  that use any of them come first, the ones needing least else at the top, then ideas
+  from TheMealDB. Each says which of your things it uses and what else it needs; what
+  is usually in your cupboard (Settings &rsaquo; Recipes) counts as had. Tap one to
+  open it; an idea can go into To try. Back to all recipes puts the list back.</p>
   <p><strong>From a book</strong> copies a recipe from a cookery book, a magazine or a
   printed page. Google Lens on your phone reads the words off the page; the app sorts
   them into the title, ingredients and steps for you to check before saving.</p>
@@ -11127,7 +11138,7 @@ function wireLinkSettings(){
    recipes themselves live in the recipes table.
    ============================================================ */
 let RECIPES=[], RCP_WHY='', RCP_LOADED=false;   // RCP_WHY is 'notset' until step 43 is run
-const RCP={q:'', cat:'', sort:'az', hidden:false};
+const RCP={q:'', cat:'', sort:'az', hidden:false, can:null};
 let RCP_CUR=null, RCP_SERVES=null, RCP_TICK=new Set();
 const RCP_CATS_DEFAULT=['Breakfast','Soups','Mains','Puddings','Baking','Sides','Salads','Drinks'];
 const RCP_CUPBOARD_DEFAULT=['salt','pepper','oil','water'];
@@ -11313,7 +11324,9 @@ function rcpShown(){
   return rows.sort(by[RCP.sort]||az);
 }
 
-function rcpRow(r){
+// fit: What can I make?'s line (ML275). Lists pass rcpRow to map, so
+// anything but words is ignored.
+function rcpRow(r,fit){
   const pic=rcpPic(arr(r.photos)[0]);
   const bits=[arr(r.categories).join(', '), rcpTimes(r)].filter(Boolean).join(' · ');
   const who=r.to_try ? 'from '+(r.source_name||linkHost(r.source_url)||'the web')
@@ -11324,7 +11337,8 @@ function rcpRow(r){
       :'<span class="rcpnopic" aria-hidden="true">&#127869;</span>'}
     <span class="rcpwhat"><b>${rcpFav(r)?'<span class="rcpstar" aria-label="My favourite">&#9733;</span> ':''}${esc(r.title)}</b>
       ${bits?`<span>${esc(bits)}</span>`:''}
-      ${who?`<span class="rcpwho">${esc(who)}</span>`:''}</span></button>`;
+      ${who?`<span class="rcpwho">${esc(who)}</span>`:''}
+      ${typeof fit==='string'&&fit?`<span class="rcpcanfit">${fit}</span>`:''}</span></button>`;
 }
 
 function renderRecipes(){
@@ -11345,8 +11359,9 @@ function renderRecipes(){
         <button class="btn" id="rcpBook">From a book</button></span>
       <span class="rcptwo"><button class="btn" id="rcpFind">Find new recipes</button>
         <button class="btn" id="rcpIdeas">Ideas</button></span>
-      <span class="rcptwo"><button class="btn" id="rcpWeek">&#128197; Week&rsquo;s menu</button></span></div>
-    ${pile.length?`<p class="dsec">To try<span class="lcount">${pile.length}</span></p>
+      <span class="rcptwo"><button class="btn" id="rcpWeek">&#128197; Week&rsquo;s menu</button>
+        <button class="btn" id="rcpCan">What can I make?</button></span></div>
+    ${RCP.can?canHtml():`${pile.length?`<p class="dsec">To try<span class="lcount">${pile.length}</span></p>
       <div class="card">${pile.map(rcpRow).join('')}</div>`:''}
     <div class="card msearch"><div class="mqrow">
       <input id="rcpQ" type="search" enterkeyhint="search" autocomplete="off"
@@ -11361,8 +11376,8 @@ function renderRecipes(){
     <div id="rcpList"></div>
     ${hid.length?`<p class="coords" style="text-align:center;margin:4px 0 18px">
       <button class="linkbtn" id="rcpShowHid">${RCP.hidden?'Leave out':'Show'} the ${hid.length}
-      you chose not to see</button></p>`:''}`;
-  paintRecipeList();
+      you chose not to see</button></p>`:''}`}`;
+  if(RCP.can) paintCan(); else paintRecipeList();
   body.scrollTop=y;
 }
 
@@ -11403,6 +11418,12 @@ $('rcpBody').addEventListener('click',ev=>{
   if(ev.target.closest('#rcpBook')){ fromBook(); return; }
   if(ev.target.closest('#rcpIdeas')){ openIdeas(); return; }
   if(ev.target.closest('#rcpShowHid')){ RCP.hidden=!RCP.hidden; renderRecipes(); return; }
+  if(ev.target.closest('#rcpCan')){ canOpen(); return; }
+  if(ev.target.closest('#rcpCanShut')){ RCP.can=null; renderRecipes(); $('rcpBody').scrollTop=0; return; }
+  if(ev.target.closest('#rcpCanGo,#rcpCanAgain')){ canFind(); return; }
+  const ci=ev.target.closest('[data-canidea]');
+  if(ci){ const x=RCP.can&&RCP.can.mdb.list.find(v=>v.m.idMeal===ci.dataset.canidea);
+    showIdea(ci.dataset.canidea, x&&x.m.strInstructions?x.m:null); return; }
   const c=ev.target.closest('[data-rcat]');
   if(c){ RCP.cat=c.dataset.rcat; renderRecipes(); return; }
   const so=ev.target.closest('[data-rsort]');
@@ -11410,10 +11431,146 @@ $('rcpBody').addEventListener('click',ev=>{
 });
 $('rcpBody').addEventListener('input',ev=>{
   if(ev.target.id==='rcpQ'){ RCP.q=ev.target.value; paintRecipeList(); }
+  if(ev.target.id==='rcpCanQ'&&RCP.can) RCP.can.text=ev.target.value;
 });
 $('rcpBody').addEventListener('keydown',ev=>{
   if(ev.target.id==='rcpQ'&&ev.key==='Enter'){ ev.preventDefault(); ev.target.blur(); }
+  if(ev.target.id==='rcpCanQ'&&ev.key==='Enter'){ ev.preventDefault(); canFind(); }
 });
+
+/* ---------- What can I make? (ML275) ----------
+   Type what you have in. Your own recipes that use any of it come first,
+   the ones needing least else at the top, then ideas from TheMealDB. Each
+   says what of yours it uses and what else it needs; what is usually in
+   your cupboard (Settings) counts as had. TheMealDB's free version looks up
+   one ingredient at a time, so each is asked for on its own, in both its
+   forms (it keeps tomato and tomatoes, egg and eggs, apart), and the
+   answers put together, the most of yours used first. */
+let CAN_SEQ=0;
+// One word made singular, the same way for what you type and for the
+// recipe, so leeks finds leek and tomatoes finds tomato.
+function canSing(w){
+  if(w.length>4&&/(oes|ches|shes|xes|sses)$/.test(w)) return w.slice(0,-2);
+  if(w.length>3&&/[^aeiou]ies$/.test(w)) return w.slice(0,-3)+'y';
+  if(w.length>3&&/s$/.test(w)&&!/ss$/.test(w)) return w.slice(0,-1);
+  return w;
+}
+const canWords = s => String(s||'').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(canSing);
+// Whether an ingredient uses something you have: its words, in order,
+// somewhere in the name. Chicken finds chicken thighs, but not chickpeas,
+// nor something made from it: chicken stock, tomato puree, cream cheese.
+const CAN_MADE=new Set(['stock','cube','puree','paste','ketchup','sauce','gravy','powder','granule',
+  'broth','bouillon','soup','noodle','cheese','crisp','jam','seasoning','essence','extract','flavouring']);
+function canUses(name,item){
+  const n=canWords(name), t=canWords(item);
+  if(!t.length||t.length>n.length) return false;
+  for(let i=0;i+t.length<=n.length;i++)
+    if(t.every((w,j)=>n[i+j]===w)&&!CAN_MADE.has(n[i+t.length])) return true;
+  return false;
+}
+// What you typed, as a list: commas, "and" or new lines between. Up to eight.
+function canItems(text){
+  const seen=new Set();
+  return String(text||'').split(/[,;\n&+]|\band\b/i).map(x=>x.trim().replace(/\s+/g,' '))
+    .filter(x=>{ const k=canWords(x).join(' '); return k&&!seen.has(k)&&seen.add(k); }).slice(0,8);
+}
+// How a recipe fits: which of your things it uses, and what else it needs
+// (headings and the cupboard left out).
+function canFit(ings,items){
+  const used=new Set(), need=new Map();
+  arr(ings).forEach(i=>{
+    if(!i||i.head) return;
+    const name=shopName(i); if(!name) return;
+    const hit=items.filter(t=>canUses(name,t));
+    hit.forEach(t=>used.add(t));
+    if(!hit.length&&!inCupboard(i)&&!need.has(name.toLowerCase())) need.set(name.toLowerCase(),name);
+  });
+  return {used:items.filter(t=>used.has(t)), need:[...need.values()]};
+}
+const canLine = f => 'Uses '+esc(lkAnd(f.used))+'. '+(f.need==null?''
+  :f.need.length?'Needs '+f.need.length+' more: '+esc(f.need.join(', ')):'<em>You have everything</em>');
+// Your recipes, and those in To try, that use any of what you have.
+function canMine(items){
+  return rcpVisible().concat(rcpPile()).map(r=>({r, ...canFit(r.ingredients,items)}))
+    .filter(x=>x.used.length)
+    .sort((a,b)=>a.need.length-b.need.length||b.used.length-a.used.length
+      ||String(a.r.title).localeCompare(String(b.r.title),'en',{sensitivity:'base'}));
+}
+// The forms TheMealDB is asked for: as typed, singular and plural.
+function canForms(item){
+  const w=item.toLowerCase().trim().replace(/\s+/g,' ');
+  const ws=w.split(' '), last=canSing(ws.pop());
+  const one=ws.concat(last).join(' ');
+  const many=ws.concat(/(o|ch|sh|x|s)$/.test(last)?last+'es':/[^aeiou]y$/.test(last)?last.slice(0,-1)+'ies':last+'s').join(' ');
+  return [...new Set([w,one,many])];
+}
+async function canMealDb(items){
+  const asks=items.slice(0,6).flatMap(t=>canForms(t).map(f=>({t,f})));
+  const got=await Promise.allSettled(asks.map(a=>mealGet('filter.php?i='+encodeURIComponent(a.f.replace(/ /g,'_')))));
+  if(got.every(g=>g.status==='rejected')) throw got[0].reason||new Error('TheMealDB');
+  const score=new Map();
+  got.forEach((g,i)=>{ if(g.status!=='fulfilled') return;
+    arr(g.value&&g.value.meals).forEach(m=>{ if(!m||!m.idMeal) return;
+      const x=score.get(m.idMeal)||{m, used:new Set()}; x.used.add(asks[i].t); score.set(m.idMeal,x); }); });
+  const top=[...score.values()].sort((a,b)=>b.used.size-a.used.size
+    ||String(a.m.strMeal).localeCompare(String(b.m.strMeal))).slice(0,12);
+  // The whole of each, to say what else it needs.
+  const full=await Promise.allSettled(top.map(x=>mealGet('lookup.php?i='+encodeURIComponent(x.m.idMeal))));
+  return top.map((x,i)=>{
+    const m=full[i].status==='fulfilled'&&arr(full[i].value&&full[i].value.meals)[0];
+    const had=items.filter(t=>x.used.has(t));
+    if(!m) return {m:x.m, used:had, need:null};
+    const f=canFit(rcpFromMeal(m).ingredients,items);
+    return {m, used:items.filter(t=>had.includes(t)||f.used.includes(t)), need:f.need};
+  }).sort((a,b)=>(a.need==null)-(b.need==null)||(a.need&&b.need?a.need.length-b.need.length:0)
+    ||b.used.length-a.used.length);
+}
+function canOpen(){
+  RCP.can={text:'', items:[], mdb:{state:'', list:[]}};
+  renderRecipes(); $('rcpBody').scrollTop=0;
+  const q=$('rcpCanQ'); if(q) q.focus();
+}
+function canHtml(){
+  return `<div class="card msearch rcpcan">
+      <p class="dsec" style="padding-top:0">What can I make?</p>
+      <p class="coords" style="margin:0 0 8px">Type what you have, with commas between.
+        What is usually in your cupboard counts too.</p>
+      <div class="mqrow"><input id="rcpCanQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="e.g. chicken, leeks, cream" value="${esc(RCP.can.text)}" aria-label="What you have">
+        <button class="btn primary" id="rcpCanGo">Find</button></div>
+      <p class="coords" style="margin:8px 0 0;text-align:right"><button class="linkbtn" id="rcpCanShut">Back to all recipes</button></p></div>
+    <div id="rcpCanList"></div>`;
+}
+function paintCan(){
+  const box=$('rcpCanList'), c=RCP.can; if(!box||!c) return;
+  if(!c.items.length){ box.innerHTML=''; return; }
+  const note=t=>`<div class="card"><div class="field"><dd style="color:var(--muted)">${t}</dd></div></div>`;
+  const mine=canMine(c.items), d=c.mdb;
+  box.innerHTML=`<p class="dsec">Your recipes<span class="lcount">${mine.length}</span></p>
+    ${mine.length?`<div class="card">${mine.map(x=>rcpRow(x.r,canLine(x))).join('')}</div>`
+      :note('None of your recipes use '+esc(lkAnd(c.items))+'.')}
+    <p class="dsec">Ideas from TheMealDB${d.state==='ok'?`<span class="lcount">${d.list.length}</span>`:''}</p>
+    ${d.state==='loading'?note('Asking TheMealDB…')
+      :d.state==='fail'?note('Could not reach TheMealDB just now. Your own recipes above are all there; '
+        +'check your signal and <button class="linkbtn" id="rcpCanAgain">try again</button>.')
+      :d.state==='none'?note('TheMealDB has nothing with '+esc(lkAnd(c.items.slice(0,6)))+'.')
+      :`<div class="idgrid">${d.list.map(x=>`<button class="idcard" data-canidea="${esc(x.m.idMeal)}">
+        <img src="${esc(x.m.strMealThumb?x.m.strMealThumb+'/preview':'')}" alt="" loading="lazy">
+        <span>${esc(x.m.strMeal)}</span><small>${canLine(x)}</small></button>`).join('')}</div>`}`;
+}
+async function canFind(){
+  const c=RCP.can; if(!c) return;
+  const q=$('rcpCanQ'); if(q){ c.text=q.value; q.blur(); }
+  c.items=canItems(c.text);
+  if(!c.items.length){ toast('Type one or more things you have, with commas between'); paintCan(); return; }
+  const seq=++CAN_SEQ;
+  c.mdb={state:'loading', list:[]}; paintCan();
+  let mdb;
+  try{ const list=await canMealDb(c.items); mdb={state:list.length?'ok':'none', list}; }
+  catch(e){ console.warn('What can I make?',e); mdb={state:'fail', list:[]}; }
+  if(seq!==CAN_SEQ||RCP.can!==c) return;
+  c.mdb=mdb; paintCan();
+}
 
 /* ---------- one recipe ---------- */
 function rcpFactor(r){
@@ -12326,8 +12483,8 @@ function rcpFromMeal(m){
     source_name:'TheMealDB'};
 }
 
-async function showIdea(id){
-  let m=IDEAS.list.find(x=>x.idMeal===id);
+async function showIdea(id,given){
+  let m=given||IDEAS.list.find(x=>x.idMeal===id);
   if(!m||!m.strInstructions){
     toast('Fetching it…');
     try{ m=arr((await mealGet('lookup.php?i='+encodeURIComponent(id))).meals)[0]; }
@@ -16575,7 +16732,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.16.2';
+const APP_VERSION='2026.11.16.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

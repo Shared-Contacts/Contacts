@@ -25,6 +25,11 @@ const MEALS = {
   4: { strMeal: 'Tomato salad', ings: [['Tomato', '4'], ['Basil', 'handful']] },
   5: { strMeal: 'Tomatoes on toast', ings: [['Tomatoes', '2'], ['Bread', '2 slices']] } };
 const FILTER = { chicken: [1, 3], leek: [1, 2], tomato: [4], tomatoes: [5] };
+// Thirty rice dishes and three bean pots, for Show more and the 24 at most.
+for (let i = 0; i < 30; i++) MEALS[100 + i] = { strMeal: 'Rice dish ' + String(i + 1).padStart(2, '0'), ings: [['Rice', '200g'], ['Onion', '1']] };
+FILTER.rice = Array.from({ length: 30 }, (_, i) => 100 + i);
+[140, 141, 142].forEach((id, i) => { MEALS[id] = { strMeal: 'Bean pot ' + (i + 1), ings: [['Beans', '1 tin'], ['Garlic', '2 cloves']] }; });
+FILTER.beans = [140, 141, 142];
 const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.strMeal, strCategory: 'Chicken', strArea: 'British',
   strInstructions: 'Cook it.\r\nServe.', strMealThumb: 'https://www.themealdb.com/images/media/meals/' + id + '.jpg', strSource: '' };
   m.ings.forEach(([w, q], i) => { o['strIngredient' + (i + 1)] = w; o['strMeasure' + (i + 1)] = q; }); return o; };
@@ -60,10 +65,11 @@ const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.s
   // ---------------------------------------------------------------
   console.log('\nThis version');
   const appVer = await ev(() => APP_VERSION);
-  const V = VJ.history.find(h => h.version === '2026.11.16.3'), V4 = VJ.history.find(h => h.version === '2026.11.16.4');
-  ok('2026.11.16.3 and 2026.11.16.4 are in version.json, and the page is the newest', !!V && !!V4 && VJ.version === appVer && VJ.history[0].version === appVer, appVer);
-  ok('  saying what changed, in lines short enough', !!V && !!V4 && /What can I make\?/.test(V.changes.join(' ')) && /in gold/.test(V4.changes.join(' '))
-    && V.changes.concat(V4.changes).every(c => c.length < 160));
+  const V = VJ.history.find(h => h.version === '2026.11.16.3'), V4 = VJ.history.find(h => h.version === '2026.11.16.4'),
+    V5 = VJ.history.find(h => h.version === '2026.11.16.5');
+  ok('2026.11.16.3, .4 and .5 are in version.json, and the page is the newest', !!V && !!V4 && !!V5 && VJ.version === appVer && VJ.history[0].version === appVer, appVer);
+  ok('  saying what changed, in lines short enough', !!V && !!V4 && !!V5 && /What can I make\?/.test(V.changes.join(' ')) && /in gold/.test(V4.changes.join(' '))
+    && /Show more/.test(V5.changes.join(' ')) && V.changes.concat(V4.changes, V5.changes).every(c => c.length < 160));
 
   // ---------------------------------------------------------------
   console.log('\nReading what you typed, and matching it');
@@ -163,6 +169,43 @@ const full = id => { const m = MEALS[id], o = { idMeal: String(id), strMeal: m.s
   ok('one thing typed: nothing picked out, as every one uses it', await ev(() => !document.querySelector('#rcpCanList .canall')
     && document.querySelector('#rcpCanList [data-ropen="504"] .rcpcanfit').textContent.trim() === 'Uses chicken. You have everything'
     && document.querySelectorAll('#rcpCanList strong.canhit').length > 0));
+
+  console.log('\nThe first thing typed leads, and Show more');
+  await p.fill('#rcpCanQ', 'leeks, chicken'); await p.click('#rcpCanGo'); await settle(800);
+  const lead = await ev(() => ({ mine: [...document.querySelectorAll('#rcpCanList [data-ropen]')].map(x => x.dataset.ropen).join(),
+    ideas: [...document.querySelectorAll('#rcpCanList [data-canidea] span')].map(x => x.textContent).join() }));
+  ok('leeks typed first: after the pie, the leek ones come before Roast chicken, though it needs nothing more', lead.mine === '501,505,502,504', JSON.stringify(lead));
+  ok('  and in TheMealDB\'s ideas: Leek pie, Leek soup, then Roast bird', lead.ideas === 'Leek pie,Leek soup,Roast bird', lead.ideas);
+  ok('  with so few, no Show more', await ev(() => !document.querySelector('[data-canmore]')));
+  await ev(rs => { RECIPES.push(...rs); }, [1, 2, 3, 4, 5, 6, 7].map(i => R(520 + i, 'me', 'Rice bowl ' + i, ['rice', 'peas'])));
+  asked = [];
+  await p.fill('#rcpCanQ', 'rice, beans'); await p.click('#rcpCanGo'); await settle(1200);
+  const cut = await ev(() => ({ mine: document.querySelectorAll('#rcpCanList [data-ropen]').length,
+    ideas: [...document.querySelectorAll('#rcpCanList [data-canidea] span')].map(x => x.textContent),
+    btns: [...document.querySelectorAll('[data-canmore]')].map(b => b.dataset.canmore + ':' + b.textContent.trim()).join(' | '),
+    heads: $('rcpCanList').textContent.replace(/\s+/g, ' ') }));
+  ok('seven of yours use just one thing: five show, then Show 2 more', cut.mine === 5 && /mine:Show 2 more/.test(cut.btns), cut.mine + ' ' + cut.btns);
+  const looked = asked.filter(u => /lookup/.test(u));
+  ok('TheMealDB: 24 looked at, at most, the bean pots kept in though there are 30 rice dishes', looked.length === 24
+    && [140, 141, 142].every(i => looked.includes('lookup.php?i=' + i)), looked.length);
+  ok('  five show, rice first as it was typed first, then Show 19 more', cut.ideas.join() === 'Rice dish 01,Rice dish 02,Rice dish 03,Rice dish 04,Rice dish 05'
+    && /mdb:Show 19 more/.test(cut.btns), JSON.stringify(cut));
+  ok('  the headings still count them all', /Your recipes ?7/.test(cut.heads) && /Ideas from TheMealDB ?24/.test(cut.heads), cut.heads.slice(0, 200));
+  await p.click('[data-canmore="mine"]'); await settle(300);
+  ok('Show more on yours brings the other two, and goes', await ev(() => document.querySelectorAll('#rcpCanList [data-ropen]').length === 7
+    && !document.querySelector('[data-canmore="mine"]') && !!document.querySelector('[data-canmore="mdb"]')));
+  await p.click('[data-canmore="mdb"]'); await settle(300);
+  const every = await ev(() => [...document.querySelectorAll('#rcpCanList [data-canidea] span')].map(x => x.textContent)),
+    gone = await ev(() => !document.querySelector('[data-canmore]'));
+  ok('  and on the ideas, all 24, the three bean pots last', every.length === 24 && every.slice(-3).join() === 'Bean pot 1,Bean pot 2,Bean pot 3'
+    && gone, JSON.stringify(every.slice(-4)));
+  await p.fill('#rcpCanQ', 'rice'); await p.click('#rcpCanGo'); await settle(1000);
+  ok('a new Find cuts both lists to five again', await ev(() => document.querySelectorAll('#rcpCanList [data-ropen]').length === 5
+    && document.querySelectorAll('#rcpCanList [data-canidea]').length === 5 && document.querySelectorAll('[data-canmore]').length === 2));
+  await p.setViewportSize({ width: 320, height: 700 }); await settle(300);
+  ok('  at 320 wide, the Show more buttons fit', await ev(() => document.documentElement.scrollWidth <= innerWidth
+    && [...document.querySelectorAll('[data-canmore]')].every(x => x.getBoundingClientRect().right <= innerWidth)));
+  await p.setViewportSize({ width: 390, height: 844 }); await settle(200);
 
   console.log('\nNo signal, and nothing found');
   down = true;

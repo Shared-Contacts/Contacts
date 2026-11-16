@@ -67,7 +67,8 @@ const CORS = { 'access-control-allow-origin': '*' };
     MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }], hidden: ['books'] } };
     loadTiles(); const binned = TILES.map(t => t.dest);
     MY_PROFILE = was; TILES = keep;
-    return got[got.length - 1] === 'books' && !binned.includes('books');
+    // Books was last until TV/Movies came after it (16 Nov 2026).
+    return got.indexOf('books') > got.indexOf('settings') && !binned.includes('books');
   }));
   ok('it has a colour of its own from the palette', await ev(() => TILE_COLOURS.includes(TILE_DEFAULT_COLOUR.books)));
   ok('it is a place in the menu', await ev(() => AREAS.books && AREAS.books.title === 'Books'

@@ -86,13 +86,14 @@ const ok = (what, cond, extra='') => {
   await page.waitForTimeout(400);
   const one = await page.evaluate(() => navigator.clipboard.readText());
   ok('query 1 reaches the clipboard', /QUERY 1/.test(one), one.slice(0, 60));
-  // 50 union alls = 51 selects: the 37 rows it returned when it was run in
+  // 52 union alls = 53 selects: the 37 rows it returned when it was run in
   // Supabase, plus log_shares (step 39), the two URL Links tables (step 42),
   // recipes (step 43), shopping_aisle_memory (step 48), the two My Stuff
   // tables (step 50), the two week's menu tables (step 55), app_owners
   // (step 56), the two MY Games tables, games and game_players (step 57), and
-  // the two Books tables, books and book_reviews (step 61), matching backup.sql. One row per table, so a missing table shows up here.
-  ok('all 51 tables are in it', one.split('union all').length - 1 === 50,
+  // the two Books tables, books and book_reviews (step 61), and the two
+  // TV/Movies tables, shows and show_reviews (step 63), matching backup.sql. One row per table, so a missing table shows up here.
+  ok('all 53 tables are in it', one.split('union all').length - 1 === 52,
      String(one.split('union all').length - 1) + ' union alls');
   ok('it ends at the photographs',
      /bucket_id = 'photos';$/.test(one.trim()), one.trim().slice(-50));
@@ -103,6 +104,7 @@ const ok = (what, cond, extra='') => {
   ok('and the week’s menu with who it is shared with', /from meal_plan t/.test(one) && /from meal_shares t/.test(one));
   ok('and the games, with who is playing them', /from games t/.test(one) && /from game_players t/.test(one));
   ok('and the books, with everyone else’s stars', /from books t/.test(one) && /from book_reviews t/.test(one));
+  ok('and TV/Movies, with everyone else’s stars', /from shows t/.test(one) && /from show_reviews t/.test(one));
   ok('the table that no longer exists is not', !/group_members/.test(one));
 
   await page.click('#bkCopy2');

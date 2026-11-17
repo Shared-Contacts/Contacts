@@ -1652,6 +1652,77 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .tvbarrow{display:flex;gap:8px;align-items:flex-end}
 .tvbarrow label{flex:1;min-width:0}
 .tvbarrow .btn{flex:0 0 auto;width:auto;padding:11px 16px;border:1.5px solid var(--rule);margin-bottom:2px}
+/* Timeline (ML301): the lines on the left, the colour key on the right */
+#tmlBody{padding-left:10px;padding-right:10px}
+.tmlwrap{display:flex;gap:8px;align-items:flex-start}
+.tmlmap{flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden}
+.tmlmap svg{display:block}
+.tmlkey{position:sticky;top:0;flex:0 0 104px;align-self:flex-start;max-height:calc(var(--vh,100dvh) - 150px);
+  overflow-y:auto;background:var(--panel);border:1px solid var(--rule);border-radius:var(--radius);padding:6px 4px}
+.tmlki{display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:6px 3px;border-radius:6px;
+  font-size:13px;font-weight:600;line-height:1.2;color:var(--ink)}
+.tmlki[aria-pressed="false"]{opacity:.4}
+.tmlki[aria-pressed="false"] span:last-child{text-decoration:line-through}
+.tmlkc{display:flex;align-items:center;gap:6px;padding:3px 3px 3px 12px;font-size:12.5px;line-height:1.2;color:var(--ink)}
+.tmlkc.off{opacity:.4}
+.tmlki span:last-child,.tmlkc span:last-child{min-width:0;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+.tmlsw{flex:0 0 auto;display:inline-block;width:12px;height:12px;border-radius:3px}
+.tmlswline{width:6px;height:18px;border-radius:3px}
+.tmlswdot{width:11px;height:11px;border-radius:50%}
+.tmlswbroken{width:6px;height:18px;border-radius:0;
+  background:repeating-linear-gradient(180deg,var(--ink) 0 4px,transparent 4px 7px)}
+.tmlkset{display:block;width:100%;margin-top:6px;padding:8px 4px 4px;border-top:1px solid var(--rule);
+  font-size:13px;font-weight:600;color:var(--hull);text-align:left;line-height:1.2}
+#tmlSvg .tmlg5{stroke:#D5D2C6;stroke-width:1}
+#tmlSvg .tmlg1{stroke:#ECEAE2;stroke-width:1}
+#tmlSvg .tmlnow{stroke:var(--ink);stroke-width:1.5}
+#tmlSvg .tmly5{font-size:12px;font-weight:700;fill:var(--ink);text-anchor:end}
+#tmlSvg .tmly1{font-size:10.5px;fill:var(--muted);text-anchor:end}
+#tmlSvg .tmlborn{font-size:13px;fill:var(--muted)}
+#tmlSvg .tmllab{font-size:11px;font-weight:600;fill:var(--ink);text-anchor:middle;dominant-baseline:central;
+  paint-order:stroke;stroke:var(--paper);stroke-width:3px;stroke-linejoin:round}
+#tmlSvg .tmldot{stroke:var(--paper);stroke-width:1.5}
+#tmlSvg .tmlmove{stroke:var(--paper);stroke-width:2}
+#tmlSvg rect,#tmlSvg circle{cursor:pointer}
+#tml .bt:disabled{opacity:.35}
+.tmlask{padding:12px 14px}
+.tmlask .btn{margin-top:12px}
+/* A date as a day, a month and a year, any of the first two left empty */
+.tmldate{margin-top:10px}
+.tmldl{margin:0;font-size:15px;color:var(--muted)}
+.tmldrow{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;gap:8px}
+.tmldrow label{margin-top:2px;font-size:13px}
+.tmldrow select,.tmldrow input{padding:11px 6px}
+#tmlForm[data-grp="place"] .tmlnot-place,#tmlForm[data-grp="other"] .tmlnot-other,
+#tmlForm:not([data-grp="place"]) .tmlfor-place,#tmlForm:not([data-grp="holiday"]) .tmlfor-holiday,
+#tmlForm:not([data-grp="other"]) .tmlfor-other,#tmlForm[data-one="1"] .tmlend,
+#tmlForm .tmlstarton,#tmlForm[data-one="1"] .tmlstartfrom{display:none}
+#tmlForm[data-one="1"] .tmlstarton{display:inline}
+/* What one of them was */
+.tmlvk{margin:0;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--muted)}
+.tmlvt{margin:6px 0 2px;font-size:20px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.tmlvd{margin:2px 0 0;font-size:16px}
+.tmlvn{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+#tmlViewBox .pfoot{margin-top:14px;padding:9px 0 0}
+#tmlViewDel{color:var(--red)}
+#tmlAddBox .pfoot{padding:9px 0 0}
+.tmlway{align-items:center;width:100%;text-align:left}
+.tmlway .tmlsw{margin:0 4px}
+/* Colours and kinds */
+.tmlkrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.tmlkrow:last-child{border-bottom:none}
+.tmlcol{flex:0 0 34px;width:34px;height:34px;border-radius:8px;border:2px solid rgba(0,0,0,.12)}
+.tmlcol.dot{border-radius:50%}
+.tmlkname{flex:1;min-width:0;font-size:16px;overflow-wrap:anywhere}
+input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+#tmlKeysBody fieldset,#tmlEdBody fieldset{min-width:0}
+.tmlkn{flex:0 0 auto;color:var(--muted);font-size:14px}
+.tmlkdot{margin:0;display:flex;align-items:center;gap:4px;font-size:14px;flex:0 0 auto;color:var(--ink)}
+.tmlkdot input{display:inline-block;width:auto;margin:0;padding:0}
+.tmlkdel{flex:0 0 30px;width:30px;height:34px;font-size:24px;color:var(--red)}
+#tmlColBox label{margin-top:14px}
+#tmlColBox input[type="color"]{height:44px;padding:2px}
 #reBody .ulrow{display:flex;gap:8px;margin-top:4px}
 #reBody .ulrow input{flex:1;min-width:0;width:auto;margin-top:0;padding:11px 12px;
   border:1.5px solid var(--rule);border-radius:8px;background:#fff;font-size:16px}
@@ -1908,6 +1979,25 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
   <div class="sheetbody" id="tvEdBody"></div>
 </div>
 
+<div id="tml" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="tml" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="tmlMenu" data-menu="tml" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Timeline</span><span class="bartools"><button class="bt" id="tmlOut" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21M7.5 10.5h6"/></svg></button><button class="bt" id="tmlIn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21M7.5 10.5h6M10.5 7.5v6"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="tmlBody"></div>
+  <button class="fab sheetfab" id="tmlAdd" aria-label="Add to your Timeline">+</button>
+</div>
+
+<div id="tmlEd" class="sheet hidden">
+  <div class="sheetbar"><button id="tmlEdCancel">Cancel</button>
+    <span class="title" id="tmlEdTitle">New</span><button id="tmlSave">Save</button></div>
+  <div class="sheetbody" id="tmlEdBody"></div>
+</div>
+
+<div id="tmlKeys" class="sheet hidden">
+  <div class="sheetbar"><button id="tmlKeysBack">Done</button>
+    <span class="title">Colours and kinds</span><span style="min-width:56px"></span></div>
+  <div class="sheetbody" id="tmlKeysBody"></div>
+</div>
+
 <div id="shop" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="shop" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -2159,7 +2249,7 @@ const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
-  'books','bookView','bookEd','tv','tvShow','tvEd'];
+  'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2919,6 +3009,7 @@ async function refreshAll(){
     if(!$('bookView').classList.contains('hidden')) renderBook(); }
   if(!$('tv').classList.contains('hidden')){ await loadShows(); renderShows();
     if(!$('tvShow').classList.contains('hidden')) renderShow(); }
+  if(!$('tml').classList.contains('hidden')){ await loadTimeline(); renderTimeline(); }
   toast('Up to date');
 }
 
@@ -5195,7 +5286,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
-  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
   // where you are.
@@ -5211,7 +5302,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff',
-  books:'h-books', tv:'h-tv'};
+  books:'h-books', tv:'h-tv', tml:'h-tml'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -5815,6 +5906,30 @@ function openHelp(where){
   with</em>. They can see it and add their own stars and a few words under <em>What you
   thought</em>, which you and everyone else it&rsquo;s shared with can see. Only you can
   change it.</p>
+
+  <h4 id="h-tml">Timeline</h4>
+  <p><strong>Timeline</strong> draws your life as coloured lines: today at the top, the
+  day you were born at the bottom, with a mark every five years. It starts from the
+  birthday on your own card in Contacts; if there isn&rsquo;t one, it asks.</p>
+  <p><strong>Where I lived</strong> is the main line, all the way from birth to today,
+  coloured by country: New Zealand black and the United Kingdom red to start with.
+  Press the round red <em>+</em>, choose <strong>Where you lived</strong>, and give the
+  country, the town if you like, and when you moved there. Each move ends the place
+  before; the first place starts the day you were born. <strong>Holidays</strong> are a
+  broken line beside it, in the same colours.</p>
+  <p>Everything else goes in a column of its own: Relationships, Work, Homes and boats,
+  School, Pets, Medical and Highlights. Give it a name, when it started and when it
+  ended. Leave the end empty and it carries on to today; tick <em>Just the one
+  day</em> and it&rsquo;s a dot. A date can be just a year, a month and a year, or the
+  day itself. Two of the same kind at the same time sit side by side.</p>
+  <p>Tap a line or a dot to see what it was, its dates and how long it lasted, with
+  <em>Change</em> and <em>Delete</em>. The key on the right stays put as you scroll; tap
+  a name in it to hide that line, and again to bring it back. The magnifying glasses at
+  the top spread the years out or close them up.</p>
+  <p><strong>Colours and kinds</strong>, at the bottom of the key or in the menu, changes
+  the colour of any country or kind, renames a kind, adds new ones, and puts them in
+  order: hold one by its dots and slide it. Tick <em>Dots</em> for a kind that is mostly
+  single days. Your Timeline is yours alone: nobody else can see it.</p>
 
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
@@ -17615,6 +17730,587 @@ async function tvDelete(s){
 }
 
 /* ============================================================
+   Timeline (ML301, 17 Nov 2026)
+   ------------------------------------------------------------
+   Your life as coloured lines: today at the top, the day you were born at
+   the bottom, a mark every five years. The main line is where you lived,
+   one line from birth to today coloured by country, each move ending the
+   place before; the first place starts on the day you were born. Holidays
+   are a broken line beside it, in the same colours. Then a column for each
+   kind of your own (Work, Pets and so on), in its own colour; the same
+   kind at the same time sits side by side. Something with no end runs on
+   to today, something on the one day is a dot. Tap any of it to see what
+   it was. A date can be a year, a month or a day. Yours alone (step 65).
+   ============================================================ */
+const TML_PALETTE=['#111111','#D7261E','#1F6FB2','#E08A00','#2E8B57','#7B3FA0','#00897B','#C2185B',
+  '#6D4C41','#C9A400','#5C6BC0','#7CB342','#F4511E','#0097A7','#8E8E8E','#AD1457','#283593','#558B2F'];
+const TML_KINDS0=[
+  {k:'rel',    name:'Relationships',   colour:'#993556'},
+  {k:'work',   name:'Work',            colour:'#3B6D11'},
+  {k:'home',   name:'Homes and boats', colour:'#854F0B'},
+  {k:'school', name:'School',          colour:'#534AB7'},
+  {k:'pets',   name:'Pets',            colour:'#1D9E75'},
+  {k:'med',    name:'Medical',         colour:'#D4537E', dot:true},
+  {k:'hi',     name:'Highlights',      colour:'#7F77DD', dot:true}];
+const TML_COUNTRIES0=[{name:'New Zealand',colour:'#111111'},{name:'United Kingdom',colour:'#D7261E'}];
+const TML_MONTHS=['January','February','March','April','May','June','July','August',
+  'September','October','November','December'];
+const TML_ZOOMS=[6,10,16,24,36,54,80,120,180];     // dots down the screen for each year
+const TML_YEAR=365.2425*864e5;
+const TML_TOP=26, TML_FOOT=40, TML_AX=42;
+function tmlStored(k,dflt){ try{ const v=localStorage.getItem(k); return v===null?dflt:JSON.parse(v); }catch(e){ return dflt; } }
+function tmlStore(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+let TML=[], TML_KEYS={born_on:null,kinds:[],countries:[]}, TML_LOADED=false, TML_WHY='';
+let TML_EDIT=null, TML_EDKIND='place', TML_HITS=[], TML_GEO=null;
+let TML_Z=(z=>Number.isInteger(z)&&z>=0&&z<TML_ZOOMS.length?z:3)(tmlStored('tmlZoom',3));
+let TML_HIDE=new Set(arr(tmlStored('tmlHide',[])));
+
+async function loadTimeline(){
+  const [t,k]=await Promise.all([
+    sb.from('timeline').select('*').eq('created_by',ME.id).order('start_on'),
+    sb.from('timeline_keys').select('*').eq('created_by',ME.id)]);
+  TML_LOADED=true;
+  const err=t.error||k.error;
+  if(err){
+    TML_WHY=/relation|does not exist|schema cache/i.test(err.message||'') ? 'notset' : 'error';
+    console.error(err); return false;
+  }
+  TML_WHY=''; TML=(t.data||[]).filter(r=>r&&r.start_on);
+  const kk=(k.data||[])[0]||{};
+  const good=(list,need)=>arr(list).filter(x=>x&&typeof x==='object'&&x[need]&&/^#[0-9a-f]{6}$/i.test(x.colour||''));
+  const kinds=good(kk.kinds,'k'), countries=good(kk.countries,'name');
+  TML_KEYS={born_on:kk.born_on||null,
+    kinds:(kinds.length?kinds:TML_KINDS0).map(x=>({...x})),
+    countries:(countries.length?countries:TML_COUNTRIES0).map(x=>({...x}))};
+  return true;
+}
+const tmlGrp = k => k==='place'||k==='holiday' ? k : 'other';
+const tmlKind = k => TML_KEYS.kinds.find(x=>x.k===k) || {k, name:'Other', colour:'#8E8E8E'};
+const tmlKindName = k => k==='place'?'Where I lived' : k==='holiday'?'Holiday' : tmlKind(k).name;
+// The colour a country has, or, for one not given one yet, one none of the
+// others has, the same each time.
+function tmlColour(country){
+  const key=countryKey(country);
+  const c=TML_KEYS.countries.find(x=>countryKey(x.name)===key);
+  if(c) return c.colour;
+  const used=new Set(TML_KEYS.countries.map(x=>x.colour.toLowerCase()));
+  const pool=TML_PALETTE.filter(p=>!used.has(p.toLowerCase()));
+  let h=0; for(const ch of key) h=(h*31+ch.charCodeAt(0))>>>0;
+  return (pool.length?pool:TML_PALETTE)[h%(pool.length||TML_PALETTE.length)];
+}
+// A country used for the first time keeps the next colour free. True if it was new.
+function tmlEnsureCountry(name){
+  if(!name||TML_KEYS.countries.some(x=>countryKey(x.name)===countryKey(name))) return false;
+  const used=new Set(TML_KEYS.countries.map(x=>x.colour.toLowerCase()));
+  TML_KEYS.countries.push({name, colour:TML_PALETTE.find(p=>!used.has(p.toLowerCase()))||tmlColour(name)});
+  return true;
+}
+// Your birthday from your own card in Contacts, or the one kept here.
+function tmlBorn(){
+  const me=MY_PROFILE&&MY_PROFILE.my_contact_id;
+  const c=me&&CONTACTS.find(x=>x.id===me);
+  if(c&&c.birth_date) return {iso:String(c.birth_date).slice(0,10), from:'card'};
+  if(TML_KEYS.born_on) return {iso:String(TML_KEYS.born_on).slice(0,10), from:'kept'};
+  return null;
+}
+
+/* ---------- dates ---------- */
+// Where a date goes on the line: a year in its middle, a month on the 15th.
+function tmlT(iso,prec){
+  const [y,m,d]=String(iso).slice(0,10).split('-').map(Number);
+  return prec==='year'?Date.UTC(y,6,1) : prec==='month'?Date.UTC(y,m-1,15) : Date.UTC(y,m-1,d);
+}
+const tmlFirst = iso => { const [y,m,d]=String(iso).slice(0,10).split('-').map(Number); return Date.UTC(y,m-1,d); };
+// The last day a date could mean, so 1990 to 1990 or March to March is fine.
+function tmlLast(iso,prec){
+  const [y,m,d]=String(iso).slice(0,10).split('-').map(Number);
+  return prec==='year'?Date.UTC(y,11,31) : prec==='month'?Date.UTC(y,m,0) : Date.UTC(y,m-1,d);
+}
+function tmlNow(){ const n=new Date(); return Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()); }
+function tmlSay(iso,prec){
+  if(!iso) return '';
+  const [y,m,d]=String(iso).slice(0,10).split('-').map(Number);
+  return prec==='year'?String(y) : prec==='month'?TML_MONTHS[m-1]+' '+y : d+' '+TML_MONTHS[m-1]+' '+y;
+}
+function tmlLong(t0,t1,yearsOnly){
+  const days=Math.round((t1-t0)/864e5);
+  if(days<1) return '';
+  if(yearsOnly){ const y=Math.round(days/365.2425); return y<1?'Under a year':y+' year'+(y>1?'s':''); }
+  if(days<45) return days+' day'+(days>1?'s':'');
+  const mo=Math.round(days/30.436875);
+  if(mo<12) return mo+' month'+(mo>1?'s':'');
+  const y=Math.floor(mo/12), r=mo%12;
+  return y+' year'+(y>1?'s':'')+(r?', '+r+' month'+(r>1?'s':''):'');
+}
+// Day, month and year boxes. Leave the day out for a month, both for a year.
+function tmlDateHtml(name,iso,prec,label,note,cls){
+  let y='',m=0,d=0;
+  if(iso){ const p=String(iso).slice(0,10).split('-').map(Number); y=p[0]; if(prec!=='year') m=p[1]; if(prec==='day') d=p[2]; }
+  return `<div class="tmldate${cls?' '+cls:''}">${label?`<p class="tmldl">${label}</p>`:''}<div class="tmldrow">
+    <label>Day<select name="${name}_d"><option value=""></option>${Array.from({length:31},(_,i)=>
+      `<option${d===i+1?' selected':''}>${i+1}</option>`).join('')}</select></label>
+    <label>Month<select name="${name}_m"><option value=""></option>${TML_MONTHS.map((x,i)=>
+      `<option value="${i+1}"${m===i+1?' selected':''}>${x.slice(0,3)}</option>`).join('')}</select></label>
+    <label>Year<input name="${name}_y" inputmode="numeric" maxlength="4" autocomplete="off" value="${y}"></label></div>
+    ${note?`<p class="coords">${note}</p>`:''}</div>`;
+}
+// {iso, prec}; null when all three are empty; or {err} saying what is wrong.
+function tmlReadDate(f,name,what){
+  const d=Number(f.elements[name+'_d'].value)||0, m=Number(f.elements[name+'_m'].value)||0;
+  const y=String(f.elements[name+'_y'].value||'').trim();
+  if(!d&&!m&&!y) return null;
+  if(!/^\d{4}$/.test(y)) return {err:what+' needs a year, like 1985'};
+  const Y=Number(y), p=n=>String(n).padStart(2,'0');
+  if(Y<1800) return {err:'Check the year: '+y};
+  if(d&&!m) return {err:what+': choose the month too, or leave the day empty'};
+  const out=!m?{iso:Y+'-01-01',prec:'year'} : !d?{iso:Y+'-'+p(m)+'-01',prec:'month'}
+    : {iso:Y+'-'+p(m)+'-'+p(d),prec:'day'};
+  if(d&&new Date(Date.UTC(Y,m-1,d)).getUTCMonth()!==m-1)
+    return {err:TML_MONTHS[m-1]+' '+Y+' has no '+d+(d%10===1&&d!==11?'st':d%10===2&&d!==12?'nd':d%10===3&&d!==13?'rd':'th')};
+  if(tmlFirst(out.iso)>tmlNow()) return {err:what+' has not come yet: the Timeline runs up to today'};
+  return out;
+}
+
+/* ---------- the screen ---------- */
+async function openTimeline(){
+  showSheet('tml'); lockBackground();
+  if(!TML_LOADED) $('tmlBody').innerHTML='<p class="empty">Fetching your Timeline…</p>';
+  await loadTimeline();
+  renderTimeline(); $('tmlBody').scrollTop=0;
+}
+function tmlWhyHtml(){
+  return `<div class="card"><div class="field"><dd style="color:${
+    TML_WHY==='notset'?'var(--muted)':'var(--red)'}">${TML_WHY==='notset'
+    ? 'Timeline needs its place in the database first. Run the step 65 file in '
+      +'Supabase, then press refresh at the top.'
+    : 'Could not load your Timeline just now. Nothing has been lost &mdash; '
+      +'check your signal and press refresh at the top.'}</dd></div></div>`;
+}
+// How tall it is, and where any day goes on it.
+function tmlGeo(){
+  const now=tmlNow(), born=tmlBorn(), bornT=born?tmlT(born.iso,'day'):null;
+  const starts=TML.map(r=>tmlT(r.start_on,r.start_prec)).filter(isFinite);
+  let low=bornT!=null?bornT:(starts.length?Math.min(...starts):now-10*TML_YEAR);
+  low=Math.min(low,now-5*TML_YEAR);
+  const px=TML_ZOOMS[TML_Z];
+  const y=t=>TML_TOP+(now-Math.max(low,Math.min(now,t)))/TML_YEAR*px;
+  return {now,low,born,bornT,px,y,h:Math.ceil(y(low))+TML_FOOT};
+}
+const tmlByStart = (a,b) => tmlT(a.start_on,a.start_prec)-tmlT(b.start_on,b.start_prec) || a.id-b.id;
+// Everything to draw, oldest first.
+function tmlPieces(g){
+  const out=[];
+  const places=TML.filter(r=>r.kind==='place').sort(tmlByStart);
+  places.forEach((r,i)=>{
+    const nx=places[i+1];
+    out.push({row:r, col:'place', first:i===0,
+      t0:i===0&&g.bornT!=null?g.bornT:tmlT(r.start_on,r.start_prec),
+      t1:nx?tmlT(nx.start_on,nx.start_prec):g.now, open:!nx,
+      colour:tmlColour(r.country), label:r.title||r.country||''});
+  });
+  TML.filter(r=>r.kind!=='place').sort(tmlByStart).forEach(r=>{
+    const t0=tmlT(r.start_on,r.start_prec), dot=!!r.one_day;
+    out.push({row:r, col:r.kind, t0, dot, open:!dot&&!r.end_on,
+      t1:dot?t0:r.end_on?Math.max(t0,tmlT(r.end_on,r.end_prec)):g.now,
+      colour:r.kind==='holiday'?tmlColour(r.country):tmlKind(r.kind).colour,
+      label:r.title||(r.kind==='holiday'?r.country:'')||''});
+  });
+  return out;
+}
+// Which columns there are, left to right: where you lived, holidays, then
+// your kinds in your order, each only if there is something in it. Things
+// of one kind at the same time get a lane each; one ending as the next
+// starts shares it. level 2 names every line with room for its name beside
+// it, 1 only where you lived and holidays, 0 none: for a narrow screen with
+// a lot on it.
+function tmlLayout(g,pieces,level){
+  const W={place:10, holiday:8}, cols=[], order=[...new Set(['place','holiday']
+    .concat(TML_KEYS.kinds.map(k=>k.k)).concat(pieces.map(p=>p.col)))];
+  let x=TML_AX+8;
+  order.forEach(col=>{
+    const mine=pieces.filter(p=>p.col===col); if(!mine.length) return;
+    const w=W[col]||6, lanes=[], named=[];
+    mine.forEach(p=>{
+      p.w=w;
+      p.y0=g.y(p.t1)-(p.dot?6:0);
+      p.y1=p.dot?p.y0+12:Math.max(g.y(p.t0),p.y0+(col==='place'?2:6));
+      let n=col==='place'?0:lanes.findIndex(top=>p.y1<=top+0.5);
+      if(n<0) n=lanes.length;
+      lanes[n]=p.y0; p.lane=n;
+      const fit=Math.floor((p.y1-p.y0-8)/6);
+      p.name=!p.dot&&p.label&&fit>=4&&(level>1||(level===1&&tmlGrp(col)!=='other'))
+        ? (p.label.length>fit?p.label.slice(0,fit-1).trimEnd()+'…':p.label) : '';
+      if(p.name) named[n]=true;
+    });
+    const at=[]; let to=x;
+    lanes.forEach((_,n)=>{ at[n]=to; to+=w+(named[n]?13:3); });
+    mine.forEach(p=>{ p.x=at[p.lane]+w/2; p.lx=at[p.lane]+w+2; });
+    cols.push({col,x});
+    x=to+(level>1?4:3);
+  });
+  return {cols,width:x};
+}
+function renderTimeline(){
+  const body=$('tmlBody'); if(!body) return;
+  if(TML_WHY){ body.innerHTML=tmlWhyHtml(); TML_HITS=[]; return; }
+  const g=TML_GEO=tmlGeo();
+  const keyW=104, cs=getComputedStyle(body);
+  const room=Math.max(140,(body.clientWidth||360)-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0)-keyW-8);
+  const pieces=tmlPieces(g).filter(p=>!TML_HIDE.has(p.col));
+  // Names beside the lines when there is room for them, else fewer of them.
+  let lay; for(const lv of [2,1,0]){ lay=tmlLayout(g,pieces,lv); if(lay.width<=room) break; }
+  const W=Math.max(room,lay.width), out=[];
+  out.push(`<svg id="tmlSvg" width="${W}" height="${g.h}" viewBox="0 0 ${W} ${g.h}" role="img" aria-label="Your Timeline, today at the top">`);
+  // A mark every five years, and every year when there is room.
+  const yNow=g.y(g.now), yLow=g.y(g.low), Y0=new Date(g.low).getUTCFullYear()+1, Y1=new Date(g.now).getUTCFullYear();
+  for(let Y=Y0;Y<=Y1;Y++){
+    const five=Y%5===0; if(!five&&g.px<36) continue;
+    const yy=g.y(Date.UTC(Y,0,1)), far=yy-yNow>14&&yLow-yy>14;
+    out.push(`<line class="${five?'tmlg5':'tmlg1'}" x1="${TML_AX-4}" x2="${W}" y1="${yy}" y2="${yy}"/>`);
+    if(far&&(five||g.px>=54)) out.push(`<text class="${five?'tmly5':'tmly1'}" x="${TML_AX-6}" y="${yy+4}">${Y}</text>`);
+  }
+  out.push(`<line class="tmlnow" x1="${TML_AX-4}" x2="${W}" y1="${yNow}" y2="${yNow}"/><text class="tmly5" x="${TML_AX-6}" y="${yNow+4}">Today</text>`);
+  if(g.born){
+    out.push(`<line class="tmlnow" x1="${TML_AX-4}" x2="${W}" y1="${yLow}" y2="${yLow}"/>`
+      +`<text class="tmly5" x="${TML_AX-6}" y="${yLow+4}">Born</text>`
+      +`<text class="tmlborn" x="4" y="${yLow+24}">${esc(tmlSay(g.born.iso,'day'))}</text>`);
+  }
+  TML_HITS=[];
+  pieces.forEach(p=>{
+    const tip=esc(tmlKindName(p.col)+(p.label?': '+p.label:''));
+    if(p.dot) out.push(`<circle cx="${p.x}" cy="${p.y0+6}" r="5.5" fill="${p.colour}" class="tmldot"><title>${tip}</title></circle>`);
+    else{
+      // A hair's gap between one thing and the next in the same lane.
+      const gap=p.col!=='place'&&p.y1-p.y0>8?1:0;
+      out.push(`<rect x="${p.x-p.w/2}" y="${p.y0+gap}" width="${p.w}" height="${p.y1-p.y0-2*gap}" rx="${p.col==='place'?1.5:p.w/2}" fill="${p.colour}"><title>${tip}</title></rect>`);
+    }
+    if(p.name) out.push(`<text class="tmllab" transform="translate(${p.lx+5.5},${(p.y0+p.y1)/2}) rotate(-90)">${esc(p.name)}</text>`);
+    TML_HITS.push(p);
+  });
+  // A move shows as a break in the line, even to the same country.
+  pieces.filter(p=>p.col==='place'&&!p.open).forEach(p=>
+    out.push(`<line class="tmlmove" x1="${p.x-p.w/2}" x2="${p.x+p.w/2}" y1="${p.y0}" y2="${p.y0}"/>`));
+  out.push('</svg>');
+  body.innerHTML=`${g.born?'':tmlAskBornHtml()}
+    ${TML.length?'':`<div class="card"><div class="field"><dd>Nothing on it yet. Press the red + to add
+      where you lived, a holiday, a job or anything else.</dd></div></div>`}
+    <div class="tmlwrap"><div class="tmlmap" id="tmlMap">${out.join('')}</div>
+      <div class="tmlkey" id="tmlKey" style="flex-basis:${keyW}px;width:${keyW}px">${tmlKeyHtml()}</div></div>`;
+  $('tmlSvg').onclick=ev=>{
+    const r=ev.currentTarget.getBoundingClientRect(), x=ev.clientX-r.left, y=ev.clientY-r.top;
+    let best=null, bd=1e9;
+    TML_HITS.forEach(p=>{
+      const dx=Math.max(0,Math.abs(x-p.x)-p.w/2), dy=y<p.y0?p.y0-y:y>p.y1?y-p.y1:0;
+      if(dx<=10&&dy<=8&&dx+dy<bd){ bd=dx+dy; best=p; }
+    });
+    if(best) tmlView(best);
+  };
+  body.querySelectorAll('[data-tmlhide]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.tmlhide; TML_HIDE.has(k)?TML_HIDE.delete(k):TML_HIDE.add(k);
+    tmlStore('tmlHide',[...TML_HIDE]); const at=body.scrollTop; renderTimeline(); body.scrollTop=at; });
+  $('tmlKeySet').onclick=()=>openTmlKeys();
+  const ask=$('tmlAskGo'); if(ask) ask.onclick=()=>tmlKeepBorn($('tmlAskBorn'));
+  $('tmlOut').disabled=TML_Z<=0; $('tmlIn').disabled=TML_Z>=TML_ZOOMS.length-1;
+}
+function tmlAskBornHtml(){
+  return `<div class="card"><form id="tmlAskBorn" class="tmlask" onsubmit="return false">
+    <p class="tmlvt">When were you born?</p>
+    <p class="coords" style="margin-top:0">Your Timeline starts there. Or put your birthday on your own card in Contacts.</p>
+    ${tmlDateHtml('born','','day','')}
+    <button type="button" class="btn primary" id="tmlAskGo">Keep it</button></form></div>`;
+}
+// The colour key: tap a line's name to hide it or bring it back.
+function tmlKeyHtml(){
+  const seen=[], add=c=>{ if(c&&!seen.some(x=>countryKey(x)===countryKey(c))) seen.push(c); };
+  TML.filter(r=>r.kind==='place'||r.kind==='holiday').sort(tmlByStart).forEach(r=>add(r.country));
+  if(!seen.length) TML_KEYS.countries.forEach(c=>add(c.name));
+  const on=k=>!TML_HIDE.has(k), has=k=>TML.some(r=>r.kind===k);
+  const kinds=TML_KEYS.kinds.filter(k=>!TML.length||has(k.k))
+    .concat([...new Set(TML.map(r=>r.kind))].filter(k=>tmlGrp(k)==='other'&&!TML_KEYS.kinds.some(x=>x.k===k)).map(tmlKind));
+  const item=(k,sw,name)=>`<button type="button" class="tmlki" data-tmlhide="${esc(k)}" aria-pressed="${on(k)}">${sw}<span>${esc(name)}</span></button>`;
+  return `${item('place','<span class="tmlsw tmlswline" style="background:var(--ink)"></span>','Where I lived')}
+    ${seen.map(c=>`<div class="tmlkc${on('place')?'':' off'}"><span class="tmlsw" style="background:${tmlColour(c)}"></span><span>${esc(c)}</span></div>`).join('')}
+    ${!TML.length||has('holiday')?item('holiday','<span class="tmlsw tmlswbroken"></span>','Holidays'):''}
+    ${kinds.map(k=>item(k.k,`<span class="tmlsw${k.dot?' tmlswdot':' tmlswline'}" style="background:${k.colour}"></span>`,k.name)).join('')}
+    <button type="button" class="tmlkset" id="tmlKeySet">Colours and kinds</button>`;
+}
+function tmlZoom(by){
+  const z=Math.max(0,Math.min(TML_ZOOMS.length-1,TML_Z+by)), body=$('tmlBody'), g=TML_GEO;
+  if(z===TML_Z||!g) return;
+  // The day in the middle of the screen stays in the middle.
+  const top=tmlSvgTop(), mid=body.scrollTop+body.clientHeight/2-top;
+  const t=g.now-(mid-TML_TOP)/g.px*TML_YEAR;
+  TML_Z=z; tmlStore('tmlZoom',z); renderTimeline(); tmlScrollTo(t);
+}
+function tmlSvgTop(){
+  const s=$('tmlSvg'), body=$('tmlBody'); if(!s) return 0;
+  return s.getBoundingClientRect().top-body.getBoundingClientRect().top+body.scrollTop;
+}
+function tmlScrollTo(t){
+  const body=$('tmlBody'), g=TML_GEO; if(!g||!$('tmlSvg')) return;
+  body.scrollTop=Math.max(0,tmlSvgTop()+g.y(t)-body.clientHeight/2);
+}
+function tmlGoBorn(){ const body=$('tmlBody'); body.scrollTop=body.scrollHeight; }
+async function tmlKeepBorn(f){
+  const b=tmlReadDate(f,'born','Born');
+  if(!b){ toast('Choose the day, month and year you were born'); return; }
+  if(b.err){ toast(b.err); return; }
+  if(b.prec!=='day'){ toast('Choose the day and the month as well as the year'); return; }
+  const was=TML_KEYS.born_on; TML_KEYS.born_on=b.iso;
+  if(!await tmlSaveKeys(true)){ TML_KEYS.born_on=was; return; }
+  renderTimeline(); if(!$('tmlKeys').classList.contains('hidden')) renderTmlKeys();
+  toast('Kept: your Timeline starts there');
+}
+function tmlSaveFail(error){
+  return /relation|does not exist|schema cache/i.test((error&&error.message)||'')
+    ? 'Could not save: Timeline needs step 65 run in Supabase first'
+    : 'Could not save it. Check your signal and try again';
+}
+async function tmlSaveKeys(quiet){
+  const {error}=await sb.from('timeline_keys').upsert({created_by:ME.id, born_on:TML_KEYS.born_on||null,
+    kinds:TML_KEYS.kinds, countries:TML_KEYS.countries, updated_at:new Date().toISOString()},{onConflict:'created_by'});
+  if(error){ toast(tmlSaveFail(error)); console.error(error); return false; }
+  if(!quiet) toast('Saved');
+  return true;
+}
+
+/* ---------- one of them ---------- */
+function tmlView(p){
+  const r=p.row, k=r.kind, g=TML_GEO;
+  document.querySelectorAll('#tmlViewBox').forEach(x=>x.remove());
+  const head=k==='place'?[r.title,r.country].filter(Boolean).join(', ')
+    : r.title||(k==='holiday'?r.country:'')||tmlKindName(k);
+  const sub=k==='holiday'&&r.title&&r.country?'Holiday · '+r.country:tmlKindName(k);
+  const from=k==='place'&&p.first&&g&&g.bornT!=null?'birth':tmlSay(r.start_on,r.start_prec);
+  const nx=k==='place'&&!p.open?TML.filter(x=>x.kind==='place').sort(tmlByStart).find(x=>tmlT(x.start_on,x.start_prec)===p.t1):null;
+  const to=k==='place'?(nx?tmlSay(nx.start_on,nx.start_prec):''):tmlSay(r.end_on,r.end_prec);
+  const when=p.dot?tmlSay(r.start_on,r.start_prec)
+    : p.open?(from==='birth'?'From birth to today':'Since '+from)
+    : (from==='birth'?'From birth':from)+' to '+to;
+  const endPrec=k==='place'?(nx?nx.start_prec:'day'):r.end_prec;
+  const startPrec=from==='birth'?'day':r.start_prec;
+  const long=p.dot?'':tmlLong(p.t0, p.open?g.now:p.t1+(endPrec==='day'&&k!=='place'?864e5:0),
+    startPrec==='year'||(!p.open&&endPrec==='year'));
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='tmlViewBox';
+  box.innerHTML=`<div class="inner">
+    <p class="tmlvk"><span class="tmlsw${p.dot?' tmlswdot':''}" style="background:${p.colour}"></span>${esc(sub)}</p>
+    <p class="tmlvt">${esc(head)}</p>
+    <p class="tmlvd">${esc(when)}</p>
+    ${long?`<p class="tmlvd">${esc(long)}${p.open?' so far':''}</p>`:''}
+    ${r.notes?`<p class="tmlvn">${esc(r.notes)}</p>`:''}
+    <div class="pfoot"><button type="button" id="tmlViewNo">Close</button><button type="button" id="tmlViewDel">Delete</button>
+      <button type="button" class="go" id="tmlViewCh">Change</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#tmlViewNo').onclick=close;
+  box.querySelector('#tmlViewCh').onclick=()=>{ close(); tmlEdit(r); };
+  box.querySelector('#tmlViewDel').onclick=async()=>{ if(await tmlDelete(r)) close(); };
+}
+async function tmlDelete(r){
+  if(!confirm('Delete "'+(r.title||r.country||tmlKindName(r.kind))+'" from your Timeline for good?')) return false;
+  const {error}=await sb.from('timeline').delete().eq('id',r.id);
+  if(error){ toast('Could not delete it'); console.error(error); return false; }
+  TML_EDIT=null; $('tmlEd').classList.add('hidden'); lockBackground();
+  const at=$('tmlBody').scrollTop;
+  await loadTimeline(); renderTimeline(); $('tmlBody').scrollTop=at;
+  toast('Deleted'); return true;
+}
+
+/* ---------- adding and changing ---------- */
+function tmlAdd(){
+  document.querySelectorAll('#tmlAddBox').forEach(x=>x.remove());
+  const box=document.createElement('div');
+  box.className='daypick'; box.id='tmlAddBox';
+  const row=(k,sw,t,w)=>`<button class="item tmlway" data-tmladd="${esc(k)}">${sw}<span class="mid"><span class="t">${esc(t)}</span>
+    ${w?`<span class="w">${esc(w)}</span>`:''}</span></button>`;
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Add to your Timeline</p>
+    ${row('place','<span class="tmlsw tmlswline" style="background:var(--ink)"></span>','Where you lived','A move: the country, and the town if you like')}
+    ${row('holiday','<span class="tmlsw tmlswbroken"></span>','A holiday','Where and when')}
+    ${TML_KEYS.kinds.map(k=>row(k.k,`<span class="tmlsw${k.dot?' tmlswdot':' tmlswline'}" style="background:${k.colour}"></span>`,k.name,'')).join('')}
+    <div class="pfoot"><button type="button" id="tmlAddKinds">Colours and kinds</button><button type="button" id="tmlAddNo">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#tmlAddNo').onclick=close;
+  box.querySelector('#tmlAddKinds').onclick=()=>{ close(); openTmlKeys(); };
+  box.querySelectorAll('[data-tmladd]').forEach(b=>b.onclick=()=>{ close(); tmlEdit(null,b.dataset.tmladd); });
+}
+function tmlEdit(r,kind){
+  TML_EDIT=r||null; TML_EDKIND=r?r.kind:(kind||'place');
+  const v=n=>r?(r[n]??''):'', grp=tmlGrp(TML_EDKIND);
+  const one=r?!!r.one_day&&grp==='other':grp==='other'&&!!tmlKind(TML_EDKIND).dot;
+  const places=TML.filter(x=>x.kind==='place'&&(!r||x.id!==r.id)), born=tmlBorn();
+  // The first place you lived starts the day you were born.
+  const startIso=r?r.start_on:(TML_EDKIND==='place'&&!places.length&&born?born.iso:'');
+  const startPrec=r?r.start_prec:'day';
+  const kinds=[['place','Where I lived'],['holiday','Holiday']].concat(TML_KEYS.kinds.map(k=>[k.k,k.name]));
+  if(r&&!kinds.some(x=>x[0]===r.kind)) kinds.push([r.kind,tmlKindName(r.kind)]);
+  const countries=[...new Set(TML_KEYS.countries.map(c=>c.name).concat(TML.map(x=>x.country).filter(Boolean)))];
+  $('tmlEdTitle').textContent=r?'Change':'New';
+  $('tmlEdBody').innerHTML=`<form id="tmlForm" onsubmit="return false" data-grp="${grp}" data-one="${one?1:0}">
+    <fieldset><legend>What it is</legend>
+      <div class="pickrow" id="tmlKinds">${kinds.map(([k,l])=>`<button type="button" data-tmlkind="${esc(k)}"
+        aria-pressed="${TML_EDKIND===k}">${esc(l)}</button>`).join('')}</div>
+      <label class="tmlnot-other">Country<input name="country" list="tmlCountryList" autocomplete="off" value="${esc(v('country'))}"
+        placeholder="New Zealand, United Kingdom"></label>
+      <datalist id="tmlCountryList">${countries.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+      <label><span class="tmlfor-place">Town or area (if you like)</span><span class="tmlfor-holiday">Where</span><span
+        class="tmlfor-other">What</span><input name="title" maxlength="200" value="${esc(v('title'))}"></label>
+    </fieldset>
+    <fieldset><legend>When</legend>
+      ${tmlDateHtml('start',startIso,startPrec,'<span class="tmlfor-place">Moved there</span><span class="tmlnot-place tmlstartfrom">From</span><span class="tmlnot-place tmlstarton">On</span>')}
+      ${tmlDateHtml('end',r&&r.end_on,r&&r.end_prec,'To','<span class="tmlfor-holiday">Leave it empty for a day out.</span><span class="tmlfor-other">Leave it empty if it is still going.</span>','tmlnot-place tmlend')}
+      <div class="checks tmlfor-other"><label><input type="checkbox" name="one_day" ${one?'checked':''}> Just the one day</label></div>
+      <p class="coords">A year is enough, or a month and year. <span class="tmlfor-place">Each move ends the place
+        before; the first place you lived starts the day you were born.</span></p>
+    </fieldset>
+    <fieldset><legend>Notes</legend><label>Anything else<textarea name="notes" rows="4">${esc(v('notes'))}</textarea></label></fieldset>
+    ${r?'<button type="button" class="btn danger" id="tmlDelete">Delete this one</button>':''}
+  </form>`;
+  const f=$('tmlForm');
+  f.querySelectorAll('[data-tmlkind]').forEach(x=>x.onclick=()=>{
+    TML_EDKIND=x.dataset.tmlkind; const gp=tmlGrp(TML_EDKIND); f.dataset.grp=gp;
+    if(!r){ f.elements.one_day.checked=gp==='other'&&!!tmlKind(TML_EDKIND).dot; }
+    f.dataset.one=gp==='other'&&f.elements.one_day.checked?1:0;
+    f.querySelectorAll('[data-tmlkind]').forEach(y=>y.setAttribute('aria-pressed',String(y===x))); });
+  f.elements.one_day.onchange=()=>{ f.dataset.one=f.elements.one_day.checked?1:0; };
+  if(r) $('tmlDelete').onclick=()=>tmlDelete(r);
+  showSheet('tmlEd'); $('tmlEdBody').scrollTop=0; lockBackground();
+}
+async function tmlSave(){
+  const f=$('tmlForm'); if(!f) return;
+  const k=TML_EDKIND, grp=tmlGrp(k), g=n=>String(f.elements[n].value||'').trim();
+  const one=grp==='other'&&f.elements.one_day.checked;
+  const country=grp==='other'?null:(countryFix(g('country')).country||null);
+  const title=g('title');
+  if(grp==='place'&&!country){ toast('Which country was it?'); return; }
+  if(grp==='holiday'&&!title&&!country){ toast('Say where it was'); return; }
+  if(grp==='other'&&!title){ toast('Say what it was'); return; }
+  const what=grp==='place'?'Moved there':one?'On':'From';
+  const s=tmlReadDate(f,'start',what);
+  if(!s){ toast(grp==='place'?'When did you move there? A year is enough':'When was it? A year is enough'); return; }
+  if(s.err){ toast(s.err); return; }
+  const e=grp==='place'||one?null:tmlReadDate(f,'end','To');
+  if(e&&e.err){ toast(e.err); return; }
+  if(e&&tmlLast(e.iso,e.prec)<tmlFirst(s.iso)){ toast('It ends before it starts: check the dates'); return; }
+  const row={kind:k, title, country, start_on:s.iso, start_prec:s.prec,
+    end_on:e?e.iso:null, end_prec:e?e.prec:'day',
+    one_day:one||(grp==='holiday'&&!e), notes:g('notes')||null, updated_at:new Date().toISOString()};
+  const btn=$('tmlSave'); btn.disabled=true;
+  let error;
+  try{
+    if(TML_EDIT) ({error}=await sb.from('timeline').update(row).eq('id',TML_EDIT.id));
+    else ({error}=await sb.from('timeline').insert(row));
+  } finally { btn.disabled=false; }
+  if(error){ toast(tmlSaveFail(error)); console.error(error); return; }
+  if(country&&tmlEnsureCountry(country)) await tmlSaveKeys(true);
+  TML_EDIT=null; $('tmlEd').classList.add('hidden'); lockBackground();
+  // Whatever was just put on comes into view.
+  if(TML_HIDE.delete(k)) tmlStore('tmlHide',[...TML_HIDE]);
+  await loadTimeline(); renderTimeline(); tmlScrollTo(tmlT(s.iso,s.prec));
+  toast('On your Timeline');
+}
+$('tmlAdd').onclick=()=>tmlAdd();
+$('tmlSave').onclick=()=>tmlSave();
+$('tmlEdCancel').onclick=()=>{ TML_EDIT=null; $('tmlEd').classList.add('hidden'); lockBackground(); };
+$('tmlIn').onclick=()=>tmlZoom(1);
+$('tmlOut').onclick=()=>tmlZoom(-1);
+
+/* ---------- colours and kinds ---------- */
+function openTmlKeys(){ renderTmlKeys(); showSheet('tmlKeys'); $('tmlKeysBody').scrollTop=0; lockBackground(); }
+function renderTmlKeys(){
+  const body=$('tmlKeysBody'); if(!body) return;
+  const born=tmlBorn(), n=k=>TML.filter(r=>r.kind===k).length;
+  const names=[...TML_KEYS.countries.map(c=>c.name)];
+  TML.forEach(r=>{ if(r.country&&!names.some(x=>countryKey(x)===countryKey(r.country))) names.push(r.country); });
+  const used=c=>TML.filter(r=>r.country&&countryKey(r.country)===countryKey(c)).length;
+  body.innerHTML=`
+    <fieldset><legend>When you were born</legend>
+      ${born&&born.from==='card'?`<p class="tmlvt" style="margin:8px 0 0">${esc(tmlSay(born.iso,'day'))}</p>
+        <p class="coords">From your own card in Contacts. Change it there.</p>`
+      :`<form id="tmlBornForm" onsubmit="return false">${tmlDateHtml('born',TML_KEYS.born_on,'day','')}
+        <button type="button" class="btn primary" id="tmlBornGo">Keep it</button></form>
+        <p class="coords">Your Timeline starts here. A birthday on your own card in Contacts is used instead.</p>`}
+    </fieldset>
+    <fieldset><legend>Countries</legend>
+      ${names.map((c,i)=>`<div class="tmlkrow"><button type="button" class="tmlcol" data-tmlcc="${i}" style="background:${tmlColour(c)}"
+        aria-label="Change the colour for ${esc(c)}"></button><span class="tmlkname">${esc(c)}</span>
+        <span class="tmlkn">${used(c)||''}</span></div>`).join('')}
+      <p class="coords">For where you lived and your holidays. A country gets a colour the first time you add it;
+        tap a colour to change it.</p>
+    </fieldset>
+    <fieldset><legend>Your kinds</legend>
+      <div id="tmlKindRows">${TML_KEYS.kinds.map(k=>`<div class="tmlkrow" data-hm="tmlk:${esc(k.k)}">
+        <span class="grip" aria-hidden="true">&#10303;</span>
+        <button type="button" class="tmlcol${k.dot?' dot':''}" data-tmlkc="${esc(k.k)}" style="background:${k.colour}"
+          aria-label="Change the colour for ${esc(k.name)}"></button>
+        <input class="tmlkname" data-tmlkn="${esc(k.k)}" value="${esc(k.name)}" maxlength="40" aria-label="Name of this kind">
+        <label class="tmlkdot"><input type="checkbox" data-tmlkd="${esc(k.k)}" ${k.dot?'checked':''}> Dots</label>
+        <button type="button" class="tmlkdel" data-tmlkx="${esc(k.k)}" aria-label="Delete ${esc(k.name)}">&times;</button></div>`).join('')}</div>
+      <button type="button" class="btn" id="tmlKindAdd" style="border:1.5px solid var(--rule);margin-top:10px">+ Add a kind</button>
+      <p class="coords">Hold one by its dots on the left and slide it to change the order across the Timeline.
+        Tick Dots for a kind that is mostly single days, like Medical.</p>
+    </fieldset>`;
+  const bf=$('tmlBornForm'); if(bf) $('tmlBornGo').onclick=()=>tmlKeepBorn(bf);
+  const again=async()=>{ if(await tmlSaveKeys(true)){ renderTmlKeys(); renderTimeline(); } };
+  body.querySelectorAll('[data-tmlcc]').forEach(b=>b.onclick=async()=>{
+    const name=names[Number(b.dataset.tmlcc)], c=await tmlPickColour(tmlColour(name),name); if(!c) return;
+    const had=TML_KEYS.countries.find(x=>countryKey(x.name)===countryKey(name));
+    if(had) had.colour=c; else TML_KEYS.countries.push({name,colour:c});
+    again(); });
+  body.querySelectorAll('[data-tmlkc]').forEach(b=>b.onclick=async()=>{
+    const k=tmlKind(b.dataset.tmlkc), c=await tmlPickColour(k.colour,k.name); if(!c) return;
+    k.colour=c; again(); });
+  body.querySelectorAll('[data-tmlkn]').forEach(i=>i.onchange=()=>{
+    const k=tmlKind(i.dataset.tmlkn), t=i.value.trim().replace(/\s+/g,' ');
+    if(!t){ i.value=k.name; toast('A kind needs a name'); return; }
+    k.name=t; again(); });
+  body.querySelectorAll('[data-tmlkd]').forEach(i=>i.onchange=()=>{ tmlKind(i.dataset.tmlkd).dot=i.checked; again(); });
+  body.querySelectorAll('[data-tmlkx]').forEach(b=>b.onclick=()=>{
+    const k=tmlKind(b.dataset.tmlkx), used=n(k.k);
+    if(used){ toast(used+' on your Timeline '+(used>1?'are':'is')+' '+k.name+'. Change or delete '+(used>1?'them':'it')+' first'); return; }
+    if(!confirm('Take '+k.name+' off your kinds?')) return;
+    TML_KEYS.kinds=TML_KEYS.kinds.filter(x=>x.k!==k.k); again(); });
+  $('tmlKindAdd').onclick=async()=>{
+    const taken=new Set(TML_KEYS.kinds.map(x=>x.colour.toLowerCase()));
+    const k={k:'k'+Date.now().toString(36), name:'New kind', colour:TML_PALETTE.find(p=>!taken.has(p.toLowerCase()))||TML_PALETTE[2]};
+    TML_KEYS.kinds.push(k);
+    if(!await tmlSaveKeys(true)){ TML_KEYS.kinds.pop(); return; }
+    renderTmlKeys(); renderTimeline();
+    const i=body.querySelector(`[data-tmlkn="${k.k}"]`); if(i){ try{ i.focus(); i.select(); }catch(e){} }
+  };
+  holdMove($('tmlKindRows'));
+}
+HM_SAVE.tmlk=async keys=>{
+  const was=TML_KEYS.kinds.slice();
+  TML_KEYS.kinds=keys.map(k=>was.find(x=>x.k===k)).filter(Boolean).concat(was.filter(x=>!keys.includes(x.k)));
+  if(!await tmlSaveKeys(true)) TML_KEYS.kinds=was;
+  renderTmlKeys(); renderTimeline();
+};
+// A colour from the box, or any colour at all. Gives back the colour, or nothing.
+function tmlPickColour(now,name){
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='tmlColBox';
+    box.innerHTML=`<div class="inner"><p class="dsec" style="padding-top:0">A colour for ${esc(name)}</p>
+      <div class="swatchgrid">${TML_PALETTE.map(c=>`<button type="button" data-col="${c}" style="background:${c}"
+        aria-pressed="${c.toLowerCase()===String(now).toLowerCase()}" aria-label="${c}"></button>`).join('')}</div>
+      <label>Or any colour<input type="color" id="tmlColAny" value="${esc(now)}"></label>
+      <div class="pfoot" style="margin-top:12px"><button type="button" id="tmlColNo">Cancel</button></div></div>`;
+    document.body.appendChild(box);
+    const done=c=>{ box.remove(); resolve(c); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#tmlColNo').onclick=()=>done(null);
+    box.querySelectorAll('[data-col]').forEach(b=>b.onclick=()=>done(b.dataset.col));
+    box.querySelector('#tmlColAny').onchange=ev=>done(String(ev.target.value).toUpperCase());
+  });
+}
+$('tmlKeysBack').onclick=()=>{ $('tmlKeys').classList.add('hidden'); lockBackground(); renderTimeline(); };
+
+/* ============================================================
    The home screen — a tile for every part of the app
    ============================================================ */
 const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect x="48.8" y="286" width="414.5" height="26" fill="#D7A82E"/><path d="M 336.7,286 L 394.7,286 L 394.7,422 L 365.7,388 L 336.7,422 Z" fill="#D7A82E"/><path d="M92.91666666666667 286.0V98.30303030303028H140.12878787878788L170.0681818181818 181.78787878787878Q172.9469696969697 190.13636363636363 175.39393939393938 198.62878787878788Q177.8409090909091 207.12121212121212 180.4318181818182 216.33333333333331H181.58333333333334Q184.17424242424244 207.12121212121212 186.47727272727275 198.62878787878788Q188.78030303030306 190.13636363636363 191.65909090909093 181.78787878787878L221.02272727272728 98.30303030303028H268.2348484848485V286.0H229.37121212121212V217.1969696969697Q229.37121212121212 207.9848484848485 230.37878787878788 195.46212121212122Q231.38636363636365 182.93939393939394 232.6818181818182 170.41666666666666Q233.97727272727275 157.89393939393938 235.1287878787879 148.68181818181816H233.97727272727275L218.71969696969697 198.1969696969697L192.2348484848485 269.8787878787879H167.47727272727275L141.28030303030303 198.1969696969697L126.59848484848484 148.68181818181816H125.4469696969697Q126.59848484848484 157.89393939393938 127.89393939393939 170.41666666666666Q129.18939393939394 182.93939393939394 130.0530303030303 195.46212121212122Q130.91666666666669 207.9848484848485 130.91666666666669 217.1969696969697V286.0Z M344.5227272727273 286.0V219.2121212121212L288.0984848484849 98.30303030303028H333.29545454545456L349.99242424242425 141.48484848484847Q353.7348484848485 152.13636363636363 357.47727272727275 162.0681818181818Q361.219696969697 172.0 365.25 182.93939393939394H366.4015151515152Q370.719696969697 172.0 374.6060606060606 162.0681818181818Q378.49242424242425 152.13636363636363 382.2348484848485 141.48484848484847L398.9318181818182 98.30303030303028H443.2651515151515L386.8409090909091 219.2121212121212V286.0Z" fill="currentColor"/></svg>`;
@@ -17642,6 +18338,7 @@ const TILE_DEST={
   stuff:   {label:'My Stuff',   go:openStuff},
   books:   {label:'Books',      go:openBooks},
   tv:      {label:'TV/Movies',  go:openShows},
+  tml:     {label:'Timeline',   go:openTimeline},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -17652,9 +18349,9 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B'};
+  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','games','links','stuff','books','tv','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -17675,7 +18372,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
-  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd']};
+  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -17942,7 +18639,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.17.3';
+const APP_VERSION='2026.11.17.4';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -19122,6 +19819,9 @@ union all select 'book_reviews',         count(*), coalesce(jsonb_agg(t), '[]') 
 -- TV/Movies
 union all select 'shows',                count(*), coalesce(jsonb_agg(t), '[]') from shows t
 union all select 'show_reviews',         count(*), coalesce(jsonb_agg(t), '[]') from show_reviews t
+-- Timeline
+union all select 'timeline',             count(*), coalesce(jsonb_agg(t), '[]') from timeline t
+union all select 'timeline_keys',        count(*), coalesce(jsonb_agg(t), '[]') from timeline_keys t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -23963,6 +24663,7 @@ const AREAS={
   stuff:   {title:'My Stuff',     set:null,        help:'stuff'},
   books:   {title:'Books',        set:null,        help:'books'},
   tv:      {title:'TV/Movies',    set:null,        help:'tv'},
+  tml:     {title:'Timeline',     set:null,        help:'tml'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
   home:    {title:'Menu',         set:null,        help:'home'}
@@ -23994,12 +24695,14 @@ const AREA_SHUT={
               if(BK_SCAN_STOP) BK_SCAN_STOP(); TV_VIEW=null; TV_EDIT=null;
               document.querySelectorAll('#tvAddBox,#tvFindBox,#tvEpBox,#tvViewBox').forEach(x=>x.remove());
               ['tv','tvShow','tvEd'].forEach(id=>$(id).classList.add('hidden')); },
+  tml:  ()=>{ TML_EDIT=null; document.querySelectorAll('#tmlAddBox,#tmlViewBox,#tmlColBox').forEach(x=>x.remove());
+              ['tml','tmlEd','tmlKeys'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, tml:openTimeline, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -24034,6 +24737,13 @@ function areaItems(area){
     it('Find a TV series',        ()=>{ shutMenu(); tvAskName('series'); }),
     ...(bkCanScan()?[it('Scan a DVD or Blu-ray', ()=>{ shutMenu(); tvScan(tvByBarcode); })]:[]),
     it('Fill one in yourself',    ()=>{ shutMenu(); openShowEd(null); })];
+  if(area==='tml') return [
+    it('Add where you lived',     ()=>{ shutMenu(); tmlEdit(null,'place'); }),
+    it('Add a holiday',           ()=>{ shutMenu(); tmlEdit(null,'holiday'); }),
+    it('Add something else',      ()=>{ shutMenu(); tmlAdd(); }),
+    it('Colours and kinds',       ()=>{ shutMenu(); openTmlKeys(); }),
+    it('Go to the day you were born', ()=>{ shutMenu(); tmlGoBorn(); }),
+    it('Go to today',             ()=>{ shutMenu(); $('tmlBody').scrollTop=0; })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

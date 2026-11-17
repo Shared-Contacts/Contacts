@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.17.3",
+  "version": "2026.11.17.4",
   "history": [
+    {
+      "version": "2026.11.17.4",
+      "changes": [
+        "Timeline: a new tile drawing your life as coloured lines, today at the top and the day you were born at the bottom, a mark every five years.",
+        "Timeline: where you lived is one line coloured by country, holidays a broken line beside it, and Work, Pets and the rest a column each.",
+        "Timeline: tap a line for its dates and how long it lasted; tap a name in the key to hide it. It needs step 65 run in Supabase first."
+      ]
+    },
     {
       "version": "2026.11.17.3",
       "changes": [

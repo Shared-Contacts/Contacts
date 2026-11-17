@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.17.2",
+  "version": "2026.11.17.3",
   "history": [
+    {
+      "version": "2026.11.17.3",
+      "changes": [
+        "Finances: sort codes, account numbers, IBANs and SWIFT codes larger and bold, with the examples small and pale so they don't look filled in."
+      ]
+    },
     {
       "version": "2026.11.17.2",
       "changes": [

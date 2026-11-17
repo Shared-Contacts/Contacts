@@ -1354,6 +1354,17 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .accbank label{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:13px;
   font-weight:600;color:var(--muted)}
 .accbank input{width:100%;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+/* The numbers themselves large, bold and in the ink colour, not the grey of
+   the box names; the examples small, plain and pale, so an empty box never
+   looks filled in (ML299). Less padding and no extra letter spacing give a
+   sort code room in its box. The IBAN is 18px too wherever all 27 characters
+   of a UK one fit, and only as much smaller as a narrower phone needs to keep
+   it on the line (17px at 360 wide, 14px at 320). */
+.accbank input{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:0;
+  padding-left:8px;padding-right:8px}
+.accbank .ib input{font-size:clamp(14px,calc(7.4vw - 9.5px),18px)}
+.accbank input::placeholder{font-size:12px;font-weight:400;letter-spacing:.04em;opacity:1;
+  color:color-mix(in srgb,var(--muted) 55%,#fff)}
 /* Sort code and account number side by side on any phone, then the IBAN,
    then the SWIFT code (ML266). */
 .accbank .sc{flex:0 0 112px}
@@ -17931,7 +17942,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.17.2';
+const APP_VERSION='2026.11.17.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

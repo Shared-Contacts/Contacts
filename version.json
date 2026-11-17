@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.17.1",
+  "version": "2026.11.17.2",
   "history": [
+    {
+      "version": "2026.11.17.2",
+      "changes": [
+        "TV/Movies: sharing from ITVX, Channel 4 and the like now finds the programme by the name in its link, and tries film and series."
+      ]
+    },
     {
       "version": "2026.11.17.1",
       "changes": [

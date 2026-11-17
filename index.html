@@ -5775,11 +5775,12 @@ function openHelp(where){
   <p><strong>Scan a DVD or Blu-ray</strong> reads the barcode on the back with the
   phone&rsquo;s camera. Scan one you already have and it opens; a new one keeps its
   barcode while you find which film it is (nothing free can tell from a barcode).</p>
-  <p><strong>From another app.</strong> On a film or series in IMDb, Netflix, iPlayer or
-  the like, tap <strong>Share</strong>, choose <strong>MY life</strong>, then <strong>A
-  film or TV series</strong>. It looks for it by the name in the share; tap the right
-  one, or switch between Film and TV series if it isn&rsquo;t there. The link goes under
-  <em>Reviews elsewhere</em>.</p>
+  <p><strong>From another app.</strong> On a film or series in IMDb, Netflix, iPlayer, ITVX,
+  Channel 4 or the like, tap <strong>Share</strong>, choose <strong>MY life</strong>, then
+  <strong>A film or TV series</strong>. It looks for it by the name in the share, or, where
+  the share only says something like &ldquo;Have you seen this yet?&rdquo;, by the name in
+  its link. If nothing is found as a series it looks for a film, and the other way round.
+  Tap the right one. The link goes under <em>Reviews elsewhere</em>.</p>
   <p><strong>Entered by</strong> says who put it in. It starts as you; choose someone
   else who uses the app if you&rsquo;re putting it in for them.</p>
   <p>Each one has whether you&rsquo;ve <em>Watched</em> it, are <em>Watching</em> it or
@@ -12555,12 +12556,17 @@ function shareGuess(s){
     ...((url.match(/\/(?:dp|gp\/product|ASIN)\/([\dX]{10})(?=[\/?#]|$)/i)||[]).slice(1))]
     .map(x=>x.replace(/[^\dX]/gi,'').toUpperCase());
   out.isbn=[...c13,...c10].find(x=>bkIsbnOk(x))||'';
-  let t=String(s.title||'').trim();
   const said=String(s.text||'').replace(/https?:\/\/\S+/g,'').trim();
   // Netflix and others: Watch “The Crown” on Netflix.
-  const q=(said.match(/[“"]([^”"]{2,120})[”"]/)||t.match(/[“"]([^”"]{2,120})[”"]/)||[])[1];
-  if(!t||q) t=q||said;
-  if(/\(TV (Mini )?Series\b|\bSeries \d+\b|\bSeason \d+\b|\bEpisode \d+\b|iplayer|itvx|channel4|all4|tvmaze/i.test(all)) out.kind='series';
+  const q=(said.match(/[“"]([^”"]{2,120})[”"]/)||String(s.title||'').match(/[“"]([^”"]{2,120})[”"]/)||[])[1];
+  // ITVX and Channel 4 send only "This is one to check out on ITVX" or
+  // "Have you seen this yet?" with the link (ML297): no name in the words,
+  // so it comes from the link instead (www.itv.com/watch/frasier/10a1234).
+  const slug=shareSlug(url);
+  let t=q||[s.title,said].map(shareWords).find(x=>x&&!shareBland(x))||slug.name||'';
+  if(/\(TV (Mini )?Series\b|\bSeries \d+\b|\bSeason \d+\b|\bEpisode \d+\b/i.test(all)) out.kind='series';
+  else if(slug.kind) out.kind=slug.kind;
+  else if(/iplayer|itvx|itv\.com|channel4|all4|channel5|my5|tvmaze/i.test(all)) out.kind='series';
   else if(/imdb|netflix|disneyplus|primevideo|now\.tv|letterboxd/i.test(all)) out.kind='film';
   // Amazon.co.uk: The Hobbit: Tolkien, J. R. R.: 9780261103344: Books
   const az=t.match(/^Amazon\.[a-z.]+\s*:\s*(.+)$/i);
@@ -12579,6 +12585,58 @@ function shareGuess(s){
   out.name=t.slice(0,200);
   return out;
 }
+// The words of a share, without its link and the service it came from:
+// "Watch Frasier on ITVX" is Frasier.
+const SHARE_SVC='ITVX|ITV ?X|ITV Hub|ITV|Channel ?4|All ?4|BBC iPlayer|iPlayer|My ?5|Channel ?5|UKTV Play|Netflix|'
+  +'Prime Video|Amazon Prime|Disney\\+|Apple TV\\+?|NOW TV|NOW|Sky Go|Paramount\\+|BritBox|YouTube|Goodreads|IMDb';
+function shareWords(x){
+  return String(x||'').replace(/https?:\/\/\S+/g,'').trim()
+    .replace(new RegExp('^(?:watch|I(?:\'|’)m watching|I am watching|now watching)\\s+(.+?)\\s+on\\s+(?:'+SHARE_SVC+')\\s*[.!]*$','i'),'$1')
+    .replace(new RegExp('\\s+on\\s+(?:'+SHARE_SVC+')\\s*[.!]*$','i'),'').trim();
+}
+// Words that are only an invitation, with no name in them.
+function shareBland(x){
+  x=String(x||'').trim();
+  return !x || new RegExp('^(?:'+SHARE_SVC+')$','i').test(x)
+    || /^(?:this|it|this one|look|wow|watch this)[.!?]*$/i.test(x)
+    || /\b(?:check(?:ing)? (?:this |it )?out|have you (?:seen|watched|read)|seen this|one to (?:watch|check|see|read)|take a look|thought you|you(?:'|’)?(?:d| might| should| would| will) (?:like|love|enjoy)|recommend|look what|found this|worth a (?:watch|look|read))\b/i.test(x);
+}
+// A film or series' name from its address, where the site puts it there:
+// ITVX /watch/frasier/…, Channel 4 /programmes/frasier, iPlayer
+// /iplayer/episode/m001…/the-traitors-series-3-episode-1, Channel 5 /show/…,
+// Disney+ /series/the-bear/…, Apple TV /show/slow-horses/…, TVmaze, Letterboxd,
+// Rotten Tomatoes, JustWatch. Kind is film or series where the address says.
+function shareSlug(url){
+  const none={name:'', kind:''};
+  let u; try{ u=new URL(url); }catch(e){ return none; }
+  if(!/^https?:$/.test(u.protocol)) return none;
+  const segs=u.pathname.split('/').filter(Boolean).map(x=>{ try{ return decodeURIComponent(x); }catch(e){ return x; } });
+  const marks={watch:'', programmes:'series', programme:'series', show:'series', shows:'series', series:'series',
+    'tv-series':'series', 'tv-show':'series', tv:'series', brand:'series', episodes:'series', episode:'series',
+    movie:'film', movies:'film', film:'film', films:'film', m:'film', detail:'', book:''};
+  const skip=/^(?:on-demand|title|titles|details?|season-?\d*|series-?\d*|episodes?|player|iplayer|video|videos|play|browse|live|en|en-gb|en-us|gb|uk|us)$/i;
+  const at=segs.findIndex(x=>Object.prototype.hasOwnProperty.call(marks,x.toLowerCase()));
+  if(at<0) return none;
+  const kind=marks[segs[at].toLowerCase()];
+  for(const x of segs.slice(at+1,at+5)){
+    const low=x.toLowerCase();
+    if(Object.prototype.hasOwnProperty.call(marks,low)||skip.test(x)) continue;
+    // An id, not a name: 10a1234, m0024hgw, B0CW1Z2X3Y, a long hex code. A name
+    // with figures in has dashes between its words (paddington-2).
+    // Amazon's ref=atv_dp is not one either.
+    if(/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(x)||!/\p{L}{3}/u.test(x)||(/\d/.test(x)&&!/[-_.+ ]/.test(x))||/[=&]/.test(x)) continue;
+    let n=x.replace(/^\d+[.-](?=\p{L})/u,'')             // Goodreads: 5907.The_Hobbit
+      .replace(/[-_+.]+/g,' ')
+      .replace(/\s+(?:series|season|episode|part|s)\s*\d+.*$/i,'')
+      .replace(/(?:\s+\d{6,})+$/,'').replace(/\s+/g,' ').trim();
+    if(!/\p{L}{2}/u.test(n)) continue;
+    const small=/^(?:a|an|and|at|by|for|in|of|on|or|the|to|with)$/i;
+    n=n.split(' ').map((w,i)=>i&&small.test(w)?w.toLowerCase()
+      :(w===w.toLowerCase()?w.charAt(0).toUpperCase()+w.slice(1):w)).join(' ');
+    return {name:n.slice(0,120), kind};
+  }
+  return none;
+}
 async function sharedBook(s){
   const w=shareGuess(s), extra={links:s.url?[{url:s.url, quote:''}]:[]};
   await openBooks();
@@ -12589,7 +12647,7 @@ async function sharedBook(s){
 async function sharedShow(s){
   const w=shareGuess(s), extra={links:s.url?[{url:s.url, quote:''}]:[]};
   await openShows();
-  tvAskName(w.kind||'film','',w.name?'':'Type its name to find it.',w.name,extra);
+  tvAskName(w.kind||'film','',w.name?'':'That share didn’t say its name. Type it to find it.',w.name,extra,true);
 }
 
 /* ---------- Ideas, from TheMealDB ----------
@@ -17255,8 +17313,9 @@ function tvAdd(){
 // Type a name; tap the right one; the editor opens with all of it filled in.
 // A barcode scanned first comes along with it.
 // name: looked for straight away; extra: anything else to start it with
-// (both from a link shared in, ML289).
-function tvAskName(kind,barcode,said,name,extra){
+// (both from a link shared in, ML289). either: the kind was only a guess,
+// so if that first look finds nothing, it looks as the other kind (ML297).
+function tvAskName(kind,barcode,said,name,extra,either){
   let k=kind==='series'?'series':'film', seq=0;
   const box=document.createElement('div');
   box.className='daypick lnked'; box.id='tvFindBox';
@@ -17276,12 +17335,14 @@ function tvAskName(kind,barcode,said,name,extra){
   box.querySelector('#tvFindNo').onclick=close;
   box.querySelector('#tvFindHand').onclick=()=>{ const t=q.value.trim(); close();
     openShowEd(null,{...(extra||{}), kind:k, title:t, barcode:barcode||''}); };
-  box.querySelectorAll('[data-tvfk]').forEach(b=>b.onclick=()=>{ k=b.dataset.tvfk;
-    box.querySelectorAll('[data-tvfk]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-    q.placeholder=k==='series'?'e.g. Line of Duty':'e.g. Paddington 2';
+  const setKind=x=>{ k=x;
+    box.querySelectorAll('[data-tvfk]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tvfk===x)));
+    q.placeholder=k==='series'?'e.g. Line of Duty':'e.g. Paddington 2'; };
+  box.querySelectorAll('[data-tvfk]').forEach(b=>b.onclick=()=>{ setKind(b.dataset.tvfk);
     out.innerHTML=''; if(q.value.trim()) go(); else q.focus(); });
   const note=t=>{ out.innerHTML=`<p class="coords" style="margin:10px 0 0">${t}</p>`; };
-  const go=async()=>{
+  // how: 'first' for the look a share starts, 'again' for its look as the other kind.
+  const go=async how=>{
     const name=q.value.trim(); if(!name){ toast('Type its name first'); q.focus(); return; }
     const my=++seq; q.blur();
     note(k==='series'?'Asking TVmaze…':'Asking Wikipedia…');
@@ -17290,7 +17351,11 @@ function tvAskName(kind,barcode,said,name,extra){
     catch(e){ console.warn(e); if(my===seq) note('Couldn’t reach '+(k==='series'?'TVmaze':'Wikipedia')
       +' just now. Check your signal and press Find again, or fill it in yourself.'); return; }
     if(my!==seq) return;
-    if(!hits.length){ note('Nothing found as a '+(k==='series'?'TV series':'film')
+    if(!hits.length){
+      if(how==='first'&&either){ setKind(k==='series'?'film':'series'); return go('again'); }
+      if(how==='again'){ note('Nothing found as a film or a TV series with that name. Try another way of writing it, '
+        +'or fill it in yourself.'); return; }
+      note('Nothing found as a '+(k==='series'?'TV series':'film')
       +' with that name. Try another way of writing it, '+(k==='series'?'look for it as a film':'look for it as a TV series')
       +', or fill it in yourself.'); return; }
     out.innerHTML=`<div class="card tvhits">${hits.map((h,i)=>`<button class="item tvhit" data-tvhit="${i}">
@@ -17298,9 +17363,9 @@ function tvAskName(kind,barcode,said,name,extra){
       <span class="mid"><span class="t">${esc(h.title)}</span>${h.line?`<span class="w">${esc(h.line)}</span>`:''}</span></button>`).join('')}</div>`;
     out.querySelectorAll('[data-tvhit]').forEach(b=>b.onclick=()=>tvPicked(hits[Number(b.dataset.tvhit)],barcode,close,extra));
   };
-  box.querySelector('#tvFindGo').onclick=go;
+  box.querySelector('#tvFindGo').onclick=()=>go();
   q.onkeydown=ev=>{ if(ev.key==='Enter') go(); };
-  if(name){ q.value=name; go(); }
+  if(name){ q.value=name; go('first'); }
   else setTimeout(()=>{ try{ q.focus(); }catch(e){} },50);
 }
 async function tvPicked(h,barcode,close,extra){
@@ -17866,7 +17931,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.17.1';
+const APP_VERSION='2026.11.17.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

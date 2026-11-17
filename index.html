@@ -916,6 +916,15 @@ body.vbtyping #verBar{display:none}
 .lkback{color:var(--hull);border:1.5px solid var(--rule);background:#fff}
 .lkdone{background:var(--hull);color:#F2EFE4;min-width:96px}
 .lkdone:disabled{opacity:.5}
+/* Done, tapped: looks finished, but a tap takes it back (ML291). */
+.lkdone.did{opacity:.55}
+/* The roller is waiting for you (ML293): the line picked out in gold and
+   Done gently pulsing. */
+.lkbar.lkwait .lkstatus{background:#FFE7A0;color:#3A2C00;border-radius:8px;padding:4px 8px;
+  box-shadow:0 0 0 2px #E0B21B}
+.lkbar.lkwait #lkDone{box-shadow:0 0 0 3px #E0B21B;animation:lkpulse 1.3s ease-in-out infinite}
+@keyframes lkpulse{0%,100%{box-shadow:0 0 0 3px #E0B21B}50%{box-shadow:0 0 0 7px rgba(224,178,27,.35)}}
+@media (prefers-reduced-motion:reduce){.lkbar.lkwait #lkDone{animation:none}}
 .lkundo{white-space:nowrap}
 .lkundo:disabled{opacity:.45}
 .lkstatus{flex:1;min-width:0;font-size:clamp(13px,4.2cqh,17px);line-height:1.25}
@@ -5730,6 +5739,13 @@ function openHelp(where){
   <p>Scanning or typing the ISBN looks the book up on Open Library, which fills in
   the title, the author and, when it has one, the cover. Anything it doesn't know,
   you type in. Scanning needs the phone's camera; on the laptop, type the ISBN.</p>
+  <p><strong>From another app.</strong> On a book's page in Amazon, Goodreads or the
+  like, tap <strong>Share</strong>, choose <strong>MY life</strong>, then <strong>A
+  book</strong>. If the share has the ISBN in it, the book is looked up as above;
+  if not, its title (and author, when it says) is filled in for you. The link goes
+  under <em>Reviews elsewhere</em>, to find the page again.</p>
+  <p><strong>Entered by</strong> says who put the book in. It starts as you; choose
+  someone else who uses the app if you're putting it in for them.</p>
   <p>Each book can have its series and number, the format, whether you've
   <em>Read</em> it (and the day you finished), are <em>Reading</em> it or
   <em>Want to read</em> it, your stars and notes, the price, and who you bought it
@@ -5759,6 +5775,13 @@ function openHelp(where){
   <p><strong>Scan a DVD or Blu-ray</strong> reads the barcode on the back with the
   phone&rsquo;s camera. Scan one you already have and it opens; a new one keeps its
   barcode while you find which film it is (nothing free can tell from a barcode).</p>
+  <p><strong>From another app.</strong> On a film or series in IMDb, Netflix, iPlayer or
+  the like, tap <strong>Share</strong>, choose <strong>MY life</strong>, then <strong>A
+  film or TV series</strong>. It looks for it by the name in the share; tap the right
+  one, or switch between Film and TV series if it isn&rsquo;t there. The link goes under
+  <em>Reviews elsewhere</em>.</p>
+  <p><strong>Entered by</strong> says who put it in. It starts as you; choose someone
+  else who uses the app if you&rsquo;re putting it in for them.</p>
   <p>Each one has whether you&rsquo;ve <em>Watched</em> it, are <em>Watching</em> it or
   <em>Want to watch</em> it, your stars and notes, and who recommended it, from your
   Contacts. Under <em>Times watched</em> keep each time: when, where, how (Netflix, a
@@ -5880,9 +5903,22 @@ function openHelp(where){
   <p><strong>Each roll:</strong> whoever is rolling throws all six dice. Everyone
   may mark the total of the two white dice, in any one row. The roller may also
   add one white die to one coloured die and mark that in the row of that colour.
-  Then everyone taps <strong>Done</strong>. It stays greyed until all of you have,
+  Then everyone taps <strong>Done</strong>. It says Done &#10003; until all of you have,
   and then the dice pass on. If someone has wandered off, the roller can tap
   <strong>Carry on without them</strong>, beside Stop game.</p>
+  <p><strong>Save your turn?</strong> As soon as you have marked the one number you
+  can take on someone else&rsquo;s roll, or both numbers on your own, it asks.
+  <strong>Save</strong> taps Done for you; <strong>Cancel</strong> takes that number
+  off again. Tap beside the question to put it away and carry on as you were.</p>
+  <p><strong>Waiting for you:</strong> once the roller has tapped Done, the line at
+  the top turns gold, says they are waiting for you, and Done pulses (the phone
+  gives a short buzz too).</p>
+  <p><strong>Done by mistake:</strong> while the others are still marking, tap
+  <strong>Done &#10003;</strong> (or Undo last move) to take it back. Once the dice have
+  passed on, and until anyone does anything on the next roll, <strong>Undo last
+  move</strong> takes everyone back to the last roll: every Done on it is taken back
+  (a penalty taken on it too), the marks stay as they were, and everyone taps Done
+  again.</p>
   <p><strong>The phone&rsquo;s dice:</strong> with Real dice unticked, whoever is
   rolling taps <strong>Roll</strong>, and the same six dice appear at the top of
   everyone&rsquo;s sheet. The numbers they let you mark have a white ring: the white
@@ -9347,6 +9383,10 @@ function drawDayPick(){
       <span class="n">${n}</span>
       <span class="dots">${have.has(key)?'<i class="a"></i>':''}</span></button>`;
   }
+  // Always six rows of weeks (ML290). A month takes four, five or six, and
+  // the box sits in the middle of the screen, so the arrows used to jump up
+  // and down from one month to the next, away from your thumb.
+  for(let i=lead+days;i<42;i++) cells+='<span class="mcell blank"></span>';
   const box=document.createElement('div');
   box.className='daypick';
   box.innerHTML=`<div class="inner">
@@ -12473,21 +12513,83 @@ async function readRecipe(url,title){
 
 // Arriving from Chrome's Share menu: a recipe, or a link for URL Links?
 function sharedIn(s){
-  if(!s.url){ toast('That share had no web address in it'); return; }
+  // A book or a film can come with just its name (ML289); the rest need a web address.
+  const words=shareGuess(s);
+  if(!s.url&&!words.name){ toast('That share had no web address in it'); return; }
   const box=document.createElement('div');
   box.className='daypick';
   box.innerHTML=`<div class="inner">
     <p class="dsec" style="padding-top:0">Save this as</p>
-    <p class="lsub">${esc(s.title||linkHost(s.url))}</p>
-    <button class="menuitem" id="siRecipe">A recipe &rsaquo;</button>
-    <button class="menuitem" id="siLink">A link in URL Links &rsaquo;</button>
+    <p class="lsub">${esc(s.title||words.name||linkHost(s.url))}</p>
+    ${s.url?`<button class="menuitem" id="siRecipe">A recipe &rsaquo;</button>
+    <button class="menuitem" id="siLink">A link in URL Links &rsaquo;</button>`:''}
+    <button class="menuitem" id="siBook">A book &rsaquo;</button>
+    <button class="menuitem" id="siShow">A film or TV series &rsaquo;</button>
     <div class="pfoot"><button id="siShut">Cancel</button></div></div>`;
   document.body.appendChild(box);
   const close=()=>box.remove();
   box.querySelector('#siShut').onclick=close;
   box.onclick=ev=>{ if(ev.target===box) close(); };
-  box.querySelector('#siRecipe').onclick=async()=>{ close(); await openRecipes(); readRecipe(s.url,s.title); };
-  box.querySelector('#siLink').onclick=async()=>{ close(); await openLinks(); editLink(null,s); };
+  if(s.url){
+    box.querySelector('#siRecipe').onclick=async()=>{ close(); await openRecipes(); readRecipe(s.url,s.title); };
+    box.querySelector('#siLink').onclick=async()=>{ close(); await openLinks(); editLink(null,s); };
+  }
+  box.querySelector('#siBook').onclick=()=>{ close(); sharedBook(s); };
+  box.querySelector('#siShow').onclick=()=>{ close(); sharedShow(s); };
+}
+
+/* A book or a film shared in from another app (ML289): Amazon, Goodreads,
+   IMDb, Netflix, iPlayer and the like. Only what the share itself says is
+   read (its title, its words and its address): the page is never fetched.
+   An ISBN anywhere in it finds the book on Open Library; failing that, the
+   name (and an author, if the share gives one) starts a new book. A film or
+   series is looked for by its name, as Find a film does. The link goes in
+   with it, under Reviews elsewhere, to find the page again. */
+function shareGuess(s){
+  const url=String(s.url||''), all=[s.title,s.text,url].filter(Boolean).join(' ');
+  const out={name:'', author:'', kind:'', isbn:''};
+  // An ISBN: 13 figures starting 978 or 979, or 10 after "ISBN" or in an
+  // Amazon address (a printed book's Amazon number is its ISBN-10).
+  const c13=(all.match(/97[89][\d\- ]{10,16}/g)||[]).map(x=>x.replace(/\D/g,'').slice(0,13));
+  const c10=[...(all.match(/ISBN(?:-10)?:?\s*([\dX\- ]{10,13})/gi)||[]).map(x=>x.replace(/^ISBN(-10)?:?/i,'')),
+    ...((url.match(/\/(?:dp|gp\/product|ASIN)\/([\dX]{10})(?=[\/?#]|$)/i)||[]).slice(1))]
+    .map(x=>x.replace(/[^\dX]/gi,'').toUpperCase());
+  out.isbn=[...c13,...c10].find(x=>bkIsbnOk(x))||'';
+  let t=String(s.title||'').trim();
+  const said=String(s.text||'').replace(/https?:\/\/\S+/g,'').trim();
+  // Netflix and others: Watch “The Crown” on Netflix.
+  const q=(said.match(/[“"]([^”"]{2,120})[”"]/)||t.match(/[“"]([^”"]{2,120})[”"]/)||[])[1];
+  if(!t||q) t=q||said;
+  if(/\(TV (Mini )?Series\b|\bSeries \d+\b|\bSeason \d+\b|\bEpisode \d+\b|iplayer|itvx|channel4|all4|tvmaze/i.test(all)) out.kind='series';
+  else if(/imdb|netflix|disneyplus|primevideo|now\.tv|letterboxd/i.test(all)) out.kind='film';
+  // Amazon.co.uk: The Hobbit: Tolkien, J. R. R.: 9780261103344: Books
+  const az=t.match(/^Amazon\.[a-z.]+\s*:\s*(.+)$/i);
+  if(az){ const part=az[1].split(/\s*:\s*/);
+    t=part[0]; if(part[1]&&!/^\d/.test(part[1])&&!/^(books?|kindle|dvd|blu-?ray)/i.test(part[1])) out.author=part[1]; }
+  t=t.replace(/\s*⭐.*$/,'')        // IMDb: Paddington 2 (2017) ⭐ 7.8 | Adventure
+    .replace(/^(BBC iPlayer|ITVX|Channel 4|All 4|My5)\s*[-–:|]\s*/i,'')
+    .replace(/\s*[|–-]\s*(IMDb|Goodreads|Waterstones|Netflix|Letterboxd|Wikipedia|Rotten Tomatoes|Prime Video|Apple TV\+?|Disney\+|TVmaze|Open Library|Blackwell'?s|Bookshop\.org|WHSmith|Amazon\.[a-z.]+)\b.*$/i,'')
+    .replace(/\s*[-–:]\s*(Series|Season) \d+.*$/i,'')
+    .replace(/\s*\((?:TV (?:Mini )?Series|TV Movie|Video)?\s*\d{4}(?:[–-]\d{0,4})?\s*\)\s*$/i,'')
+    .replace(/\s*\(TV (?:Mini )?Series\)\s*$/i,'').trim();
+  // The Hobbit by J.R.R. Tolkien
+  const by=t.match(/^(.{2,120}?)\s+by\s+(.{2,80})$/i);
+  if(by){ t=by[1].trim(); if(!out.author) out.author=by[2].trim(); }
+  if(/^https?:\/\//i.test(t)) t='';
+  out.name=t.slice(0,200);
+  return out;
+}
+async function sharedBook(s){
+  const w=shareGuess(s), extra={links:s.url?[{url:s.url, quote:''}]:[]};
+  await openBooks();
+  if(w.isbn){ bkFind(w.isbn,{...extra, author:w.author}); return; }
+  openBookEd(null,{...extra, title:w.name, author:w.author});
+  toast(w.name?'No ISBN in that: check the title and fill in the rest':'Nothing to go on in that: fill it in yourself');
+}
+async function sharedShow(s){
+  const w=shareGuess(s), extra={links:s.url?[{url:s.url, quote:''}]:[]};
+  await openShows();
+  tvAskName(w.kind||'film','',w.name?'':'Type its name to find it.',w.name,extra);
 }
 
 /* ---------- Ideas, from TheMealDB ----------
@@ -13830,7 +13932,9 @@ function lkSheet(raw){
   const out={pen:Math.max(0,Math.min(4,parseInt(s.pen,10)||0)),
     locked:arr(s.locked).filter(c=>LK_ROWS.some(r=>r.c===c)),
     turn:{no:Number(t.no)||0, marks:arr(t.marks).filter(m=>Array.isArray(m)&&m.length===2)
-      .map(m=>[String(m[0]),Number(m[1])]), pen:!!t.pen}};
+      .map(m=>[String(m[0]),Number(m[1])]), pen:!!t.pen,
+      // How many penalties that Done took (ML291), so taking it back takes them off.
+      pn:Math.max(0,Math.min(2,parseInt(t.pn,10)||0))}};
   LK_ROWS.forEach(r=>{
     const order=lkNums(r);
     out[r.c]=arr(s[r.c]).map(Number).filter(n=>order.includes(n))
@@ -13982,8 +14086,22 @@ function lkWhyNot(g,s,r,n){
 }
 // The newest of your marks on this roll: what Undo last move takes back.
 const lkLastMark = (g,s) => { const t=lkTurnMarks(s,g); return t.length?t[t.length-1]:null; };
-const lkCanUndo = (g,me,s) => g.status==='playing' && !lkDoneThisRoll(g,me)
-  && !(s.turn.no===g.turn_no&&s.turn.pen) && !!lkLastMark(g,s);
+const lkCanUndo = (g,me,s) => g.status==='playing' && (lkDoneThisRoll(g,me)
+  || (!(s.turn.no===g.turn_no&&s.turn.pen) && !!lkLastMark(g,s)) || !!lkCanGoBack(g));
+// Can everyone go back to the roll before (ML291, step 64)? Only before
+// the new roll has started: nobody has marked or tapped Done on it, no
+// lock has closed on it, and the phone's dice have not been rolled for it.
+// Says whose roll that was (a player), or null.
+function lkCanGoBack(g){
+  if(!g||g.status!=='playing'||!(g.turn_no>1)) return null;
+  const ps=lkPlayers(g.id);
+  if(ps.some(p=>lkDoneThisRoll(g,p))) return null;
+  if(ps.some(p=>{ const s=lkSheet(p.sheet); return s.turn.no===g.turn_no&&(s.turn.marks.length||s.turn.pen); })) return null;
+  if(Object.values(g.closed||{}).some(v=>Number(v)===g.turn_no)) return null;
+  if(!lkReal(g)&&lkDice(g)) return null;
+  const n=ps.length; if(!n) return null;
+  return ps.find(p=>p.seat===((g.turn-1+n)%n))||null;
+}
 
 /* ---------- fetching ---------- */
 const lkMissing = e => /games|game_players|42P01|PGRST205|does not exist|schema cache/i.test((e&&(e.message||e.code))||'');
@@ -14346,6 +14464,13 @@ function lkResults(g){
   return {list, best, line};
 }
 
+// Someone else's roll, they have tapped Done, and you haven't (ML293).
+function lkWaitedOn(g,me){
+  if(!g||!me||g.status!=='playing'||lkDoneThisRoll(g,me)||lkNoDice(g)) return false;
+  const r=lkRoller(g); if(!r||r===ME.id) return false;
+  return lkDoneThisRoll(g,lkPlayers(g.id).find(p=>p.user_id===r));
+}
+let LK_NUDGED='';
 function lkStatus(g,me){
   if(g.status!=='playing') return 'Game over: '+(g.end_reason||'ended');
   const r=lkRoller(g), done=lkDoneThisRoll(g,me);
@@ -14360,6 +14485,13 @@ function lkStatus(g,me){
     .map(x=>x.name.toLowerCase());
   const still=closing.length?' The '+lkAnd(closing)+' lock'+(closing.length>1?'s close':' closes')
     +' after this roll: you can still mark '+(closing.length>1?'them':closing[0])+' now.':'';
+  // The roller has finished and is waiting for you (ML293): said plainly,
+  // and the bar is picked out in gold by lkPaint.
+  if(lkWaitedOn(g,me)){
+    const ps=lkPlayers(g.id), left=ps.filter(p=>!lkDoneThisRoll(g,p)&&p.user_id!==ME.id);
+    return (!left.length&&ps.length>2?'<b>Everyone is waiting for you.</b>':'<b>'+esc(lkWho(r))+' is waiting for you.</b>')
+      +(v?' White dice '+(v[0]+v[1])+': yours too.':' The white dice total is yours too.')+' Then Done.'+still;
+  }
   if(v) return (r===ME.id?'<b>Your roll.</b> White dice '+(v[0]+v[1])+', or a white and a colour.'
     :'<b>'+esc(lkWho(r))+' is rolling.</b> White dice '+(v[0]+v[1])+': yours too.')+' Then Done.'+still;
   if(r===ME.id) return '<b>Your roll.</b> The white dice total in any row, a white and a colour in that colour’s row. Then Done.'+still;
@@ -14403,15 +14535,22 @@ function lkPaint(){
         aria-label="${r.name} lock${held?', closed by you':shut?', closed':', open'}">${LK_GATES(shut)}</button>
     </div>`;
   };
+  const waited=lkWaitedOn(g,me);
+  // A short buzz, once a roll, when they start waiting for you.
+  if(waited&&LK_NUDGED!==g.id+':'+g.turn_no){
+    LK_NUDGED=g.id+':'+g.turn_no;
+    try{ if(document.visibilityState==='visible'&&navigator.vibrate) navigator.vibrate([70,60,70]); }catch(e){}
+  }
   st.innerHTML=`
-    <div class="lkbar">
+    <div class="lkbar${waited?' lkwait':''}">
       <button class="lkback" id="lkBack">&lsaquo; Games</button>
       ${playing&&!real?(noDice&&roller===ME.id
         ?`<button class="lkroll" id="lkRoll" ${LK_ROLLING?'disabled':''}>${PD_LOGO} Roll</button>`:lkDiceHtml(g)):''}
       <div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>
       ${playing?`<button class="lkback lkundo" id="lkUndo" ${lkCanUndo(g,me,s)?'':'disabled'}
         aria-label="Undo last move: take back your newest mark on this roll">&#8630; Undo last move</button>`:''}
-      ${playing?`<button class="lkdone" id="lkDone" ${done||noDice?'disabled':''}>${done?'Done ✓':'Done'}</button>`:''}
+      ${playing?`<button class="lkdone${done?' did':''}" id="lkDone" ${!done&&noDice?'disabled':''}
+        ${done?'aria-label="Done. Tap to take it back"':''}>${done?'Done ✓':'Done'}</button>`:''}
     </div>
     <div class="lkwho">${ps.map(p=>{
       const t=lkScore(lkSheet(p.sheet),lkLocksOf(g,p)).total, pen=lkSheet(p.sheet).pen;
@@ -14435,7 +14574,7 @@ function lkPaint(){
   if(ask) st.appendChild(ask);
   $('lkBack').onclick=lkBackToList;
   const un=$('lkUndo'); if(un) un.onclick=lkUndo;
-  const d=$('lkDone'); if(d) d.onclick=()=>lkDone(g.id);
+  const d=$('lkDone'); if(d) d.onclick=()=>done?lkNotDone(g.id):lkDone(g.id);
   const rl=$('lkRoll'); if(rl) rl.onclick=lkRollDice;
   const on=$('lkOn'); if(on) on.onclick=()=>lkCarryOn(g.id);
   st.querySelectorAll('[data-lk]').forEach(b=>b.onclick=()=>{
@@ -14470,20 +14609,23 @@ function lkOverHtml(g){
 /* Questions during a game (ML219). The phone's own confirm box always
    stands upright, across a game played on its side, so they are asked on
    the game sheet instead and turn with it. Resolves true or false. */
-function lkAsk(msg,yes,no){
-  const st=$('lkStage');
-  if(!st||$('lkPlay').classList.contains('hidden')) return Promise.resolve(confirm(msg));
+// opt.away (ML292): what it resolves to when put away without a button
+// (tapped beside, the game shut, another question over it). Left out, false.
+function lkAsk(msg,yes,no,opt){
+  const st=$('lkStage'), o=opt||{}, away=('away' in o)?o.away:false;
+  if(!st||$('lkPlay').classList.contains('hidden')) return Promise.resolve('away' in o?away:confirm(msg));
   const old=st.querySelector('.lkask'); if(old&&old.__done) old.__done(false);
   return new Promise(res=>{
     const box=document.createElement('div');
     box.className='lkask'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true');
+    if(o.kind) box.dataset.kind=o.kind;
     box.innerHTML=`<div class="lkaskin"><p>${esc(msg)}</p><div class="lkaskbtns">
       <button type="button" class="lkback" data-ask="0">${esc(no||'Cancel')}</button>
       <button type="button" class="lkdone" data-ask="1">${esc(yes||'OK')}</button></div></div>`;
-    const done=v=>{ box.__done=null; box.remove(); res(v); };
+    const done=(v,btn)=>{ box.__done=null; box.remove(); res(btn?v:(v?v:away)); };
     box.__done=done;
     box.querySelectorAll('[data-ask]').forEach(b=>b.onclick=ev=>{
-      ev.stopPropagation(); done(b.dataset.ask==='1'); });
+      ev.stopPropagation(); done(b.dataset.ask==='1',true); });
     box.onclick=ev=>{ if(ev.target===box) done(false); };
     st.appendChild(box);
   });
@@ -14593,13 +14735,19 @@ async function lkTap(c,n){
       ?'The '+name+' lock is closed'+(beat?' and it is yours: '+hw+'’s '+n+' counts as a mark':'')+'. Put that die aside'
       :'Marked. The '+name+' lock and its bonus are '+lkWho(h2.user_id)+'’s, and your '+n+' counts as a mark');
   }
+  // The last number you can take on this roll: Save your turn? (ML292)
+  const gNow=lkGame(g.id)||g;
+  if(gNow.status==='playing'&&gNow.turn_no===s.turn.no&&s.turn.marks.length===(lkMyRoll(gNow)?2:1))
+    lkAskSave(g.id,c,n);
 }
 
 // Takes back one of your marks from this roll. One that closed a lock opens
 // it again for everyone (step 58), unless someone else closed it on this
 // roll too. The lock is opened first, so a failed save can simply be tried
 // again: opening an open lock does nothing.
-async function lkTakeBack(g,s,c,n){
+// asked: Cancel on Save your turn? (ML292) has said so already, so a lock
+// it closed opens again without asking twice.
+async function lkTakeBack(g,s,c,n,asked){
   const r=LK_ROWS.find(x=>x.c===c), name=r.name.toLowerCase();
   const i=s.turn.marks.findIndex(m=>m[0]===c&&m[1]===n);
   if(i<0||s[c][s[c].length-1]!==n) return;
@@ -14612,7 +14760,7 @@ async function lkTakeBack(g,s,c,n){
     const others=lkPlayers(g.id).filter(p=>p.user_id!==ME.id&&lkSheet(p.sheet).locked.includes(c))
       .sort((a,b)=>lkRank(g,a,c)-lkRank(g,b,c));
     const nw=others.length?lkWho(others[0].user_id):'';
-    if(!await lkAskNow(g.id,others.length
+    if(!asked&&!await lkAskNow(g.id,others.length
         ?'Take back the '+n+'? The '+name+' lock stays closed, and it and its bonus '
           +(lkHasLock(g,lkMe(g.id),c)?'go to ':'stay with ')+nw+'.'
         :'Take back the '+n+' and open the '+name+' lock again, for everyone?',
@@ -14638,15 +14786,72 @@ async function lkTakeBack(g,s,c,n){
       :'The '+name+' lock is open again: put that die back');
   }
 }
+// Undo last move takes back, newest first: your Done on this roll, while
+// the others are still marking (ML291); a mark on this roll; and, once the
+// dice have passed on and before the next roll has started, the whole of
+// the last roll, for everyone.
 async function lkUndo(){
   const g=lkGame(LK_CUR), me=g&&lkMe(g.id); if(!me) return;
   const s=lkSheet(me.sheet);
   if(g.status!=='playing'){ toast('This game has ended'); return; }
-  if(lkDoneThisRoll(g,me)){ toast('You have finished with this roll'); return; }
+  if(lkDoneThisRoll(g,me)){ await lkNotDone(g.id); return; }
   if(s.turn.no===g.turn_no&&s.turn.pen){ toast('You have taken the penalty for this roll: tap Done'); return; }
   const m=lkLastMark(g,s);
-  if(!m){ toast('Nothing to undo: you have not marked anything on this roll'); return; }
-  await lkTakeBack(g,s,m[0],m[1]);
+  if(m){ await lkTakeBack(g,s,m[0],m[1]); return; }
+  if(lkCanGoBack(g)){ await lkGoBack(g.id); return; }
+  toast('Nothing to undo: you have not marked anything on this roll');
+}
+const lkStepMsg = e => /PGRST202|not_done|back_a_roll|lk_unpen/i.test(((e&&e.message)||'')+((e&&e.code)||''));
+// Done tapped by mistake, the roll still going: take it back (step 64).
+async function lkNotDone(id){
+  const g=lkGame(id), me=g&&lkMe(id); if(!me||g.status!=='playing') return;
+  if(!lkDoneThisRoll(g,me)) return;
+  const s=lkSheet(me.sheet), pen=s.turn.no===g.turn_no&&s.turn.pen;
+  if(!await lkAskNow(id,'Take back your Done? You can change your marks on this roll again'
+      +(pen?', and the penalty you took is taken off':'')+'. Tap Done again when you’re ready.',
+    'Take it back','Keep it')) return;
+  const {data,error}=await sb.rpc('not_done',{g:id, at_turn:g.turn_no});
+  if(error){ console.error(error);
+    toast(lkStepMsg(error)?'Taking back a Done needs step 64 run in Supabase first':'Could not reach the game: check your signal'); return; }
+  await lkReload(id); lkPaint();
+  toast(data==='ok'?'Done taken back: change what you need, then Done'
+    :data==='ended'?'This game has ended':'Too late: the dice have passed on. Undo last move can still take everyone back a roll');
+}
+// The dice passed on by mistake: everyone back on the roll before (step 64).
+async function lkGoBack(id){
+  const g=lkGame(id), was=lkCanGoBack(g); if(!was) return;
+  const whose=was.user_id===ME.id?'your roll':lkWho(was.user_id)+'’s roll';
+  if(!await lkAskNow(id,'Go back to '+whose+', for everyone? Every Done on it is taken back, '
+      +'so anyone can change their marks on it again (a penalty taken on it is taken off). Then everyone taps Done again.',
+    'Go back','Cancel')) return;
+  const {data,error}=await sb.rpc('back_a_roll',{g:id, at_turn:g.turn_no});
+  if(error){ console.error(error);
+    toast(lkStepMsg(error)?'Going back a roll needs step 64 run in Supabase first':'Could not reach the game: check your signal'); return; }
+  await lkReload(id); lkPaint();
+  toast(data==='ok'?'Back to '+whose+': change what you need, then Done'
+    :data==='started'?'Too late: the next roll has started':data==='ended'?'This game has ended':'The game moved on: have another look');
+}
+
+/* Save your turn? (ML292) Straight after the one number you can take on
+   someone else's roll, or the second on your own: Save taps Done for you,
+   Cancel takes that number off again. Tapping beside the question just
+   puts it away: the mark stays, and Done is there as ever. */
+async function lkAskSave(id,c,n){
+  const g=lkGame(id), me=g&&lkMe(id); if(!me||g.status!=='playing') return;
+  const r=LK_ROWS.find(x=>x.c===c); if(!r) return;
+  const s=lkSheet(me.sheet), mine=lkMyRoll(g);
+  const marks=lkTurnMarks(s,g).map(m=>{ const x=LK_ROWS.find(y=>y.c===m[0]); return (x?x.name.toLowerCase():m[0])+' '+m[1]; });
+  const before=lkSnap(id);
+  const a=await lkAsk('Save your turn? '+(mine
+      ?'You have marked both numbers on your roll: '+lkAnd(marks)+'.'
+      :r.name+' '+n+' is marked, the one number you can take on '+lkWho(lkRoller(g))+'’s roll.')
+    +' Save taps Done for you; Cancel takes the '+(mine?r.name.toLowerCase()+' ':'')+n+' off again.',
+    'Save','Cancel',{kind:'save', away:null});
+  if(a===null) return;
+  if(lkSnap(id)!==before){ toast('The game moved on while you were deciding: have another look'); return; }
+  if(a){ await lkDone(id); return; }
+  const g2=lkGame(id), me2=g2&&lkMe(id); if(!me2) return;
+  await lkTakeBack(g2,lkSheet(me2.sheet),c,n,true);
 }
 
 async function lkDone(id){
@@ -14667,7 +14872,7 @@ async function lkDone(id){
       +fourth+' Take '+(owe===2?'them':'it')+', or go back and mark '
       +(marks?'another':'something')+'?', owe===2?'Take them':'Take it', 'Go back')) return;
     s.pen=Math.min(4,s.pen+owe);
-    s.turn={no:g.turn_no, marks:s.turn.no===g.turn_no?s.turn.marks:[], pen:true};
+    s.turn={no:g.turn_no, marks:s.turn.no===g.turn_no?s.turn.marks:[], pen:true, pn:owe};
     if(!await lkSave(g,s)) return;
   }
   await lkFinish(g,false);
@@ -16185,6 +16390,7 @@ function renderBook(){
       ${R('Borrowed from',stfWhoHtml(b.borrowed_from,b.borrowed_from_id))}
       ${R('Lent to',b.lent_to?stfWhoHtml(b.lent_to,b.lent_to_id)+(b.lent_on?' since '+esc(stfDay(b.lent_on)):''):'')}
       ${R('ISBN',esc(b.isbn||''))}${R(mine?'Your notes':who+'’s notes',esc(b.notes||''))}
+      ${R('Entered by',esc(enteredByName(enteredBy(b))))}
       ${mine?R('Shared with',esc(namesOf(arr(b.shared_with)).join(', '))):R('Shared by',esc(who))}</div>
     ${quick?`<div class="bkquick">${quick}</div>`:''}
     ${links.length?`<p class="dsec">Reviews elsewhere</p><div class="card">${links.map(x=>
@@ -16364,7 +16570,8 @@ async function bkLookup(isbn){
     return out;
   } finally { clearTimeout(t); }
 }
-async function bkFind(isbn){
+// extra: anything else to start the book with (a link shared in, ML289).
+async function bkFind(isbn,extra){
   isbn=String(isbn).replace(/[\s-]/g,'').toUpperCase();
   const had=BOOKS.find(b=>bkMine(b)&&b.isbn&&bkIsbn13(b.isbn)===bkIsbn13(isbn));
   if(had&&confirm('"'+had.title+'" is already in your books. Open it?')){ openBook(had.id); return; }
@@ -16373,12 +16580,37 @@ async function bkFind(isbn){
   try{ found=await bkLookup(isbn); }catch(e){ failed=true; console.warn(e); }
   if(!found){
     toast(failed?'Couldn’t reach Open Library: fill it in yourself':'Not found on Open Library: fill it in yourself');
-    openBookEd(null,{isbn}); return; }
-  openBookEd(null,{isbn, title:found.title, author:found.author, cover:found.cover});
+    openBookEd(null,{...(extra||{}), isbn}); return; }
+  openBookEd(null,{...(extra||{}), isbn, title:found.title, author:found.author||(extra&&extra.author)||'', cover:found.cover});
   toast(found.cover?'Found it, with its cover':'Found it: add a photo of the cover if you like');
 }
 
 /* ---------- adding and changing ---------- */
+/* Entered by (ML288, step 64), on a book or a film: who put it in. It
+   starts as whoever is signed in, and can be any of the people who use the
+   app, to enter one for Sandra, say. Empty (every one from before step 64)
+   means whoever added it. */
+const enteredBy = x => (x&&x.entered_by)||(x&&x.created_by)||ME.id;
+function enteredByName(id){
+  if(id===ME.id) return 'You';
+  const u=USERS.find(x=>x.id===id);
+  return u?personName(u):'Someone';
+}
+function enteredByBox(x){
+  const cur=x?enteredBy(x):ME.id;
+  const people=[{id:ME.id, name:'You'+(MY_PROFILE?' ('+personName(MY_PROFILE)+')':'')},
+    ...USERS.map(u=>({id:u.id, name:personName(u)})).sort((a,b)=>a.name.localeCompare(b.name))];
+  if(!people.some(p=>p.id===cur)) people.push({id:cur, name:'Someone'});
+  return `<label>Entered by<select name="entered_by">${people.map(p=>
+    `<option value="${esc(p.id)}"${p.id===cur?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>`;
+}
+// Only sent when it says something new, so that before step 64 is run,
+// one entered by whoever added it still saves.
+function enteredByPatch(f,x){
+  const el=f.elements.entered_by, v=String((el&&el.value)||'');
+  if(!v) return {};
+  return (v!==(x?x.created_by:ME.id)||(x&&x.entered_by))?{entered_by:v}:{};
+}
 function bkLinkRow(x){
   return `<div class="bklink"><label>Link<input name="link_url" value="${esc(x.url||'')}" inputmode="url"
       placeholder="https://"${NOFIX}></label>
@@ -16398,6 +16630,7 @@ function openBookEd(b,preset){
         placeholder="if it&rsquo;s one of a series"></label>
         <label class="bkno">Number<input name="series_no" value="${esc(v('series_no'))}" inputmode="decimal"></label></div>
       <label>ISBN<input name="isbn" value="${esc(v('isbn'))}" inputmode="numeric"${NOFIX}></label>
+      ${enteredByBox(b)}
     </fieldset>
     <fieldset><legend>Reading</legend>
       <div class="pickrow" id="bkStat">${BK_STATUS.map(([k,l])=>`<button type="button" data-bkstat="${k}"
@@ -16416,7 +16649,7 @@ function openBookEd(b,preset){
       <label>Lent on<input name="lent_on" value="${esc(v('lent_on'))}"></label>
       <p class="coords">A shop, or whoever you borrowed it from or lent it to, from Contacts.</p>
     </fieldset>
-    <fieldset><legend>Reviews elsewhere</legend><div id="bkLinks">${arr(b&&b.links).filter(x=>x&&x.url).map(bkLinkRow).join('')}</div>
+    <fieldset><legend>Reviews elsewhere</legend><div id="bkLinks">${arr(b?b.links:p.links).filter(x=>x&&x.url).map(bkLinkRow).join('')}</div>
       <button type="button" class="btn" id="bkLinkAdd" style="border:1.5px solid var(--rule)">+ Add a link</button>
       <p class="coords">A review on Goodreads or in a newspaper, say, with a line from it.</p></fieldset>
     <fieldset><legend>Photos</legend>${dphHtml('bkPics')}
@@ -16477,7 +16710,7 @@ async function saveBook(){
     ...who('bought_from'), ...who('borrowed_from'), ...lent,
     // Lent with no day given: today.
     lent_on:lent.lent_to?(g('lent_on')||isoDay(new Date())):null,
-    links, photos:dphNow(),
+    links, photos:dphNow(), ...enteredByPatch(f,BK_EDIT),
     shared_with:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
     updated_at:new Date().toISOString()};
   $('bkSave').disabled=true;
@@ -16488,7 +16721,9 @@ async function saveBook(){
     error=r.error; id=r.data&&r.data.id;
   }
   $('bkSave').disabled=false;
-  if(error){ toast(/relation|does not exist|schema cache/i.test(error.message||'')
+  if(error){ toast(/entered_by/i.test(error.message||'')
+      ? 'Could not save: Entered by needs step 64 run in Supabase first'
+      : /relation|does not exist|schema cache/i.test(error.message||'')
       ? 'Could not save: Books needs step 61 run in Supabase first' : 'Could not save'); console.error(error); return; }
   await dphSaved();
   BK_EDIT=null;
@@ -16688,6 +16923,7 @@ function renderShow(){
       ${R('Seasons',series&&s.seasons?esc(String(s.seasons)):'')}
       ${R('Genre',esc(s.genre||''))}${R(series?'Channel':'Channel or service',esc(s.channel||''))}
       ${R('Actors',esc(s.actors||''))}
+      ${R('Entered by',esc(enteredByName(enteredBy(s))))}
       ${mine?R('Shared with',esc(namesOf(arr(s.shared_with)).join(', '))):R('Shared by',esc(who))}</div>
     ${quick?`<div class="bkquick">${quick}</div>`:''}
     ${series&&mine?`<p class="dsec">How far you are</p><div class="card tvprog" id="tvProg">${tvProgHtml(s)}</div>`:''}
@@ -17018,7 +17254,9 @@ function tvAdd(){
 }
 // Type a name; tap the right one; the editor opens with all of it filled in.
 // A barcode scanned first comes along with it.
-function tvAskName(kind,barcode,said){
+// name: looked for straight away; extra: anything else to start it with
+// (both from a link shared in, ML289).
+function tvAskName(kind,barcode,said,name,extra){
   let k=kind==='series'?'series':'film', seq=0;
   const box=document.createElement('div');
   box.className='daypick lnked'; box.id='tvFindBox';
@@ -17037,7 +17275,7 @@ function tvAskName(kind,barcode,said){
   box.onclick=ev=>{ if(ev.target===box) close(); };
   box.querySelector('#tvFindNo').onclick=close;
   box.querySelector('#tvFindHand').onclick=()=>{ const t=q.value.trim(); close();
-    openShowEd(null,{kind:k, title:t, barcode:barcode||''}); };
+    openShowEd(null,{...(extra||{}), kind:k, title:t, barcode:barcode||''}); };
   box.querySelectorAll('[data-tvfk]').forEach(b=>b.onclick=()=>{ k=b.dataset.tvfk;
     box.querySelectorAll('[data-tvfk]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
     q.placeholder=k==='series'?'e.g. Line of Duty':'e.g. Paddington 2';
@@ -17058,22 +17296,23 @@ function tvAskName(kind,barcode,said){
     out.innerHTML=`<div class="card tvhits">${hits.map((h,i)=>`<button class="item tvhit" data-tvhit="${i}">
       ${h.thumb?`<img src="${esc(h.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'<span class="tvnopic" aria-hidden="true">&#127916;</span>'}
       <span class="mid"><span class="t">${esc(h.title)}</span>${h.line?`<span class="w">${esc(h.line)}</span>`:''}</span></button>`).join('')}</div>`;
-    out.querySelectorAll('[data-tvhit]').forEach(b=>b.onclick=()=>tvPicked(hits[Number(b.dataset.tvhit)],barcode,close));
+    out.querySelectorAll('[data-tvhit]').forEach(b=>b.onclick=()=>tvPicked(hits[Number(b.dataset.tvhit)],barcode,close,extra));
   };
   box.querySelector('#tvFindGo').onclick=go;
   q.onkeydown=ev=>{ if(ev.key==='Enter') go(); };
-  setTimeout(()=>{ try{ q.focus(); }catch(e){} },50);
+  if(name){ q.value=name; go(); }
+  else setTimeout(()=>{ try{ q.focus(); }catch(e){} },50);
 }
-async function tvPicked(h,barcode,close){
+async function tvPicked(h,barcode,close,extra){
   close();
   toast('Fetching the details…');
   let d=null;
   try{ d=await (h.kind==='series'?tvSeriesDetails(h.ref):tvFilmDetails(h)); }
   catch(e){ console.warn(e); }
   if(!d){ toast('Couldn’t fetch the rest: fill in what you know');
-    openShowEd(null,{kind:h.kind, title:h.title, barcode:barcode||''}); return; }
+    openShowEd(null,{...(extra||{}), kind:h.kind, title:h.title, barcode:barcode||''}); return; }
   const poster=await tvPoster(d.poster);
-  openShowEd(null,{...d, barcode:barcode||'', poster});
+  openShowEd(null,{...(extra||{}), ...d, barcode:barcode||'', poster});
   toast(poster?'Found it, with its poster':'Found it: add a photo of the poster if you like');
 }
 // The camera, reading the barcode on a box. Shares Books' stop switch, so
@@ -17157,6 +17396,7 @@ function openShowEd(s,preset){
       <label>Channel or service<input name="channel" value="${esc(v('channel'))}" placeholder="BBC One, Netflix, the cinema"></label>
       <label>Actors<textarea name="actors" rows="3">${esc(v('actors'))}</textarea></label>
       <label>What it&rsquo;s about<textarea name="synopsis" rows="5">${esc(v('synopsis'))}</textarea></label>
+      ${enteredByBox(s)}
     </fieldset>
     <fieldset><legend>Watching</legend>
       <div class="pickrow" id="tvStat">${TV_STATUS.map(([k,l])=>`<button type="button" data-tvstat="${k}"
@@ -17181,7 +17421,7 @@ function openShowEd(s,preset){
       <label>Lent on<input name="lent_on" value="${esc(v('lent_on'))}"></label>
       <p class="coords">Leave it unticked if you don&rsquo;t own a copy. A shop, or whoever you lent it to, from Contacts.</p>
     </fieldset>
-    <fieldset><legend>Reviews elsewhere</legend><div id="tvLinks">${arr(s&&s.links).filter(x=>x&&x.url).map(bkLinkRow).join('')}</div>
+    <fieldset><legend>Reviews elsewhere</legend><div id="tvLinks">${arr(s?s.links:p.links).filter(x=>x&&x.url).map(bkLinkRow).join('')}</div>
       <button type="button" class="btn" id="tvLinkAdd" style="border:1.5px solid var(--rule)">+ Add a link</button>
       <p class="coords">A review in a newspaper or on a website, with a line from it.</p></fieldset>
     <fieldset><legend>Photos</legend>${dphHtml('tvPics')}
@@ -17258,7 +17498,7 @@ async function saveShow(){
     ...who('bought_from'), ...lent,
     // Lent with no day given: today.
     lent_on:lent.lent_to?(g('lent_on')||isoDay(new Date())):null,
-    links, photos:dphNow(),
+    links, photos:dphNow(), ...enteredByPatch(f,TV_EDIT),
     shared_with:[...f.querySelectorAll('[name="share"]:checked')].map(i=>i.value),
     updated_at:new Date().toISOString()};
   $('tvSave').disabled=true;
@@ -17269,7 +17509,9 @@ async function saveShow(){
     error=r.error; id=r.data&&r.data.id;
   }
   $('tvSave').disabled=false;
-  if(error){ toast(/relation|does not exist|schema cache/i.test(error.message||'')
+  if(error){ toast(/entered_by/i.test(error.message||'')
+      ? 'Could not save: Entered by needs step 64 run in Supabase first'
+      : /relation|does not exist|schema cache/i.test(error.message||'')
       ? 'Could not save: TV/Movies needs step 63 run in Supabase first' : 'Could not save'); console.error(error); return; }
   await dphSaved();
   TV_EDIT=null;
@@ -17624,7 +17866,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.16.6';
+const APP_VERSION='2026.11.17.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -23907,7 +24149,7 @@ let SHARED_IN=null, SHARED_PICS=null;
       SHARED_PICS={text:[p.get('share_text'),p.get('share_url')].filter(Boolean)
         .filter((v,i,a)=>a.indexOf(v)===i).join('\n').trim(), files:sharedPicsFetch()};
     else SHARED_IN={url:findUrl(p.get('share_url'))||findUrl(p.get('share_text')),
-               title:(p.get('share_title')||'').trim()};
+               title:(p.get('share_title')||'').trim(), text:(p.get('share_text')||'').trim()};
     history.replaceState(null,'',location.pathname);
   }catch(e){}
 })();

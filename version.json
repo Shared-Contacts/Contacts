@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.16.6",
+  "version": "2026.11.17.1",
   "history": [
+    {
+      "version": "2026.11.17.1",
+      "changes": [
+        "Books and TV/Movies: an Entered by box, and Share > MY life from Amazon, IMDb, Netflix and the like now adds a book or a film.",
+        "Daily Log: the calendar stays still as you go through the months.",
+        "Loxx: Save your turn? after your last number, a gold line when you are being waited for, and Undo for a Done tapped by mistake."
+      ]
+    },
     {
       "version": "2026.11.16.6",
       "changes": [

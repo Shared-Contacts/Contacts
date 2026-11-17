@@ -161,8 +161,8 @@ const ROOT = path.join(__dirname, '..');
   ok('  now it waits for Sandra', /Waiting for Sandra/.test(await status()), await status());
   ok('  you rolled, so you can carry on without her: beside Stop game, not where Done is (ML241)', await ev(() => !!$('lkOn')
     && !!$('lkOn').closest('.lkends') && !$('lkOn').closest('.lkbar') && $('lkOn').nextElementSibling === $('lkStop')));
-  ok('  and Done stays put, greyed, until Sandra has tapped hers', await ev(() => !!$('lkDone') && $('lkDone').disabled
-    && /Done ✓/.test($('lkDone').textContent)));
+  ok('  and Done stays put, saying Done ✓, until Sandra has tapped hers (a tap takes it back, ML291)', await ev(() => !!$('lkDone')
+    && $('lkDone').classList.contains('did') && /Done ✓/.test($('lkDone').textContent)));
   const ends = await ev(() => { const w = document.querySelector('.lkwho').getBoundingClientRect(), o = $('lkOn').getBoundingClientRect(),
     s = $('lkStop').getBoundingClientRect(); return { w: w.right, o: [o.left, o.right, o.width], s: [s.left, s.right] }; });
   ok('  both fit on the line, side by side', ends.o[2] > 100 && ends.o[1] <= ends.s[0] + 1 && ends.s[1] <= ends.w + 1, JSON.stringify(ends));
@@ -248,7 +248,12 @@ const ROOT = path.join(__dirname, '..');
   ok('the next roll, red is closed for good', !/\bon\b/.test(await cell('red', 7)), await toasts());
   await tap('red', 12);
   ok('  its 12 cannot be taken back now: a closed lock stays closed', /\bon\b/.test(await cell('red', 12)) && /stays closed/.test(await toasts()), await toasts());
-  ok('  and Undo last move has nothing to take back', await ev(() => $('lkUndo').disabled));
+  ok('  Undo last move now only offers to take everyone back to roll 5 (ML291)', await ev(() => !$('lkUndo').disabled));
+  answer = false; asked.length = 0; await clear();
+  await p.click('#lkUndo'); await settle(300);
+  ok('    it asks first, and Cancel leaves the game where it is', asked.length === 1 && /Go back to your roll, for everyone\?/.test(asked[0])
+    && (await rpcs('back_a_roll')).length === 0 && (await game()).turn_no === 6, asked.join(' | '));
+  answer = true;
 
   // A lock Sandra closed, on this roll
   await clearToasts();
@@ -383,8 +388,7 @@ const ROOT = path.join(__dirname, '..');
   await tap('yellow', 6); await tap('blue', 9);
   asked.length = 0;
   await p.click('#lkDone'); await settle(300);
-  ok('Done: Undo has nothing it may take back now', asked.length === 0 && await undoOff() && await (async () => { await clearToasts();
-    await ev(() => lkUndo()); await settle(200); return /finished with this roll/.test(await toasts()); })(), await toasts());
+  ok('Done: Undo last move is ready, to take your Done back (ML291)', asked.length === 0 && !(await undoOff()));
   await as('sandra', 'finish_turn', { g: G4, at_turn: 1 });
 
   console.log('\nThe 12, or the 2, without five marks (ML212)');
@@ -584,7 +588,7 @@ const ROOT = path.join(__dirname, '..');
   ok('different people (just Someone Else): no question, straight to who rolls first', await ev(() => !$('lkAlready') && !!$('lkFirst')));
   await p.click('#lkfCancel'); await settle(200);
   ok('Help says the others don’t start one of their own', await ev(() => /They don’t start one of their own: that would make two\s+games, each waiting for the other/.test($('h-games').parentElement.textContent)
-    && /stays greyed until all of you have/.test($('h-games').parentElement.textContent)
+    && /says Done ✓ until all of you have/.test($('h-games').parentElement.textContent)
     && /Only one player gets the lock/.test($('h-games').parentElement.textContent)));
   // Someone starts a game with you while your phone is put away: picking it up catches up.
   const before = await ev(() => GAMES.length);

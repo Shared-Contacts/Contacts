@@ -32,7 +32,7 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
     create table profiles (id uuid primary key);
     insert into profiles values ('${U.me}'), ('${U.sandra}');
     create table accounts (id bigserial primary key); create table contacts (id bigserial primary key, country text);`);
-  for (const n of [57, 58, 60, 62]) await db.exec(fs.readFileSync(path.join(DB, `contacts-step${n}.sql`), 'utf8'));
+  for (const n of [57, 58, 60, 62, 64]) await db.exec(fs.readFileSync(path.join(DB, `contacts-step${n}.sql`), 'utf8'));
 
   const pages = {};
   const out = r => { const o = { ...r };
@@ -56,6 +56,8 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
         close_row: ['select close_row($1, $2) as v', a => [a.g, a.colour]],
         reopen_row: ['select reopen_row($1, $2) as v', a => [a.g, a.colour]],
         finish_turn: ['select finish_turn($1, $2, $3) as v', a => [a.g, a.at_turn, !!a.move_on]],
+        not_done: ['select not_done($1, $2) as v', a => [a.g, a.at_turn]],
+        back_a_roll: ['select back_a_roll($1, $2) as v', a => [a.g, a.at_turn]],
         stop_game: ['select stop_game($1) as v', a => [a.g]], delete_game: ['select delete_game($1) as v', a => [a.g]] }[name];
       if (!sql) return null;                   // not a game function: the page's own stand-in answers
       const r = await asUser(who, sql[0], sql[1](a));
@@ -108,7 +110,8 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   const wait = (p, ms = 400) => p.waitForTimeout(ms);
   const both = (ms = 700) => B.waitForTimeout(ms);
   const status = p => p.evaluate(() => $('lkStatus') ? $('lkStatus').textContent.replace(/\s+/g, ' ').trim() : '(no game open)');
-  const doneBtn = p => p.evaluate(() => { const d = $('lkDone'); return d ? (d.disabled ? 'greyed' : 'ready') : 'none'; });
+  // Since ML291 a tapped Done says Done ✓ and is not greyed: a tap takes it back.
+  const doneBtn = p => p.evaluate(() => { const d = $('lkDone'); return d ? (d.disabled ? 'greyed' : d.classList.contains('did') ? 'done' : 'ready') : 'none'; });
   const carry = p => p.evaluate(() => !!$('lkOn'));
   const toasts = p => p.evaluate(() => [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '));
   const clearToasts = p => p.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove()));
@@ -140,8 +143,8 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   ok('  she opens the same game: Barry is rolling', await cur(S) === G && /Barry is rolling/.test(await status(S)), await status(S));
   await tap(B, 'red', 4); await tap(B, 'red', 6);
   await B.click('#lkDone'); await both();
-  ok('Barry taps Done: waiting for Sandra, his Done greyed, Carry on beside Stop game', /Waiting for Sandra/.test(await status(B))
-    && await doneBtn(B) === 'greyed' && await carry(B) && await B.evaluate(() => !!$('lkOn').closest('.lkends')), await status(B));
+  ok('Barry taps Done: waiting for Sandra, his Done ✓, Carry on beside Stop game', /Waiting for Sandra/.test(await status(B))
+    && await doneBtn(B) === 'done' && await carry(B) && await B.evaluate(() => !!$('lkOn').closest('.lkends')), await status(B));
   ok('  Sandra’s Done is still ready, and she has no Carry on: it isn’t her roll', await doneBtn(S) === 'ready' && !(await carry(S)));
   await tap(S, 'yellow', 4);
   await S.click('#lkDone'); await both();
@@ -149,7 +152,7 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   ok('  and Barry’s phone says Sandra is rolling, Done ready again', /Sandra is rolling/.test(await status(B)) && await doneBtn(B) === 'ready', await status(B));
   await tap(S, 'green', 10); await tap(S, 'blue', 9);
   await S.click('#lkDone'); await both();
-  ok('Sandra’s own roll, Done tapped first: hers greyed, waiting for Barry', await doneBtn(S) === 'greyed' && /Waiting for Barry/.test(await status(S))
+  ok('Sandra’s own roll, Done tapped first: hers Done ✓, waiting for Barry', await doneBtn(S) === 'done' && /Waiting for Barry/.test(await status(S))
     && await carry(S) && !(await carry(B)), await status(S));
   await tap(B, 'yellow', 7);
   await B.click('#lkDone'); await both();
@@ -285,6 +288,83 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   ok('Play again after it: Real dice left unticked, as last game', await S.evaluate(() => !!$('lkWho') && !$('lkwReal').checked
     && [...$('lkWho').querySelectorAll('.ppl input:checked')].map(i => i.value).join() === 'me'));
   await S.click('#lkwCancel'); await wait(S, 200);
+
+  // ML291, ML292, ML293 (17 Nov 2026), against step 64's real SQL.
+  console.log('\nSave your turn?, being waited for, and a Done by mistake (step 64)');
+  const dbP = async (g, who) => (await db.query(`select done_turn, sheet from game_players where game_id = ${Number(g)} and user_id = '${U[who]}'`)).rows[0];
+  const dbG = async g => (await db.query(`select turn, turn_no from games where id = ${Number(g)}`)).rows[0];
+  const sheetOf = p => p.evaluate(() => lkSheet(lkMe(LK_CUR).sheet));
+  const gold = p => p.evaluate(() => !!document.querySelector('.lkbar.lkwait'));
+  await B.evaluate(() => lkBackToList()); await wait(B, 300);
+  await newGame(B);
+  if (await B.evaluate(() => !!$('lkAlready'))) { await B.click('#lkaNew'); await wait(B, 300); }
+  await B.click('[data-lkfirst="0"]'); await wait(B, 800);
+  const G5 = await cur(B);
+  await openFromList(S, G5);
+  await B.evaluate(() => { window.__lkSaveAsks = true; }); await S.evaluate(() => { window.__lkSaveAsks = true; });
+  B.asked.length = 0;
+  await tap(B, 'red', 4);
+  ok('Barry’s first number on his own roll: nothing asked yet', B.asked.length === 0, B.asked.join(' | '));
+  await B.evaluate(() => { window.__lkNext = [false]; });
+  await tap(B, 'yellow', 5); await both();
+  ok('  his second: Save your turn?, naming both', /^Save your turn\? You have marked both numbers on your roll: red 4 and yellow 5\./.test(B.asked[0] || '')
+    && /Cancel takes the yellow 5 off again/.test(B.asked[0] || ''), B.asked.join(' | '));
+  ok('  Cancel takes the yellow 5 off again, red 4 stays, not done', (await sheetOf(B)).yellow.length === 0 && (await sheetOf(B)).red.join() === '4'
+    && (await dbP(G5, 'me')).done_turn === 0 && (await dbP(G5, 'me')).sheet.yellow.length === 0);
+  B.asked.length = 0; await B.evaluate(() => { window.__lkNext = [true]; });
+  await tap(B, 'yellow', 5); await both();
+  ok('  marked again, Save: Done is tapped for him, waiting for Sandra', B.asked.length === 1 && (await dbP(G5, 'me')).done_turn === 1
+    && /Waiting for Sandra/.test(await status(B)) && await doneBtn(B) === 'done', await status(B));
+  ok('Sandra’s phone: Barry is waiting for her, the line in gold, Done pulsing', /Barry is waiting for you\. The white dice total is yours too\. Then Done/.test(await status(S))
+    && await gold(S) && await S.evaluate(() => getComputedStyle($('lkDone')).animationName) === 'lkpulse', await status(S));
+  ok('  not on Barry’s', !(await gold(B)));
+  B.asked.length = 0;
+  await B.click('#lkDone'); await both();
+  ok('Barry taps Done ✓: it asks, then takes his Done back (not_done)', /^Take back your Done\?/.test(B.asked[0] || '')
+    && (await dbP(G5, 'me')).done_turn === 0 && await doneBtn(B) === 'ready' && /Your roll/.test(await status(B)), B.asked.join(' | ') + ' / ' + await status(B));
+  ok('  Sandra’s phone hears: no longer waited on', !(await gold(S)) && /Barry is rolling/.test(await status(S)), await status(S));
+  await B.click('#lkDone'); await both();
+  S.asked.length = 0; await S.evaluate(() => { window.__lkNext = [null]; });
+  await tap(S, 'green', 9); await both();
+  ok('Sandra’s one number on Barry’s roll: Save your turn? at once', /^Save your turn\? Green 9 is marked, the one number you can take on Barry’s roll\./.test(S.asked[0] || ''), S.asked.join(' | '));
+  ok('  tapped beside it: put away, the 9 stays, Done still hers to tap', (await sheetOf(S)).green.join() === '9' && (await dbP(G5, 'sandra')).done_turn === 0
+    && await doneBtn(S) === 'ready' && !(await S.evaluate(() => !!document.querySelector('.lkask'))));
+  await S.click('#lkDone'); await both();
+  ok('Sandra taps Done: the dice pass to her (roll 2)', (await dbG(G5)).turn_no === 2 && /Your roll/.test(await status(S)), JSON.stringify(await dbG(G5)));
+  ok('  Barry’s Undo last move is ready: nothing has happened on roll 2 yet', await B.evaluate(() => !$('lkUndo').disabled));
+  B.asked.length = 0;
+  await B.click('#lkUndo'); await both(900);
+  ok('Undo on roll 2: it asks to go back to Barry’s roll, for everyone', /^Go back to your roll, for everyone\?/.test(B.asked[0] || ''), B.asked.join(' | '));
+  const g5 = await dbG(G5);
+  ok('  back_a_roll: roll 1 again, Barry rolling, both Dones taken back', g5.turn_no === 1 && g5.turn === 0
+    && (await dbP(G5, 'me')).done_turn === 0 && (await dbP(G5, 'sandra')).done_turn === 0, JSON.stringify(g5));
+  ok('  both phones say so, and the marks are as they were', /Your roll/.test(await status(B)) && /Barry is rolling/.test(await status(S))
+    && (await sheetOf(B)).red.join() === '4' && (await sheetOf(B)).yellow.join() === '5' && (await sheetOf(S)).green.join() === '9',
+    await status(B) + ' / ' + await status(S));
+  await B.click('#lkUndo'); await wait(B, 400);
+  ok('  so Barry can take back his yellow 5 with Undo last move', (await sheetOf(B)).yellow.length === 0 && (await sheetOf(B)).red.join() === '4');
+  await B.click('#lkUndo'); await wait(B, 400);
+  B.asked.length = 0;
+  await B.click('#lkDone'); await both();
+  ok('Then Done with nothing marked: two penalties taken (and noted as 2)', /two penalties/.test(B.asked[0] || '')
+    && (await dbP(G5, 'me')).sheet.pen === 2 && (await dbP(G5, 'me')).sheet.turn.pn === 2, B.asked.join(' | '));
+  await S.click('#lkDone'); await both();
+  ok('  Sandra finishes: roll 2', (await dbG(G5)).turn_no === 2);
+  await B.click('#lkUndo'); await both(900);
+  const bp = (await dbP(G5, 'me')).sheet;
+  ok('Back to roll 1 again: the two penalties are taken off', (await dbG(G5)).turn_no === 1 && bp.pen === 0 && bp.turn.pen === false
+    && (await sheetOf(B)).pen === 0, JSON.stringify(bp));
+  await tap(B, 'red', 6); await tap(B, 'blue', 11); await both();
+  await S.click('#lkDone'); await both();
+  ok('  marked properly this time, both Done: roll 2, no penalties', (await dbG(G5)).turn_no === 2 && (await dbP(G5, 'me')).sheet.pen === 0);
+  await tap(S, 'yellow', 3); await both();
+  ok('Once Sandra marks on roll 2, it is too late to go back: Barry’s Undo greyed', await B.evaluate(() => $('lkUndo').disabled));
+  const late = await B.evaluate(g => sb.rpc('back_a_roll', { g, at_turn: 2 }), G5);
+  const late2 = await B.evaluate(g => sb.rpc('not_done', { g, at_turn: 1 }), G5);
+  ok('  and the database says so too: started, and a Done on roll 1 cannot be taken back now (moved)', late.data === 'started' && late2.data === 'moved'
+    && (await dbG(G5)).turn_no === 2, JSON.stringify([late, late2]));
+  await B.evaluate(() => { window.__lkSaveAsks = false; }); await S.evaluate(() => { window.__lkSaveAsks = false; });
+  await S.click('#lkStop'); await both(800);
 
   console.log('\nErrors: ' + (errors.length ? errors.join('\n') : 'none'));
   ok('no page errors on either phone', errors.length === 0, errors.join(' | '));

@@ -232,6 +232,83 @@ const LOD = { id: 353, name: 'Line of Duty', premiered: '2012-06-26', runtime: 6
   await closeAll();
 
   // ---------------------------------------------------------------
+  console.log('\nShares that only invite, with the name in the link (ML297)');
+  const itv = 'https://www.itv.com/watch/frasier/10a1234/10a1234a0001';
+  g = await guess({ title: '', text: 'This is one to check out on ITVX ' + itv, url: itv });
+  ok('ITVX: "This is one to check out on ITVX" is not the name; the link’s frasier is', g.name === 'Frasier' && g.kind === 'series', JSON.stringify(g));
+  const c4 = 'https://www.channel4.com/programmes/frasier/on-demand/12345-001';
+  g = await guess({ title: '', text: 'Have you seen this yet? ' + c4, url: c4 });
+  ok('Channel 4: "Have you seen this yet?" is not the name either', g.name === 'Frasier' && g.kind === 'series', JSON.stringify(g));
+  g = await guess({ title: 'ITVX', text: 'This is one to check out on ITVX ' + itv, url: itv });
+  ok('  a title of just ITVX doesn’t count as a name', g.name === 'Frasier', JSON.stringify(g));
+  const ipl = 'https://www.bbc.co.uk/iplayer/episode/m0024hgw/the-traitors-series-3-episode-1';
+  g = await guess({ title: '', text: 'Check this out on BBC iPlayer ' + ipl, url: ipl });
+  ok('iPlayer: the programme code is skipped, and Series 3 Episode 1 taken off', g.name === 'The Traitors' && g.kind === 'series', JSON.stringify(g));
+  g = await guess({ title: '', text: 'Have you seen this yet? https://c4.page.link/Xy12', url: 'https://c4.page.link/Xy12' });
+  ok('  a short link with no name in it: no name made up', g.name === '', JSON.stringify(g));
+  g = await guess({ title: '', text: 'Watch Line of Duty on ITVX https://itvx.onelink.me/abc', url: 'https://itvx.onelink.me/abc' });
+  ok('"Watch Line of Duty on ITVX": the name between', g.name === 'Line of Duty', JSON.stringify(g));
+  g = await guess({ title: '', text: 'Mamma Mia! https://example.com/x', url: 'https://example.com/x' });
+  ok('  a real name with ! in it stays', g.name === 'Mamma Mia!', JSON.stringify(g));
+  g = await guess({ title: '', text: 'https://www.channel5.com/show/the-yorkshire-vet', url: 'https://www.channel5.com/show/the-yorkshire-vet' });
+  ok('Channel 5: The Yorkshire Vet, a series', g.name === 'The Yorkshire Vet' && g.kind === 'series', JSON.stringify(g));
+  g = await guess({ title: '', text: '', url: 'https://tv.apple.com/gb/movie/wolfs/umc.cmc.4ln4zq8j2xbs' });
+  ok('Apple TV: a film, from /movie/', g.name === 'Wolfs' && g.kind === 'film', JSON.stringify(g));
+  g = await guess({ title: '', text: '', url: 'https://letterboxd.com/film/paddington-2/' });
+  ok('Letterboxd: Paddington 2, a film', g.name === 'Paddington 2' && g.kind === 'film', JSON.stringify(g));
+  g = await guess({ title: '', text: 'Check out this book on Goodreads https://www.goodreads.com/book/show/5907.The_Hobbit',
+    url: 'https://www.goodreads.com/book/show/5907.The_Hobbit' });
+  ok('Goodreads with no title: The Hobbit, from the link', g.name === 'The Hobbit', JSON.stringify(g));
+  g = await guess({ title: '', text: 'Check out this video on Prime Video', url: 'https://www.amazon.co.uk/gp/video/detail/B0DYRLQKXZ/ref=atv_dp' });
+  ok('  Prime Video’s product code is not a name', g.name === '', JSON.stringify(g));
+  g = await guess({ title: '', text: '', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' });
+  ok('  a YouTube link alone: no name made up', g.name === '', JSON.stringify(g));
+
+  calls.length = 0;
+  const itvLod = 'https://www.itv.com/watch/line-of-duty/2a7612';
+  await ev(u => sharedIn({ url: u, title: '', text: 'This is one to check out on ITVX ' + u }), itvLod);
+  await settle(200);
+  ok('Save this as names it Line of Duty, not the invitation', /^Line of Duty$/.test(await ev(() =>
+    document.querySelector('.daypick .lsub').textContent.trim())), await ev(() => document.querySelector('.daypick .lsub').textContent));
+  await p.click('#siShow'); await settle(700);
+  ok('  A film or TV series: TV series, looked for as Line of Duty, found', await ev(() => $('tvFindQ').value === 'Line of Duty'
+    && document.querySelector('[data-tvfk="series"]').getAttribute('aria-pressed') === 'true' && !!document.querySelector('[data-tvhit="0"]'))
+    && calls.some(c => /search\/shows\?q=Line(%20|\+)of(%20|\+)Duty/.test(c)), calls.join(' | '));
+  await closeAll();
+
+  calls.length = 0;
+  const c4Pad = 'https://www.channel4.com/programmes/paddington-2';
+  await ev(u => sharedIn({ url: u, title: '', text: 'Have you seen this yet? ' + u }), c4Pad);
+  await settle(200); await p.click('#siShow'); await settle(900);
+  ok('A film from Channel 4: not a TV series, so it looks for a film and finds it', await ev(() => $('tvFindQ').value === 'Paddington 2'
+    && document.querySelector('[data-tvfk="film"]').getAttribute('aria-pressed') === 'true' && !!document.querySelector('[data-tvhit="0"]'))
+    && calls.some(c => /^tvmaze \/search\/shows/.test(c)) && calls.some(c => /^wiki paddington 2 film/i.test(c)), calls.join(' | '));
+  await closeAll();
+
+  const c4None = 'https://www.channel4.com/programmes/nothing-at-all';
+  await ev(u => sharedIn({ url: u, title: '', text: 'Have you seen this yet? ' + u }), c4None);
+  await settle(200); await p.click('#siShow'); await settle(900);
+  ok('  found as neither: it says so, once, and Fill it in myself keeps the name', /^Nothing found as a film or a TV series with that name/.test(
+    await ev(() => $('tvFindOut').innerText.trim())) && await ev(() => $('tvFindQ').value === 'Nothing at All'));
+  await p.click('#tvFindHand'); await settle(300);
+  f = await ev(() => { const f = $('tvForm'); return { t: f.elements.title.value, l: [...f.querySelectorAll('[name="link_url"]')].map(x => x.value) }; });
+  ok('  with the Channel 4 link kept', f.t === 'Nothing at All' && f.l.join() === c4None, JSON.stringify(f));
+  await ev(() => $('tvEdCancel').click()); await settle(200);
+  await closeAll();
+
+  await ev(() => sharedIn({ url: 'https://c4.page.link/Xy12', title: '', text: 'Have you seen this yet? https://c4.page.link/Xy12' }));
+  await settle(200); calls.length = 0; await p.click('#siShow'); await settle(400);
+  ok('A short link with no name: the box asks for the name, and nothing is looked for', await ev(() => $('tvFindQ').value === ''
+    && /didn’t say its name/.test($('tvFindBox').innerText)) && !calls.some(c => /tvmaze|wiki/.test(c)), calls.join(' | '));
+  await closeAll();
+
+  await ev(() => tvAskName('series')); await settle(150);
+  await p.fill('#tvFindQ', 'Nothing at all'); await p.click('#tvFindGo'); await settle(500);
+  ok('Find a TV series typed in by hand: still just the one look, as before', /Nothing found as a TV series with that name/.test(
+    await ev(() => $('tvFindOut').innerText)) && await ev(() => document.querySelector('[data-tvfk="series"]').getAttribute('aria-pressed') === 'true'));
+  await closeAll();
+
+  // ---------------------------------------------------------------
   console.log('\nLoxx: the gold waiting line fits the bar (ML293)');
   await p.addScriptTag({ path: path.join(__dirname, 'lkfake.js') });
   await ev(async () => { window.__lkFake(); window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 1 }); await lkReload(); });

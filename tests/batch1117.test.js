@@ -309,6 +309,44 @@ const LOD = { id: 353, name: 'Line of Duty', premiered: '2012-06-26', runtime: 6
   await closeAll();
 
   // ---------------------------------------------------------------
+  console.log('\nFinances: bank numbers large and bold, the examples small and pale (ML299)');
+  await ev(async () => { window.__rows.accounts = [{ id: 1, name: 'Test Current', group_name: 'Test', kind: 'current',
+    currency: 'GBP', opening_balance: 0, opening_date: '2026-08-31', active: true, sort: 10, created_by: 'me',
+    sort_code: '20-00-00', account_number: '12345678', iban: 'GB33 BUKB 2020 1555 5555 55', swift: null }];
+    await loadMoney(); openSettings('Finances'); }); await settle(500);
+  await ev(() => document.querySelectorAll('.card.logsec').forEach(d => d.open = true)); await settle(150);
+  await ev(() => document.querySelector('[data-afold="1"]').click()); await settle(300);
+  // How wide a number is in its box's own font, against the room inside the box.
+  const bankBoxes = () => ev(() => ['sort_code', 'account_number', 'iban', 'swift'].map(k => {
+    const i = document.querySelector(`[data-afield="1:${k}"]`), s = getComputedStyle(i), ph = getComputedStyle(i, '::placeholder');
+    const sp = document.createElement('span'); sp.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+    for (const x of ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'fontVariantNumeric']) sp.style[x] = s[x];
+    sp.textContent = { sort_code: '20-00-00', account_number: '12345678', iban: 'GB33 BUKB 2020 1555 5555 55', swift: 'BUKBGB22XXX' }[k];
+    document.body.appendChild(sp); const text = sp.getBoundingClientRect().width; sp.remove();
+    // How light a colour is, 0 (black) to 765 (white), whichever way it is written.
+    const lum = c => { const m = (c.match(/[\d.]+/g) || []).map(Number).slice(0, 3);
+      return c.startsWith('color(') ? m.reduce((a, b) => a + b, 0) * 255 : m.reduce((a, b) => a + b, 0); };
+    return { k, size: parseFloat(s.fontSize), weight: Number(s.fontWeight), color: s.color, light: lum(s.color),
+      phSize: parseFloat(ph.fontSize), phWeight: Number(ph.fontWeight), phLight: lum(ph.color),
+      label: lum(getComputedStyle(i.closest('label')).color),
+      room: i.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight), text: Math.ceil(text) };
+  }));
+  let bx = await bankBoxes();
+  ok('sort code, account number, IBAN and SWIFT: 18px, bold, and darker than the grey box names', bx.every(x => x.size >= 17 && x.weight >= 700
+    && x.light < x.label), JSON.stringify(bx.map(x => [x.k, x.size, x.weight, x.color])));
+  ok('  the examples: 12px, not bold, and paler than the numbers and the box names', bx.every(x => x.phSize <= 12.5 && x.phWeight <= 400
+    && x.phLight > x.light + 200 && x.phLight > x.label), JSON.stringify(bx.map(x => [x.k, x.phSize, x.phWeight, x.phLight, x.label])));
+  for (const w of [320, 360, 412]) {
+    await p.setViewportSize({ width: w, height: 844 }); await settle(250);
+    bx = await bankBoxes();
+    ok(`  ${w} wide: every number fits its box, a UK IBAN with its spaces included` + (w >= 375 ? ' (all 18px)' : ''),
+      bx.every(x => x.text <= x.room) && (w < 375 || bx.every(x => x.size === 18)) && bx.find(x => x.k === 'iban').size >= 14,
+      JSON.stringify(bx.map(x => [x.k, x.size, x.text, Math.floor(x.room)])));
+  }
+  await p.setViewportSize({ width: 390, height: 844 }); await settle(200);
+  await closeAll();
+
+  // ---------------------------------------------------------------
   console.log('\nLoxx: the gold waiting line fits the bar (ML293)');
   await p.addScriptTag({ path: path.join(__dirname, 'lkfake.js') });
   await ev(async () => { window.__lkFake(); window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 1 }); await lkReload(); });

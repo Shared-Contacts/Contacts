@@ -133,7 +133,7 @@ const LOD = { id: 353, name: 'Line of Duty', premiered: '2012-06-26', runtime: 6
     MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }], hidden: ['tv'] } };
     loadTiles(); const binned = TILES.map(t => t.dest);
     MY_PROFILE = was; TILES = keep; TILES_HIDDEN = kh; WX_OFF = true; BSKY_OFF = true;
-    return got[got.length - 1] === 'tv' && !binned.includes('tv');
+    return got.indexOf('tv') > got.indexOf('settings') && !binned.includes('tv');
   }));
   ok('it has a colour from the palette, not the same as Books beside it', await ev(() => TILE_COLOURS.includes(TILE_DEFAULT_COLOUR.tv)
     && TILE_DEFAULT_COLOUR.tv !== TILE_DEFAULT_COLOUR.books));

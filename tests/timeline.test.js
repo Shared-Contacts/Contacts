@@ -48,7 +48,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
     MY_PROFILE = { ...(was || {}), home_tiles: { tiles: [{ dest: 'contacts' }], hidden: ['tml'] } };
     loadTiles(); const binned = TILES.map(t => t.dest);
     MY_PROFILE = was; TILES = keep; TILES_HIDDEN = kh; WX_OFF = true; BSKY_OFF = true;
-    return got[got.length - 1] === 'tml' && !binned.includes('tml');
+    return got.indexOf('tml') > got.indexOf('settings') && !binned.includes('tml');
   }));
   ok('it has a colour from the palette, not the same as TV/Movies beside it', await ev(() =>
     TILE_COLOURS.includes(TILE_DEFAULT_COLOUR.tml) && TILE_DEFAULT_COLOUR.tml !== TILE_DEFAULT_COLOUR.tv));

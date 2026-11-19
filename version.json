@@ -4,8 +4,8 @@
     {
       "version": "2026.11.19.2",
       "changes": [
-        "Birthdays: on someone's birthday, Today and their contact page have a Send Happy Birthday button. It opens WhatsApp, Messages or email with the message written, and you press Send.",
-        "Contacts: a Birthday message card on each contact with a birthday: untick them, or choose WhatsApp, text or email and which wording. Your choices are yours alone.",
+        "Birthdays: on the day, Today and their contact page have a Send Happy Birthday button. It opens WhatsApp, Messages or email ready for you to send.",
+        "Contacts: a Birthday message card on each contact with a birthday, to untick them or choose WhatsApp, text or email and which wording.",
         "Settings: Birthday messages under Contacts, to change the wordings, add your own and star the standard one. {name} becomes their first name."
       ]
     },

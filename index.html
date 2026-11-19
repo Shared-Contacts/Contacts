@@ -1176,6 +1176,29 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 /* On the day a party popper that moves; the day after, the morning after. */
 .brow .bcake.party img{width:34px;height:34px;display:block;margin-top:-4px}
 .brow .bcake.party,.brow .bcake.hangover{font-size:26px;line-height:1.1}
+/* Birthday messages (ML306): the Send button on the day, on Today under the
+   person's row and on their contact page. A link, so the phone opens
+   WhatsApp, Messages or email itself. */
+.bsend{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;padding:0 14px 12px}
+.card .brow+.bsend{margin-top:-4px;border-bottom:1px solid #F0EEE7}
+.card .bsend:last-child{border-bottom:none}
+.bsendbtn{display:inline-block;padding:10px 16px;border-radius:999px;background:#2E7D4F;color:#fff;
+  font-weight:700;text-decoration:none;font-size:16px}
+.bsent{color:#2E7D4F;font-weight:700;font-size:15px}
+.bsagain{color:var(--hull);font-size:15px;padding:6px 2px}
+.bdayset{padding:0 14px 14px}
+.bdayset .bsend{padding:10px 0 0}
+#bdayWord{display:block;width:100%;margin-top:6px;padding:11px 12px;border:1.5px solid var(--rule);
+  border-radius:8px;background:#fff}
+.bdaysay{margin:10px 0 0;padding:10px 12px;border-left:3px solid var(--brass);background:#FBFAF5;
+  border-radius:0 8px 8px 0;font-size:16px}
+.bdword{display:flex;align-items:flex-start;gap:6px;padding:8px 14px;border-bottom:1px solid #F0EEE7}
+.bdword textarea,#bdNew{flex:1;min-width:0;width:100%;padding:9px 10px;border:1.5px solid var(--rule);
+  border-radius:8px;background:#fff;resize:vertical}
+#bdNew{display:block;margin-bottom:8px}
+.bdword .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:6px 4px}
+.bdstar{flex:0 0 auto;font-size:22px;line-height:1;padding:8px 4px;color:var(--muted)}
+.bdstar[aria-pressed="true"]{color:var(--brass)}
 
 /* Accounts gathered under the bank they belong to */
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
@@ -2384,7 +2407,7 @@ function clearTrouble(){
 }
 
 async function loadAll(){
-  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp,of,ow]=await Promise.all([
+  const [g,s,k,c,l,u,sh,pt,fv,it,ish,sp,of,ow,bw,bs]=await Promise.all([
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
@@ -2400,7 +2423,10 @@ async function loadAll(){
     // Everything still waiting, plus what has happened to the ones you sent,
     // so you can be told who took them.
     sb.from('contact_offers').select('*').or('decided_at.is.null,from_user.eq.'+ME.id),
-    sb.from('app_owners').select('user_id')     // step 56; missing before it
+    sb.from('app_owners').select('user_id'),    // step 56; missing before it
+    // Birthday messages, yours alone (step 66; missing before it)
+    sb.from('bday_wordings').select('*').eq('created_by',ME.id),
+    sb.from('bday_sends').select('*').eq('created_by',ME.id)
   ]);
   for(const r of [g,s,k,c,l,u,sh]) if(r.error){
     console.error(r.error);
@@ -2416,6 +2442,7 @@ async function loadAll(){
   PEOPLE_READY=!!(ow&&!ow.error);
   MY_PROFILE=(u.data||[]).find(p=>p.id===ME.id)||null;
   if(MY_PROFILE&&MY_PROFILE.theme) applyTheme(MY_PROFILE.theme);
+  bdayLoaded(bw,bs);
   // Came back empty where there was plenty a moment ago? That is the signal
   // worth shouting about: a fetch that half worked, not a book that emptied.
   if(!CONTACTS.length && knownCount('contacts')>0){
@@ -3546,6 +3573,7 @@ async function openDetail(id, keepPlace){
     <div class="tags">${tagNames.map(g=>`<span class="tag">${esc(g.name)}</span>`).join('')}</div>
     ${LINKED&&LINKED.has(c.id)?'<p class="detsub" id="detUsed">&#128279; Used elsewhere in the app</p>':''}
     ${personal?`<div class="card"><h3>Personal</h3>${personal}</div>`:''}
+    ${bdayCard(c)}
     ${c.notes?`<div class="card"><h3>Notes</h3><div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div></div>`:''}
     ${touch?`<div class="card"><h3>Getting in touch</h3>${touch}</div>`:''}
     ${where?`<div class="card"><h3>Where</h3>${where}</div>`:''}
@@ -3578,6 +3606,7 @@ async function openDetail(id, keepPlace){
   const fb=$('favBtn'); if(fb) fb.onclick=()=>toggleFav(c.id);
   const dd=$('detDelete'); if(dd) dd.onclick=()=>deleteContact(c);
   const ai=$('addItemHere'); if(ai)ai.onclick=()=>newItem(c.id);
+  wireBdayCard(c);
   $('detBody').querySelectorAll('[data-done2]').forEach(b=>
     b.onclick=()=>toggleDone(Number(b.dataset.done2)));
   $('detBody').querySelectorAll('[data-item2]').forEach(b=>
@@ -4832,7 +4861,7 @@ const ACCBOX_OPEN=new Set();
 
 const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
-  'coal_type','gas_bottle','service_kind','mecontact','hidegone',
+  'coal_type','gas_bottle','service_kind','mecontact','hidegone','bdaymsg',
   'shareall','hometiles','people',
   'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects',
   'rcpcats','rcpcupboard','rcphidden'];
@@ -4842,7 +4871,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   medication:'Medication — choices',bike_ride:'Bike ride — choices',
   alcohol:'Alcohol — choices',coal_type:'Coal — types',
   gas_bottle:'Gas — bottle sizes',service_kind:'Boat servicing — what was serviced',mecontact:'Which contact is you?',
-  hidegone:'People who have died',
+  hidegone:'People who have died',bdaymsg:'Birthday messages',
   logcats:'Your own sections',logshare:'Share my log',shareall:'Hand over what you have shared',hometiles:'The tiles',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
@@ -4853,7 +4882,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
 // Everything to do with one screen sits under that screen's heading.
 const SET_GROUPS=[
   {label:'Contacts',   cards:['groups','statuses','link_kinds','pet_types',
-                              'mecontact','hidegone','shareall']},
+                              'mecontact','hidegone','bdaymsg','shareall']},
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
@@ -5031,6 +5060,7 @@ async function openSettings(goTo){
         <button class="btn" id="paContactPick" style="border:1.5px solid var(--rule);text-align:left">
           ${esc(nameOfContact(MY_PROFILE&&MY_PROFILE.partner_contact_id)||'Choose\u2026')}</button>
       </div>`,
+    bdaymsg: bdayMsgRows(),
     shareall: handoverRows(),
     hometiles: `<div class="field"><dd style="color:var(--muted);font-size:15px">
         The tiles on the opening screen are arranged on that screen itself.
@@ -5204,6 +5234,7 @@ async function openSettings(goTo){
   const hg=$('hideGone');
   if(hg) hg.onchange=async()=>{ HIDE_GONE=hg.checked; await saveTiles();
     toast(HIDE_GONE?'Left out of searches':'Back in searches'); };
+  wireBdayMsg();
   const lsDone=async(error,msg)=>{
     if(error){ toast('Could not save that'); console.error(error); return; }
     await loadLog(); openSettings(); if(msg) toast(msg);
@@ -5329,6 +5360,10 @@ function openHelp(where){
   <strong>ASAP</strong> list under Calendar &rsaquo; Regular jobs. Tap any of
   them to go straight there. Today stays open underneath, so Back, Cancel or the
   arrow brings you back to Today rather than the opening screen.</p>
+  <p>On someone&rsquo;s birthday there is a green <strong>Send Happy
+  Birthday</strong> button under their name. It opens WhatsApp, Messages or
+  email with the message written for you to send (see Birthday messages
+  under Contacts).</p>
   <p>At the top is Barry’s Bluesky photo of the day: the newest post with a
   picture. Put a different Bluesky name in <strong>Settings &rsaquo; Home
   screen</strong> to see someone else’s, or switch the photo off there. Tap it to open the
@@ -6344,6 +6379,23 @@ function openHelp(where){
   switch this on themselves. <strong>On the list</strong> shows it on their line
   in the main list, and is always your own choice, so the list stays readable.
   Two is about the most that fits.</p>
+
+  <h4 id="h-bdaymsg">Birthday messages</h4>
+  <p>On someone&rsquo;s birthday, Today shows a green <strong>Send Happy
+  Birthday</strong> button under their name, and so does their contact page.
+  Tap it and WhatsApp, Messages or your email opens with the message already
+  written. Check it, then press Send yourself: the app never sends anything on
+  its own. Afterwards the button says <strong>Sent</strong>, with a Send again
+  in case it did not go.</p>
+  <p>Everyone with a birthday and a mobile number or an email address is ticked
+  to begin with. On their contact page, under <strong>Birthday message</strong>,
+  you can untick them, choose WhatsApp, a text or email, and pick which wording
+  to use. WhatsApp is offered for any mobile; if they are not on WhatsApp, choose
+  a text instead.</p>
+  <p>The wordings are under <strong>Settings &rsaquo; Contacts &rsaquo; Birthday
+  messages</strong>. Change them, add your own, or tap the &#9734; to make one
+  the standard. <strong>{name}</strong> becomes their first name. Your wordings
+  and your choices are yours alone, even on a contact you share.</p>
 
   <h4 id="h-log">Daily Log</h4>
   <p>Tap the date in the bar for a calendar, or the arrows either side to
@@ -18672,7 +18724,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.19.1';
+const APP_VERSION='2026.11.19.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -19817,6 +19869,8 @@ union all select 'pet_types',            count(*), coalesce(jsonb_agg(t), '[]') 
 union all select 'contact_favourites',   count(*), coalesce(jsonb_agg(t), '[]') from contact_favourites t
 union all select 'contact_shares',       count(*), coalesce(jsonb_agg(t), '[]') from contact_shares t
 union all select 'contact_offers',       count(*), coalesce(jsonb_agg(t), '[]') from contact_offers t
+union all select 'bday_wordings',        count(*), coalesce(jsonb_agg(t), '[]') from bday_wordings t
+union all select 'bday_sends',           count(*), coalesce(jsonb_agg(t), '[]') from bday_sends t
 union all select 'profiles',             count(*), coalesce(jsonb_agg(t), '[]') from profiles t
 union all select 'app_owners',           count(*), coalesce(jsonb_agg(t), '[]') from app_owners t
 union all select 'games',                count(*), coalesce(jsonb_agg(t), '[]') from games t
@@ -24522,6 +24576,235 @@ function bdayIcon(d){
   return '<span class="bcake" aria-hidden="true">\u{1F382}</span>';
 }
 
+/* ---------- Birthday messages (ML306, step 66) ----------
+   On someone's birthday, Today and their contact page have a button that
+   opens WhatsApp, Messages or email on your own phone with a Happy Birthday
+   already written; you press Send. Nothing goes by itself. Everyone is
+   ticked unless you untick them, wherever there is a mobile or an email.
+   Your wordings (bday_wordings) and your choices for each contact
+   (bday_sends) are yours alone, even on a contact you share. */
+const BDAY_STARTERS=[
+  {k:'s1',text:'Happy Birthday {name}! Hope you have a lovely day.'},
+  {k:'s2',text:'Happy Birthday {name}! Wishing you a wonderful day and a great year ahead.'},
+  {k:'s3',text:'Many happy returns, {name}! Have a brilliant day.'}];
+const BDAY_WAY={whatsapp:'WhatsApp',text:'Text',email:'Email'};
+let BDAY_READY=false, BDAY_WORDS=[], BDAY_SENDS={};
+
+// From loadAll. Either table missing means step 66 has not been run yet, and
+// then nothing about birthday messages shows anywhere but Settings.
+function bdayLoaded(w,s){
+  BDAY_READY=!!(w&&!w.error&&s&&!s.error);
+  const row=BDAY_READY?arr(w.data).find(x=>x.created_by===ME.id):null;
+  BDAY_WORDS=row?arr(row.wordings).filter(x=>x&&x.k&&String(x.text||'').trim()):[];
+  BDAY_SENDS={};
+  if(BDAY_READY) arr(s.data).forEach(x=>{ if(x.created_by===ME.id) BDAY_SENDS[x.contact_id]=x; });
+}
+// Until you write your own, three to choose from. The first is the standard one.
+const bdayWordings = () => BDAY_WORDS.length ? BDAY_WORDS : BDAY_STARTERS;
+function bdayChoice(c){
+  const r=BDAY_SENDS[c.id]||{};
+  return {send:r.send!==false, wording:r.wording||null, way:r.way||null, sent_on:r.sent_on||null};
+}
+// Their country decides what a number starting 0 is: 07 is a UK mobile but
+// a landline in New Zealand or Australia. No country is taken as the UK.
+const bdayWhere = c => { const w=countryName(c&&c.country); return w==='No country'?'United Kingdom':w; };
+function bdayMobile(p,c){
+  if(/mob|cell/i.test(p.label||'')) return true;
+  const n=tidyNum(p.value), w=bdayWhere(c);
+  if(/^\+?(447|614|642[127])/.test(n)) return true;
+  if(/^07/.test(n)) return w==='United Kingdom';
+  if(/^02[127]/.test(n)) return w==='New Zealand';
+  if(/^04/.test(n)) return w==='Australia';
+  return false;
+}
+// A number as WhatsApp wants it: the country's code, no + and no leading 0.
+// A leading 0 in a country it does not know gives no WhatsApp rather than
+// a wrong number.
+const BDAY_CC={'United Kingdom':'44','New Zealand':'64','Australia':'61','Ireland':'353'};
+function bdayIntl(v,c){
+  const n=tidyNum(String(v||'').replace(/\(0\)/g,''));     // +44 (0)7700 ...
+  if(n.startsWith('+')) return n.slice(1).replace(/\+/g,'');
+  if(n.startsWith('00')) return n.slice(2);
+  if(!n.startsWith('0')) return n;
+  const cc=BDAY_CC[bdayWhere(c)];
+  return cc ? cc+n.slice(1) : null;
+}
+// Where a message can go: WhatsApp to their WhatsApp number or any mobile,
+// a text to a mobile, an email to their first address.
+function bdayWays(c){
+  const mob=arr(c.phones).find(p=>p.value&&bdayMobile(p,c));
+  const wa=arr(c.socials).find(s=>/whatsapp/i.test(s.label||'')&&/\d{6,}/.test(tidyNum(s.value)));
+  const em=arr(c.emails).find(e=>e.value&&/@/.test(e.value));
+  const out={};
+  const waNum=(wa&&bdayIntl(wa.value,c))||(mob&&bdayIntl(mob.value,c));
+  if(waNum&&/^\d{6,}$/.test(waNum)) out.whatsapp=waNum;
+  if(mob) out.text=tidyNum(mob.value);
+  if(em) out.email=String(em.value).trim();
+  return out;
+}
+// Their own choice if it can still be used; otherwise WhatsApp, then email.
+function bdayWay(c,ch){
+  const ways=bdayWays(c); ch=ch||bdayChoice(c);
+  if(ch.way&&ways[ch.way]) return ch.way;
+  return ways.whatsapp?'whatsapp':ways.email?'email':null;
+}
+function bdayWording(ch){
+  const list=bdayWordings();
+  return (ch&&ch.wording&&list.find(w=>w.k===ch.wording))||list[0];
+}
+const bdayName = c => String(c.first_name||'').trim()||fullName(c);
+const bdayFill = (text,c) => String(text||'').replace(/\{name\}/gi,bdayName(c)).trim();
+const bdayText = (c,ch) => bdayFill(bdayWording(ch||bdayChoice(c)).text,c);
+function bdayLink(c,way,text){
+  const ways=bdayWays(c), t=encodeURIComponent(text);
+  if(way==='whatsapp'&&ways.whatsapp) return 'https://wa.me/'+ways.whatsapp+'?text='+t;
+  // An iPhone wants &body, everything else ?body.
+  if(way==='text'&&ways.text) return 'sms:'+ways.text+(/iPhone|iPad|iPod/.test(navigator.userAgent)?'&':'?')+'body='+t;
+  if(way==='email'&&ways.email) return 'mailto:'+ways.email+'?subject='+encodeURIComponent('Happy Birthday')+'&body='+t;
+  return null;
+}
+// The button, when there is one to show: ticked, still with us, and
+// somewhere to send it. sent: already tapped today.
+function bdayOffer(c){
+  if(!BDAY_READY||!c||!c.birth_date||isGone(c)) return null;
+  const ch=bdayChoice(c); if(!ch.send) return null;
+  const way=bdayWay(c,ch); if(!way) return null;
+  const text=bdayText(c,ch);
+  return {way, text, url:bdayLink(c,way,text), sent:ch.sent_on===dayKeyOf(new Date())};
+}
+function bdaySendHtml(c){
+  const o=bdayOffer(c); if(!o||!o.url) return '';
+  const a=(label,cls)=>`<a class="${cls}" href="${esc(o.url)}"${o.way==='whatsapp'
+    ?' target="_blank" rel="noopener"':''} data-bsend="${c.id}">${label}</a>`;
+  return `<div class="bsend">${o.sent
+    ?`<span class="bsent">&#10003; Sent by ${esc(BDAY_WAY[o.way])}</span>${a('Send again','bsagain')}`
+    :a(`&#127881; Send Happy Birthday &middot; ${esc(BDAY_WAY[o.way])}`,'bsendbtn')}</div>`;
+}
+// Noted as sent when the button is tapped: the app cannot see you press Send.
+async function bdayMarkSent(id){
+  const today=dayKeyOf(new Date()), was=BDAY_SENDS[id];
+  BDAY_SENDS[id]={...(was||{contact_id:id,created_by:ME.id,send:true}),sent_on:today};
+  const {error}=await sb.from('bday_sends').upsert({created_by:ME.id,contact_id:id,sent_on:today,
+    updated_at:new Date().toISOString()},{onConflict:'created_by,contact_id'});
+  if(error){ console.error(error); BDAY_SENDS[id]=was; }
+}
+// The link opens WhatsApp, Messages or email by itself; this notes it and
+// turns the button into "Sent".
+function wireBdaySend(root){
+  root.querySelectorAll('[data-bsend]').forEach(a=>a.addEventListener('click',async ev=>{
+    ev.stopPropagation();
+    const id=Number(a.dataset.bsend), box=a.closest('.bsend');
+    await bdayMarkSent(id);
+    const c=CONTACTS.find(x=>x.id===id);
+    if(!box||!box.isConnected||!c) return;
+    const t=document.createElement('div'); t.innerHTML=bdaySendHtml(c);
+    const nb=t.firstElementChild;
+    if(nb){ box.replaceWith(nb); wireBdaySend(nb); }
+  }));
+}
+
+// On their contact page: send or not, which way, which wording, and the
+// message as it will read. Only for someone with a birthday.
+const bdayShort = (s,n) => s.length>n ? s.slice(0,n-1).trimEnd()+'…' : s;
+function bdayCard(c){
+  if(!BDAY_READY||!c||!c.birth_date||isGone(c)) return '';
+  const ways=bdayWays(c);
+  if(!Object.keys(ways).length) return `<div class="card" id="bdayCard"><h3>Birthday message</h3>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">Add a mobile number or an
+      email address and you can send ${esc(bdayName(c))} a Happy Birthday on the day.</dd></div></div>`;
+  const ch=bdayChoice(c), way=bdayWay(c,ch), w=bdayWording(ch), list=bdayWordings();
+  return `<div class="card" id="bdayCard"><h3>Birthday message</h3>
+    <div class="checks" style="padding:12px 14px 6px"><label>
+      <input type="checkbox" id="bdaySend" ${ch.send?'checked':''}> Send birthday message</label></div>
+    ${ch.send?`<div class="bdayset">
+      <p class="coords">By</p>
+      <div class="pickrow">${['whatsapp','text','email'].filter(k=>ways[k]).map(k=>
+        `<button type="button" data-bdway="${k}" aria-pressed="${k===way}">${BDAY_WAY[k]}</button>`).join('')}</div>
+      <p class="coords">Wording</p>
+      <select id="bdayWord">${list.map((x,i)=>`<option value="${esc(x.k)}"${x.k===w.k?' selected':''}>${
+        esc(bdayShort(bdayFill(x.text,c),48))}${i===0?' (standard)':''}</option>`).join('')}</select>
+      <p class="bdaysay">${esc(bdayText(c,ch))}</p>
+      ${daysToBirthday(c)===0?bdaySendHtml(c)
+        :`<p class="coords">On their birthday, Today has a button that opens ${esc(BDAY_WAY[way])}
+          with this written for you to send.</p>`}
+    </div>`:''}
+  </div>`;
+}
+function wireBdayCard(c){
+  const box=$('bdayCard'); if(!box) return;
+  const redraw=()=>{ const b=$('bdayCard'); if(!b) return;
+    const t=document.createElement('div'); t.innerHTML=bdayCard(c);
+    if(t.firstElementChild){ b.replaceWith(t.firstElementChild); wireBdayCard(c); } };
+  const save=async patch=>{
+    const was=BDAY_SENDS[c.id];
+    BDAY_SENDS[c.id]={...(was||{contact_id:c.id,created_by:ME.id,send:true}),...patch};
+    redraw();
+    const {error}=await sb.from('bday_sends').upsert({created_by:ME.id,contact_id:c.id,...patch,
+      updated_at:new Date().toISOString()},{onConflict:'created_by,contact_id'});
+    if(error){ console.error(error); BDAY_SENDS[c.id]=was; redraw(); toast('Could not save that'); }
+  };
+  const cb=$('bdaySend'); if(cb) cb.onchange=()=>save({send:cb.checked});
+  box.querySelectorAll('[data-bdway]').forEach(b=>b.onclick=()=>save({way:b.dataset.bdway}));
+  const sel=$('bdayWord'); if(sel) sel.onchange=()=>save({wording:sel.value});
+  wireBdaySend(box);
+}
+
+// Settings > Contacts > Birthday messages: your wordings, the star the standard one.
+function bdayMsgRows(){
+  if(!BDAY_READY) return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+      Birthday messages need step 66 run in Supabase first.</dd></div>`;
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+      On someone&rsquo;s birthday, Today has a button that opens WhatsApp, Messages
+      or email with one of these already written, and you press Send.
+      <strong>{name}</strong> becomes their first name. The starred one is used
+      unless you pick another on their contact page, where you can also choose
+      WhatsApp, text or email, or untick them. Yours alone.</dd></div>
+    ${bdayWordings().map((w,i)=>`<div class="bdword">
+      <button type="button" class="bdstar" data-bdstar="${esc(w.k)}" aria-pressed="${i===0}"
+        aria-label="${i===0?'The standard wording':'Make this the standard wording'}">${i===0?'&#9733;':'&#9734;'}</button>
+      <textarea data-bdtext="${esc(w.k)}" rows="${Math.max(2,Math.ceil(w.text.length/24))}"
+        aria-label="Wording">${esc(w.text)}</textarea>
+      <button type="button" class="x" data-bddrop="${esc(w.k)}" aria-label="Remove this wording">&times;</button>
+    </div>`).join('')}
+    <div class="setadd"><textarea id="bdNew" rows="2"
+      placeholder="A new wording, e.g. Happy Birthday {name}! Love from us both"></textarea>
+      <button class="btn primary" id="bdAdd">Add wording</button></div>`;
+}
+async function saveBdayWords(list){
+  const {error}=await sb.from('bday_wordings').upsert({created_by:ME.id,wordings:list,
+    updated_at:new Date().toISOString()},{onConflict:'created_by'});
+  if(error){ console.error(error); toast('Could not save the wordings'); return false; }
+  BDAY_WORDS=list; return true;
+}
+function wireBdayMsg(){
+  const body=$('setBody'); if(!body) return;
+  const cur=()=>bdayWordings().map(w=>({k:w.k,text:w.text}));
+  body.querySelectorAll('[data-bdtext]').forEach(t=>t.onchange=async()=>{
+    const list=cur(), w=list.find(x=>x.k===t.dataset.bdtext); if(!w) return;
+    const v=t.value.trim();
+    if(!v){ t.value=w.text; toast('Use the × to remove a wording'); return; }
+    w.text=v; if(await saveBdayWords(list)) toast('Saved');
+  });
+  body.querySelectorAll('[data-bdstar]').forEach(b=>b.onclick=async()=>{
+    const list=cur(), i=list.findIndex(x=>x.k===b.dataset.bdstar); if(i<1) return;
+    list.unshift(list.splice(i,1)[0]);
+    if(await saveBdayWords(list)) openSettings();
+  });
+  body.querySelectorAll('[data-bddrop]').forEach(b=>b.onclick=async()=>{
+    const list=cur();
+    if(list.length<2){ toast('Keep at least one wording'); return; }
+    if(!confirm('Remove this wording? Anyone set to it gets the starred one.')) return;
+    if(await saveBdayWords(list.filter(x=>x.k!==b.dataset.bddrop))) openSettings();
+  });
+  const add=$('bdAdd');
+  if(add) add.onclick=async()=>{
+    const v=$('bdNew').value.trim();
+    if(!v){ toast('Type the wording first'); return; }
+    const list=cur(); list.push({k:'w'+Date.now().toString(36),text:v});
+    if(await saveBdayWords(list)) openSettings();
+  };
+}
+
 function renderBrief(){
   const days=briefBirthdays(), items=briefItems(), asap=briefAsap();
   // The bar says Today and the date goes underneath: a long weekday and a
@@ -24538,7 +24821,7 @@ function renderBrief(){
         <small>${esc(bdayDate(d))}</small></span>
       <span class="bwhat"><b>${esc(fullName(c))}</b>
         ${years?`<span>${esc(years)}</span>`:''}</span>
-      ${bdayIcon(d)}</button>`;
+      ${bdayIcon(d)}</button>${d===0?bdaySendHtml(c):''}`;
   }).join('');
 
   // Today, and anything overdue, always shows; the rest of the week waits for a tap.
@@ -24611,6 +24894,7 @@ function renderBrief(){
   // Back, Cancel or the arrow home comes back to Today (Barry, 5 Nov 2026).
   $('briefBody').querySelectorAll('[data-briefc]').forEach(b=>b.onclick=()=>
     openDetail(Number(b.dataset.briefc)));
+  wireBdaySend($('briefBody'));
   $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>
     openItem(ITEMS.find(x=>x.id===Number(b.dataset.briefi))));
   $('briefBody').querySelectorAll('[data-briefr]').forEach(b=>b.onclick=()=>

@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.19.2",
+  "version": "2026.11.19.3",
   "history": [
+    {
+      "version": "2026.11.19.3",
+      "changes": [
+        "Slideshow: a new tile playing your photos at random, full screen, all upright or all sideways, in slideshows of your own such as Canals or People.",
+        "Slideshow: the photos are kept on that phone or computer only, not online. Your Bluesky photo posts are a ready-made one.",
+        "Slideshow: for music or a podcast, start it in your own app first; it carries on behind the slideshow."
+      ]
+    },
     {
       "version": "2026.11.19.2",
       "changes": [

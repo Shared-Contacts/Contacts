@@ -1199,6 +1199,54 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .bdword .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:6px 4px}
 .bdstar{flex:0 0 auto;font-size:22px;line-height:1;padding:8px 4px;color:var(--muted)}
 .bdstar[aria-pressed="true"]{color:var(--brass)}
+/* MY Slideshow (ML307). The list of slideshows, one slideshow's photos, and
+   the show itself: black, full screen, above everything. Sideways photos on a
+   phone held upright are turned round, as the jigsaw is, if the phone will
+   not turn the screen itself. */
+.sldrow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px;text-align:left;
+  border-bottom:1px solid #F0EEE7}
+.card .sldrow:last-child{border-bottom:none}
+.sldrow img,.sldrow .sldnone{flex:0 0 auto;width:64px;height:64px;border-radius:8px;object-fit:cover;background:#EEEBE3}
+.sldrow .sldnone{display:flex;align-items:center;justify-content:center;font-size:26px}
+.sldrow .sldwhat{flex:1;min-width:0}
+.sldrow .sldwhat b{display:block;font-weight:600;overflow-wrap:anywhere}
+.sldrow .sldwhat span{display:block;color:var(--muted);font-size:14px}
+.sldrow .sldchev{flex:0 0 auto;color:var(--muted);font-size:26px;line-height:1}
+.sldplays{display:flex;gap:8px;padding:0 14px 14px}
+.sldplays .btn{flex:1 1 0;min-width:0;margin:0;padding-left:8px;padding-right:8px}
+.sldplays .btn[disabled]{opacity:.45}
+.sldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.sldth{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#EEEBE3;padding:0}
+.sldth img{width:100%;height:100%;object-fit:cover;display:block}
+.sldnote{text-align:center;margin:14px 6px 24px}
+
+.sldplay{position:fixed;inset:0;z-index:120;background:#000;color:#fff;overflow:hidden;
+  -webkit-user-select:none;user-select:none;touch-action:none}
+.sldstage{position:absolute;inset:0}
+@media (orientation:portrait){
+  .sldplay.side .sldstage{inset:auto;top:0;left:100vw;width:var(--vh,100dvh);height:100vw;
+    transform-origin:0 0;transform:rotate(90deg)}
+}
+.sldimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;
+  transition:opacity 1.2s ease}
+.sldplay.fill .sldimg{object-fit:cover}
+.sldimg.on{opacity:1}
+.sldsay{position:absolute;left:16px;right:16px;top:44%;margin:0;text-align:center;font-size:17px}
+.sldsay:empty{display:none}
+.sldctl{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
+.sldctl.on{opacity:1}
+.sldctl.on button{pointer-events:auto}
+.sldtop{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;
+  padding:calc(8px + env(safe-area-inset-top)) 8px 22px 16px;background:linear-gradient(rgba(0,0,0,.65),transparent)}
+.sldtitle{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sldcount{flex:0 0 auto;font-size:15px;opacity:.9}
+.sldx{flex:0 0 auto;color:#fff;font-size:34px;line-height:1;padding:4px 10px}
+.sldbtm{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;
+  gap:10px;padding:22px 8px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.sldbtm button{color:#fff;min-width:48px;min-height:48px;border-radius:999px;background:rgba(255,255,255,.16);
+  display:inline-flex;align-items:center;justify-content:center;padding:0 12px;font-size:15px;font-weight:700}
+.sldbtm svg{width:24px;height:24px}
 
 /* Accounts gathered under the bank they belong to */
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
@@ -2023,6 +2071,19 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
   <div class="sheetbody" id="tmlKeysBody"></div>
 </div>
 
+<div id="sld" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="sld" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="sldMenu" data-menu="sld" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Slideshow</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="sldBody"></div>
+  <button class="fab sheetfab" id="sldAdd" aria-label="Start a new slideshow">+</button>
+</div>
+
+<div id="sldTheme" class="sheet hidden">
+  <div class="sheetbar"><button id="sldThemeBack">Back</button>
+    <span class="title" id="sldThemeTitle">Slideshow</span><button id="sldThemeName">Rename</button></div>
+  <div class="sheetbody" id="sldThemeBody"></div>
+</div>
+
 <div id="shop" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="shop" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="shopMenu" data-menu="shop" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Shopping</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -2274,7 +2335,7 @@ const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','
   'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
-  'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys'];
+  'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys','sld','sldTheme'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -3039,6 +3100,8 @@ async function refreshAll(){
   if(!$('tv').classList.contains('hidden')){ await loadShows(); renderShows();
     if(!$('tvShow').classList.contains('hidden')) renderShow(); }
   if(!$('tml').classList.contains('hidden')){ await loadTimeline(); renderTimeline(); }
+  if(!$('sld').classList.contains('hidden')){ SLD_BSKY.at=0; await loadSlides(); renderSlides();
+    if(!$('sldTheme').classList.contains('hidden')) renderSlideTheme(); }
   toast('Up to date');
 }
 
@@ -5319,7 +5382,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
-  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['sldTheme','sld'],['sld','sld'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
   // where you are.
@@ -5335,7 +5398,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff',
-  books:'h-books', tv:'h-tv', tml:'h-tml'};
+  books:'h-books', tv:'h-tv', tml:'h-tml', sld:'h-sld'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', recipes:'Recipes'};
@@ -5967,6 +6030,29 @@ function openHelp(where){
   the colour of any country or kind, renames a kind, adds new ones, and puts them in
   order: hold one by its dots and slide it. Tick <em>Dots</em> for a kind that is mostly
   single days. Your Timeline is yours alone: nobody else can see it.</p>
+
+  <h4 id="h-sld">Slideshow</h4>
+  <p><strong>Slideshow</strong> plays your photos at random, full screen, either all
+  upright or all sideways, so every one fills the screen the same way. Press the red
+  <em>+</em> to start a slideshow of your own (Canals, Scenic, People, whatever suits),
+  then <strong>Add photos</strong> and pick as many as you like from the gallery. On a
+  computer you can add a whole folder. The app works out which are upright and which
+  sideways; a square one goes in both.</p>
+  <p>The photos are kept on <strong>that phone or computer only</strong>, not online, so
+  they use none of the app&rsquo;s space and nobody else sees them. The gallery or folder
+  keeps the originals. A phone and a laptop each have their own slideshows. Tap a photo
+  in a slideshow to take it out; <em>Delete this slideshow</em> is at the bottom.</p>
+  <p><strong>Your Bluesky photos</strong> is ready-made: the photo posts from your
+  Bluesky name (Barry&rsquo;s unless you chose another under Settings &rsaquo; Home
+  screen), fetched while it plays, so it needs a signal.</p>
+  <p>Press <em>Play upright</em> or <em>Play sideways</em>. The screen turns to match
+  and stays on. Tap the middle for the buttons: back, pause, next, how long each photo
+  shows, and <em>Fill</em> or <em>Whole photo</em> (Fill trims the edges off a photo a
+  different shape from the screen). Tap or swipe at either side to go back or on. The
+  &times;, or the phone&rsquo;s Back, ends it.</p>
+  <p><strong>Music or a podcast:</strong> start it in your own app first (Spotify, BBC
+  Sounds, a podcast app or the radio), then play a slideshow. It carries on behind, and
+  you control it in that app as usual.</p>
 
   <h4 id="h-recipes">Recipes</h4>
   <p><strong>Recipes</strong> is the family cookbook. Everybody who uses the app sees
@@ -18396,6 +18482,538 @@ function tmlPickColour(now,name){
 $('tmlKeysBack').onclick=()=>{ $('tmlKeys').classList.add('hidden'); lockBackground(); renderTimeline(); };
 
 /* ============================================================
+   MY Slideshow (ML307)
+   Photos at random, full screen, all upright or all sideways. Your own
+   slideshows (Canals, Scenic, People...) keep their photos on this phone or
+   computer only, in the browser's own storage: nothing goes to Supabase, the
+   originals stay in the gallery or the folder they came from, and a phone
+   and a laptop each have their own. Your Bluesky photo posts are a
+   ready-made one, fetched while it plays. No sound of its own: music or a
+   podcast plays from your own app behind it (Barry, 19 Nov 2026).
+   ============================================================ */
+const SLD_MAX=2560, SLD_THUMB=360, SLD_SECS=[5,8,15,30];
+let SLD_THEMES=[], SLD_PHOTOS=[], SLD_OK=true, SLD_LOADED=false, SLD_CUR=null;
+let SLD_BSKY={handle:'', state:'', list:[], at:0};
+let SLD=null;                          // the show that is playing
+const SLD_THUMBS=new Map();            // photo id -> little picture's address
+
+function sldPrefs(){
+  try{ const p=JSON.parse(localStorage.getItem('sldprefs')||'{}');
+    return {secs:SLD_SECS.includes(p.secs)?p.secs:8, fill:p.fill===true}; }
+  catch(e){ return {secs:8, fill:false}; }
+}
+function sldSavePrefs(p){ try{ localStorage.setItem('sldprefs',JSON.stringify(p)); }catch(e){} }
+const sldDevice = () => matchMedia('(pointer:coarse)').matches ? 'phone' : 'computer';
+const sldBskyHandle = () => BSKY_OWN || BSKY_DEFAULT;
+
+/* ---------- the store on this phone or computer ---------- */
+// One for each person who signs in here, so two people sharing a laptop
+// never see each other's.
+let SLD_DBP=null, SLD_DBWHO='';
+function sldDb(){
+  const who='myslides-'+((ME&&ME.id)||'anon');
+  if(SLD_DBP&&SLD_DBWHO===who) return SLD_DBP;
+  SLD_DBWHO=who;
+  SLD_DBP=new Promise((ok,no)=>{
+    let r; try{ r=indexedDB.open(who,1); }catch(e){ no(e); return; }
+    r.onupgradeneeded=()=>{ const d=r.result;
+      if(!d.objectStoreNames.contains('themes')) d.createObjectStore('themes',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('photos'))
+        d.createObjectStore('photos',{keyPath:'id'}).createIndex('theme','theme'); };
+    r.onsuccess=()=>ok(r.result);
+    r.onerror=()=>no(r.error||new Error('no store'));
+    r.onblocked=()=>no(new Error('store blocked'));
+  });
+  SLD_DBP.catch(()=>{ SLD_DBP=null; });
+  return SLD_DBP;
+}
+// One go at the store. fn is handed the stores asked for, and may hand back
+// a request whose answer is wanted.
+async function sldTx(stores,mode,fn){
+  const d=await sldDb();
+  return new Promise((ok,no)=>{
+    let tx, q;
+    try{ tx=d.transaction(stores,mode); q=fn(...[].concat(stores).map(s=>tx.objectStore(s))); }
+    catch(e){ no(e); return; }
+    tx.oncomplete=()=>ok(q&&typeof q==='object'&&'readyState' in q?q.result:undefined);
+    tx.onerror=()=>no(tx.error||new Error('store error'));
+    tx.onabort=()=>no(tx.error||new Error('store aborted'));
+  });
+}
+async function loadSlides(){
+  try{
+    const [t,p]=await Promise.all([sldTx('themes','readonly',s=>s.getAll()),
+                                   sldTx('photos','readonly',s=>s.getAll())]);
+    SLD_THEMES=arr(t); sldSortThemes();
+    SLD_PHOTOS=arr(p); SLD_OK=true;
+  }catch(e){ console.error('Slideshow store',e); SLD_OK=false; SLD_THEMES=[]; SLD_PHOTOS=[]; }
+  SLD_LOADED=true;
+}
+function sldSortThemes(){
+  SLD_THEMES.sort((a,b)=>String(a.name).localeCompare(String(b.name),'en',{sensitivity:'base'}));
+}
+const sldNewId = k => k+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- which way up ---------- */
+// Upright, sideways, or square enough to go in either. One whose shape is
+// not known yet (a Bluesky post that did not say) is tried, and skipped if
+// it turns out the wrong way.
+const sldShape = p => !p||!p.w||!p.h ? '' : p.h>p.w*1.02 ? 'up' : p.w>p.h*1.02 ? 'side' : 'both';
+const sldFits = (p,shape) => { const s=sldShape(p); return !s||s==='both'||s===shape; };
+const sldOf = id => SLD_PHOTOS.filter(p=>p.theme===id);
+const sldCounts = list => ({n:list.length, up:list.filter(p=>sldFits(p,'up')).length,
+  side:list.filter(p=>sldFits(p,'side')).length});
+function sldThumb(p){
+  if(!SLD_THUMBS.has(p.id)){
+    try{ SLD_THUMBS.set(p.id, URL.createObjectURL(p.thumb||p.img)); }catch(e){ return ''; }
+  }
+  return SLD_THUMBS.get(p.id);
+}
+function sldForget(id){
+  const u=SLD_THUMBS.get(id); if(u){ try{ URL.revokeObjectURL(u); }catch(e){} SLD_THUMBS.delete(id); }
+}
+const sldWord = shape => shape==='up'?'upright':'sideways';
+
+/* ---------- the screen ---------- */
+async function openSlides(){
+  showSheet('sld'); lockBackground();
+  if(!SLD_LOADED) $('sldBody').innerHTML='<p class="empty">Fetching your slideshows…</p>';
+  await loadSlides();
+  renderSlides(); $('sldBody').scrollTop=0;
+}
+function renderSlides(){
+  const body=$('sldBody'); if(!body) return;
+  const pr=sldPrefs(), dev=sldDevice(), h=sldBskyHandle();
+  const row=t=>{ const ps=sldOf(t.id), c=sldCounts(ps), first=ps[ps.length-1];
+    return `<button class="sldrow" data-sldopen="${esc(t.id)}">
+      ${first?`<img src="${esc(sldThumb(first))}" alt="">`:'<span class="sldnone" aria-hidden="true">&#128444;&#65039;</span>'}
+      <span class="sldwhat"><b>${esc(t.name)}</b><span>${c.n
+        ?`${c.n} photo${c.n===1?'':'s'}: ${c.up} upright, ${c.side} sideways`:'No photos yet'}</span></span>
+      <span class="sldchev" aria-hidden="true">&rsaquo;</span></button>`; };
+  body.innerHTML=`
+    ${SLD_OK?'':`<div class="card"><div class="field"><dd style="color:var(--red)">This ${dev}
+      would not open the place it keeps the Slideshow's photos. Close the app and open it
+      again; if it still says this, tell the Code tab.</dd></div></div>`}
+    <p class="dsec">Your slideshows</p>
+    <div class="card">${SLD_THEMES.map(row).join('')
+      ||`<div class="field"><dd style="color:var(--muted)">None yet. Press the red + to start
+        one, such as Canals, Scenic or People, then add photos to it.</dd></div>`}</div>
+    <p class="dsec">Your Bluesky photos</p>
+    <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
+      Photo posts from @${esc(h)}, fetched while it plays, so it needs a signal.</dd></div>
+      <div class="sldplays"><button class="btn primary" data-sldplay="bsky:up">Play upright</button>
+        <button class="btn primary" data-sldplay="bsky:side">Play sideways</button></div></div>
+    <p class="dsec">How it plays</p>
+    <div class="card"><div class="setadd">
+      <p class="coords" style="margin-top:0">Each photo shows for</p>
+      <div class="pickrow">${SLD_SECS.map(s=>`<button type="button" data-sldsecs="${s}"
+        aria-pressed="${pr.secs===s}">${s} seconds</button>`).join('')}</div>
+      <p class="coords" style="margin-top:14px">Each photo</p>
+      <div class="pickrow"><button type="button" data-sldfill="0" aria-pressed="${!pr.fill}">Whole photo</button>
+        <button type="button" data-sldfill="1" aria-pressed="${pr.fill}">Fill the screen</button></div>
+      <p class="coords">Fill the screen trims the edges off a photo that is a different shape
+        from the screen. Whole photo leaves a black border instead.</p></div></div>
+    <p class="coords sldnote">The photos are kept on this ${dev} only, not online, and the
+      ${dev==='phone'?'gallery':'folder'} keeps the originals. For music or a podcast, start it
+      in your own app first, then play a slideshow here: it carries on behind.</p>`;
+  body.querySelectorAll('[data-sldopen]').forEach(b=>b.onclick=()=>openSlideTheme(b.dataset.sldopen));
+  sldWirePlays(body);
+  body.querySelectorAll('[data-sldsecs]').forEach(b=>b.onclick=()=>{
+    sldSavePrefs({...sldPrefs(), secs:Number(b.dataset.sldsecs)}); renderSlides(); });
+  body.querySelectorAll('[data-sldfill]').forEach(b=>b.onclick=()=>{
+    sldSavePrefs({...sldPrefs(), fill:b.dataset.sldfill==='1'}); renderSlides(); });
+}
+function sldWirePlays(root){
+  root.querySelectorAll('[data-sldplay]').forEach(b=>b.onclick=()=>{
+    const [from,shape]=b.dataset.sldplay.split(':'); sldPlay(from,shape); });
+}
+
+/* ---------- one slideshow ---------- */
+function openSlideTheme(id){
+  SLD_CUR=id; showSheet('sldTheme'); lockBackground();
+  renderSlideTheme(); $('sldThemeBody').scrollTop=0;
+}
+function renderSlideTheme(){
+  const t=SLD_THEMES.find(x=>x.id===SLD_CUR);
+  if(!t){ $('sldTheme').classList.add('hidden'); SLD_CUR=null; lockBackground(); renderSlides(); return; }
+  $('sldThemeTitle').textContent=t.name;
+  const ps=sldOf(t.id).sort((a,b)=>(b.added||0)-(a.added||0)), c=sldCounts(ps), dev=sldDevice();
+  $('sldThemeBody').innerHTML=`
+    <div class="sldplays" style="padding:0 0 12px">
+      <button class="btn primary" data-sldplay="${esc(t.id)}:up" ${c.up?'':'disabled'}>Play upright (${c.up})</button>
+      <button class="btn primary" data-sldplay="${esc(t.id)}:side" ${c.side?'':'disabled'}>Play sideways (${c.side})</button></div>
+    <div class="card"><div class="setadd">
+      <button class="btn" id="sldPick" style="border:1.5px solid var(--rule)">Add photos</button>
+      ${dev==='computer'?`<button class="btn" id="sldFolder"
+        style="border:1.5px solid var(--rule);margin-top:8px">Add a whole folder</button>`:''}
+      <p class="coords">${dev==='phone'
+        ?'Pick as many as you like from the gallery; do it again to add more.'
+        :'Pick photos, or a whole folder of them.'} A copy of each is kept on this ${dev}
+        for the slideshow; the originals stay where they are. Upright and sideways are
+        sorted out for you.</p>
+      <p class="coords" id="sldBusy" role="status" hidden></p></div></div>
+    ${ps.length?`<p class="dsec">${ps.length} photo${ps.length===1?'':'s'}, newest first:
+        tap one to take it out</p>
+      <div class="sldgrid">${ps.map(p=>`<button class="sldth" data-sldph="${esc(p.id)}"
+        aria-label="Take this photo out"><img src="${esc(sldThumb(p))}" alt="" loading="lazy"></button>`).join('')}</div>`
+     :'<p class="empty">No photos in it yet.</p>'}
+    <button class="btn danger" id="sldDrop" style="margin-top:18px">Delete this slideshow</button>`;
+  const body=$('sldThemeBody');
+  sldWirePlays(body);
+  $('sldPick').onclick=()=>sldChoose(false);
+  const fo=$('sldFolder'); if(fo) fo.onclick=()=>sldChoose(true);
+  body.querySelectorAll('[data-sldph]').forEach(b=>b.onclick=()=>sldDropPhoto(b.dataset.sldph));
+  $('sldDrop').onclick=sldDropTheme;
+}
+function sldChoose(folder){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.multiple=true;
+  if(folder) inp.webkitdirectory=true;
+  inp.onchange=()=>sldAddFiles([...(inp.files||[])]);
+  inp.click();
+}
+// A copy the size of a big screen, and a little one for the list. The
+// phone turns a photo the right way up as it reads it.
+async function sldMake(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,no)=>{
+      const i=new Image(); i.onload=()=>ok(i); i.onerror=()=>no(new Error('unreadable')); i.src=url; });
+    const W=img.naturalWidth, H=img.naturalHeight;
+    if(!W||!H) throw new Error('no size');
+    const draw=async(max,q)=>{
+      const s=Math.min(1,max/Math.max(W,H)), w=Math.max(1,Math.round(W*s)), h=Math.max(1,Math.round(H*s));
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      const g=cv.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,w,h); g.drawImage(img,0,0,w,h);
+      const b=await new Promise(ok=>cv.toBlob(ok,'image/jpeg',q));
+      if(!b) throw new Error('no jpeg'); return b;
+    };
+    return {w:W, h:H, img:await draw(SLD_MAX,0.86), thumb:await draw(SLD_THUMB,0.72)};
+  } finally { URL.revokeObjectURL(url); }
+}
+async function sldAddFiles(files){
+  const id=SLD_CUR, t=SLD_THEMES.find(x=>x.id===id); if(!t) return;
+  files=files.filter(f=>/^image\//.test(f.type||'')||/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(f.name||''));
+  if(!files.length){ toast('No photos in that'); return; }
+  // Asked once: keep these even when the phone is short of space.
+  try{ if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
+  const have=new Set(sldOf(id).map(p=>p.src));
+  let added=0, same=0, bad=0, stuck='';
+  const busy=$('sldBusy');
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    if(busy){ busy.hidden=false; busy.textContent=`Adding ${i+1} of ${files.length}…`; }
+    // The same photo picked again: same name, same size. (Its date can
+    // change from one pick to the next, so it is not used.)
+    const src=[f.name,f.size].join('|');
+    if(have.has(src)){ same++; continue; }
+    let made;
+    try{ made=await sldMake(f); }catch(e){ bad++; continue; }
+    const p={id:sldNewId('p'), theme:id, src, name:f.name, w:made.w, h:made.h,
+      img:made.img, thumb:made.thumb, added:Date.now()+i};
+    try{ await sldTx('photos','readwrite',s=>s.put(p)); }
+    catch(e){ console.error(e);
+      stuck=/quota/i.test(String((e&&e.name)||'')+String((e&&e.message)||''))?'full':'error'; break; }
+    SLD_PHOTOS.push(p); have.add(src); added++;
+  }
+  if(busy) busy.hidden=true;
+  const bits=[added+' added'];
+  if(same) bits.push(same+' already in it');
+  if(bad) bits.push(bad+' could not be read');
+  toast(stuck==='full'?`This ${sldDevice()} has no room for more. `+bits.join(', ')
+    : stuck?'Could not keep the rest. '+bits.join(', ') : bits.join(', '));
+  if(SLD_CUR===id&&!$('sldTheme').classList.contains('hidden')) renderSlideTheme();
+}
+async function sldNew(){
+  const n=(prompt('What is the new slideshow called?\n\nCanals, Scenic, People, whatever suits.')||'').trim().slice(0,60);
+  if(!n) return;
+  if(SLD_THEMES.some(t=>t.name.toLowerCase()===n.toLowerCase())){ toast('You already have one called '+n); return; }
+  const t={id:sldNewId('t'), name:n, made:Date.now()};
+  try{ await sldTx('themes','readwrite',s=>s.put(t)); }
+  catch(e){ console.error(e); toast('Could not start it'); return; }
+  SLD_THEMES.push(t); sldSortThemes(); renderSlides();
+  openSlideTheme(t.id);
+}
+async function sldRename(){
+  const t=SLD_THEMES.find(x=>x.id===SLD_CUR); if(!t) return;
+  const n=(prompt('Call this slideshow:',t.name)||'').trim().slice(0,60);
+  if(!n||n===t.name) return;
+  if(SLD_THEMES.some(x=>x!==t&&x.name.toLowerCase()===n.toLowerCase())){ toast('You already have one called '+n); return; }
+  try{ await sldTx('themes','readwrite',s=>s.put({...t,name:n})); }
+  catch(e){ console.error(e); toast('Could not rename it'); return; }
+  t.name=n; sldSortThemes(); renderSlideTheme(); renderSlides();
+}
+async function sldDropPhoto(pid){
+  const p=SLD_PHOTOS.find(x=>x.id===pid), t=p&&SLD_THEMES.find(x=>x.id===p.theme); if(!p) return;
+  if(!confirm('Take this photo out of '+(t?t.name:'this slideshow')+'? The original stays where it is.')) return;
+  try{ await sldTx('photos','readwrite',s=>s.delete(pid)); }
+  catch(e){ console.error(e); toast('Could not take it out'); return; }
+  SLD_PHOTOS=SLD_PHOTOS.filter(x=>x.id!==pid); sldForget(pid);
+  renderSlideTheme();
+}
+async function sldDropTheme(){
+  const t=SLD_THEMES.find(x=>x.id===SLD_CUR); if(!t) return;
+  const n=sldOf(t.id).length;
+  if(!confirm(`Delete ${t.name}${n?` and its ${n} photo${n===1?'':'s'}`:''} from this ${sldDevice()}?`
+    +' The originals stay where they are.')) return;
+  try{
+    await sldTx(['themes','photos'],'readwrite',(ts,ps)=>{
+      ts.delete(t.id);
+      ps.index('theme').openCursor(IDBKeyRange.only(t.id)).onsuccess=e=>{
+        const c=e.target.result; if(c){ c.delete(); c.continue(); } };
+    });
+  }catch(e){ console.error(e); toast('Could not delete it'); return; }
+  sldOf(t.id).forEach(p=>sldForget(p.id));
+  SLD_PHOTOS=SLD_PHOTOS.filter(p=>p.theme!==t.id);
+  SLD_THEMES=SLD_THEMES.filter(x=>x!==t);
+  SLD_CUR=null; $('sldTheme').classList.add('hidden'); lockBackground();
+  renderSlides(); toast(t.name+' deleted');
+}
+
+/* ---------- Bluesky ---------- */
+// Every picture in their own photo posts (not reposts), newest first, up to
+// five pages of a hundred posts. Kept for half an hour.
+function sldBskyPics(feed){
+  const out=[];
+  arr(feed).forEach(it=>{
+    const p=it&&it.post; if(!p||it.reason) return;
+    const e=p.embed||{}, imgs=arr(e.images||(e.media&&e.media.images));
+    imgs.forEach((im,i)=>{
+      const url=im&&(im.fullsize||im.thumb);
+      if(!/^https:\/\//.test(String(url||''))) return;
+      const ar=im.aspectRatio||{};
+      out.push({id:'b:'+p.uri+'#'+i, url, w:Number(ar.width)||0, h:Number(ar.height)||0, alt:im.alt||''});
+    });
+  });
+  return out;
+}
+async function sldLoadBsky(){
+  const h=sldBskyHandle();
+  if(SLD_BSKY.handle===h&&SLD_BSKY.state==='ok'&&Date.now()-SLD_BSKY.at<30*60*1000) return SLD_BSKY.list;
+  const list=[]; let cursor='', ok=false;
+  try{
+    for(let page=0;page<5;page++){
+      const ctl=new AbortController(), tm=setTimeout(()=>ctl.abort(),15000);
+      const r=await fetch(BSKY_API+'?actor='+encodeURIComponent(h)+'&filter=posts_with_media&limit=100'
+        +(cursor?'&cursor='+encodeURIComponent(cursor):''), {signal:ctl.signal});
+      clearTimeout(tm);
+      if(!r.ok) break;
+      const j=await r.json(); ok=true;
+      list.push(...sldBskyPics(j.feed));
+      cursor=j.cursor||'';
+      if(!cursor||!arr(j.feed).length) break;
+    }
+  }catch(e){ console.warn('Bluesky slideshow',e); }
+  SLD_BSKY={handle:h, state:ok?'ok':'fail', list, at:Date.now()};
+  return list;
+}
+
+/* ---------- playing ---------- */
+const SLD_ICON={
+  prev:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2.4v14H6zM20 5v14L9.6 12z"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM4 5l10.4 7L4 19z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15L19.5 12z"/></svg>'};
+function sldShuffle(list){
+  const a=list.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+async function sldPlay(from,shape){
+  if(SLD) sldStop();
+  shape=shape==='side'?'side':'up';
+  let list, title;
+  if(from==='bsky'){
+    toast('Fetching your Bluesky photos…');
+    const all=await sldLoadBsky();
+    list=all.filter(p=>sldFits(p,shape)); title='Bluesky';
+    if(!list.length){
+      toast(SLD_BSKY.state==='fail'?'Could not reach Bluesky. Try again when there is a signal'
+        :`No ${sldWord(shape)} photo posts from @${sldBskyHandle()} on Bluesky`);
+      return;
+    }
+  } else {
+    const t=SLD_THEMES.find(x=>x.id===from); if(!t) return;
+    list=sldOf(from).filter(p=>sldFits(p,shape)); title=t.name;
+    if(!list.length){ toast(`No ${sldWord(shape)} photos in ${t.name} yet`); return; }
+  }
+  const pr=sldPrefs();
+  const box=document.createElement('div');
+  box.id='sldPlay'; box.className='sldplay '+shape+(pr.fill?' fill':'');
+  box.setAttribute('role','dialog'); box.setAttribute('aria-label','Slideshow: '+title);
+  box.innerHTML=`<div class="sldstage" id="sldStage">
+      <img class="sldimg" alt=""><img class="sldimg" alt="">
+      <p class="sldsay" id="sldSay"></p>
+      <div class="sldctl" id="sldCtl">
+        <div class="sldtop"><span class="sldtitle">${esc(title)}</span>
+          <span class="sldcount" id="sldCount"></span>
+          <button type="button" class="sldx" id="sldClose" aria-label="Close the slideshow">&times;</button></div>
+        <div class="sldbtm">
+          <button type="button" id="sldSecs" aria-label="How long each photo shows"></button>
+          <button type="button" id="sldPrev" aria-label="Back one">${SLD_ICON.prev}</button>
+          <button type="button" id="sldPause" aria-label="Pause"></button>
+          <button type="button" id="sldNext" aria-label="Next one">${SLD_ICON.next}</button>
+          <button type="button" id="sldFill"></button></div></div></div>`;
+  document.body.appendChild(box);
+  SLD={from, shape, title, list:sldShuffle(list), i:-1, secs:pr.secs, fill:pr.fill, paused:false,
+       timer:null, ctlTimer:null, held:['',''], front:1, wake:null, fs:false, turn:0};
+  sldPaintCtl(); sldWireCtl(box);
+  await sldFull();
+  sldCtl(true);
+  await sldShow(1);
+}
+// Full screen, turned to match, and the screen kept on. Each may be refused
+// (a laptop will not turn), and the show carries on without it.
+async function sldFull(){
+  const s=SLD, box=$('sldPlay'); if(!s||!box) return;
+  try{
+    if(box.requestFullscreen&&!document.fullscreenElement){
+      await box.requestFullscreen({navigationUI:'hide'}); s.fs=!!document.fullscreenElement; }
+  }catch(e){}
+  try{
+    if(screen.orientation&&screen.orientation.lock)
+      await screen.orientation.lock(s.shape==='side'?'landscape':'portrait');
+  }catch(e){}
+  sldWake();
+}
+async function sldWake(){
+  const s=SLD;
+  if(!s||s.wake||!navigator.wakeLock||document.visibilityState!=='visible') return;
+  try{
+    const w=await navigator.wakeLock.request('screen');
+    if(SLD!==s){ try{ w.release(); }catch(e){} return; }
+    s.wake=w;
+    if(w&&w.addEventListener) w.addEventListener('release',()=>{ if(SLD===s&&s.wake===w) s.wake=null; });
+  }catch(e){}
+}
+function sldLoad(url){
+  return new Promise(ok=>{
+    const i=new Image();
+    i.onload=()=>{ const done=()=>ok({w:i.naturalWidth,h:i.naturalHeight});
+      if(i.decode) i.decode().then(done,done); else done(); };
+    i.onerror=()=>ok(null);
+    i.src=url;
+  });
+}
+// step 1 for the next one, -1 for the one before. Starts again in a new
+// order after the last, never the same one twice running.
+async function sldShow(step){
+  const s=SLD; if(!s) return;
+  clearTimeout(s.timer);
+  const turn=++s.turn;
+  for(let tries=0; tries<s.list.length; tries++){
+    s.i+=step;
+    if(s.i>=s.list.length){
+      const last=s.list[s.list.length-1];
+      s.list=sldShuffle(s.list);
+      if(s.list.length>1&&s.list[0]===last) [s.list[0],s.list[1]]=[s.list[1],s.list[0]];
+      s.i=0;
+    }
+    if(s.i<0) s.i=s.list.length-1;
+    const p=s.list[s.i];
+    let url=p.url;
+    if(!url){ try{ url=URL.createObjectURL(p.img); }catch(e){ url=''; } }
+    const got=url?await sldLoad(url):null;
+    if(SLD!==s||s.turn!==turn){ if(!p.url&&url) URL.revokeObjectURL(url); return; }
+    if(got&&(!p.url||sldFits({w:p.w||got.w,h:p.h||got.h},s.shape))){
+      if(p.url&&!p.w){ p.w=got.w; p.h=got.h; }
+      const imgs=[...document.querySelectorAll('#sldPlay .sldimg')], back=1-s.front;
+      const was=s.held[back];
+      imgs[back].src=url; imgs[back].alt=p.alt||'';
+      imgs[back].classList.add('on'); imgs[s.front].classList.remove('on');
+      s.held[back]=p.url?'':url; s.front=back;
+      if(was) setTimeout(()=>{ try{ URL.revokeObjectURL(was); }catch(e){} },1500);
+      $('sldSay').textContent='';
+      sldPaintCtl();
+      // The next one fetched ahead, so a Bluesky photo is there when wanted.
+      const nx=s.list[s.i+1]; if(nx&&nx.url){ const pre=new Image(); pre.src=nx.url; }
+      sldSchedule();
+      return;
+    }
+    if(!p.url&&url) URL.revokeObjectURL(url);
+    if(p.url&&got&&!p.w){ p.w=got.w; p.h=got.h; }     // wrong way round: remembered
+  }
+  $('sldSay').textContent=s.from==='bsky'?'The photos would not load. Check the signal and try again.'
+    :'The photos would not load.';
+  s.paused=true; sldPaintCtl(); sldCtl(true);
+}
+function sldSchedule(){
+  const s=SLD; if(!s) return;
+  clearTimeout(s.timer);
+  if(!s.paused) s.timer=setTimeout(()=>sldShow(1), s.secs*1000);
+}
+function sldPaintCtl(){
+  const s=SLD; if(!s) return;
+  const c=$('sldCount'); if(c) c.textContent=(s.paused?'Paused · ':'')+(s.i+1)+' of '+s.list.length;
+  const pa=$('sldPause'); if(pa){ pa.innerHTML=s.paused?SLD_ICON.play:SLD_ICON.pause;
+    pa.setAttribute('aria-label',s.paused?'Play':'Pause'); }
+  const se=$('sldSecs'); if(se) se.textContent=s.secs+' sec';
+  const fi=$('sldFill'); if(fi) fi.textContent=s.fill?'Whole photo':'Fill';
+  const box=$('sldPlay'); if(box) box.classList.toggle('fill',s.fill);
+}
+// The buttons show on a tap and go again after a few seconds.
+function sldCtl(on){
+  const s=SLD, c=$('sldCtl'); if(!s||!c) return;
+  c.classList.toggle('on',!!on);
+  clearTimeout(s.ctlTimer);
+  if(on&&!s.paused) s.ctlTimer=setTimeout(()=>{ if(SLD===s) c.classList.remove('on'); },4000);
+}
+function sldWireCtl(box){
+  const stage=$('sldStage'), btn=(id,fn)=>{ $(id).onclick=ev=>{ ev.stopPropagation(); fn(); sldCtl(true); }; };
+  btn('sldPrev',()=>sldShow(-1));
+  btn('sldNext',()=>sldShow(1));
+  btn('sldPause',()=>{ SLD.paused=!SLD.paused; sldPaintCtl(); sldSchedule(); });
+  btn('sldSecs',()=>{ const s=SLD; s.secs=SLD_SECS[(SLD_SECS.indexOf(s.secs)+1)%SLD_SECS.length];
+    sldSavePrefs({...sldPrefs(), secs:s.secs}); sldPaintCtl(); sldSchedule(); });
+  btn('sldFill',()=>{ SLD.fill=!SLD.fill; sldSavePrefs({...sldPrefs(), fill:SLD.fill}); sldPaintCtl(); });
+  $('sldClose').onclick=ev=>{ ev.stopPropagation(); sldStop(); };
+  // A tap at either side goes back or on; in the middle, the buttons.
+  stage.onclick=ev=>{
+    const r=stage.getBoundingClientRect(), side=SLD&&SLD.shape==='side'&&r.height>r.width;
+    const at=side?(ev.clientY-r.top)/r.height:(ev.clientX-r.left)/r.width;
+    if(at<0.25) sldShow(-1); else if(at>0.75) sldShow(1);
+    else sldCtl(!$('sldCtl').classList.contains('on'));
+  };
+  let x0=null, y0=null;
+  stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
+  stage.addEventListener('touchend',e=>{
+    if(x0==null) return;
+    const t=e.changedTouches[0], r=stage.getBoundingClientRect(), side=SLD&&SLD.shape==='side'&&r.height>r.width;
+    const d=side?t.clientY-y0:t.clientX-x0, other=side?t.clientX-x0:t.clientY-y0;
+    x0=null;
+    if(Math.abs(d)>50&&Math.abs(d)>Math.abs(other)*1.5){ e.preventDefault(); sldShow(d<0?1:-1); }
+  });
+}
+function sldStop(){
+  const s=SLD; if(!s) return;
+  SLD=null;
+  clearTimeout(s.timer); clearTimeout(s.ctlTimer);
+  s.held.forEach(u=>{ if(u) try{ URL.revokeObjectURL(u); }catch(e){} });
+  try{ if(s.wake) s.wake.release(); }catch(e){}
+  try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+  try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(e){}
+  const box=$('sldPlay'); if(box) box.remove();
+  lockBackground();
+}
+// The phone's Back leaves full screen, and that ends the show.
+document.addEventListener('fullscreenchange',()=>{
+  if(SLD&&SLD.fs&&!document.fullscreenElement) sldStop();
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&SLD) sldWake();
+});
+document.addEventListener('keydown',ev=>{
+  if(!SLD) return;
+  if(ev.key==='ArrowRight'){ sldShow(1); sldCtl(true); }
+  else if(ev.key==='ArrowLeft'){ sldShow(-1); sldCtl(true); }
+  else if(ev.key===' '){ ev.preventDefault(); SLD.paused=!SLD.paused; sldPaintCtl(); sldSchedule(); sldCtl(true); }
+  else if(ev.key==='Escape') sldStop();
+});
+$('sldAdd').onclick=sldNew;
+$('sldThemeBack').onclick=()=>{ $('sldTheme').classList.add('hidden'); SLD_CUR=null; lockBackground(); renderSlides(); };
+$('sldThemeName').onclick=sldRename;
+
+/* ============================================================
    The home screen — a tile for every part of the app
    ============================================================ */
 const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect x="48.8" y="286" width="414.5" height="26" fill="#D7A82E"/><path d="M 336.7,286 L 394.7,286 L 394.7,422 L 365.7,388 L 336.7,422 Z" fill="#D7A82E"/><path d="M92.91666666666667 286.0V98.30303030303028H140.12878787878788L170.0681818181818 181.78787878787878Q172.9469696969697 190.13636363636363 175.39393939393938 198.62878787878788Q177.8409090909091 207.12121212121212 180.4318181818182 216.33333333333331H181.58333333333334Q184.17424242424244 207.12121212121212 186.47727272727275 198.62878787878788Q188.78030303030306 190.13636363636363 191.65909090909093 181.78787878787878L221.02272727272728 98.30303030303028H268.2348484848485V286.0H229.37121212121212V217.1969696969697Q229.37121212121212 207.9848484848485 230.37878787878788 195.46212121212122Q231.38636363636365 182.93939393939394 232.6818181818182 170.41666666666666Q233.97727272727275 157.89393939393938 235.1287878787879 148.68181818181816H233.97727272727275L218.71969696969697 198.1969696969697L192.2348484848485 269.8787878787879H167.47727272727275L141.28030303030303 198.1969696969697L126.59848484848484 148.68181818181816H125.4469696969697Q126.59848484848484 157.89393939393938 127.89393939393939 170.41666666666666Q129.18939393939394 182.93939393939394 130.0530303030303 195.46212121212122Q130.91666666666669 207.9848484848485 130.91666666666669 217.1969696969697V286.0Z M344.5227272727273 286.0V219.2121212121212L288.0984848484849 98.30303030303028H333.29545454545456L349.99242424242425 141.48484848484847Q353.7348484848485 152.13636363636363 357.47727272727275 162.0681818181818Q361.219696969697 172.0 365.25 182.93939393939394H366.4015151515152Q370.719696969697 172.0 374.6060606060606 162.0681818181818Q378.49242424242425 152.13636363636363 382.2348484848485 141.48484848484847L398.9318181818182 98.30303030303028H443.2651515151515L386.8409090909091 219.2121212121212V286.0Z" fill="currentColor"/></svg>`;
@@ -18424,6 +19042,7 @@ const TILE_DEST={
   books:   {label:'Books',      go:openBooks},
   tv:      {label:'TV/Movies',  go:openShows},
   tml:     {label:'Timeline',   go:openTimeline},
+  sld:     {label:'Slideshow',  go:openSlides},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
 
@@ -18434,9 +19053,9 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52'};
+  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52', sld:'#6B3F2A'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','sld','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -18457,7 +19076,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
-  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys']};
+  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys'], sld:['sld','sldTheme']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -18724,7 +19343,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.19.2';
+const APP_VERSION='2026.11.19.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -24981,6 +25600,7 @@ const AREAS={
   books:   {title:'Books',        set:null,        help:'books'},
   tv:      {title:'TV/Movies',    set:null,        help:'tv'},
   tml:     {title:'Timeline',     set:null,        help:'tml'},
+  sld:     {title:'Slideshow',    set:null,        help:'sld'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
   home:    {title:'Menu',         set:null,        help:'home'}
@@ -25014,12 +25634,13 @@ const AREA_SHUT={
               ['tv','tvShow','tvEd'].forEach(id=>$(id).classList.add('hidden')); },
   tml:  ()=>{ TML_EDIT=null; document.querySelectorAll('#tmlAddBox,#tmlViewBox,#tmlColBox').forEach(x=>x.remove());
               ['tml','tmlEd','tmlKeys'].forEach(id=>$(id).classList.add('hidden')); },
+  sld:  ()=>{ sldStop(); SLD_CUR=null; ['sld','sldTheme'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, tml:openTimeline, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, tml:openTimeline, sld:openSlides, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -25061,6 +25682,10 @@ function areaItems(area){
     it('Colours and kinds',       ()=>{ shutMenu(); openTmlKeys(); }),
     it('Go to the day you were born', ()=>{ shutMenu(); tmlGoBorn(); }),
     it('Go to today',             ()=>{ shutMenu(); $('tmlBody').scrollTop=0; })];
+  if(area==='sld') return [
+    it('New slideshow',           ()=>{ shutMenu(); sldNew(); }),
+    it('Play your Bluesky photos sideways', ()=>{ shutMenu(); sldPlay('bsky','side'); }),
+    it('Play your Bluesky photos upright',  ()=>{ shutMenu(); sldPlay('bsky','up'); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

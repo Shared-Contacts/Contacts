@@ -86,15 +86,17 @@ const ok = (what, cond, extra='') => {
   await page.waitForTimeout(400);
   const one = await page.evaluate(() => navigator.clipboard.readText());
   ok('query 1 reaches the clipboard', /QUERY 1/.test(one), one.slice(0, 60));
-  // 54 union alls = 55 selects: the 37 rows it returned when it was run in
+  // 56 union alls = 57 selects: the 37 rows it returned when it was run in
   // Supabase, plus log_shares (step 39), the two URL Links tables (step 42),
   // recipes (step 43), shopping_aisle_memory (step 48), the two My Stuff
   // tables (step 50), the two week's menu tables (step 55), app_owners
   // (step 56), the two MY Games tables, games and game_players (step 57), and
   // the two Books tables, books and book_reviews (step 61), and the two
   // TV/Movies tables, shows and show_reviews (step 63), and the two Timeline
-  // tables, timeline and timeline_keys (step 65), matching backup.sql. One row per table, so a missing table shows up here.
-  ok('all 55 tables are in it', one.split('union all').length - 1 === 54,
+  // tables, timeline and timeline_keys (step 65), and the two Birthday
+  // messages tables, bday_wordings and bday_sends (step 66), matching
+  // backup.sql. One row per table, so a missing table shows up here.
+  ok('all 57 tables are in it', one.split('union all').length - 1 === 56,
      String(one.split('union all').length - 1) + ' union alls');
   ok('it ends at the photographs',
      /bucket_id = 'photos';$/.test(one.trim()), one.trim().slice(-50));
@@ -107,6 +109,7 @@ const ok = (what, cond, extra='') => {
   ok('and the books, with everyone else’s stars', /from books t/.test(one) && /from book_reviews t/.test(one));
   ok('and TV/Movies, with everyone else’s stars', /from shows t/.test(one) && /from show_reviews t/.test(one));
   ok('and the Timeline, with its colours and kinds', /from timeline t\b/.test(one) && /from timeline_keys t\b/.test(one));
+  ok('and the birthday messages, wordings and choices', /from bday_wordings t\b/.test(one) && /from bday_sends t\b/.test(one));
   ok('the table that no longer exists is not', !/group_members/.test(one));
 
   await page.click('#bkCopy2');

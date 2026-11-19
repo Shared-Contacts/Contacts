@@ -191,8 +191,9 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('Help says what Completed and Done do', /an appointment has Completed and a to-do has Done/.test(help)
     && /completed appointment stays on the Week and Month calendars/.test(help) && /Birthdays always stay/.test(help));
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
-  ok('version 2026.11.19.1, in the app and version.json', await ev(() => APP_VERSION) === '2026.11.19.1'
-    && vj.version === '2026.11.19.1' && vj.history[0].version === '2026.11.19.1' && vj.history[0].changes.length === 2);
+  const appVer = await ev(() => APP_VERSION), V = vj.history.find(h => h.version === '2026.11.19.1');
+  ok('2026.11.19.1 is in version.json, and the page is the newest', !!V && V.changes.length === 2
+    && vj.version === appVer && vj.history[0].version === appVer, appVer + ' / ' + vj.version);
 
   ok('no page errors', errors.length === 0, errors.join(' / '));
   await b.close();

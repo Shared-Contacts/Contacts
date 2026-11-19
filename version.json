@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.17.4",
+  "version": "2026.11.19.1",
   "history": [
+    {
+      "version": "2026.11.19.1",
+      "changes": [
+        "Diary: a Completed button on each appointment and a Done button on each to-do, beside +1 hr, +8 hr and +1 day.",
+        "Diary: a completed appointment now stays on the Week and Month calendars, ticked; a done to-do still comes off them. Birthdays always stay."
+      ]
+    },
     {
       "version": "2026.11.17.4",
       "changes": [

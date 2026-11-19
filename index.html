@@ -685,7 +685,9 @@ body:has(#jigPlay.jigfull:not(.hidden)) #verBar{display:none}
 .lshare .who span{flex:1;font-weight:700}
 .lshare .checks{margin-top:10px}
 .lshare .coords{margin:10px 0 4px}
-.pickrow.dly button{padding:5px 12px;font-size:14px;color:var(--muted)}
+.pickrow.dly button{padding:5px 10px;font-size:14px;color:var(--muted)}
+/* Completed (an appointment) or Done (a to-do), beside the three (ML305) */
+.pickrow.dly button.dlyfin{color:#2E7D4F;border-color:#2E7D4F;background:#EEF6F0;font-weight:700}
 .rtlist .item{padding:7px 14px}
 .rtlist .item .t{font-size:16px}
 .mvhead{flex:0 0 auto;color:var(--muted);font-size:20px;padding:0 8px}
@@ -6459,6 +6461,8 @@ function openHelp(where){
   reminder that was already overdue does not stay overdue. The same three
   buttons are on the reminder itself when it appears on your phone.</p>
   <p>Something with no date at all gets one: the date becomes that far from now.</p>
+  <p>Beside them, an appointment has <strong>Completed</strong> and a to-do has
+  <strong>Done</strong>. Both tick it off, the same as the circle.</p>
 
   <h4 id="h-diary">Diary</h4>
   <p><strong>Diary</strong> in the green bar holds appointments and to-dos. The
@@ -6478,15 +6482,21 @@ function openHelp(where){
   otherwise: <em>Completed</em>, <em>Missed</em>, <em>Delayed</em>, <em>On
   hold</em> or <em>Cancelled</em>. The status shows on the list. Any of them stops
   it showing as overdue and its reminder going; <em>Completed</em> ticks it off as
-  well, and unticking it makes it Booked again.</p>
+  well (and ticking one off makes it Completed), and unticking it makes it Booked
+  again.</p>
   <p><em>About which contact</em> ties an entry to a person, so it appears on
   their page too. Leave it blank for anything that is not about anybody.</p>
   <p>A <strong>to-do</strong> is due by a time, and can have a "not before" date
   if it shouldn't be started yet. An <strong>appointment</strong> has a start and
   an end. Either can be attached to a contact, in which case it also shows on
   their page, and either can repeat.</p>
-  <p>Tap the circle to mark something done. A repeating item rolls forward to its
-  next date instead of disappearing.</p>
+  <p>Tap the circle to mark something done, or the <strong>Completed</strong>
+  button on an appointment (<strong>Done</strong> on a to-do). A completed
+  appointment stays on the Week and Month calendars, ticked and marked
+  Completed, so the days gone by say what happened. A done to-do comes off them.
+  Both move to <em>Finished</em> in the List, and tapping the circle again puts
+  them back. A repeating item rolls forward to its next date instead of
+  disappearing. Birthdays always stay.</p>
   <p><strong>Regular</strong> is a standing list of jobs you come back to &mdash;
   engine oil, tax return, paint the shower. Ticking one drops it to the bottom
   with the date you did it; unticking brings it back to the top as needing doing.
@@ -6795,11 +6805,13 @@ function openDiary(){
 // An appointment occupies every day from its start to its end, so ten days
 // away shows on all ten and nothing gets booked over it.
 // all: finished ones too, whichever the list is showing (Days, ML254).
+// A completed appointment stays on the calendar, ticked, so the days gone by
+// say what happened; a done to-do comes off it (ML305).
 function itemsOn(day,all){
   const a=new Date(day.getFullYear(),day.getMonth(),day.getDate()).getTime();
   const b=a+86400000;
   return ITEMS.filter(it=>{
-    if(!all&&(DIARY_DONE ? !it.done_at : it.done_at)) return false;
+    if(!all&&(DIARY_DONE ? !it.done_at : it.done_at&&it.kind!=='appointment')) return false;
     if(it.kind==='appointment' && it.starts_at){
       const st=new Date(it.starts_at).getTime();
       const en=it.ends_at ? new Date(it.ends_at).getTime() : st;
@@ -6820,19 +6832,22 @@ function itemForOther(it){
 function itemRow(it){
   const c=it.contact_id?CONTACTS.find(x=>x.id===it.contact_id):null;
   const shared=ITEM_SHARES.some(x=>x.item_id===it.id)||it.created_by!==ME.id;
+  // A ticked appointment is Completed, whether ticked or chosen on the form (ML305).
+  const st=it.kind!=='appointment'?null:apptStatus(it.status)||(it.done_at?apptStatus('done'):null);
   return `<div class="item dlywrap${itemForOther(it)?' forother':''}">
     <button class="tick ${it.done_at?'on':''}" data-done="${it.id}"
       aria-label="${it.done_at?'Mark as not done':'Mark as done'}">${it.done_at?'&#10003;':''}</button>
     <button class="mid" data-item="${it.id}">
       <span class="t ${it.done_at?'done':''}">${esc(it.title)}</span>
       <span class="w ${isLate(it)?'late':''}">${it.kind==='appointment'?'&#128197; ':''}${esc(whenText(it))}${shared?' &middot; shared':''}${photoCount(it)?' &middot; '+esc(photoCount(it)):''}${
-        apptStatus(it.status)&&it.kind==='appointment'?` &middot; <span class="ststat" style="color:${apptStatus(it.status)[2]}">${esc(apptStatus(it.status)[1])}</span>`:''}</span>
+        st?` &middot; <span class="ststat" style="color:${st[2]}">${esc(st[1])}</span>`:''}</span>
       ${c?`<span class="who2">${esc(fullName(c))}</span>`:''}
     </button>
     ${it.done_at?'':`<span class="pickrow dly">
       <button type="button" data-dly="${it.id}:1">+1 hr</button>
       <button type="button" data-dly="${it.id}:8">+8 hr</button>
       <button type="button" data-dly="${it.id}:24">+1 day</button>
+      <button type="button" class="dlyfin" data-fin="${it.id}">${it.kind==='appointment'?'Completed':'Done'}</button>
     </span>`}</div>`;
 }
 
@@ -6908,6 +6923,8 @@ function renderDiary(){
     const [id,hrs]=b.dataset.dly.split(':');
     delayItem(Number(id),Number(hrs));
   });
+  $('diaryBody').querySelectorAll('[data-fin]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation(); b.disabled=true; finishItem(Number(b.dataset.fin)); });
   $('diaryBody').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{
     DIARY_DAY=b.dataset.day; renderDiary(); });
   $('diaryBody').querySelectorAll('[data-mshift]').forEach(b=>b.onclick=()=>{
@@ -8419,12 +8436,13 @@ function nextDate(iso, every){
   return d.toISOString();
 }
 
+// Ticks something off, or back on. True once it has been saved.
 async function toggleDone(id){
   const it=ITEMS.find(x=>x.id===id);
-  if(!it) return;
+  if(!it) return false;
   if(it.done_at){
     const {error}=await sb.from('items').update(it.status==='done'?{done_at:null,status:null}:{done_at:null}).eq('id',id);
-    if(error){ toast('Could not change that'); return; }
+    if(error){ toast('Could not change that'); return false; }
   }else if(it.repeat_every&&it.repeat_every!=='none'&&whenOf(it)){
     // A repeating item rolls forward instead of disappearing
     const field=it.kind==='appointment'?'starts_at':'due_at';
@@ -8435,15 +8453,30 @@ async function toggleDone(id){
     patch.remind_at = it.remind_mins!=null
       ? new Date(new Date(nxt).getTime()-it.remind_mins*60000).toISOString() : null;
     const {error}=await sb.from('items').update(patch).eq('id',id);
-    if(error){ toast('Could not roll it forward'); return; }
-    toast('Done — moved to '+whenText({...it,[field]:nxt}));
+    if(error){ toast('Could not roll it forward'); return false; }
+    toast((it.kind==='appointment'?'Completed — the next one is ':'Done — moved to ')+whenText({...it,[field]:nxt}));
   }else{
-    const {error}=await sb.from('items').update({done_at:new Date().toISOString()}).eq('id',id);
-    if(error){ toast('Could not change that'); return; }
+    // A ticked appointment is Completed, unless it was Missed or Cancelled (ML305).
+    const patch={done_at:new Date().toISOString()};
+    if(it.kind==='appointment'&&it.status!=='missed'&&it.status!=='cancelled') patch.status='done';
+    const {error}=await sb.from('items').update(patch).eq('id',id);
+    if(error){ toast('Could not change that'); return false; }
   }
   await loadAll();
   renderDiary();
   if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
+  return true;
+}
+
+// The Completed or Done button beside +1 hr (ML305). It only ever ticks off,
+// so a second tap before the screen redraws can't untick it.
+async function finishItem(id){
+  const it=ITEMS.find(x=>x.id===id);
+  if(!it||it.done_at) return;
+  const rolls=!!(it.repeat_every&&it.repeat_every!=='none'&&whenOf(it));
+  const ok=await toggleDone(id);
+  if(ok&&!rolls) toast(it.kind==='appointment'?'Completed. It stays on the calendar'
+    :'Done. It is under Finished in the List');
 }
 
 /* ---------- alerts while the app is open ---------- */
@@ -18639,7 +18672,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.17.4';
+const APP_VERSION='2026.11.19.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

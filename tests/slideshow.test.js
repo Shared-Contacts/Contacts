@@ -321,7 +321,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
     document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden')); return t; });
   ok('Help explains the Slideshow', /Slideshow plays your photos full screen, at random or by date, upright, sideways or both ways/.test(help)
     && /Playing: tap a slideshow in the list\. It opens with a title for about 10 seconds/.test(help)
-    && /kept on that phone or computer only, not online/.test(help) && /Your Bluesky photos is ready-made/.test(help)
+    // since 20 Nov 2026 (ML318) the slideshows themselves are on every device; the photos still never go online
+    && /kept on each phone or computer, not online/.test(help) && /Your Bluesky photos is ready-made/.test(help)
     && /start it in your own app first/.test(help));
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
   const appVer = await ev(() => APP_VERSION), V = vj.history.find(h => h.version === '2026.11.19.3');

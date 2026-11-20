@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.20.1",
+  "version": "2026.11.20.2",
   "history": [
+    {
+      "version": "2026.11.20.2",
+      "changes": [
+        "The phone's Back arrow: pressing it twice or more in a row no longer closes the app.",
+        "Slideshow: choose how long each photo shows on the slideshow's own page, before you press Play."
+      ]
+    },
     {
       "version": "2026.11.20.1",
       "changes": [

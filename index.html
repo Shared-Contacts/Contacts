@@ -6073,6 +6073,9 @@ function openHelp(where){
   photo, or failing that the file&rsquo;s date; a Bluesky photo has the date it was
   posted. Photos added before the app read dates have none: pick them again with
   <em>Add photos</em> and their dates are filled in (nothing is added twice).</p>
+  <p><strong>How long each photo shows</strong> (5, 8, 15 or 30 seconds) is chosen on a
+  slideshow&rsquo;s own page, before you press Play, or under <em>How it plays</em>; it can
+  be changed while it plays too, and stays as you left it.</p>
   <p><strong>Music or a podcast:</strong> start it in your own app first (Spotify, BBC
   Sounds, a podcast app or the radio), then play a slideshow. It carries on behind, and
   you control it in that app as usual.</p>
@@ -18698,8 +18701,7 @@ function renderSlides(){
     <p class="dsec">How it plays</p>
     <div class="card"><div class="setadd">
       <p class="coords" style="margin-top:0">Each photo shows for</p>
-      <div class="pickrow">${SLD_SECS.map(s=>`<button type="button" data-sldsecs="${s}"
-        aria-pressed="${pr.secs===s}">${s} seconds</button>`).join('')}</div>
+      ${sldSecsRow(pr,'seconds')}
       <p class="coords" style="margin-top:14px">Each photo</p>
       <div class="pickrow"><button type="button" data-sldfill="0" aria-pressed="${!pr.fill}">Whole photo</button>
         <button type="button" data-sldfill="1" aria-pressed="${pr.fill}">Fill the screen</button></div>
@@ -18712,11 +18714,16 @@ function renderSlides(){
       in your own app first, then play a slideshow here: it carries on behind.</p>`;
   body.querySelectorAll('[data-sldopen]').forEach(b=>b.onclick=()=>openSlideTheme(b.dataset.sldopen));
   sldWirePlays(body);
-  body.querySelectorAll('[data-sldsecs]').forEach(b=>b.onclick=()=>{
-    sldSavePrefs({...sldPrefs(), secs:Number(b.dataset.sldsecs)}); renderSlides(); });
+  sldWireSecs(body, renderSlides);
   body.querySelectorAll('[data-sldfill]').forEach(b=>b.onclick=()=>{
     sldSavePrefs({...sldPrefs(), fill:b.dataset.sldfill==='1'}); renderSlides(); });
   sldWireOrder(body, renderSlides);
+}
+const sldSecsRow = (pr, word) => `<div class="pickrow">${SLD_SECS.map(s=>`<button type="button"
+    data-sldsecs="${s}" aria-pressed="${pr.secs===s}">${s} ${word}</button>`).join('')}</div>`;
+function sldWireSecs(root, again){
+  root.querySelectorAll('[data-sldsecs]').forEach(b=>b.onclick=()=>{
+    sldSavePrefs({...sldPrefs(), secs:Number(b.dataset.sldsecs)}); again(); });
 }
 const sldOrderRow = pr => `<div class="pickrow"><button type="button" data-sldorder="random"
     aria-pressed="${pr.order==='random'}">Random</button>
@@ -18746,6 +18753,7 @@ function renderSlideTheme(){
       <button class="btn primary" data-sldplay="${esc(t.id)}:up" ${c.up?'':'disabled'}>Play upright (${c.up})</button>
       <button class="btn primary" data-sldplay="${esc(t.id)}:side" ${c.side?'':'disabled'}>Play sideways (${c.side})</button>
       <button class="btn primary both" data-sldplay="${esc(t.id)}:both" ${c.n?'':'disabled'}>Play both ways (${c.n})</button></div>
+    <div class="sldorder"><span>Each photo shows for</span>${sldSecsRow(pr,'sec')}</div>
     <div class="sldorder"><span>In what order</span>${sldOrderRow(pr)}</div>
     ${pr.order==='date'&&undated?`<p class="coords sldundated">${undated===ps.length
         ?(undated===1?'This one has no date taken yet':'None of these has a date taken yet')
@@ -18771,6 +18779,7 @@ function renderSlideTheme(){
     <button class="btn danger" id="sldDrop" style="margin-top:18px">Delete this slideshow</button>`;
   const body=$('sldThemeBody');
   sldWirePlays(body);
+  sldWireSecs(body, renderSlideTheme);
   sldWireOrder(body, renderSlideTheme);
   $('sldPick').onclick=()=>sldChoose(false);
   const fo=$('sldFolder'); if(fo) fo.onclick=()=>sldChoose(true);
@@ -19479,7 +19488,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.1';
+const APP_VERSION='2026.11.20.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -19541,7 +19550,7 @@ function verRestart(){
     .some(id=>$(id)&&!$(id).classList.contains('hidden'));
   if(busy&&!confirm('Something is open and not saved yet. Restart anyway? '
     +'Anything not saved will be lost.')) return;
-  location.replace('index.html?v='+encodeURIComponent(VER.info?VER.info.version:Date.now()));
+  backRewind(()=>location.replace('index.html?v='+encodeURIComponent(VER.info?VER.info.version:Date.now())));
 }
 (function(){            // tidy that address away again once it has done its job
   try{
@@ -21349,7 +21358,7 @@ $('signinBtn').onclick=async()=>{
   start();
 };
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')$('signinBtn').click();});
-$('signoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload();};
+$('signoutBtn').onclick=async()=>{await sb.auth.signOut();backRewind(()=>location.reload());};
 $('search').oninput=render;
 $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBackground();};
@@ -26029,17 +26038,54 @@ $('viewPick').onchange=()=>{
   applyView(); render();
 };
 
-/* ---------- the phone's Back arrow (ML322) ----------
+/* ---------- the phone's Back arrow (ML322, ML326) ----------
    Back goes back one screen, just as that screen's own Back, Close, Cancel
    or home arrow would; a box on top is closed first. On the home screen it
-   stays put rather than closing the app. The browser is given one spare
-   step to go back to: each Back uses it up and it is put straight back.
-   Chrome only honours a step the page adds once the page has been touched,
-   so it is put back on the next touch too if it is missing. */
-let BACK_ARMED=false;
-function backArm(){
-  if(BACK_ARMED) return;
-  try{ history.pushState({myl:'back'},'',location.href); BACK_ARMED=true; }catch(e){}
+   stays put rather than closing the app.
+   The browser is given spare steps to go back to: one for each screen or
+   box open, and two more. Chrome only honours steps a page adds once it
+   has been touched, and after a Back it ignores any new one until the next
+   touch: adding one then makes Back skip them all and close the app, which
+   is what the first version did on the second Back. So steps are only
+   added just after a real tap or key press, never after a Back, and there
+   are enough in hand for several Backs in a row. */
+const BACK_SPARE=2, BACK_MAX=12;
+const BACK_BOXES='body > .daypick, body > .lightbox, body > .bkscan, body > .alarm, body > .lkask';
+let BACK_TOUCHED=false, BACK_REWIND=false, BACK_T=0;
+const backAt=()=>{ const s=history.state; return s&&s.myl==='back'&&s.n>0?s.n:0; };
+// How many Backs it takes from here to the home screen.
+function backDepth(){
+  let d=(SLD?1:0)+document.querySelectorAll(BACK_BOXES).length;
+  if(ME){
+    d+=SHEET_IDS.filter(id=>$(id)&&!$(id).classList.contains('hidden')).length;
+    if(PICKING) d++;
+    if($('home').classList.contains('hidden')) d++;
+  }
+  return d;
+}
+function backTopUp(){
+  if(!BACK_TOUCHED||BACK_REWIND) return;
+  try{
+    const want=Math.min(BACK_MAX, backDepth()+BACK_SPARE);
+    for(let n=backAt()+1; n<=want; n++) history.pushState({myl:'back',n},'',location.href);
+  }catch(e){}
+}
+function backTouched(e){
+  if(!e.isTrusted||e.key==='Escape'||e.key==='Esc') return;   // the app's own clicks don't count
+  BACK_TOUCHED=true;
+  if(BACK_T) return;
+  // Straight away, and again once whatever the tap opened is showing.
+  BACK_T=setTimeout(()=>{ backTopUp(); BACK_T=setTimeout(()=>{ BACK_T=0; backTopUp(); },500); },0);
+}
+// Before the app restarts itself, go back to its first step, so that Back
+// afterwards doesn't land on steps left over from before.
+function backRewind(go){
+  const k=backAt();
+  if(!k){ go(); return; }
+  BACK_REWIND=true;
+  let done=false; const once=()=>{ if(done) return; done=true; go(); };
+  addEventListener('popstate',once,{once:true}); setTimeout(once,1500);
+  history.go(-k);
 }
 // Screens where you type something in: leaving one by Back asks first.
 const BACK_EDITS=['editor','itemEd','rtEd','logEd','recipeEd','moneyEd','stuffEd','bookEd','tvEd','tmlEd'];
@@ -26053,7 +26099,7 @@ function backBox(el){
 }
 function backStep(){
   if(SLD){ sldStop(); return; }
-  const boxes=document.querySelectorAll('body > .daypick, body > .lightbox, body > .bkscan, body > .alarm, body > .lkask');
+  const boxes=document.querySelectorAll(BACK_BOXES);
   if(boxes.length){ backBox(boxes[boxes.length-1]); return; }
   if(!ME) return;
   stackSheets();
@@ -26069,9 +26115,10 @@ function backStep(){
   if($('home').classList.contains('hidden')) backHome('contacts');
   // On the home screen: nothing, so the app stays open.
 }
-window.addEventListener('popstate',()=>{ BACK_ARMED=false; backStep(); backArm(); });
-['pointerdown','keydown'].forEach(t=>document.addEventListener(t,backArm,{capture:true,passive:true}));
-backArm();
+window.addEventListener('popstate',()=>{ if(BACK_REWIND) return; BACK_TOUCHED=false; backStep(); });
+['pointerup','click','keydown'].forEach(t=>document.addEventListener(t,backTouched,{capture:true,passive:true}));
+// Opened afresh on a step left from before (pulled down to reload): count from here.
+if(backAt()) try{ history.replaceState({myl:'back',n:0},'',location.href); }catch(e){}
 
 // Every few minutes, but only when nothing is open and you are not typing,
 // so it can never interrupt what you are doing.

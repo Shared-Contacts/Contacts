@@ -169,13 +169,13 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   let show = await ev(() => { const s = SLD, box = $('sldPlay'), st = $('sldStage');
     return s && { shape: s.shape, n: s.list.length, names: s.list.map(x => x.name).sort().join(), i: s.i,
       on: box.querySelectorAll('.sldimg.on').length, src: box.querySelector('.sldimg.on').getAttribute('src'),
-      buttons: box.querySelectorAll('button').length, paused: !$('sldPaused').hidden,
+      buttons: $('sldCtl').classList.contains('on'), paused: s.paused,
       fixed: getComputedStyle(box).position, z: Number(getComputedStyle(box).zIndex), t: getComputedStyle(st).transform,
       wake: window.__wake, locks: window.__locks.join() }; });
   ok('full screen and black, over everything', show && show.fixed === 'fixed' && show.z >= 100);
   ok('  only the upright ones and the square one', show.n === 2 && show.names === 'lock.png,swan.png', show.names);
   ok('  one photo showing, the first of the two', show.on === 1 && /^blob:/.test(show.src) && show.i === 0, JSON.stringify(show));
-  ok('  nothing on top of it: no buttons, no words', show.buttons === 0 && !show.paused, JSON.stringify(show));
+  ok('  nothing on top of it: the buttons put away', show.buttons === false && !show.paused, JSON.stringify(show));
   ok('  the screen kept on and turned upright', show.wake === 1 && show.locks === 'portrait', show.wake + ' ' + show.locks);
   ok('  not turned round on an upright phone', show.t === 'none', show.t);
   const first = await ev(() => SLD.list[SLD.i].id);
@@ -190,13 +190,15 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   await ev(() => { SLD.secs = 0.3; sldSchedule(); });
   await settle(1100);
   ok('it moves on by itself', await ev(() => SLD.turn >= 5));
-  await p.mouse.click(195, 420);
+  await p.mouse.click(195, 420); await settle(300);
+  ok('a tap in the middle brings the buttons back, with where you are', await ev(() => !SLD.paused
+    && $('sldCtl').classList.contains('on') && /^[12] of 2$/.test($('sldCount').textContent)), await ev(() => $('sldCount').textContent));
+  await p.click('#sldPause');
   const turnAt = await ev(() => SLD.turn); await settle(900);
-  ok('a tap in the middle pauses it, and one line says where you are', await ev(t => SLD.paused && SLD.turn === t
-    && !$('sldPaused').hidden && /^Paused · Canals · [12] of 2$/.test($('sldPaused').textContent), turnAt),
-    await ev(() => $('sldPaused').textContent));
-  await p.mouse.click(195, 420);
-  ok('  and another carries on, the line gone', await ev(() => !SLD.paused && !!SLD.timer && $('sldPaused').hidden));
+  ok('  its pause button pauses it', await ev(t => SLD.paused && SLD.turn === t
+    && /^Paused · [12] of 2$/.test($('sldCount').textContent), turnAt), await ev(() => $('sldCount').textContent));
+  await p.click('#sldPause');
+  ok('  and again carries on', await ev(() => !SLD.paused && !!SLD.timer));
   await ev(() => { SLD.secs = 8; sldSchedule(); });
   await p.keyboard.press('Escape'); await settle(300);
   ok('Esc ends it: gone, the screen let go, back at the list', await ev(() => !SLD && !$('sldPlay') && window.__rel === 1
@@ -318,7 +320,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   const help = await ev(() => { openHelp('sld'); const t = $('helpBody').textContent.replace(/\s+/g, ' ');
     document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden')); return t; });
   ok('Help explains the Slideshow', /Slideshow plays your photos full screen, at random or by date, upright, sideways or both ways/.test(help)
-    && /Playing: tap a slideshow in the list\. It opens with a title for a few seconds/.test(help)
+    && /Playing: tap a slideshow in the list\. It opens with a title for about 10 seconds/.test(help)
     && /kept on that phone or computer only, not online/.test(help) && /Your Bluesky photos is ready-made/.test(help)
     && /start it in your own app first/.test(help));
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));

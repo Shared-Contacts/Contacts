@@ -7,6 +7,9 @@
 //          small photo) while Chrome's own message about full screen comes
 //          and goes; then just the photos: no buttons, a tap in the middle
 //          pauses.
+// Brought up to date for 2026.11.20.4 (ML334 to ML339, more in batch1120d):
+// the title stays 11 seconds with the buttons over it, they go when the
+// first photo comes, and a tap in the middle brings them back.
 // Pretend photos and a pretend Bluesky; nothing goes online.
 const { chromium } = require('playwright');
 const path = require('path');
@@ -86,11 +89,11 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     const q = s => $('sldBody').querySelector(s), after = (a, b) => !!(q(a).compareDocumentPosition(q(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
     return after('[data-sldsecs]', '[data-sldfill]') && after('[data-sldfill]', '[data-sldorder]') && after('[data-sldorder]', '[data-sldshape]')
       && after('[data-sldshape]', '[data-sldgo]'); }));
-  ok('  Which way: Upright, Sideways or Both ways, Upright to begin with', await ev(() =>
-    [...$('sldBody').querySelectorAll('[data-sldshape]')].map(x => x.textContent.trim()).join('|') === 'Upright|Sideways|Both ways'
+  ok('  Which Slideshow Images to view: Upright, Sideways or Both, Upright to begin with', await ev(() =>
+    [...$('sldBody').querySelectorAll('[data-sldshape]')].map(x => x.textContent.trim()).join('|') === 'Upright|Sideways|Both'
     && $('sldBody').querySelector('[data-sldshape="up"]').getAttribute('aria-pressed') === 'true'));
   const txt = await ev(() => $('sldBody').textContent.replace(/\s+/g, ' '));
-  ok('a note says how to get about', /Tap a slideshow to start it\. It opens with its name for a few seconds, then just the photos\. Tap or swipe at either side to go back or on, tap the middle to pause, and press the phone’s Back to finish\./.test(txt), txt.slice(0, 600));
+  ok('a note says how to get about', /Tap a slideshow to start it\. It opens with its name and the buttons for about 10 seconds, then just the photos\. Tap or swipe at either side to go back or on, tap the middle for the buttons \(pause and the rest\), and press the phone’s Back to finish\./.test(txt), txt.slice(0, 600));
   ok('the list: Your Bluesky photos first, then yours', await ev(() =>
     [...$('sldBody').querySelectorAll('.sldrow b')].map(x => x.textContent).join('|') === 'Your Bluesky photos|Canals|Mixed Bag'));
   ok('  a Photos button beside each of yours, none beside Bluesky', await ev(() =>
@@ -117,22 +120,22 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   ok('  full screen and turned upright asked for at once, while the title is up', await ev(() => window.__locks.join() === 'portrait' && SLD.intro));
   const title = await ev(() => ({ h: document.querySelector('#sldIntro h2').textContent, dates: $('sldIdates').textContent,
     det: $('sldIdet').textContent, pic: $('sldIpic').getAttribute('src'), how: document.querySelector('.sldihow').textContent.replace(/\s+/g, ' ').trim(),
-    buttons: $('sldPlay').querySelectorAll('button').length }));
+    buttons: $('sldPlay').querySelectorAll('button').length, on: $('sldCtl').classList.contains('on') }));
   ok('  its name, and when the photos were taken', title.h === 'Mixed Bag' && title.dates === 'Taken June 2010 to August 2024', JSON.stringify(title));
   ok('  how it will play', title.det === '2 photos · upright · 8 seconds each · in random order', title.det);
   ok('  a small photo from it', /^blob:/.test(title.pic || '') && await ev(() => $('sldIpic').naturalWidth > 0), title.pic);
-  ok('  how to get about, and nothing to press', title.how === 'Tap or swipe at the sides for back and next · tap the middle to pause · Back to finish'
-    && title.buttons === 0, JSON.stringify(title));
+  ok('  how to get about, with the buttons over it (ML335)', title.how === 'Tap or swipe at the sides for back and next · tap the middle for the buttons · Back to finish'
+    && title.buttons === 6 && title.on, JSON.stringify(title));
   await p.mouse.click(195, 420); await settle(200);
   ok('a tap in the middle of the title does nothing', (await playing()).intro && !(await playing()).paused);
-  await settle(Math.max(0, 4500 - (Date.now() - t0)));
-  ok('still the title after four and a half seconds', (await playing()).intro);
-  await settle(Math.max(0, 6800 - (Date.now() - t0)));
+  await settle(Math.max(0, 10200 - (Date.now() - t0)));
+  ok('still the title after ten seconds (ML334: Chrome\'s message takes about 9)', (await playing()).intro);
+  await settle(Math.max(0, 11800 - (Date.now() - t0)));
   st = await playing();
-  ok('after six seconds: the title goes and the first photo comes', !st.intro && st.gone && st.on === 1 && st.i === 0, JSON.stringify(st));
+  ok('after eleven seconds: the title goes and the first photo comes', !st.intro && st.gone && st.on === 1 && st.i === 0, JSON.stringify(st));
   await settle(1000);
-  ok('  just the photo: no buttons, no words, the title faded right out', await ev(() =>
-    $('sldPlay').querySelectorAll('button').length === 0 && $('sldPaused').hidden && !$('sldSay').textContent
+  ok('  just the photo: the buttons gone, no words, the title faded right out', await ev(() =>
+    !$('sldCtl').classList.contains('on') && getComputedStyle($('sldCtl')).opacity === '0' && !$('sldSay').textContent
     && getComputedStyle($('sldIntro')).opacity === '0' && getComputedStyle($('sldIntro')).pointerEvents === 'none'));
 
   console.log('\nGetting about');
@@ -144,13 +147,16 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   ok('a swipe to the left: on', (await playing()).i === 1);
   await swipe(150); await settle(500);
   ok('a swipe to the right: back', (await playing()).i === 0);
-  await p.mouse.click(195, 420); await settle(300);
-  ok('a tap in the middle: paused, and one line says where you are and when it was taken', await ev(() => SLD.paused && !$('sldPaused').hidden
-    && /^Paused · Mixed Bag · 1 of 2 · \d{1,2} (Jun 2010|Aug 2024)$/.test($('sldPaused').textContent)), await ev(() => $('sldPaused').textContent));
+  await p.mouse.click(195, 420); await settle(400);
+  ok('a tap in the middle: the buttons, with where you are and when it was taken', await ev(() => !SLD.paused && $('sldCtl').classList.contains('on')
+    && $('sldCount').textContent === '1 of 2' && /^ · \d{1,2} (Jun 2010|Aug 2024)$/.test($('sldWhen').textContent)),
+    await ev(() => $('sldCount').textContent + ' / ' + $('sldWhen').textContent));
+  await p.tap('#sldPause'); await settle(300);
+  ok('  its pause button: paused', await ev(() => SLD.paused && $('sldCount').textContent === 'Paused · 1 of 2'));
   await p.mouse.click(370, 420); await settle(500);
-  ok('  on while paused: still paused, the line up to date', await ev(() => SLD.paused && SLD.i === 1 && / · 2 of 2 · /.test($('sldPaused').textContent)));
-  await p.mouse.click(195, 420); await settle(300);
-  ok('  another tap in the middle carries on, the line gone', await ev(() => !SLD.paused && !!SLD.timer && $('sldPaused').hidden));
+  ok('  on while paused: still paused, up to date', await ev(() => SLD.paused && SLD.i === 1 && $('sldCount').textContent === 'Paused · 2 of 2'));
+  await p.tap('#sldPause'); await settle(300);
+  ok('  the button again carries on', await ev(() => !SLD.paused && !!SLD.timer && $('sldCount').textContent === '2 of 2'));
   await ev(() => history.back()); await settle(500);
   ok('the phone\'s Back ends it, back at the list', await ev(() => !SLD && !$('sldPlay')) && await open('sld'));
 
@@ -191,7 +197,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     ids: SLD.list.map(x => x.id).join() }));
   ok('  then how it will play: the sideways one only', bt.det === '1 photo · sideways · 8 seconds each · in random order' && bt.ids === 'b:at://x/1#0', JSON.stringify(bt));
   ok('  when it was posted, and a small copy of it', bt.dates === 'Posted May 2024' && bt.pic === 'https://cdn.example/twide.png', JSON.stringify(bt));
-  await settle(Math.max(0, 6800 - (Date.now() - b0)));
+  await settle(Math.max(0, 11800 - (Date.now() - b0)));
   ok('  then the photo itself', await ev(() => !SLD.intro && document.querySelector('.sldimg.on').getAttribute('src') === 'https://cdn.example/wide.png'));
   await ev(() => sldStop());
   ok('the menu has Play your Bluesky photos, and it plays the way chosen under How it plays', await ev(async () => {
@@ -217,9 +223,11 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     await ev(() => sldPlay(SLD_THEMES.find(t => t.name === 'Mixed Bag').id)); await settle(500);
     const fit = await ev(() => [...$('sldIntro').children].map(x => { const r = x.getBoundingClientRect();
       return [x.tagName, Math.round(r.top), Math.round(r.bottom), Math.round(r.left), Math.round(r.right)]; }));
-    ok(`the title fits a ${w} × ${h} screen, nothing over anything else`, fit.every(([, t, bo, l, r]) => t >= 0 && bo <= h && l >= 0 && r <= w)
+    const bars = await ev(() => [document.querySelector('.sldx').getBoundingClientRect().bottom,
+      document.querySelector('.sldbtm button').getBoundingClientRect().top]);
+    ok(`the title fits a ${w} × ${h} screen, nothing over anything else, clear of the buttons`, fit.every(([, t, bo, l, r]) => t >= 0 && bo <= h && l >= 0 && r <= w)
       && fit.slice(0, 4).every((x, i, a) => !i || x[1] >= a[i - 1][2] - 1)
-      && fit[4][1] >= fit[3][2], JSON.stringify(fit));
+      && fit[4][1] >= fit[3][2] && fit[0][1] >= bars[0] && fit[4][2] <= bars[1], JSON.stringify([fit, bars]));
     await ev(() => sldStop());
   }
   await p.setViewportSize({ width: 390, height: 844 }); await settle(200);
@@ -229,13 +237,14 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   const h = await help();
   ok('Help says how it is laid out and how to get about', /How it plays is at the top of the Slideshow, for every slideshow/.test(h)
     && /The Photos button beside a slideshow opens its own page/.test(h) && /Your Bluesky photos is ready-made, first in the list/.test(h)
-    && /Playing: tap a slideshow in the list\. It opens with a title for a few seconds/.test(h)
-    && /Tap the middle to pause, and a line shows where you are and when the photo was taken/.test(h));
+    && /Playing: tap a slideshow in the list\. It opens with a title for about 10 seconds/.test(h)
+    && /Tap the middle to bring the buttons back for a few seconds/.test(h));
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
-  ok('2026.11.20.3, the app and version.json agree', await ev(() => APP_VERSION) === '2026.11.20.3' && vj.version === '2026.11.20.3'
-    && vj.history[0].version === '2026.11.20.3');
-  ok('  what\'s new says both', /How it plays is now at the top for every slideshow/.test(vj.history[0].changes.join(' '))
-    && /opens with its title for a few seconds, then just the photos/.test(vj.history[0].changes.join(' ')));
+  const V3 = vj.history.find(x => x.version === '2026.11.20.3');
+  ok('2026.11.20.3 is in version.json, and the page is the newest', !!V3 && await ev(() => APP_VERSION) === vj.version
+    && vj.history[0].version === vj.version);
+  ok('  what\'s new says both', !!V3 && /How it plays is now at the top for every slideshow/.test(V3.changes.join(' '))
+    && /opens with its title for a few seconds, then just the photos/.test(V3.changes.join(' ')));
 
   console.log(errors.length ? '\n' + errors.join('\n') : '\nNo page errors.');
   if (errors.length) fail += errors.length;

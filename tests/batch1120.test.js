@@ -218,18 +218,18 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     whole: document.querySelector('.sldimg.on').classList.contains('whole') });
   ok('Play both ways: all five, oldest first', show && show.shape === 'both' && show.order === 'e.jpg,b.jpg,c.jpg,a.jpg,d.png', JSON.stringify(show));
   await ev(() => sldPause());
-  ok('  paused, the date it was taken shows', await ev(() => !$('sldPaused').hidden && / · 1 Jan 2010$/.test($('sldPaused').textContent)),
-    await ev(() => $('sldPaused').textContent));
+  ok('  paused, the date it was taken shows along the top', await ev(() => $('sldCount').textContent === 'Paused · 1 of 5'
+    && / · 1 Jan 2010$/.test($('sldWhen').textContent)), await ev(() => $('sldCount').textContent + ' / ' + $('sldWhen').textContent));
   await ev(() => sldPause());
   ok('  the screen not turned or held: it turns as the phone does', (await ev(() => window.__locks.length)) === locks0);
   ok('  the upright one on an upright phone fills it', show && !show.whole);
   await ev(() => sldShow(1)); await settle(700);
   show = await ev(() => ({ name: SLD.list[SLD.i].name, whole: document.querySelector('.sldimg.on').classList.contains('whole'),
-    fit: getComputedStyle(document.querySelector('.sldimg.on')).objectFit, when: $('sldPaused').textContent }));
+    fit: getComputedStyle(document.querySelector('.sldimg.on')).objectFit, when: $('sldWhen').textContent }));
   ok('  a sideways one is shown whole, though Fill is on', show.name === 'b.jpg' && show.whole && show.fit === 'contain', JSON.stringify(show));
   ok('  with its date', / · 2 Mar 2015$/.test(show.when), show.when);
   await ev(async () => { await sldShow(1); await sldShow(1); await sldShow(1); }); await settle(500);
-  show = await ev(() => ({ name: SLD.list[SLD.i].name, when: $('sldPaused').textContent }));
+  show = await ev(() => ({ name: SLD.list[SLD.i].name, when: $('sldWhen').textContent }));
   ok('  one with only the file\'s date shows no date', show.name === 'd.png' && !/\d{4}$/.test(show.when), JSON.stringify(show));
   await ev(() => sldShow(1)); await settle(600);
   show = await ev(() => ({ name: SLD.list[SLD.i].name, i: SLD.i, order: SLD.list.map(p => p.name).join() }));
@@ -280,7 +280,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     const rows = [...document.querySelectorAll('#sldBody .sldrow')];
     return !!rows[0].querySelector('[data-sldgo="bsky"]') && areaItems('sld').some(x => x.label === 'Play your Bluesky photos'); }));
   h = await help();
-  ok('Help knows about both ways and Date taken', /Both ways plays them all, which suits a laptop/.test(h) && /In what order: at random, or by Date taken/.test(h)
+  ok('Help knows about both ways and Date taken', /Both plays them all, which suits a laptop/.test(h) && /In what order: at random, or by Date taken/.test(h)
     && /pick them again with Add photos and their dates are filled in/.test(h));
   await ev(() => sldSavePrefs({ secs: 8, fill: false, order: 'random', shape: 'up' }));
   await closeAll();

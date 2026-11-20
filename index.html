@@ -1209,26 +1209,19 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
    the show itself: black, full screen, above everything. Sideways photos on a
    phone held upright are turned round, as the jigsaw is, if the phone will
    not turn the screen itself. */
-.sldrow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px;text-align:left;
-  border-bottom:1px solid #F0EEE7}
+.sldrow{display:flex;align-items:center;gap:8px;width:100%;padding:0 12px 0 0;border-bottom:1px solid #F0EEE7}
 .card .sldrow:last-child{border-bottom:none}
+.sldgo{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:10px 4px 10px 14px;text-align:left}
 .sldrow img,.sldrow .sldnone{flex:0 0 auto;width:64px;height:64px;border-radius:8px;object-fit:cover;background:#EEEBE3}
 .sldrow .sldnone{display:flex;align-items:center;justify-content:center;font-size:26px}
 .sldrow .sldwhat{flex:1;min-width:0}
 .sldrow .sldwhat b{display:block;font-weight:600;overflow-wrap:anywhere}
 .sldrow .sldwhat span{display:block;color:var(--muted);font-size:14px}
-.sldrow .sldchev{flex:0 0 auto;color:var(--muted);font-size:26px;line-height:1}
-.sldplays{display:flex;gap:8px;padding:0 14px 14px}
-.sldplays .btn{flex:1 1 0;min-width:0;margin:0;padding-left:8px;padding-right:8px}
-.sldplays .btn[disabled]{opacity:.45}
-.sldplays{flex-wrap:wrap}
-.sldplays .btn.both{flex-basis:100%}
-.sldorder{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}
-.sldorder>span{color:var(--muted);font-size:15px}
-.sldorder .pickrow{margin:0}
+.sldph{flex:0 0 auto;min-height:40px;padding:0 14px;border:1.5px solid var(--rule);border-radius:999px;
+  font-weight:600;font-size:15px;color:inherit}
+.sldhow{margin:2px 4px 14px}
 .sldundated{margin:-4px 2px 12px}
 .sldplay.fill .sldimg.whole{object-fit:contain}
-.sldtitle small{font-weight:400;font-size:15px;opacity:.9}
 .sldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
 .sldth{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#EEEBE3;padding:0}
 .sldth img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1247,20 +1240,21 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .sldimg.on{opacity:1}
 .sldsay{position:absolute;left:16px;right:16px;top:44%;margin:0;text-align:center;font-size:17px}
 .sldsay:empty{display:none}
-.sldctl{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
-.sldctl.on{opacity:1}
-.sldctl.on button{pointer-events:auto}
-.sldtop{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;
-  padding:calc(8px + env(safe-area-inset-top)) 8px 22px 16px;background:linear-gradient(rgba(0,0,0,.65),transparent)}
-.sldtitle{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sldcount{flex:0 0 auto;font-size:15px;opacity:.9}
-.sldx{flex:0 0 auto;color:#fff;font-size:34px;line-height:1;padding:4px 10px}
-.sldbtm{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;
-  gap:10px;padding:22px 8px calc(14px + env(safe-area-inset-bottom));
-  background:linear-gradient(transparent,rgba(0,0,0,.65))}
-.sldbtm button{color:#fff;min-width:48px;min-height:48px;border-radius:999px;background:rgba(255,255,255,.16);
-  display:inline-flex;align-items:center;justify-content:center;padding:0 12px;font-size:15px;font-weight:700}
-.sldbtm svg{width:24px;height:24px}
+/* The title at the start (ML331): up while the phone shows, and then puts
+   away, its own message about full screen; then just the photos. */
+.sldintro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:24px 20px 64px;text-align:center;background:#000;transition:opacity .8s ease}
+.sldintro.gone{opacity:0;pointer-events:none}
+.sldintro img{width:min(46vmin,240px);height:min(46vmin,240px);object-fit:cover;border-radius:14px;margin-bottom:14px;background:#1a1a1a}
+.sldintro img:not([src]){visibility:hidden}
+.sldintro h2{margin:0;font-size:30px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.sldidates{margin:0;font-size:18px;opacity:.92}
+.sldidates:empty{display:none}
+.sldidet{margin:4px 0 0;font-size:16px;opacity:.8}
+.sldihow{position:absolute;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));margin:0;font-size:14px;opacity:.6}
+.sldpaused{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  max-width:calc(100% - 32px);margin:0;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.55);
+  font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Accounts gathered under the bank they belong to */
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
@@ -6049,33 +6043,36 @@ function openHelp(where){
   single days. Your Timeline is yours alone: nobody else can see it.</p>
 
   <h4 id="h-sld">Slideshow</h4>
-  <p><strong>Slideshow</strong> plays your photos at random, full screen, either all
-  upright or all sideways, so every one fills the screen the same way. Press the red
-  <em>+</em> to start a slideshow of your own (Canals, Scenic, People, whatever suits),
-  then <strong>Add photos</strong> and pick as many as you like from the gallery. On a
-  computer you can add a whole folder. The app works out which are upright and which
-  sideways; a square one goes in both.</p>
+  <p><strong>Slideshow</strong> plays your photos full screen, at random or by date,
+  upright, sideways or both ways. Press the red <em>+</em> to start a slideshow of your
+  own (Canals, Scenic, People, whatever suits), then <strong>Add photos</strong> and pick
+  as many as you like from the gallery. On a computer you can add a whole folder. The app
+  works out which are upright and which sideways; a square one goes in both.</p>
   <p>The photos are kept on <strong>that phone or computer only</strong>, not online, so
   they use none of the app&rsquo;s space and nobody else sees them. The gallery or folder
-  keeps the originals. A phone and a laptop each have their own slideshows. Tap a photo
-  in a slideshow to take it out; <em>Delete this slideshow</em> is at the bottom.</p>
-  <p><strong>Your Bluesky photos</strong> is ready-made: the photo posts from your
-  Bluesky name (Barry&rsquo;s unless you chose another under Settings &rsaquo; Home
-  screen), fetched while it plays, so it needs a signal.</p>
-  <p>Press <em>Play upright</em> or <em>Play sideways</em>. The screen turns to match
-  and stays on. <em>Play both ways</em> plays them all together, which suits a laptop;
-  on a phone, one the other shape from the screen is shown whole. Tap the middle for the buttons: back, pause, next, how long each photo
-  shows, and <em>Fill</em> or <em>Whole photo</em> (Fill trims the edges off a photo a
-  different shape from the screen). Tap or swipe at either side to go back or on. The
-  &times;, or the phone&rsquo;s Back, ends it.</p>
-  <p><strong>In what order:</strong> at random, or by <em>Date taken</em>, oldest first,
-  with the date at the top. The date comes from the camera&rsquo;s own note inside the
-  photo, or failing that the file&rsquo;s date; a Bluesky photo has the date it was
-  posted. Photos added before the app read dates have none: pick them again with
-  <em>Add photos</em> and their dates are filled in (nothing is added twice).</p>
-  <p><strong>How long each photo shows</strong> (5, 8, 15 or 30 seconds) is chosen on a
-  slideshow&rsquo;s own page, before you press Play, or under <em>How it plays</em>; it can
-  be changed while it plays too, and stays as you left it.</p>
+  keeps the originals. A phone and a laptop each have their own slideshows. The
+  <em>Photos</em> button beside a slideshow opens its own page: add more, tap a photo to
+  take it out, <em>Rename</em> it, or <em>Delete this slideshow</em> at the bottom.</p>
+  <p><strong>Your Bluesky photos</strong> is ready-made, first in the list: the photo posts
+  from your Bluesky name (Barry&rsquo;s unless you chose another under Settings &rsaquo;
+  Home screen), fetched while it plays, so it needs a signal.</p>
+  <p><strong>How it plays</strong> is at the top of the Slideshow, for every slideshow: how
+  long each photo shows (5, 8, 15 or 30 seconds); the whole photo, or <em>Fill the
+  screen</em> (which trims the edges off a photo a different shape from the screen); the
+  order; and which way. <em>Upright</em> or <em>Sideways</em> turns the screen to suit and
+  plays only the photos that way round. <em>Both ways</em> plays them all, which suits a
+  laptop; on a phone, one the other shape from the screen is shown whole.</p>
+  <p><strong>In what order:</strong> at random, or by <em>Date taken</em>, oldest first. The
+  date comes from the camera&rsquo;s own note inside the photo, or failing that the
+  file&rsquo;s date; a Bluesky photo has the date it was posted. Photos added before the app
+  read dates have none: pick them again with <em>Add photos</em> and their dates are filled
+  in (nothing is added twice).</p>
+  <p><strong>Playing:</strong> tap a slideshow in the list. It opens with a title for a few
+  seconds (its name, when the photos were taken, how it will play and a small photo from
+  it) while the phone shows and puts away its own message about full screen. Then just the
+  photos, with nothing on top. Tap or swipe at either side to go back or on. Tap the middle
+  to pause, and a line shows where you are and when the photo was taken; tap again to carry
+  on. The phone&rsquo;s Back ends it (on a computer, Esc).</p>
   <p><strong>Music or a podcast:</strong> start it in your own app first (Spotify, BBC
   Sounds, a podcast app or the radio), then play a slideshow. It carries on behind, and
   you control it in that app as usual.</p>
@@ -18538,8 +18535,9 @@ const SLD_THUMBS=new Map();            // photo id -> little picture's address
 
 function sldPrefs(){
   try{ const p=JSON.parse(localStorage.getItem('sldprefs')||'{}');
-    return {secs:SLD_SECS.includes(p.secs)?p.secs:8, fill:p.fill===true, order:p.order==='date'?'date':'random'}; }
-  catch(e){ return {secs:8, fill:false, order:'random'}; }
+    return {secs:SLD_SECS.includes(p.secs)?p.secs:8, fill:p.fill===true, order:p.order==='date'?'date':'random',
+      shape:['up','side','both'].includes(p.shape)?p.shape:'up'}; }
+  catch(e){ return {secs:8, fill:false, order:'random', shape:'up'}; }
 }
 function sldSavePrefs(p){ try{ localStorage.setItem('sldprefs',JSON.stringify(p)); }catch(e){} }
 const sldDevice = () => matchMedia('(pointer:coarse)').matches ? 'phone' : 'computer';
@@ -18679,25 +18677,16 @@ function renderSlides(){
   const body=$('sldBody'); if(!body) return;
   const pr=sldPrefs(), dev=sldDevice(), h=sldBskyHandle();
   const row=t=>{ const ps=sldOf(t.id), c=sldCounts(ps), first=ps[ps.length-1];
-    return `<button class="sldrow" data-sldopen="${esc(t.id)}">
+    return `<div class="sldrow"><button type="button" class="sldgo" data-sldgo="${esc(t.id)}">
       ${first?`<img src="${esc(sldThumb(first))}" alt="">`:'<span class="sldnone" aria-hidden="true">&#128444;&#65039;</span>'}
       <span class="sldwhat"><b>${esc(t.name)}</b><span>${c.n
-        ?`${c.n} photo${c.n===1?'':'s'}: ${c.up} upright, ${c.side} sideways`:'No photos yet'}</span></span>
-      <span class="sldchev" aria-hidden="true">&rsaquo;</span></button>`; };
+        ?`${c.n} photo${c.n===1?'':'s'}: ${c.up} upright, ${c.side} sideways`:'No photos yet'}</span></span></button>
+      <button type="button" class="sldph" data-sldopen="${esc(t.id)}">Photos</button></div>`; };
+  const bp=SLD_BSKY.handle===h&&SLD_BSKY.list.length?SLD_BSKY.list[0]:null;
   body.innerHTML=`
     ${SLD_OK?'':`<div class="card"><div class="field"><dd style="color:var(--red)">This ${dev}
       would not open the place it keeps the Slideshow's photos. Close the app and open it
       again; if it still says this, tell the Code tab.</dd></div></div>`}
-    <p class="dsec">Your slideshows</p>
-    <div class="card">${SLD_THEMES.map(row).join('')
-      ||`<div class="field"><dd style="color:var(--muted)">None yet. Press the red + to start
-        one, such as Canals, Scenic or People, then add photos to it.</dd></div>`}</div>
-    <p class="dsec">Your Bluesky photos</p>
-    <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
-      Photo posts from @${esc(h)}, fetched while it plays, so it needs a signal.</dd></div>
-      <div class="sldplays"><button class="btn primary" data-sldplay="bsky:up">Play upright</button>
-        <button class="btn primary" data-sldplay="bsky:side">Play sideways</button>
-        <button class="btn primary both" data-sldplay="bsky:both">Play both ways</button></div></div>
     <p class="dsec">How it plays</p>
     <div class="card"><div class="setadd">
       <p class="coords" style="margin-top:0">Each photo shows for</p>
@@ -18708,16 +18697,34 @@ function renderSlides(){
       <p class="coords">Fill the screen trims the edges off a photo that is a different shape
         from the screen. Whole photo leaves a black border instead.</p>
       <p class="coords" style="margin-top:14px">In what order</p>
-      ${sldOrderRow(pr)}</div></div>
+      ${sldOrderRow(pr)}
+      <p class="coords" style="margin-top:14px">Which way</p>
+      ${sldShapeRow(pr)}
+      <p class="coords">${dev==='phone'
+        ?'Upright or Sideways turns the screen to suit and plays only the photos that way round. Both ways plays them all, and leaves the phone free to turn.'
+        :'Upright or Sideways plays only the photos that way round. Both ways plays them all.'}</p></div></div>
+    <p class="coords sldhow">Tap a slideshow to start it. It opens with its name for a few
+      seconds, then just the photos. ${dev==='phone'
+        ?'Tap or swipe at either side to go back or on, tap the middle to pause, and press the phone&rsquo;s Back to finish.'
+        :'Click either side or use the arrow keys to go back or on, click the middle or press the space bar to pause, and press Esc to finish.'}</p>
+    <p class="dsec">Your slideshows</p>
+    <div class="card"><div class="sldrow"><button type="button" class="sldgo" data-sldgo="bsky">
+        ${bp?`<img src="${esc(bp.thumb||bp.url)}" alt="">`:'<span class="sldnone" aria-hidden="true">&#129419;</span>'}
+        <span class="sldwhat"><b>Your Bluesky photos</b><span>Photo posts from @${esc(h)}, fetched
+          while it plays, so it needs a signal</span></span></button></div>
+      ${SLD_THEMES.map(row).join('')}</div>
+    ${SLD_THEMES.length?'':`<p class="coords sldhow">None of your own yet. Press the red + to start
+      one, such as Canals, Scenic or People, then add photos to it.</p>`}
     <p class="coords sldnote">The photos are kept on this ${dev} only, not online, and the
       ${dev==='phone'?'gallery':'folder'} keeps the originals. For music or a podcast, start it
       in your own app first, then play a slideshow here: it carries on behind.</p>`;
+  body.querySelectorAll('[data-sldgo]').forEach(b=>b.onclick=()=>sldPlay(b.dataset.sldgo));
   body.querySelectorAll('[data-sldopen]').forEach(b=>b.onclick=()=>openSlideTheme(b.dataset.sldopen));
-  sldWirePlays(body);
   sldWireSecs(body, renderSlides);
   body.querySelectorAll('[data-sldfill]').forEach(b=>b.onclick=()=>{
     sldSavePrefs({...sldPrefs(), fill:b.dataset.sldfill==='1'}); renderSlides(); });
   sldWireOrder(body, renderSlides);
+  sldWireShape(body, renderSlides);
 }
 const sldSecsRow = (pr, word) => `<div class="pickrow">${SLD_SECS.map(s=>`<button type="button"
     data-sldsecs="${s}" aria-pressed="${pr.secs===s}">${s} ${word}</button>`).join('')}</div>`;
@@ -18728,13 +18735,15 @@ function sldWireSecs(root, again){
 const sldOrderRow = pr => `<div class="pickrow"><button type="button" data-sldorder="random"
     aria-pressed="${pr.order==='random'}">Random</button>
   <button type="button" data-sldorder="date" aria-pressed="${pr.order==='date'}">Date taken</button></div>`;
+const sldShapeRow = pr => `<div class="pickrow">${['up','side','both'].map(x=>`<button type="button"
+    data-sldshape="${x}" aria-pressed="${pr.shape===x}">${x==='up'?'Upright':x==='side'?'Sideways':'Both ways'}</button>`).join('')}</div>`;
+function sldWireShape(root, again){
+  root.querySelectorAll('[data-sldshape]').forEach(b=>b.onclick=()=>{
+    sldSavePrefs({...sldPrefs(), shape:b.dataset.sldshape}); again(); });
+}
 function sldWireOrder(root, again){
   root.querySelectorAll('[data-sldorder]').forEach(b=>b.onclick=()=>{
     sldSavePrefs({...sldPrefs(), order:b.dataset.sldorder}); again(); });
-}
-function sldWirePlays(root){
-  root.querySelectorAll('[data-sldplay]').forEach(b=>b.onclick=()=>{
-    const [from,shape]=b.dataset.sldplay.split(':'); sldPlay(from,shape); });
 }
 
 /* ---------- one slideshow ---------- */
@@ -18746,15 +18755,10 @@ function renderSlideTheme(){
   const t=SLD_THEMES.find(x=>x.id===SLD_CUR);
   if(!t){ $('sldTheme').classList.add('hidden'); SLD_CUR=null; lockBackground(); renderSlides(); return; }
   $('sldThemeTitle').textContent=t.name;
-  const ps=sldOf(t.id).sort((a,b)=>(b.added||0)-(a.added||0)), c=sldCounts(ps), dev=sldDevice();
+  const ps=sldOf(t.id).sort((a,b)=>(b.added||0)-(a.added||0)), dev=sldDevice();
   const pr=sldPrefs(), undated=ps.filter(p=>!p.taken).length;
   $('sldThemeBody').innerHTML=`
-    <div class="sldplays" style="padding:0 0 12px">
-      <button class="btn primary" data-sldplay="${esc(t.id)}:up" ${c.up?'':'disabled'}>Play upright (${c.up})</button>
-      <button class="btn primary" data-sldplay="${esc(t.id)}:side" ${c.side?'':'disabled'}>Play sideways (${c.side})</button>
-      <button class="btn primary both" data-sldplay="${esc(t.id)}:both" ${c.n?'':'disabled'}>Play both ways (${c.n})</button></div>
-    <div class="sldorder"><span>Each photo shows for</span>${sldSecsRow(pr,'sec')}</div>
-    <div class="sldorder"><span>In what order</span>${sldOrderRow(pr)}</div>
+    <p class="coords sldhow">To play it, go Back and tap it in the list, where How it plays is too.</p>
     ${pr.order==='date'&&undated?`<p class="coords sldundated">${undated===ps.length
         ?(undated===1?'This one has no date taken yet':'None of these has a date taken yet')
         :undated+' of these '+(undated===1?'has':'have')+' no date taken yet'},
@@ -18778,9 +18782,6 @@ function renderSlideTheme(){
      :'<p class="empty">No photos in it yet.</p>'}
     <button class="btn danger" id="sldDrop" style="margin-top:18px">Delete this slideshow</button>`;
   const body=$('sldThemeBody');
-  sldWirePlays(body);
-  sldWireSecs(body, renderSlideTheme);
-  sldWireOrder(body, renderSlideTheme);
   $('sldPick').onclick=()=>sldChoose(false);
   const fo=$('sldFolder'); if(fo) fo.onclick=()=>sldChoose(true);
   body.querySelectorAll('[data-sldph]').forEach(b=>b.onclick=()=>sldDropPhoto(b.dataset.sldph));
@@ -18914,7 +18915,8 @@ function sldBskyPics(feed){
       if(!/^https:\/\//.test(String(url||''))) return;
       const ar=im.aspectRatio||{};
       const when=Date.parse((p.record&&p.record.createdAt)||p.indexedAt||'')||0;
-      out.push({id:'b:'+p.uri+'#'+i, url, w:Number(ar.width)||0, h:Number(ar.height)||0, alt:im.alt||'',
+      out.push({id:'b:'+p.uri+'#'+i, url, thumb:/^https:\/\//.test(String(im.thumb||''))?im.thumb:'',
+        w:Number(ar.width)||0, h:Number(ar.height)||0, alt:im.alt||'',
         taken:when, takenBy:when?'camera':''});
     });
   });
@@ -18942,11 +18944,9 @@ async function sldLoadBsky(){
 }
 
 /* ---------- playing ---------- */
-const SLD_ICON={
-  prev:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2.4v14H6zM20 5v14L9.6 12z"/></svg>',
-  next:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM4 5l10.4 7L4 19z"/></svg>',
-  pause:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
-  play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15L19.5 12z"/></svg>'};
+// The title stays this long: long enough for the phone's own message about
+// full screen, and its buttons, to come and go before the first photo.
+const SLD_INTRO=6000;
 function sldShuffle(list){
   const a=list.slice();
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
@@ -18954,47 +18954,78 @@ function sldShuffle(list){
 }
 async function sldPlay(from,shape){
   if(SLD) sldStop();
-  shape=shape==='side'||shape==='both'?shape:'up';
-  let list, title;
-  if(from==='bsky'){
-    toast('Fetching your Bluesky photos…');
-    const all=await sldLoadBsky();
-    list=all.filter(p=>sldFits(p,shape)); title='Bluesky';
-    if(!list.length){
-      toast(SLD_BSKY.state==='fail'?'Could not reach Bluesky. Try again when there is a signal'
-        :`No ${sldWord(shape)} photo posts from @${sldBskyHandle()} on Bluesky`);
-      return;
-    }
-  } else {
-    const t=SLD_THEMES.find(x=>x.id===from); if(!t) return;
-    list=sldOf(from).filter(p=>sldFits(p,shape)); title=t.name;
+  const pr=sldPrefs();
+  shape=['up','side','both'].includes(shape)?shape:pr.shape;
+  const bsky=from==='bsky', t=bsky?null:SLD_THEMES.find(x=>x.id===from);
+  if(!bsky&&!t) return;
+  let list=[];
+  if(!bsky){
+    list=sldOf(from).filter(p=>sldFits(p,shape));
     if(!list.length){ toast(shape==='both'?`No photos in ${t.name} yet`:`No ${sldWord(shape)} photos in ${t.name} yet`); return; }
   }
-  const pr=sldPrefs();
+  const title=bsky?'Your Bluesky photos':t.name;
   const box=document.createElement('div');
   box.id='sldPlay'; box.className='sldplay '+shape+(pr.fill?' fill':'');
   box.setAttribute('role','dialog'); box.setAttribute('aria-label','Slideshow: '+title);
   box.innerHTML=`<div class="sldstage" id="sldStage">
       <img class="sldimg" alt=""><img class="sldimg" alt="">
+      <div class="sldintro" id="sldIntro"><img id="sldIpic" alt="">
+        <h2>${esc(title)}</h2><p class="sldidates" id="sldIdates"></p><p class="sldidet" id="sldIdet"></p>
+        <p class="sldihow">${sldDevice()==='phone'
+          ?'Tap or swipe at the sides for back and next &middot; tap the middle to pause &middot; Back to finish'
+          :'Arrow keys or click the sides for back and next &middot; space or click the middle to pause &middot; Esc to finish'}</p></div>
       <p class="sldsay" id="sldSay"></p>
-      <div class="sldctl" id="sldCtl">
-        <div class="sldtop"><span class="sldtitle">${esc(title)}<small id="sldWhen"></small></span>
-          <span class="sldcount" id="sldCount"></span>
-          <button type="button" class="sldx" id="sldClose" aria-label="Close the slideshow">&times;</button></div>
-        <div class="sldbtm">
-          <button type="button" id="sldSecs" aria-label="How long each photo shows"></button>
-          <button type="button" id="sldPrev" aria-label="Back one">${SLD_ICON.prev}</button>
-          <button type="button" id="sldPause" aria-label="Pause"></button>
-          <button type="button" id="sldNext" aria-label="Next one">${SLD_ICON.next}</button>
-          <button type="button" id="sldFill"></button></div></div></div>`;
+      <p class="sldpaused" id="sldPaused" hidden></p></div>`;
   document.body.appendChild(box);
-  SLD={from, shape, title, order:pr.order, list:pr.order==='date'?sldByDate(list):sldShuffle(list),
-       i:-1, secs:pr.secs, fill:pr.fill, paused:false,
-       timer:null, ctlTimer:null, held:['',''], front:1, wake:null, fs:false, turn:0};
-  sldPaintCtl(); sldWireCtl(box);
-  await sldFull();
-  sldCtl(true);
-  await sldShow(1);
+  const s=SLD={from, shape, title, order:pr.order, list:[], i:-1, secs:pr.secs, fill:pr.fill, paused:false,
+       timer:null, intro:true, introTimer:null, introAt:Date.now(), held:['',''], front:1, wake:null, fs:false, turn:0};
+  sldWireCtl(box);
+  if(bsky) $('sldIdet').textContent='Fetching your photo posts\u2026';
+  else sldSetList(list);
+  await sldFull();                       // at once, while the tap still counts
+  if(bsky){
+    const all=await sldLoadBsky();
+    if(SLD!==s) return;
+    list=all.filter(p=>sldFits(p,shape));
+    if(!list.length){
+      sldStop();
+      toast(SLD_BSKY.state==='fail'?'Could not reach Bluesky. Try again when there is a signal'
+        :`No ${sldWord(shape)} photo posts from @${sldBskyHandle()} on Bluesky`);
+      return;
+    }
+    sldSetList(list);
+  }
+  if(SLD!==s) return;
+  s.introTimer=setTimeout(()=>sldBegin(s), Math.max(2000, SLD_INTRO-(Date.now()-s.introAt)));
+}
+// The order it plays in, and the title: a small photo from it, when they
+// were taken, and how it will play.
+function sldSetList(list){
+  const s=SLD; if(!s) return;
+  s.list=s.order==='date'?sldByDate(list):sldShuffle(list);
+  const n=s.list.length, pic=s.list[Math.floor(Math.random()*n)];
+  const im=$('sldIpic');
+  if(im&&pic){ const u=pic.url?(pic.thumb||pic.url):sldThumb(pic); if(u) im.src=u; }   // a Bluesky one has addresses; yours, a stored copy
+  const span=sldSpan(s.list);
+  $('sldIdates').textContent=span?(s.from==='bsky'?'Posted ':'Taken ')+span:'';
+  $('sldIdet').textContent=`${n} photo${n===1?'':'s'} \u00b7 ${sldWord(s.shape)} \u00b7 ${s.secs} seconds each \u00b7 `
+    +(s.order==='date'?'oldest first':'in random order');
+}
+// "June 2019", "March to June 2019" or "June 2010 to May 2024".
+function sldSpan(list){
+  const ts=list.filter(p=>p.taken&&p.takenBy==='camera').map(p=>p.taken);
+  if(!ts.length) return '';
+  const a=new Date(Math.min(...ts)), b=new Date(Math.max(...ts));
+  const m=d=>d.toLocaleDateString('en-GB',{month:'long'}), y=d=>d.getFullYear();
+  if(y(a)===y(b)) return m(a)===m(b)?`${m(a)} ${y(a)}`:`${m(a)} to ${m(b)} ${y(a)}`;
+  return `${m(a)} ${y(a)} to ${m(b)} ${y(b)}`;
+}
+// The title goes and the first photo comes.
+function sldBegin(s){
+  if(SLD!==s||!s.intro||!s.list.length) return;
+  clearTimeout(s.introTimer); s.intro=false;
+  const it=$('sldIntro'); if(it) it.classList.add('gone');
+  sldShow(1);
 }
 // Full screen, turned to match, and the screen kept on. Each may be refused
 // (a laptop will not turn), and the show carries on without it.
@@ -19066,7 +19097,7 @@ async function sldShow(step){
       s.held[back]=p.url?'':url; s.front=back;
       if(was) setTimeout(()=>{ try{ URL.revokeObjectURL(was); }catch(e){} },1500);
       $('sldSay').textContent='';
-      sldPaintCtl();
+      sldPaintPaused();
       // The next one fetched ahead, so a Bluesky photo is there when wanted.
       const nx=s.list[s.i+1]; if(nx&&nx.url){ const pre=new Image(); pre.src=nx.url; }
       sldSchedule();
@@ -19077,61 +19108,55 @@ async function sldShow(step){
   }
   $('sldSay').textContent=s.from==='bsky'?'The photos would not load. Check the signal and try again.'
     :'The photos would not load.';
-  s.paused=true; sldPaintCtl(); sldCtl(true);
+  s.paused=true; sldPaintPaused();
 }
 function sldSchedule(){
   const s=SLD; if(!s) return;
   clearTimeout(s.timer);
   if(!s.paused) s.timer=setTimeout(()=>sldShow(1), s.secs*1000);
 }
-function sldPaintCtl(){
-  const s=SLD; if(!s) return;
-  const c=$('sldCount'); if(c) c.textContent=(s.paused?'Paused · ':'')+(s.i+1)+' of '+s.list.length;
-  const p=s.list[s.i], wh=$('sldWhen');
-  if(wh) wh.textContent=s.order==='date'&&p&&p.takenBy==='camera'?' · '+sldDateWord(p.taken):'';
-  const pa=$('sldPause'); if(pa){ pa.innerHTML=s.paused?SLD_ICON.play:SLD_ICON.pause;
-    pa.setAttribute('aria-label',s.paused?'Play':'Pause'); }
-  const se=$('sldSecs'); if(se) se.textContent=s.secs+' sec';
-  const fi=$('sldFill'); if(fi) fi.textContent=s.fill?'Whole photo':'Fill';
+// No buttons on the photos. While paused, one line: the name, where you
+// are, and when it was taken.
+function sldPaintPaused(){
+  const s=SLD, el=$('sldPaused'); if(!s||!el) return;
+  const say=$('sldSay'), p=s.list[s.i];
+  el.hidden=!s.paused||s.intro||!!(say&&say.textContent);
+  el.textContent=['Paused', s.title, s.list.length&&s.i>=0?(s.i+1)+' of '+s.list.length:'',
+    p&&p.taken&&p.takenBy==='camera'?sldDateWord(p.taken):''].filter(Boolean).join(' \u00b7 ');
   const box=$('sldPlay'); if(box) box.classList.toggle('fill',s.fill);
 }
-// The buttons show on a tap and go again after a few seconds.
-function sldCtl(on){
-  const s=SLD, c=$('sldCtl'); if(!s||!c) return;
-  c.classList.toggle('on',!!on);
-  clearTimeout(s.ctlTimer);
-  if(on&&!s.paused) s.ctlTimer=setTimeout(()=>{ if(SLD===s) c.classList.remove('on'); },4000);
+function sldPause(){
+  const s=SLD; if(!s||s.intro) return;
+  s.paused=!s.paused; sldPaintPaused(); sldSchedule();
 }
 function sldWireCtl(box){
-  const stage=$('sldStage'), btn=(id,fn)=>{ $(id).onclick=ev=>{ ev.stopPropagation(); fn(); sldCtl(true); }; };
-  btn('sldPrev',()=>sldShow(-1));
-  btn('sldNext',()=>sldShow(1));
-  btn('sldPause',()=>{ SLD.paused=!SLD.paused; sldPaintCtl(); sldSchedule(); });
-  btn('sldSecs',()=>{ const s=SLD; s.secs=SLD_SECS[(SLD_SECS.indexOf(s.secs)+1)%SLD_SECS.length];
-    sldSavePrefs({...sldPrefs(), secs:s.secs}); sldPaintCtl(); sldSchedule(); });
-  btn('sldFill',()=>{ SLD.fill=!SLD.fill; sldSavePrefs({...sldPrefs(), fill:SLD.fill}); sldPaintCtl(); });
-  $('sldClose').onclick=ev=>{ ev.stopPropagation(); sldStop(); };
-  // A tap at either side goes back or on; in the middle, the buttons.
+  const stage=$('sldStage');
+  // A tap at either side goes back or on; in the middle, pause and carry on.
+  // On the title, a tap at the right (or a swipe on) starts the photos.
   stage.onclick=ev=>{
-    const r=stage.getBoundingClientRect(), side=SLD&&SLD.shape==='side'&&r.height>r.width;
+    const s=SLD; if(!s) return;
+    const r=stage.getBoundingClientRect(), side=s.shape==='side'&&r.height>r.width;
     const at=side?(ev.clientY-r.top)/r.height:(ev.clientX-r.left)/r.width;
-    if(at<0.25) sldShow(-1); else if(at>0.75) sldShow(1);
-    else sldCtl(!$('sldCtl').classList.contains('on'));
+    if(s.intro){ if(at>0.75) sldBegin(s); return; }
+    if(at<0.25) sldShow(-1); else if(at>0.75) sldShow(1); else sldPause();
   };
   let x0=null, y0=null;
   stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
   stage.addEventListener('touchend',e=>{
-    if(x0==null) return;
-    const t=e.changedTouches[0], r=stage.getBoundingClientRect(), side=SLD&&SLD.shape==='side'&&r.height>r.width;
+    const s=SLD; if(x0==null||!s) return;
+    const t=e.changedTouches[0], r=stage.getBoundingClientRect(), side=s.shape==='side'&&r.height>r.width;
     const d=side?t.clientY-y0:t.clientX-x0, other=side?t.clientX-x0:t.clientY-y0;
     x0=null;
-    if(Math.abs(d)>50&&Math.abs(d)>Math.abs(other)*1.5){ e.preventDefault(); sldShow(d<0?1:-1); }
+    if(Math.abs(d)>50&&Math.abs(d)>Math.abs(other)*1.5){
+      e.preventDefault();
+      if(s.intro){ if(d<0) sldBegin(s); } else sldShow(d<0?1:-1);
+    }
   });
 }
 function sldStop(){
   const s=SLD; if(!s) return;
   SLD=null;
-  clearTimeout(s.timer); clearTimeout(s.ctlTimer);
+  clearTimeout(s.timer); clearTimeout(s.introTimer);
   s.held.forEach(u=>{ if(u) try{ URL.revokeObjectURL(u); }catch(e){} });
   try{ if(s.wake) s.wake.release(); }catch(e){}
   try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
@@ -19147,11 +19172,12 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&SLD) sldWake();
 });
 document.addEventListener('keydown',ev=>{
-  if(!SLD) return;
-  if(ev.key==='ArrowRight'){ sldShow(1); sldCtl(true); }
-  else if(ev.key==='ArrowLeft'){ sldShow(-1); sldCtl(true); }
-  else if(ev.key===' '){ ev.preventDefault(); SLD.paused=!SLD.paused; sldPaintCtl(); sldSchedule(); sldCtl(true); }
-  else if(ev.key==='Escape') sldStop();
+  const s=SLD; if(!s) return;
+  if(ev.key==='Escape'){ sldStop(); return; }
+  if(s.intro){ if(ev.key==='ArrowRight'||ev.key===' '){ ev.preventDefault(); sldBegin(s); } return; }
+  if(ev.key==='ArrowRight') sldShow(1);
+  else if(ev.key==='ArrowLeft') sldShow(-1);
+  else if(ev.key===' '){ ev.preventDefault(); sldPause(); }
 });
 $('sldAdd').onclick=sldNew;
 $('sldThemeBack').onclick=()=>{ $('sldTheme').classList.add('hidden'); SLD_CUR=null; lockBackground(); renderSlides(); };
@@ -19488,7 +19514,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.2';
+const APP_VERSION='2026.11.20.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -25898,9 +25924,7 @@ function areaItems(area){
     it('Go to today',             ()=>{ shutMenu(); $('tmlBody').scrollTop=0; })];
   if(area==='sld') return [
     it('New slideshow',           ()=>{ shutMenu(); sldNew(); }),
-    it('Play your Bluesky photos sideways', ()=>{ shutMenu(); sldPlay('bsky','side'); }),
-    it('Play your Bluesky photos upright',  ()=>{ shutMenu(); sldPlay('bsky','up'); }),
-    it('Play your Bluesky photos both ways', ()=>{ shutMenu(); sldPlay('bsky','both'); })];
+    it('Play your Bluesky photos', ()=>{ shutMenu(); sldPlay('bsky'); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),

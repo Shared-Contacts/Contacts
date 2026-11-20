@@ -66,7 +66,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_FAILED|Se
     return all.join() === CONTACTS.filter(pickable).sort(bestFirst('')).slice(0, 40).map(c => c.id).join(); }));
   const src = require('fs').readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   ok('the other contact searches put names first as well',
-    (src.match(/\.sort\(bestFirst\(q\)\)/g) || []).length === 4
+    // five since 20 Nov 2026: Send to someone… has its own Contacts search (ML346)
+    (src.match(/\.sort\(bestFirst\(q\)\)/g) || []).length === 5
     && !/matches\(c,q\)\)?(\.filter\(pickable\))?\s*\.sort\(byName\)/.test(src));
 
   console.log('\nThe Contacts screen search');

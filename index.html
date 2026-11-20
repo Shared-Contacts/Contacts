@@ -922,7 +922,7 @@ body.vbtyping #verBar{display:none}
 .lkdone.did{opacity:.55}
 /* The roller is waiting for you (ML293): the line picked out in gold and
    Done gently pulsing. */
-.lkbar.lkwait .lkstatus{background:#FFE7A0;color:#3A2C00;border-radius:8px;padding:4px 8px;
+.lkwho.lkwait .lkstatus{background:#FFE7A0;color:#3A2C00;border-radius:8px;padding:4px 8px;
   box-shadow:0 0 0 2px #E0B21B}
 .lkbar.lkwait #lkDone{box-shadow:0 0 0 3px #E0B21B;animation:lkpulse 1.3s ease-in-out infinite}
 @keyframes lkpulse{0%,100%{box-shadow:0 0 0 3px #E0B21B}50%{box-shadow:0 0 0 7px rgba(224,178,27,.35)}}
@@ -930,6 +930,9 @@ body.vbtyping #verBar{display:none}
 .lkundo{white-space:nowrap}
 .lkundo:disabled{opacity:.45}
 .lkstatus{flex:1;min-width:0;font-size:clamp(13px,4.2cqh,17px);line-height:1.25}
+.lkspace{flex:1 1 auto}
+/* On the line of players (ML323): whatever room they leave, two lines at most. */
+.lkwho .lkstatus{flex:1 1 0;min-width:min(45%,18em);white-space:normal;padding:2px 4px}
 /* The phone's dice (ML203): two white, then red, yellow, green and blue,
    in the bar beside the words. A closed colour's die is set aside, faded. */
 .lkdice{display:flex;gap:.7cqw;flex:0 0 auto;align-items:center}
@@ -1199,6 +1202,9 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .bdword .x{flex:0 0 auto;color:var(--red);font-size:22px;padding:6px 4px}
 .bdstar{flex:0 0 auto;font-size:22px;line-height:1;padding:8px 4px;color:var(--muted)}
 .bdstar[aria-pressed="true"]{color:var(--brass)}
+.brow .bwhat .beve{color:#2E7D4F;font-weight:600}
+.offasknames{margin:0 0 6px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+#pickBtn[aria-pressed="true"]{background:rgba(255,255,255,.22);border-radius:10px}
 /* MY Slideshow (ML307). The list of slideshows, one slideshow's photos, and
    the show itself: black, full screen, above everything. Sideways photos on a
    phone held upright are turned round, as the jigsaw is, if the phone will
@@ -1215,6 +1221,14 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .sldplays{display:flex;gap:8px;padding:0 14px 14px}
 .sldplays .btn{flex:1 1 0;min-width:0;margin:0;padding-left:8px;padding-right:8px}
 .sldplays .btn[disabled]{opacity:.45}
+.sldplays{flex-wrap:wrap}
+.sldplays .btn.both{flex-basis:100%}
+.sldorder{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.sldorder>span{color:var(--muted);font-size:15px}
+.sldorder .pickrow{margin:0}
+.sldundated{margin:-4px 2px 12px}
+.sldplay.fill .sldimg.whole{object-fit:contain}
+.sldtitle small{font-weight:400;font-size:15px;opacity:.9}
 .sldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
 .sldth{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#EEEBE3;padding:0}
 .sldth img{width:100%;height:100%;object-fit:cover;display:block}
@@ -1860,7 +1874,7 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
   <header class="plate">
     <button class="bt" data-home="contacts" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="homeBtn" data-menu="contacts" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Contacts</span>
-    <span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></header>
+    <span class="bartools"><button class="bt" id="pickBtn" aria-pressed="false" aria-label="Multi Select: send or delete several" title="Multi Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.3l2.8 2.8 5.7-5.9"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></header>
   <div class="searchwrap">
     <div class="srow">
       <input id="search" type="search" placeholder="Search name, boat, town, notes" autocomplete="off">
@@ -2993,12 +3007,15 @@ function paintPickBar(){
 }
 
 function startPicking(){
-  PICKING=true; PICKED.clear(); render(); paintPickBar();
+  PICKING=true; PICKED.clear(); render(); paintPickBar(); paintPickBtn();
   toast('Tap the ones you want, then choose what to do with them');
 }
 function stopPicking(){
-  PICKING=false; PICKED.clear(); render(); paintPickBar();
+  PICKING=false; PICKED.clear(); render(); paintPickBar(); paintPickBtn();
 }
+// The tick-box button at the top of Contacts (ML321): on, then off again.
+function paintPickBtn(){ const b=$('pickBtn'); if(b) b.setAttribute('aria-pressed',String(!!PICKING)); }
+$('pickBtn').onclick=()=>{ if(PICKING) stopPicking(); else startPicking(); };
 
 async function deletePicked(){
   let mine=[...PICKED].filter(id=>{
@@ -6046,10 +6063,16 @@ function openHelp(where){
   Bluesky name (Barry&rsquo;s unless you chose another under Settings &rsaquo; Home
   screen), fetched while it plays, so it needs a signal.</p>
   <p>Press <em>Play upright</em> or <em>Play sideways</em>. The screen turns to match
-  and stays on. Tap the middle for the buttons: back, pause, next, how long each photo
+  and stays on. <em>Play both ways</em> plays them all together, which suits a laptop;
+  on a phone, one the other shape from the screen is shown whole. Tap the middle for the buttons: back, pause, next, how long each photo
   shows, and <em>Fill</em> or <em>Whole photo</em> (Fill trims the edges off a photo a
   different shape from the screen). Tap or swipe at either side to go back or on. The
   &times;, or the phone&rsquo;s Back, ends it.</p>
+  <p><strong>In what order:</strong> at random, or by <em>Date taken</em>, oldest first,
+  with the date at the top. The date comes from the camera&rsquo;s own note inside the
+  photo, or failing that the file&rsquo;s date; a Bluesky photo has the date it was
+  posted. Photos added before the app read dates have none: pick them again with
+  <em>Add photos</em> and their dates are filled in (nothing is added twice).</p>
   <p><strong>Music or a podcast:</strong> start it in your own app first (Spotify, BBC
   Sounds, a podcast app or the radio), then play a slideshow. It carries on behind, and
   you control it in that app as usual.</p>
@@ -6262,10 +6285,13 @@ function openHelp(where){
   already picked stays, and <strong>Link to another person</strong> still finds
   them.</p>
 
-  <h4 id="h-pick">Getting rid of several at once</h4>
-  <p>Menu &rsaquo; <strong>Delete several contacts</strong>. Tap the ones you want
-  rid of &mdash; they turn pink with a tick &mdash; then use the red bar at the
-  bottom. It counts them first and lists a few by name before anything happens.</p>
+  <h4 id="h-pick">Sending or deleting several at once</h4>
+  <p>Press the tick-box button at the top of Contacts, beside the refresh button
+  (or the <strong>Multi Select</strong> tile, or Menu &rsaquo; <strong>Multi
+  Select</strong>). Tap the ones you want &mdash; they turn pink with a tick
+  &mdash; then use the bar at the bottom to <strong>Send</strong> or
+  <strong>Delete</strong> them. Delete counts them first and lists a few by name
+  before anything happens. Press the tick-box button again, or Cancel, to stop.</p>
   <p>To get rid of one, there is a <strong>Delete this contact</strong> button at
   the bottom of their own page, as well as inside Edit.</p>
   <p>You can only delete contacts you created. If you have picked any that someone
@@ -6473,6 +6499,10 @@ function openHelp(where){
   written. Check it, then press Send yourself: the app never sends anything on
   its own. Afterwards the button says <strong>Sent</strong>, with a Send again
   in case it did not go.</p>
+  <p>For someone in New Zealand or Australia, whose day starts many hours before
+  ours, the button comes up at <strong>8pm the evening before</strong>, so the
+  message arrives in their morning. Today says it is already their birthday
+  there. One sent that evening counts for their birthday.</p>
   <p>Everyone with a birthday and a mobile number or an email address is ticked
   to begin with. On their contact page, under <strong>Birthday message</strong>,
   you can untick them, choose WhatsApp, a text or email, and pick which wording
@@ -6689,8 +6719,9 @@ function openHelp(where){
 
   <h4 id="h-sharing">Sending a contact to someone</h4>
   <p>Everything you add is private to you. To pass somebody on, open the contact
-  and use <strong>Send a copy to&hellip;</strong>, or tick several in Menu &rsaquo;
-  Tidy up contacts and use <strong>Send</strong>.</p>
+  and use <strong>Send a copy to&hellip;</strong>, or press the tick-box button at
+  the top of Contacts (<strong>Multi Select</strong>), tap several and use
+  <strong>Send</strong>.</p>
   <p>It arrives in their <strong>Sent to you</strong> screen. Tapping it shows the
   whole contact first, then they accept it, turn it down, or &mdash; if they
   already have that person &mdash; compare the two and take only the bits they
@@ -6700,6 +6731,10 @@ function openHelp(where){
   their own, theirs to edit, file or delete; the first one accepted opens
   straight away so you can file it. Yours is untouched, and the two are
   not linked afterwards, so later changes do not travel.</p>
+  <p>While any are waiting for you, the <strong>Contacts</strong> tile has a red
+  number too, and tapping it asks whether to look at them now (<em>Later</em> goes
+  on to Contacts as usual). Today lists them under <strong>Contacts sent to
+  you</strong>.</p>
   <p>You can only pass on contacts you own. Somebody shared theirs with you, not
   with whoever you might send it to next.</p>
   <p>Photos and connections do not travel. A photo belongs to the contact it was
@@ -6925,6 +6960,7 @@ function paintDue(){
 }
 // What a tile should shout about: things due, things still to buy.
 function tilePip(dest){
+  if(dest==='contacts') return offersToMe().length;
   if(dest==='diary') return dueSoonCount();
   if(dest==='shop')  return SHOP.filter(x=>!x.got).length;
   if(dest==='offers') return offersToMe().length+offersBack().length;
@@ -14901,20 +14937,20 @@ function lkPaint(){
       <button class="lkback" id="lkBack">&lsaquo; Games</button>
       ${playing&&!real?(noDice&&roller===ME.id
         ?`<button class="lkroll" id="lkRoll" ${LK_ROLLING?'disabled':''}>${PD_LOGO} Roll</button>`:lkDiceHtml(g)):''}
-      <div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>
+      <span class="lkspace"></span>
       ${playing?`<button class="lkback lkundo" id="lkUndo" ${lkCanUndo(g,me,s)?'':'disabled'}
         aria-label="Undo last move: take back your newest mark on this roll">&#8630; Undo last move</button>`:''}
       ${playing?`<button class="lkdone${done?' did':''}" id="lkDone" ${!done&&noDice?'disabled':''}
         ${done?'aria-label="Done. Tap to take it back"':''}>${done?'Done ✓':'Done'}</button>`:''}
     </div>
-    <div class="lkwho">${ps.map(p=>{
+    <div class="lkwho${waited?' lkwait':''}">${ps.map(p=>{
       const t=lkScore(lkSheet(p.sheet),lkLocksOf(g,p)).total, pen=lkSheet(p.sheet).pen;
       // Only names longer than six letters give way when the line is full.
       const nm=lkWho(p.user_id), give=Math.max(0,nm.length-6);
       return `<span class="${p.user_id===ME.id?'me':''}${playing&&p.user_id===roller?' roll':''}" style="flex-shrink:${give}">${
         playing&&p.user_id===roller?'<i aria-label="rolling">⚄</i> ':''}<small class="lknm" style="min-width:${Math.min(7,nm.length+1)}ch">${esc(nm)}</small> <b>${t}</b>${
         pen?' <em>'+'✕'.repeat(pen)+'</em>':''}${playing&&lkDoneThisRoll(g,p)?' ✓':''}</span>`;
-    }).join('')}${playing?`<div class="lkends">${canCarryOn
+    }).join('')}<div class="lkstatus" id="lkStatus">${lkStatus(g,me)}</div>${playing?`<div class="lkends">${canCarryOn
       ?'<button class="lkstop lkon" id="lkOn">Carry on without them</button>':''}<button class="lkstop" id="lkStop">Stop game</button></div>`:''}</div>
     <div class="lkrows">${LK_ROWS.map(row).join('')}</div>
     <div class="lkfoot">
@@ -18499,8 +18535,8 @@ const SLD_THUMBS=new Map();            // photo id -> little picture's address
 
 function sldPrefs(){
   try{ const p=JSON.parse(localStorage.getItem('sldprefs')||'{}');
-    return {secs:SLD_SECS.includes(p.secs)?p.secs:8, fill:p.fill===true}; }
-  catch(e){ return {secs:8, fill:false}; }
+    return {secs:SLD_SECS.includes(p.secs)?p.secs:8, fill:p.fill===true, order:p.order==='date'?'date':'random'}; }
+  catch(e){ return {secs:8, fill:false, order:'random'}; }
 }
 function sldSavePrefs(p){ try{ localStorage.setItem('sldprefs',JSON.stringify(p)); }catch(e){} }
 const sldDevice = () => matchMedia('(pointer:coarse)').matches ? 'phone' : 'computer';
@@ -18559,7 +18595,7 @@ const sldNewId = k => k+Date.now().toString(36)+Math.random().toString(36).slice
 // not known yet (a Bluesky post that did not say) is tried, and skipped if
 // it turns out the wrong way.
 const sldShape = p => !p||!p.w||!p.h ? '' : p.h>p.w*1.02 ? 'up' : p.w>p.h*1.02 ? 'side' : 'both';
-const sldFits = (p,shape) => { const s=sldShape(p); return !s||s==='both'||s===shape; };
+const sldFits = (p,shape) => { const s=sldShape(p); return shape==='both'||!s||s==='both'||s===shape; };
 const sldOf = id => SLD_PHOTOS.filter(p=>p.theme===id);
 const sldCounts = list => ({n:list.length, up:list.filter(p=>sldFits(p,'up')).length,
   side:list.filter(p=>sldFits(p,'side')).length});
@@ -18572,7 +18608,62 @@ function sldThumb(p){
 function sldForget(id){
   const u=SLD_THUMBS.get(id); if(u){ try{ URL.revokeObjectURL(u); }catch(e){} SLD_THUMBS.delete(id); }
 }
-const sldWord = shape => shape==='up'?'upright':'sideways';
+const sldWord = shape => shape==='up'?'upright':shape==='side'?'sideways':'both ways';
+
+/* ---------- when a photo was taken (ML319) ----------
+   Read from the camera's own note inside a JPEG (its Exif "date taken"),
+   else the file's date. The copy kept here is made afresh, so the note is
+   read from the original while it is being added. */
+const sldExifDate = str => {
+  const m=/^(\d{4}):(\d\d):(\d\d)[ T](\d\d):(\d\d):(\d\d)/.exec(String(str||''));
+  if(!m||m[1]==='0000') return 0;
+  const t=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime();
+  return isFinite(t)?t:0;
+};
+function sldExif(buf){
+  const v=new DataView(buf);
+  if(v.byteLength<4||v.getUint16(0)!==0xFFD8) return 0;
+  let o=2;
+  while(o+4<=v.byteLength){
+    if(v.getUint8(o)!==0xFF) return 0;
+    const mk=v.getUint8(o+1), len=v.getUint16(o+2);
+    if(mk===0xDA||mk===0xD9) return 0;               // the picture itself: no note
+    if(mk===0xE1&&o+10<=v.byteLength&&v.getUint32(o+4)===0x45786966){   // "Exif"
+      const t=o+10;
+      if(t+8>v.byteLength) return 0;
+      const le=v.getUint16(t)===0x4949;
+      const u16=p=>v.getUint16(t+p,le), u32=p=>v.getUint32(t+p,le);
+      const str=(p,n)=>{ let x=''; for(let i=0;i<n&&t+p+i<v.byteLength;i++){
+        const c=v.getUint8(t+p+i); if(!c) break; x+=String.fromCharCode(c); } return x; };
+      // tags in one folder of the note: tag -> where its value is
+      const ifd=p=>{ const out={}; if(t+p+2>v.byteLength) return out;
+        const n=u16(p);
+        for(let i=0;i<n;i++){ const e=p+2+i*12; if(t+e+12>v.byteLength) break;
+          const tag=u16(e), cnt=u32(e+4);
+          out[tag]={cnt, at:cnt>4?u32(e+8):e+8, val:u32(e+8)}; }
+        return out; };
+      try{
+        const d0=ifd(u32(4)), ex=d0[0x8769]?ifd(d0[0x8769].val):{};
+        const tag=ex[0x9003]||ex[0x9004]||d0[0x0132];
+        return tag?sldExifDate(str(tag.at,tag.cnt)):0;
+      }catch(e){ return 0; }
+    }
+    o+=2+len;
+  }
+  return 0;
+}
+async function sldTaken(file){
+  let t=0;
+  try{ if(/jpe?g$/i.test(file.type||'')||/\.jpe?g$/i.test(file.name||''))
+    t=sldExif(await file.slice(0,256*1024).arrayBuffer()); }catch(e){}
+  if(t) return {taken:t, takenBy:'camera'};
+  const m=Number(file.lastModified)||0;
+  return m?{taken:m, takenBy:'file'}:{taken:0, takenBy:''};
+}
+// Oldest first. Any with no date yet go after, in the order they were added.
+const sldByDate = list => list.slice().sort((a,b)=>(a.taken?0:1)-(b.taken?0:1)
+  || (a.taken||0)-(b.taken||0) || (a.added||0)-(b.added||0));
+const sldDateWord = t => t?new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
 
 /* ---------- the screen ---------- */
 async function openSlides(){
@@ -18602,7 +18693,8 @@ function renderSlides(){
     <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
       Photo posts from @${esc(h)}, fetched while it plays, so it needs a signal.</dd></div>
       <div class="sldplays"><button class="btn primary" data-sldplay="bsky:up">Play upright</button>
-        <button class="btn primary" data-sldplay="bsky:side">Play sideways</button></div></div>
+        <button class="btn primary" data-sldplay="bsky:side">Play sideways</button>
+        <button class="btn primary both" data-sldplay="bsky:both">Play both ways</button></div></div>
     <p class="dsec">How it plays</p>
     <div class="card"><div class="setadd">
       <p class="coords" style="margin-top:0">Each photo shows for</p>
@@ -18612,7 +18704,9 @@ function renderSlides(){
       <div class="pickrow"><button type="button" data-sldfill="0" aria-pressed="${!pr.fill}">Whole photo</button>
         <button type="button" data-sldfill="1" aria-pressed="${pr.fill}">Fill the screen</button></div>
       <p class="coords">Fill the screen trims the edges off a photo that is a different shape
-        from the screen. Whole photo leaves a black border instead.</p></div></div>
+        from the screen. Whole photo leaves a black border instead.</p>
+      <p class="coords" style="margin-top:14px">In what order</p>
+      ${sldOrderRow(pr)}</div></div>
     <p class="coords sldnote">The photos are kept on this ${dev} only, not online, and the
       ${dev==='phone'?'gallery':'folder'} keeps the originals. For music or a podcast, start it
       in your own app first, then play a slideshow here: it carries on behind.</p>`;
@@ -18622,6 +18716,14 @@ function renderSlides(){
     sldSavePrefs({...sldPrefs(), secs:Number(b.dataset.sldsecs)}); renderSlides(); });
   body.querySelectorAll('[data-sldfill]').forEach(b=>b.onclick=()=>{
     sldSavePrefs({...sldPrefs(), fill:b.dataset.sldfill==='1'}); renderSlides(); });
+  sldWireOrder(body, renderSlides);
+}
+const sldOrderRow = pr => `<div class="pickrow"><button type="button" data-sldorder="random"
+    aria-pressed="${pr.order==='random'}">Random</button>
+  <button type="button" data-sldorder="date" aria-pressed="${pr.order==='date'}">Date taken</button></div>`;
+function sldWireOrder(root, again){
+  root.querySelectorAll('[data-sldorder]').forEach(b=>b.onclick=()=>{
+    sldSavePrefs({...sldPrefs(), order:b.dataset.sldorder}); again(); });
 }
 function sldWirePlays(root){
   root.querySelectorAll('[data-sldplay]').forEach(b=>b.onclick=()=>{
@@ -18638,10 +18740,19 @@ function renderSlideTheme(){
   if(!t){ $('sldTheme').classList.add('hidden'); SLD_CUR=null; lockBackground(); renderSlides(); return; }
   $('sldThemeTitle').textContent=t.name;
   const ps=sldOf(t.id).sort((a,b)=>(b.added||0)-(a.added||0)), c=sldCounts(ps), dev=sldDevice();
+  const pr=sldPrefs(), undated=ps.filter(p=>!p.taken).length;
   $('sldThemeBody').innerHTML=`
     <div class="sldplays" style="padding:0 0 12px">
       <button class="btn primary" data-sldplay="${esc(t.id)}:up" ${c.up?'':'disabled'}>Play upright (${c.up})</button>
-      <button class="btn primary" data-sldplay="${esc(t.id)}:side" ${c.side?'':'disabled'}>Play sideways (${c.side})</button></div>
+      <button class="btn primary" data-sldplay="${esc(t.id)}:side" ${c.side?'':'disabled'}>Play sideways (${c.side})</button>
+      <button class="btn primary both" data-sldplay="${esc(t.id)}:both" ${c.n?'':'disabled'}>Play both ways (${c.n})</button></div>
+    <div class="sldorder"><span>In what order</span>${sldOrderRow(pr)}</div>
+    ${pr.order==='date'&&undated?`<p class="coords sldundated">${undated===ps.length
+        ?(undated===1?'This one has no date taken yet':'None of these has a date taken yet')
+        :undated+' of these '+(undated===1?'has':'have')+' no date taken yet'},
+      as ${undated===1?'it was':'they were'} added before the app read dates. Pick
+      ${undated===1?'it':'them'} again with Add photos and the dates are filled in; until then
+      ${undated===1?'it plays':'they play'} last.</p>`:''}
     <div class="card"><div class="setadd">
       <button class="btn" id="sldPick" style="border:1.5px solid var(--rule)">Add photos</button>
       ${dev==='computer'?`<button class="btn" id="sldFolder"
@@ -18660,6 +18771,7 @@ function renderSlideTheme(){
     <button class="btn danger" id="sldDrop" style="margin-top:18px">Delete this slideshow</button>`;
   const body=$('sldThemeBody');
   sldWirePlays(body);
+  sldWireOrder(body, renderSlideTheme);
   $('sldPick').onclick=()=>sldChoose(false);
   const fo=$('sldFolder'); if(fo) fo.onclick=()=>sldChoose(true);
   body.querySelectorAll('[data-sldph]').forEach(b=>b.onclick=()=>sldDropPhoto(b.dataset.sldph));
@@ -18698,7 +18810,7 @@ async function sldAddFiles(files){
   // Asked once: keep these even when the phone is short of space.
   try{ if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
   const have=new Set(sldOf(id).map(p=>p.src));
-  let added=0, same=0, bad=0, stuck='';
+  let added=0, same=0, bad=0, dated=0, stuck='';
   const busy=$('sldBusy');
   for(let i=0;i<files.length;i++){
     const f=files[i];
@@ -18706,11 +18818,20 @@ async function sldAddFiles(files){
     // The same photo picked again: same name, same size. (Its date can
     // change from one pick to the next, so it is not used.)
     const src=[f.name,f.size].join('|');
-    if(have.has(src)){ same++; continue; }
+    if(have.has(src)){
+      same++;
+      // Added before the app read dates: its date is filled in now.
+      const old=sldOf(id).find(p=>p.src===src&&!p.taken);
+      if(old){ const tk=await sldTaken(f);
+        if(tk.taken){ try{ await sldTx('photos','readwrite',s=>s.put({...old,...tk}));
+          Object.assign(old,tk); dated++; }catch(e){ console.error(e); } } }
+      continue;
+    }
     let made;
     try{ made=await sldMake(f); }catch(e){ bad++; continue; }
+    const tk=await sldTaken(f);
     const p={id:sldNewId('p'), theme:id, src, name:f.name, w:made.w, h:made.h,
-      img:made.img, thumb:made.thumb, added:Date.now()+i};
+      img:made.img, thumb:made.thumb, added:Date.now()+i, ...tk};
     try{ await sldTx('photos','readwrite',s=>s.put(p)); }
     catch(e){ console.error(e);
       stuck=/quota/i.test(String((e&&e.name)||'')+String((e&&e.message)||''))?'full':'error'; break; }
@@ -18719,6 +18840,7 @@ async function sldAddFiles(files){
   if(busy) busy.hidden=true;
   const bits=[added+' added'];
   if(same) bits.push(same+' already in it');
+  if(dated) bits.push('dates found for '+dated);
   if(bad) bits.push(bad+' could not be read');
   toast(stuck==='full'?`This ${sldDevice()} has no room for more. `+bits.join(', ')
     : stuck?'Could not keep the rest. '+bits.join(', ') : bits.join(', '));
@@ -18782,7 +18904,9 @@ function sldBskyPics(feed){
       const url=im&&(im.fullsize||im.thumb);
       if(!/^https:\/\//.test(String(url||''))) return;
       const ar=im.aspectRatio||{};
-      out.push({id:'b:'+p.uri+'#'+i, url, w:Number(ar.width)||0, h:Number(ar.height)||0, alt:im.alt||''});
+      const when=Date.parse((p.record&&p.record.createdAt)||p.indexedAt||'')||0;
+      out.push({id:'b:'+p.uri+'#'+i, url, w:Number(ar.width)||0, h:Number(ar.height)||0, alt:im.alt||'',
+        taken:when, takenBy:when?'camera':''});
     });
   });
   return out;
@@ -18821,7 +18945,7 @@ function sldShuffle(list){
 }
 async function sldPlay(from,shape){
   if(SLD) sldStop();
-  shape=shape==='side'?'side':'up';
+  shape=shape==='side'||shape==='both'?shape:'up';
   let list, title;
   if(from==='bsky'){
     toast('Fetching your Bluesky photos…');
@@ -18835,7 +18959,7 @@ async function sldPlay(from,shape){
   } else {
     const t=SLD_THEMES.find(x=>x.id===from); if(!t) return;
     list=sldOf(from).filter(p=>sldFits(p,shape)); title=t.name;
-    if(!list.length){ toast(`No ${sldWord(shape)} photos in ${t.name} yet`); return; }
+    if(!list.length){ toast(shape==='both'?`No photos in ${t.name} yet`:`No ${sldWord(shape)} photos in ${t.name} yet`); return; }
   }
   const pr=sldPrefs();
   const box=document.createElement('div');
@@ -18845,7 +18969,7 @@ async function sldPlay(from,shape){
       <img class="sldimg" alt=""><img class="sldimg" alt="">
       <p class="sldsay" id="sldSay"></p>
       <div class="sldctl" id="sldCtl">
-        <div class="sldtop"><span class="sldtitle">${esc(title)}</span>
+        <div class="sldtop"><span class="sldtitle">${esc(title)}<small id="sldWhen"></small></span>
           <span class="sldcount" id="sldCount"></span>
           <button type="button" class="sldx" id="sldClose" aria-label="Close the slideshow">&times;</button></div>
         <div class="sldbtm">
@@ -18855,7 +18979,8 @@ async function sldPlay(from,shape){
           <button type="button" id="sldNext" aria-label="Next one">${SLD_ICON.next}</button>
           <button type="button" id="sldFill"></button></div></div></div>`;
   document.body.appendChild(box);
-  SLD={from, shape, title, list:sldShuffle(list), i:-1, secs:pr.secs, fill:pr.fill, paused:false,
+  SLD={from, shape, title, order:pr.order, list:pr.order==='date'?sldByDate(list):sldShuffle(list),
+       i:-1, secs:pr.secs, fill:pr.fill, paused:false,
        timer:null, ctlTimer:null, held:['',''], front:1, wake:null, fs:false, turn:0};
   sldPaintCtl(); sldWireCtl(box);
   await sldFull();
@@ -18872,7 +18997,8 @@ async function sldFull(){
   }catch(e){}
   try{
     if(screen.orientation&&screen.orientation.lock)
-      await screen.orientation.lock(s.shape==='side'?'landscape':'portrait');
+      // Both ways: the phone turns as it is held, so it is left free.
+      if(s.shape!=='both') await screen.orientation.lock(s.shape==='side'?'landscape':'portrait');
   }catch(e){}
   sldWake();
 }
@@ -18895,8 +19021,9 @@ function sldLoad(url){
     i.src=url;
   });
 }
-// step 1 for the next one, -1 for the one before. Starts again in a new
-// order after the last, never the same one twice running.
+// step 1 for the next one, -1 for the one before. At random it starts again
+// in a new order after the last, never the same one twice running; by date
+// it goes back to the oldest.
 async function sldShow(step){
   const s=SLD; if(!s) return;
   clearTimeout(s.timer);
@@ -18904,9 +19031,11 @@ async function sldShow(step){
   for(let tries=0; tries<s.list.length; tries++){
     s.i+=step;
     if(s.i>=s.list.length){
-      const last=s.list[s.list.length-1];
-      s.list=sldShuffle(s.list);
-      if(s.list.length>1&&s.list[0]===last) [s.list[0],s.list[1]]=[s.list[1],s.list[0]];
+      if(s.order!=='date'){
+        const last=s.list[s.list.length-1];
+        s.list=sldShuffle(s.list);
+        if(s.list.length>1&&s.list[0]===last) [s.list[0],s.list[1]]=[s.list[1],s.list[0]];
+      }
       s.i=0;
     }
     if(s.i<0) s.i=s.list.length-1;
@@ -18920,6 +19049,10 @@ async function sldShow(step){
       const imgs=[...document.querySelectorAll('#sldPlay .sldimg')], back=1-s.front;
       const was=s.held[back];
       imgs[back].src=url; imgs[back].alt=p.alt||'';
+      // Both ways: one the other shape from the screen is shown whole, as
+      // filling would cut most of it off.
+      const scr=innerWidth>innerHeight?'side':'up', ps=sldShape({w:p.w||got.w,h:p.h||got.h});
+      imgs[back].classList.toggle('whole', s.shape==='both'&&!!ps&&ps!=='both'&&ps!==scr);
       imgs[back].classList.add('on'); imgs[s.front].classList.remove('on');
       s.held[back]=p.url?'':url; s.front=back;
       if(was) setTimeout(()=>{ try{ URL.revokeObjectURL(was); }catch(e){} },1500);
@@ -18945,6 +19078,8 @@ function sldSchedule(){
 function sldPaintCtl(){
   const s=SLD; if(!s) return;
   const c=$('sldCount'); if(c) c.textContent=(s.paused?'Paused · ':'')+(s.i+1)+' of '+s.list.length;
+  const p=s.list[s.i], wh=$('sldWhen');
+  if(wh) wh.textContent=s.order==='date'&&p&&p.takenBy==='camera'?' · '+sldDateWord(p.taken):'';
   const pa=$('sldPause'); if(pa){ pa.innerHTML=s.paused?SLD_ICON.play:SLD_ICON.pause;
     pa.setAttribute('aria-label',s.paused?'Play':'Pause'); }
   const se=$('sldSecs'); if(se) se.textContent=s.secs+' sec';
@@ -19021,7 +19156,7 @@ const MY_MARK=`<svg class="mys" viewBox="39 86 434 346" aria-hidden="true"><rect
 // Everywhere a tile can take you. Add a screen here and it becomes
 // something you can put on the home screen.
 const TILE_DEST={
-  contacts:{label:'Contacts',   go:()=>hideHome()},
+  contacts:{label:'Contacts',   go:()=>{ hideHome(); offersAsk(); }},
   log:     {label:'Daily Log',  go:openLog},
   diary:   {label:'Calendar',   go:openDiary},
   shop:    {label:'Shopping',   go:openShop},
@@ -19029,7 +19164,7 @@ const TILE_DEST={
   wish:    {label:'Wishlist',   go:openWish},
   links:   {label:'URL Links',  go:openLinks},
   io:      {label:'Import & export', go:openIO},
-  pick:    {label:'Tidy up',    go:()=>{hideHome();startPicking();}},
+  pick:    {label:'Multi Select', go:()=>{hideHome();startPicking();}},
   settings:{label:'Settings',   go:openSettings},
   offers:  {label:'Sent to you', go:openOffers},
   chats:   {label:'Messages',    go:openChats},
@@ -19188,7 +19323,8 @@ function loadTiles(){
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
     dest:t.dest,
-    label:t.label||TILE_DEST[t.dest].label,
+    label:(t.dest==='pick'&&/^\s*(tidy up|multi[ -]?delete)\s*$/i.test(t.label||''))?TILE_DEST.pick.label
+      :t.label||TILE_DEST[t.dest].label,
     colour:t.colour||TILE_DEFAULT_COLOUR[t.dest]||TILE_COLOURS[0]}));
   // Anything new in the app, that you have not already turned down, joins the end.
   const have=TILES.map(t=>t.dest);
@@ -19343,7 +19479,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.19.3';
+const APP_VERSION='2026.11.20.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -20006,6 +20142,34 @@ function pickPeople(title, onGo){
     if(!who.length){ toast('Tick at least one person'); return; }
     close(); await onGo(who);
   };
+}
+
+// Some waiting (ML320): the Contacts tile has a red number, and tapping it
+// asks whether to look at them now. Later goes on to Contacts as usual.
+function offersWho(list){
+  const who=[...new Set(list.map(o=>o.from_user))].map(whoWrote);
+  return who.length<3?who.join(' and '):who.slice(0,-1).join(', ')+' and '+who[who.length-1];
+}
+function offersAsk(){
+  const list=offersToMe();
+  if(!list.length||!OFFERS_READY||document.querySelector('.offask')) return;
+  const n=list.length, names=list.slice(0,5).map(o=>o.name||'Someone');
+  const box=document.createElement('div');
+  box.className='daypick offask';
+  box.setAttribute('role','dialog');
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">${esc(offersWho(list))} ${new Set(list.map(o=>o.from_user)).size>1?'have':'has'}
+      sent you ${n===1?'a contact':n+' contacts'}</p>
+    <p class="offasknames">${names.map(esc).join('<br>')}${n>5?'<br>and '+(n-5)+' more':''}</p>
+    <p class="coords">Look at ${n===1?'it':'them'} now to accept or turn ${n===1?'it':'them'} down?
+      They wait under Sent to you until you do.</p>
+    <div class="pfoot"><button id="offAskLater">Later</button>
+      <button id="offAskGo" class="go">Look now</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.querySelector('#offAskLater').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#offAskGo').onclick=()=>{ close(); openOffers(); };
 }
 
 /* ---------- the inbox ---------- */
@@ -21216,7 +21380,9 @@ $('chatText').addEventListener('keydown',ev=>{
     ev.preventDefault(); sendMsg();
   }
 });
-$('offBack').onclick=()=>{$('offers').classList.add('hidden');lockBackground();};
+$('offBack').onclick=()=>{$('offers').classList.add('hidden');lockBackground();
+  if($('brief')&&!$('brief').classList.contains('hidden')) renderBrief();
+  if($('home')&&!$('home').classList.contains('hidden')) renderHome();};
 $('ioBack').onclick=()=>{$('io').classList.add('hidden');lockBackground();};
 $('shopAdd').onclick=newShopList;
 async function newShopList(){
@@ -25282,14 +25448,35 @@ function bdayLink(c,way,text){
   if(way==='email'&&ways.email) return 'mailto:'+ways.email+'?subject='+encodeURIComponent('Happy Birthday')+'&body='+t;
   return null;
 }
+// Someone well ahead of us (ML316): New Zealand is 12 or 13 hours ahead and
+// Australia 8 to 11, so their birthday morning is our evening before. For
+// them the button comes up at 8pm the night before, your time.
+const BDAY_AHEAD=['New Zealand','Australia'], BDAY_EVE_HOUR=20;
+const bdayAhead = c => BDAY_AHEAD.includes(bdayWhere(c)) ? bdayWhere(c) : '';
+// Time to send: their birthday, or for someone well ahead the evening before.
+function bdayDue(c, now){
+  const n=now||new Date(), d=bdayOffset(c,n);
+  if(d===0) return true;
+  return d===1 && !!bdayAhead(c) && n.getHours()>=BDAY_EVE_HOUR;
+}
+const bdayEve = (c, now) => { const n=now||new Date(); return bdayOffset(c,n)===1 && bdayDue(c,n); };
+// Already sent for this birthday: today, or the evening before for someone ahead.
+function bdaySentNow(c, ch, now){
+  if(!ch||!ch.sent_on) return false;
+  const n=now||new Date();
+  if(ch.sent_on===dayKeyOf(n)) return true;
+  if(!bdayAhead(c)||bdayOffset(c,n)!==0) return false;
+  return ch.sent_on===dayKeyOf(new Date(n.getFullYear(),n.getMonth(),n.getDate()-1));
+}
+
 // The button, when there is one to show: ticked, still with us, and
-// somewhere to send it. sent: already tapped today.
+// somewhere to send it. sent: already tapped for this birthday.
 function bdayOffer(c){
   if(!BDAY_READY||!c||!c.birth_date||isGone(c)) return null;
   const ch=bdayChoice(c); if(!ch.send) return null;
   const way=bdayWay(c,ch); if(!way) return null;
   const text=bdayText(c,ch);
-  return {way, text, url:bdayLink(c,way,text), sent:ch.sent_on===dayKeyOf(new Date())};
+  return {way, text, url:bdayLink(c,way,text), sent:bdaySentNow(c,ch)};
 }
 function bdaySendHtml(c){
   const o=bdayOffer(c); if(!o||!o.url) return '';
@@ -25343,7 +25530,10 @@ function bdayCard(c){
       <select id="bdayWord">${list.map((x,i)=>`<option value="${esc(x.k)}"${x.k===w.k?' selected':''}>${
         esc(bdayShort(bdayFill(x.text,c),48))}${i===0?' (standard)':''}</option>`).join('')}</select>
       <p class="bdaysay">${esc(bdayText(c,ch))}</p>
-      ${daysToBirthday(c)===0?bdaySendHtml(c)
+      ${bdayDue(c)?bdaySendHtml(c)
+        :bdayAhead(c)?`<p class="coords">At 8pm the evening before their birthday (morning in
+          ${esc(bdayAhead(c))}), Today has a button that opens ${esc(BDAY_WAY[way])}
+          with this written for you to send.</p>`
         :`<p class="coords">On their birthday, Today has a button that opens ${esc(BDAY_WAY[way])}
           with this written for you to send.</p>`}
     </div>`:''}
@@ -25435,12 +25625,14 @@ function renderBrief(){
     const age=turningAge(c,d);
     const years = isFinite(age)&&age>0&&age<130
       ? (d<0 ? 'Turned '+age : d===0 ? 'Turns '+age+' today' : 'Turns '+age) : '';
+    const eve=bdayEve(c);
     return `<button class="brow" data-briefc="${c.id}">
       <span class="bwhen ${d<0?'past':d===0?'now':''}">${esc(whenWord(d))}
         <small>${esc(bdayDate(d))}</small></span>
       <span class="bwhat"><b>${esc(fullName(c))}</b>
-        ${years?`<span>${esc(years)}</span>`:''}</span>
-      ${bdayIcon(d)}</button>${d===0?bdaySendHtml(c):''}`;
+        ${years?`<span>${esc(years)}</span>`:''}
+        ${eve?`<span class="beve">Already their birthday in ${esc(bdayAhead(c))}</span>`:''}</span>
+      ${bdayIcon(d)}</button>${bdayDue(c)?bdaySendHtml(c):''}`;
   }).join('');
 
   // Today, and anything overdue, always shows; the rest of the week waits for a tap.
@@ -25459,6 +25651,16 @@ function renderBrief(){
       <span class="bwhat"><b>${esc(r.title)}</b>${photoCount(r)
         ?`<span>${esc(photoCount(r))}</span>`:''}</span></button>`).join('');
 
+  // Contacts sent to you and still waiting (ML320): only when there are some.
+  const offRows=OFFERS_READY?offersToMe().slice().sort((a,b)=>
+      String(b.created_at||'').localeCompare(String(a.created_at||''))).map(o=>{
+    const at=o.created_at?new Date(o.created_at):null;
+    return `<button class="brow" data-briefo="${o.id}">
+      <span class="bwhen">${at&&!isNaN(at)?esc(at.toLocaleDateString('en-GB',{day:'numeric',month:'short'})):''}</span>
+      <span class="bwhat"><b>${esc(o.name||'Someone')}</b>
+        <span>Sent to you by ${esc(whoWrote(o.from_user))}</span></span>
+      <span class="bcake" aria-hidden="true">&#128233;</span></button>`; }).join(''):'';
+
   const none='<div class="field"><dd style="color:var(--muted)">Nothing.</dd></div>';
   $('briefBody').innerHTML=`
     <p class="briefdate" id="briefHello">${esc(briefHello(today))}</p>
@@ -25466,6 +25668,8 @@ function renderBrief(){
     ${briefWeather()}
     <p class="dsec">Your Birthday Reminders for this Week</p>
     <div class="card">${bdayRows||none}</div>
+    ${offRows?`<p class="dsec">Contacts sent to you</p>
+    <div class="card">${offRows}</div>`:''}
 
     <p class="dsec">${BRIEF_WEEK?'Appointments and to-dos this week':'Today\u2019s appointments and to-dos'}</p>
     <div class="card">${itemRows||(BRIEF_WEEK?none
@@ -25514,6 +25718,7 @@ function renderBrief(){
   $('briefBody').querySelectorAll('[data-briefc]').forEach(b=>b.onclick=()=>
     openDetail(Number(b.dataset.briefc)));
   wireBdaySend($('briefBody'));
+  $('briefBody').querySelectorAll('[data-briefo]').forEach(b=>b.onclick=()=>openOffers());
   $('briefBody').querySelectorAll('[data-briefi]').forEach(b=>b.onclick=()=>
     openItem(ITEMS.find(x=>x.id===Number(b.dataset.briefi))));
   $('briefBody').querySelectorAll('[data-briefr]').forEach(b=>b.onclick=()=>
@@ -25648,7 +25853,7 @@ const AREA_OPEN={
 function areaItems(area){
   const it=(label,fn)=>({label,fn});
   if(area==='contacts') return [
-    it('Delete several contacts', ()=>{ shutMenu(); startPicking(); }),
+    it('Multi Select: send or delete several', ()=>{ shutMenu(); startPicking(); }),
     it('Find double-ups',         ()=>{ shutMenu(); openDoubles(); }),
     it('Contacts sent to you',    ()=>{ shutMenu(); openOffers(); }),
     it('Messages',                ()=>{ shutMenu(); openChats(); }),
@@ -25685,7 +25890,8 @@ function areaItems(area){
   if(area==='sld') return [
     it('New slideshow',           ()=>{ shutMenu(); sldNew(); }),
     it('Play your Bluesky photos sideways', ()=>{ shutMenu(); sldPlay('bsky','side'); }),
-    it('Play your Bluesky photos upright',  ()=>{ shutMenu(); sldPlay('bsky','up'); })];
+    it('Play your Bluesky photos upright',  ()=>{ shutMenu(); sldPlay('bsky','up'); }),
+    it('Play your Bluesky photos both ways', ()=>{ shutMenu(); sldPlay('bsky','both'); })];
   if(area==='recipes') return [
     it('Add a recipe',            ()=>{ shutMenu(); editRecipe(null); }),
     it('From a book or a page',   ()=>{ shutMenu(); fromBook(); }),
@@ -25822,6 +26028,50 @@ $('viewPick').onchange=()=>{
   try{ localStorage.setItem('view',VIEW); }catch(e){}
   applyView(); render();
 };
+
+/* ---------- the phone's Back arrow (ML322) ----------
+   Back goes back one screen, just as that screen's own Back, Close, Cancel
+   or home arrow would; a box on top is closed first. On the home screen it
+   stays put rather than closing the app. The browser is given one spare
+   step to go back to: each Back uses it up and it is put straight back.
+   Chrome only honours a step the page adds once the page has been touched,
+   so it is put back on the next touch too if it is missing. */
+let BACK_ARMED=false;
+function backArm(){
+  if(BACK_ARMED) return;
+  try{ history.pushState({myl:'back'},'',location.href); BACK_ARMED=true; }catch(e){}
+}
+// Screens where you type something in: leaving one by Back asks first.
+const BACK_EDITS=['editor','itemEd','rtEd','logEd','recipeEd','moneyEd','stuffEd','bookEd','tvEd','tmlEd'];
+function backBox(el){
+  el.click();                                    // as a tap outside it would
+  if(!el.isConnected) return;
+  const b=[...el.querySelectorAll('button')].find(x=>!x.disabled&&(
+    /^(cancel|close|later|dismiss|no|no thanks|not now|back|done|\u00d7)$/i.test(x.textContent.trim())
+    ||/close|cancel/i.test(x.getAttribute('aria-label')||'')));
+  if(b) b.click();
+}
+function backStep(){
+  if(SLD){ sldStop(); return; }
+  const boxes=document.querySelectorAll('body > .daypick, body > .lightbox, body > .bkscan, body > .alarm, body > .lkask');
+  if(boxes.length){ backBox(boxes[boxes.length-1]); return; }
+  if(!ME) return;
+  stackSheets();
+  const top=SHEET_STACK[SHEET_STACK.length-1];
+  if(top){
+    if(BACK_EDITS.includes(top)&&!confirm('Leave this without saving?')) return;
+    const el=$(top);
+    const b=top==='lkPlay'?el.querySelector('#lkBack,#lkOverBack'):el.querySelector('.sheetbar > button');
+    if(b) b.click(); else { el.classList.add('hidden'); lockBackground(); }
+    return;
+  }
+  if(PICKING){ stopPicking(); return; }
+  if($('home').classList.contains('hidden')) backHome('contacts');
+  // On the home screen: nothing, so the app stays open.
+}
+window.addEventListener('popstate',()=>{ BACK_ARMED=false; backStep(); backArm(); });
+['pointerdown','keydown'].forEach(t=>document.addEventListener(t,backArm,{capture:true,passive:true}));
+backArm();
 
 // Every few minutes, but only when nothing is open and you are not typing,
 // so it can never interrupt what you are doing.

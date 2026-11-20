@@ -1,6 +1,17 @@
 {
-  "version": "2026.11.19.3",
+  "version": "2026.11.20.1",
   "history": [
+    {
+      "version": "2026.11.20.1",
+      "changes": [
+        "Birthday messages: for someone in New Zealand or Australia, the Send button comes up at 8pm the night before, so it reaches them in their morning.",
+        "Slideshow: Play both ways, upright and sideways photos together, and a choice of Random or Date taken order, oldest first.",
+        "Contacts sent to you: a red number on the Contacts tile, a box asking whether to look at them now, and a list on Today.",
+        "Multi Select (was Tidy up): a tick-box button at the top of Contacts to send or delete several at once.",
+        "The phone's Back arrow now goes back one screen instead of closing the app, and stays put on the home screen.",
+        "Loxx: the words at the top now sit on the line of players, so a long message no longer squeezes the board."
+      ]
+    },
     {
       "version": "2026.11.19.3",
       "changes": [

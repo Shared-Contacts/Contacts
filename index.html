@@ -1207,6 +1207,23 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .bdstar{flex:0 0 auto;font-size:22px;line-height:1;padding:8px 4px;color:var(--muted)}
 .bdstar[aria-pressed="true"]{color:var(--brass)}
 .brow .bwhat .beve{color:#2E7D4F;font-weight:600}
+/* Send to someone (ML346, ML347) */
+.btn.sendbtn{border:1.5px solid var(--rule);color:var(--hull);margin-top:10px}
+.sendbox textarea{display:block;width:100%;padding:10px 12px;border:1.5px solid var(--rule);border-radius:8px;
+  font:inherit;font-size:15px;line-height:1.4;resize:vertical;background:#fff}
+.sendbox input[type=text],.sendbox input[type=search]{display:block;width:100%;padding:11px 12px;
+  border:1.5px solid var(--rule);border-radius:8px;font:inherit;margin-top:4px;background:#fff}
+.sendbox .dsec{padding-top:14px}
+.sendbox .results{margin-top:4px}
+.sendways{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+.sendway{flex:1 1 0;min-width:84px;text-align:center;padding:11px 8px;border-radius:999px;background:#2E7D4F;
+  color:#fff;font-weight:700;text-decoration:none}
+@media (max-width:340px){.sendway{min-width:0;padding:11px 4px;font-size:14px}}
+.sendpicked{display:flex;align-items:baseline;gap:10px;margin-top:4px}
+.sendpicked b{flex:1;min-width:0;overflow-wrap:anywhere}
+.checks.sendadd{margin:10px 0 8px}
+.sendbox .linkbtn{color:var(--hull);font-weight:600;text-decoration:underline;font-size:15px;padding:4px 0 4px 6px}
+.sendbox .pfoot{margin:14px -16px -16px}
 .offasknames{margin:0 0 6px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
 #pickBtn[aria-pressed="true"]{background:rgba(255,255,255,.22);border-radius:10px}
 /* MY Slideshow (ML307). The list of slideshows, one slideshow's photos, and
@@ -3727,6 +3744,7 @@ async function openDetail(id, keepPlace){
     b.onclick=()=>removePhoto(b.dataset.rmphoto,false));
   $('detBody').querySelectorAll('[data-setface]').forEach(b=>
     b.onclick=()=>setFace(b.dataset.setface));
+  const sd=$('detSend'); if(sd) sd.onclick=()=>sendOpen(contactSendWhat(CURRENT));
   const sc=$('sendCopy');
   if(sc) sc.onclick=()=>pickPeople('Send a copy of '+fullName(CURRENT)+' to',
     who=>sendContacts([CURRENT.id],who));
@@ -3776,8 +3794,11 @@ function shareCard(c){
     return `<div class="card"><h3>Sharing</h3><div class="field"><dd>Shared with you by
       ${esc(whoWrote(c.created_by))}. You can edit it, but only they can delete it,
       change who sees it, or pass it on to anyone else.</dd></div></div>`;
+  const send=`<div class="setadd" style="padding-top:4px"><button class="btn sendbtn" id="detSend" style="margin-top:0">Send their details to someone&hellip;</button></div>
+    <div class="field"><dd style="color:var(--muted);font-size:15px">Their name, numbers, email and address, to
+      anyone by WhatsApp, a text or email.</dd></div>`;
   if(!USERS.length)
-    return `<div class="card"><h3>Sharing</h3><div class="field"><dd>No one else has an account yet.</dd></div></div>`;
+    return `<div class="card"><h3>Sharing</h3><div class="field"><dd>No one else has an account yet.</dd></div>${send}</div>`;
   const old=SHARES.filter(x=>x.contact_id===c.id);
   const from = c.came_from
     ? `<div class="field"><dt>Came from</dt><dd>${esc(whoWrote(c.came_from))}${
@@ -3788,6 +3809,7 @@ function shareCard(c){
     <div class="field"><dd style="color:var(--muted);font-size:15px">
       They get their own contact, theirs to edit, file or delete. Yours stays
       yours.</dd></div>
+    ${send}
     ${old.length?`
       <div class="field"><dt>Also still shared the old way</dt><dd>
         They are looking at this very record. Once they have taken a copy you can
@@ -6010,6 +6032,12 @@ function openHelp(where){
   under <em>Share with</em>. They can see the book and add their own stars and a few
   words under <em>What you thought</em>, which you and everyone else it's shared
   with can see. Only you can change the book itself.</p>
+  <p><strong>Send to someone&hellip;</strong> on a book&rsquo;s screen sends it to anyone,
+  in the app or not: the title and author, your stars, your notes and its first link.
+  Pick them from Contacts, or type a mobile number or an email address (with a tick to
+  add them to Contacts), then tap <em>WhatsApp</em>, <em>Text</em> or <em>Email</em>: it
+  opens with the words written, for you to send. <em>Share with the cover</em> uses the
+  phone&rsquo;s own Share list instead, for any other app, with the picture.</p>
 
   <h4 id="h-tv">TV/Movies</h4>
   <p><strong>TV/Movies</strong> keeps the films and TV series you&rsquo;ve watched,
@@ -6048,6 +6076,9 @@ function openHelp(where){
   to tap the one you&rsquo;re up to. One tap also covers <em>I&rsquo;ve watched it</em>,
   <em>I&rsquo;ve finished it</em>, <em>Add a time I watched it</em> and <em>It&rsquo;s
   come back</em> for a disc you lent.</p>
+  <p><strong>Send to someone&hellip;</strong> works as it does for a book: the title and
+  year, where it&rsquo;s on, your stars, your notes and its first link, by WhatsApp, a
+  text or email, or with the poster through the phone&rsquo;s Share list.</p>
   <p><strong>Who sees it.</strong> Yours alone unless you tick people under <em>Share
   with</em>. They can see it and add their own stars and a few words under <em>What you
   thought</em>, which you and everyone else it&rsquo;s shared with can see. Only you can
@@ -6130,6 +6161,9 @@ function openHelp(where){
   each line &mdash; pasting a whole list in one go works. A line ending in a colon,
   such as <em>For the sauce:</em>, is a heading. <strong>Just me</strong> keeps a recipe
   out of the family cookbook.</p>
+  <p><strong>Send to someone&hellip;</strong> on a recipe sends the whole of it (the
+  ingredients, the steps and the notes) by WhatsApp, a text or email, or with its photo
+  through the phone&rsquo;s Share list.</p>
   <p><strong>Find new recipes</strong> searches Google or BBC Good Food in Chrome. When
   you find one you like, press <strong>Share</strong> in Chrome, choose <strong>MY
   life</strong>, then <strong>A recipe</strong>. The app reads the page for you and the
@@ -6747,6 +6781,9 @@ function openHelp(where){
   <p><strong>Who else to remind</strong> puts the same entry in someone else's
   diary. They can tick it off or change it, so an appointment you are both going
   to only needs entering once.</p>
+  <p><strong>Send to someone&hellip;</strong>, at the bottom of an entry you have saved,
+  sends its title, when it is and the notes to anyone, by WhatsApp, a text or email, or
+  any other app.</p>
   <p>New entries fill in your own name under "about which contact". Set who that
   is in Menu &rsaquo; Settings &rsaquo; <em>Which contact is you?</em></p>
   <p>At the bottom of the Diary, <strong>Turn on reminders</strong> registers the
@@ -6761,7 +6798,12 @@ function openHelp(where){
   and use <strong>Send a copy to&hellip;</strong>, or press the tick-box button at
   the top of Contacts (<strong>Multi Select</strong>), tap several and use
   <strong>Send</strong>.</p>
-  <p>It arrives in their <strong>Sent to you</strong> screen. Tapping it shows the
+  <p>To send somebody&rsquo;s details to anyone, in the app or not, use <strong>Send their
+  details to someone&hellip;</strong> on one of your own contacts: their name, phone
+  numbers, email addresses and address, by WhatsApp, a text or email. <em>Share as a
+  contact card</em> sends a card through the phone&rsquo;s Share list, which they can
+  save straight into their own phone.</p>
+  <p>A contact sent with Send a copy to&hellip; arrives in their <strong>Sent to you</strong> screen. Tapping it shows the
   whole contact first, then they accept it, turn it down, or &mdash; if they
   already have that person &mdash; compare the two and take only the bits they
   want. You are told what they decided: it shows at the top of your own
@@ -8448,6 +8490,7 @@ function openItem(it, presetContact, presetDay, presetKind){
 
     <fieldset><legend>Photos</legend>${dphHtml('itPics')}</fieldset>
 
+    ${it?'<button type="button" class="btn sendbtn" id="itSend">Send to someone&hellip;</button><p class="coords" style="text-align:center">Sends it as it was last saved.</p>':''}
     ${it?'<button type="button" class="btn danger" id="itDelete">Delete this</button>':''}
   </form>`;
 
@@ -8466,6 +8509,7 @@ function openItem(it, presetContact, presetDay, presetKind){
     f.elements['remind_mins'].value=it.remind_mins==null?'':String(it.remind_mins);
     f.elements['repeat_every'].value=it.repeat_every||'none';
     $('itDelete').onclick=()=>deleteItem(it);
+    $('itSend').onclick=()=>sendOpen(itemSendWhat(it));
   }else{
     const soon=new Date(Date.now()+60*60*1000);
     soon.setMinutes(0,0,0);
@@ -12166,6 +12210,7 @@ function renderRecipe(){
       ?`<small>${cooked.n} time${cooked.n===1?'':'s'}, last ${esc(fmtDate(cooked.last))}</small>`:''}</button>`}
     ${r.video_url?`<a class="btn rcpvid" href="${esc(r.video_url)}" target="_blank"
       rel="noopener noreferrer">&#9654; Watch the video</a>`:''}
+    ${r.to_try?'':'<button class="btn sendbtn" id="rvSend">Send to someone&hellip;</button>'}
 
     ${ings.length?`<p class="dsec" style="margin-top:16px">Ingredients</p>
     <div class="card">
@@ -12198,6 +12243,7 @@ function renderRecipe(){
 $('rcpView').addEventListener('click',async ev=>{
   const r=RECIPES.find(x=>x.id===RCP_CUR); if(!r) return;
   const t=ev.target;
+  if(t.closest&&t.closest('#rvSend')){ sendOpen(rcpSendWhat(r)); return; }
   const pic=t.closest('[data-rpic]');
   if(pic){ lightbox(pic.getAttribute('src')); return; }
   if(t.closest('#rvCook')){ openCook(r); return; }
@@ -16821,6 +16867,7 @@ function renderBook(){
       ${R('Entered by',esc(enteredByName(enteredBy(b))))}
       ${mine?R('Shared with',esc(namesOf(arr(b.shared_with)).join(', '))):R('Shared by',esc(who))}</div>
     ${quick?`<div class="bkquick">${quick}</div>`:''}
+    <button class="btn sendbtn" id="bkSend">Send to someone&hellip;</button>
     ${links.length?`<p class="dsec">Reviews elsewhere</p><div class="card">${links.map(x=>
       `<a class="item bklinkout" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="mid">
         <span class="t">${esc(bkHost(x.url))}</span>${x.quote?`<span class="w">&ldquo;${esc(x.quote)}&rdquo;</span>`:''}
@@ -16846,6 +16893,7 @@ function renderBook(){
   bkWireStars($('bkRevStars'),()=>BK_RSTARS,n=>{ BK_RSTARS=n; });
   const rs=$('bkRevSave'); if(rs) rs.onclick=()=>bkSaveReview(b);
   const e=$('bkEditBtn'); if(e) e.onclick=()=>openBookEd(b);
+  $('bkSend').onclick=()=>sendOpen(bkSendWhat(b));
 }
 const bkHost = u => { try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; } };
 $('bkBack').onclick=()=>{ BK_VIEW=null; $('bookView').classList.add('hidden'); lockBackground(); };
@@ -17354,6 +17402,7 @@ function renderShow(){
       ${R('Entered by',esc(enteredByName(enteredBy(s))))}
       ${mine?R('Shared with',esc(namesOf(arr(s.shared_with)).join(', '))):R('Shared by',esc(who))}</div>
     ${quick?`<div class="bkquick">${quick}</div>`:''}
+    <button class="btn sendbtn" id="tvSend">Send to someone&hellip;</button>
     ${series&&mine?`<p class="dsec">How far you are</p><div class="card tvprog" id="tvProg">${tvProgHtml(s)}</div>`:''}
     ${s.synopsis?`<p class="dsec">What it&rsquo;s about</p><div class="card"><div class="field"><dd class="bkwords">${esc(s.synopsis)}</dd></div></div>`:''}
     ${views.length?`<p class="dsec">Times watched<span class="lcount">${views.length}</span></p><div class="card">${views.map(v=>
@@ -17388,6 +17437,7 @@ function renderShow(){
   bkWireStars($('tvRevStars'),()=>TV_RSTARS,n=>{ TV_RSTARS=n; });
   const rs=$('tvRevSave'); if(rs) rs.onclick=()=>tvSaveReview(s);
   const e=$('tvEditBtn'); if(e) e.onclick=()=>openShowEd(s);
+  $('tvSend').onclick=()=>sendOpen(tvSendWhat(s));
   if(series&&mine) tvWireProg(s);
 }
 $('tvBack').onclick=()=>{ TV_VIEW=null; $('tvShow').classList.add('hidden'); lockBackground(); };
@@ -19597,7 +19647,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.5';
+const APP_VERSION='2026.11.20.6';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -25729,6 +25779,267 @@ function wireBdayMsg(){
     const list=cur(); list.push({k:'w'+Date.now().toString(36),text:v});
     if(await saveBdayWords(list)) openSettings();
   };
+}
+
+/* ---------- Send to someone (ML346, ML347) ----------
+   A book, film or series, a contact's details, a recipe or a diary entry,
+   sent to anyone, in the app or not. Pick them from Contacts, or type a
+   mobile number or an email address (and add them to Contacts if you like):
+   WhatsApp, Messages or email opens with the words written, and you press
+   Send yourself. A link like that carries words only, so Other apps uses
+   the phone's own Share list, which can take the picture or a contact card. */
+const SEND_WAYS=[['whatsapp','WhatsApp'],['text','Text'],['email','Email']];
+let SEND=null;
+// Typed in: an email address, or a mobile number (the UK unless it starts
+// with + or 00).
+function sendTyped(v){
+  v=String(v||'').trim(); const out={};
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ out.email=v; return out; }
+  const n=tidyNum(v);
+  if(n.replace(/\D/g,'').length<7) return out;
+  const w=bdayIntl(v,{});
+  if(w&&/^\d{6,}$/.test(w)) out.whatsapp=w;
+  out.text=n;
+  return out;
+}
+function sendLink(ways,way,text,subject){
+  const t=encodeURIComponent(text);
+  if(way==='whatsapp'&&ways.whatsapp) return 'https://wa.me/'+ways.whatsapp+'?text='+t;
+  if(way==='text'&&ways.text) return 'sms:'+ways.text+(/iPhone|iPad|iPod/.test(navigator.userAgent)?'&':'?')+'body='+t;
+  if(way==='email'&&ways.email) return 'mailto:'+ways.email+'?subject='+encodeURIComponent(subject||'')+'&body='+t;
+  return null;
+}
+// Someone typed in who is already in Contacts: the same email address, or a
+// number ending in the same nine digits.
+function sendKnown(v){
+  const t=sendTyped(v); if(!t.email&&!t.text) return null;
+  const tail=x=>tidyNum(x).replace(/\D/g,'').slice(-9);
+  return CONTACTS.find(c=>!isGone(c)&&(t.email
+    ? arr(c.emails).some(e=>String(e.value||'').trim().toLowerCase()===t.email.toLowerCase())
+    : arr(c.phones).concat(arr(c.socials)).some(p=>{ const a=tail(p.value||''); return a.length===9&&a===tail(t.text); })))||null;
+}
+const sendWaysHtml = (ways,whose) => { const ks=SEND_WAYS.filter(([k])=>ways[k]);
+  return ks.length?`<div class="sendways">${ks.map(([k,l])=>`<a class="sendway" href="#" data-sendway="${k}"
+    data-sendwhose="${whose}"${k==='whatsapp'?' target="_blank" rel="noopener"':''}>${l}</a>`).join('')}</div>`
+    :`<p class="coords">${whose==='who'?'No mobile number or email address for them in Contacts.':''}</p>`; };
+
+function sendOpen(o){
+  if(!o) return;
+  document.querySelectorAll('.sendbox').forEach(x=>x.remove());
+  SEND={...o, who:null, add:false, name:'', ready:null};
+  const box=document.createElement('div');
+  box.className='daypick typing sendbox'; box.setAttribute('role','dialog');
+  box.setAttribute('aria-label','Send '+o.what);
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Send ${esc(o.what)}</p>
+    <textarea id="sendText" rows="6" aria-label="The message">${esc(o.text)}</textarea>
+    <p class="coords">Change the words if you like. Nothing goes until you press Send in
+      WhatsApp, Messages or your email.</p>
+    <p class="dsec">To someone in Contacts</p>
+    <div id="sendWho"></div>
+    <p class="dsec">Or someone not in Contacts</p>
+    <input id="sendTo" type="text" inputmode="email" autocomplete="off"
+      placeholder="Their mobile number or email address" aria-label="Their mobile number or email address">
+    <div id="sendToWays"></div>
+    ${navigator.share?`<p class="dsec">Or another app</p>
+      <button type="button" class="btn sendbtn" id="sendOther" style="margin-top:4px">${
+        esc(o.files?(o.otherLabel||'Share with the picture'):'Other apps')}&hellip;</button>
+      <p class="coords">The phone&rsquo;s own Share list, for any app, ${
+        esc(o.files?(o.otherWhat||'with the picture'):'with these words')}.</p>`:''}
+    <div class="pfoot"><button type="button" id="sendClose">Close</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>{ box.remove(); if(SEND&&!document.querySelector('.sendbox')) SEND=null; };
+  $('sendClose').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  sendWhoPaint();
+  const to=$('sendTo');
+  to.oninput=sendToPaint;
+  const ot=$('sendOther'); if(ot) ot.onclick=()=>sendOther(ot);
+  // WhatsApp, Text or Email: the link is made at the tap, from the words as
+  // they are then, and opens straight from it.
+  box.addEventListener('click',ev=>{
+    const a=ev.target.closest&&ev.target.closest('[data-sendway]'); if(!a||!SEND) return;
+    const whose=a.dataset.sendwhose, typed=$('sendTo').value;
+    const ways=whose==='who'?(SEND.who?bdayWays(SEND.who):{}):sendTyped(typed);
+    const url=sendLink(ways,a.dataset.sendway,($('sendText').value||'').trim(),SEND.subject);
+    if(!url){ ev.preventDefault(); toast('Nowhere to send it'); return; }
+    if(whose==='to'&&SEND.add&&!sendKnown(typed)){
+      const name=String(SEND.name||'').trim();
+      if(!name){ ev.preventDefault(); toast('Type their name to add them, or untick Add'); const n=$('sendName'); if(n) n.focus(); return; }
+      sendAddContact(name,typed);
+    }
+    a.href=url;
+  });
+}
+function sendWhoPaint(){
+  const el=$('sendWho'); if(!el||!SEND) return;
+  const c=SEND.who;
+  if(c){
+    el.innerHTML=`<div class="sendpicked"><b>${esc(fullName(c))}</b>
+      <button type="button" class="linkbtn" id="sendWhoChange">Someone else</button></div>${sendWaysHtml(bdayWays(c),'who')}`;
+    $('sendWhoChange').onclick=()=>{ SEND.who=null; sendWhoPaint(); const f=$('sendFind'); if(f) f.focus(); };
+    return;
+  }
+  el.innerHTML=`<input id="sendFind" type="search" autocomplete="off" placeholder="Type a name" aria-label="Find them in Contacts">
+    <div class="results hidden" id="sendHits"></div>`;
+  const f=$('sendFind'), res=$('sendHits');
+  f.oninput=()=>{
+    const q=f.value.trim();
+    if(q.length<2){ res.classList.add('hidden'); return; }
+    const hits=CONTACTS.filter(c=>!isGone(c)&&matches(c,q)).sort(bestFirst(q)).slice(0,8);
+    res.innerHTML=hits.length?hits.map(c=>`<button type="button" data-sendpick="${c.id}">${esc(fullName(c))}</button>`).join('')
+      :'<p class="coords" style="padding:8px 12px;margin:0">Nobody by that name. Type their number or email address below instead.</p>';
+    res.classList.remove('hidden');
+    res.querySelectorAll('[data-sendpick]').forEach(b=>b.onclick=()=>{
+      SEND.who=CONTACTS.find(x=>x.id===Number(b.dataset.sendpick))||null; sendWhoPaint(); });
+  };
+}
+function sendToPaint(){
+  const tw=$('sendToWays'), to=$('sendTo'); if(!tw||!to||!SEND) return;
+  const v=to.value.trim(), t=sendTyped(v);
+  if(!v){ tw.innerHTML=''; return; }
+  if(!t.email&&!t.text){ tw.innerHTML='<p class="coords">A mobile number or an email address.</p>'; return; }
+  const known=sendKnown(v);
+  tw.innerHTML=sendWaysHtml(t,'to')+(known
+    ?`<p class="coords">That&rsquo;s ${esc(fullName(known))} in your Contacts.</p>`
+    :`<div class="checks sendadd"><label><input type="checkbox" id="sendAdd"${SEND.add?' checked':''}> Add them to my Contacts</label></div>
+      <input id="sendName" type="text" autocomplete="off" placeholder="Their name" aria-label="Their name"
+        value="${esc(SEND.name||'')}"${SEND.add?'':' hidden'}>`);
+  const ad=$('sendAdd'), nm=$('sendName');
+  if(ad) ad.onchange=()=>{ SEND.add=ad.checked; nm.hidden=!ad.checked; if(ad.checked) nm.focus(); };
+  if(nm) nm.oninput=()=>{ SEND.name=nm.value; };
+}
+// Someone new, kept with the number or email address they were sent to.
+async function sendAddContact(name,typed){
+  const t=sendTyped(typed), bits=String(name).trim().split(/\s+/);
+  const row={created_by:ME.id, first_name:bits[0]||'', last_name:bits.slice(1).join(' '),
+    phones:t.text?[{label:'Mobile', value:String(typed).trim()}]:[],
+    emails:t.email?[{label:'Email', value:t.email}]:[]};
+  if(SEND){ SEND.add=false; SEND.name=''; }
+  const {error}=await sb.from('contacts').insert(row).select().single();
+  if(error){ console.error(error); toast('Could not add them to Contacts'); return false; }
+  try{ await loadAll(); }catch(e){ console.warn(e); }
+  toast('Added '+String(name).trim()+' to Contacts');
+  sendToPaint();
+  return true;
+}
+// The phone's Share list. Fetching a picture can outlast the few seconds a
+// phone allows after a tap; then it is kept ready and the next tap shares.
+async function sendOther(btn){
+  const o=SEND; if(!o||!navigator.share) return;
+  const text=(($('sendText')||{}).value||o.text).trim();
+  let data;
+  if(o.ready&&o.ready.text===text) data=o.ready;
+  else {
+    data={title:o.title, text};
+    if(o.files){
+      try{
+        const fs=await o.files();
+        if(fs.length&&(!navigator.canShare||navigator.canShare({files:fs}))) data.files=fs;
+        else toast(fs.length?'This phone can only share the words':'Could not get the picture, so just the words');
+      }catch(e){ console.warn(e); toast('Could not get the picture, so just the words'); }
+    }
+  }
+  o.ready=null;
+  try{ await navigator.share(data); }
+  catch(e){
+    if(e&&e.name==='AbortError') return;
+    if(e&&e.name==='NotAllowedError'){ o.ready=data; if(btn) btn.textContent='Ready: tap to share'; toast('Ready: tap it again to share'); return; }
+    console.error(e); toast('Could not share it');
+  }
+}
+async function sendFiles(list){
+  const out=[];
+  for(let i=0;i<list.length;i++){
+    const p=list[i];
+    try{
+      let blob;
+      if(p.path){ const {data,error}=await sb.storage.from('photos').download(p.path);
+        if(error||!data) throw error||new Error('no picture'); blob=data; }
+      else { const r=await fetch(p.url); if(!r.ok) throw new Error(String(r.status)); blob=await r.blob(); }
+      out.push(new File([blob],'picture-'+(i+1)+(/png/.test(blob.type||'')?'.png':'.jpg'),{type:blob.type||'image/jpeg'}));
+    }catch(e){ console.warn('a picture could not be fetched to share', e); }
+  }
+  return out;
+}
+
+// What each one says. Your stars and notes go with a book or a film (on one
+// someone else shared, what you thought of it); the first link saved with it.
+const sendStars = n => n ? ` I gave it ${n} out of 5.` : '';
+function bkSendWhat(b){
+  const mine=bkMine(b), rv=BK_REVIEWS.find(r=>r.book_id===b.id&&r.user_id===ME.id);
+  const stars=mine?b.stars:(rv&&rv.stars), notes=String((mine?b.notes:(rv&&rv.words))||'').trim();
+  const link=arr(b.links).find(x=>x&&x.url), pic=arr(b.photos).find(x=>x&&x.path);
+  return {what:'this book', title:b.title, subject:b.title+(b.author?' by '+b.author:''),
+    text:[`Thought you might like this book: ${b.title}${b.author?' by '+b.author:''}.${sendStars(stars)}`,
+      notes, link&&link.url].filter(Boolean).join('\n\n'),
+    files:pic?()=>sendFiles([pic]):null, otherLabel:'Share with the cover', otherWhat:'with the cover'};
+}
+function tvSendWhat(s){
+  const mine=tvMine(s), rv=TV_REVIEWS.find(r=>r.show_id===s.id&&r.user_id===ME.id);
+  const stars=mine?s.stars:(rv&&rv.stars), notes=String((mine?s.notes:(rv&&rv.words))||'').trim();
+  const kind=s.kind==='series'?'series':'film';
+  const link=arr(s.links).find(x=>x&&x.url), pic=arr(s.photos).find(x=>x&&x.path);
+  return {what:'this '+kind, title:s.title, subject:s.title+(s.year?' ('+s.year+')':''),
+    text:[`Thought you might like this ${kind}: ${s.title}${s.year?' ('+s.year+')':''}.${
+      s.channel?` It's on ${s.channel}.`:''}${sendStars(stars)}`, notes, link&&link.url].filter(Boolean).join('\n\n'),
+    files:pic?()=>sendFiles([pic]):null, otherLabel:'Share with the poster', otherWhat:'with the poster'};
+}
+// Name, numbers, email addresses, address and boat: no birthday or notes.
+function contactSendWhat(c){
+  const L=[fullName(c)];
+  arr(c.phones).filter(p=>p&&p.value).forEach(p=>L.push(`${p.label||'Phone'}: ${p.value}`));
+  arr(c.emails).filter(e=>e&&e.value).forEach(e=>L.push(`${e.label&&!/^e-?mail$/i.test(e.label)?e.label+' email':'Email'}: ${e.value}`));
+  const where=countryName(c.country), addr=[c.address,c.address_2,c.town,c.county,c.postcode,
+    where&&where!=='No country'?where:''].filter(Boolean).join(', ');
+  if(addr) L.push('Address: '+addr);
+  if(c.boat_name) L.push('Boat: '+c.boat_name);
+  const file=String(fullName(c)||'contact').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'contact';
+  return {what:fullName(c)+'\u2019s details', title:fullName(c), subject:fullName(c), text:L.join('\n'),
+    files:()=>Promise.resolve([new File([contactVcf(c)],file+'.vcf',{type:'text/vcard'})]),
+    otherLabel:'Share as a contact card', otherWhat:'as a contact card they can save in their own phone'};
+}
+function contactVcf(c){
+  const e=x=>String(x||'').replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/([,;])/g,'\\$1');
+  const L=['BEGIN:VCARD','VERSION:3.0',`N:${e(c.last_name)};${e(c.first_name)};;;`,`FN:${e(fullName(c))}`];
+  arr(c.phones).filter(p=>p&&p.value).forEach(p=>L.push(`TEL;TYPE=${/mob|cell/i.test(p.label||'')?'CELL'
+    :/work/i.test(p.label||'')?'WORK':'VOICE'}:${e(p.value)}`));
+  arr(c.emails).filter(x=>x&&x.value).forEach(x=>L.push(`EMAIL:${e(x.value)}`));
+  const street=[c.address,c.address_2].filter(Boolean).join(', '), where=countryName(c.country);
+  if(street||c.town||c.postcode) L.push(`ADR;TYPE=HOME:;;${e(street)};${e(c.town)};${e(c.county)};${e(c.postcode)};${
+    e(where&&where!=='No country'?where:'')}`);
+  L.push('END:VCARD');
+  return L.join('\r\n')+'\r\n';
+}
+function rcpSendWhat(r){
+  const L=[r.title], ings=arr(r.ingredients);
+  if(r.about) L.push(r.about);
+  if(r.serves) L.push('Serves '+r.serves);
+  if(ings.length) L.push('Ingredients\n'+ings.map(x=>x.head?'\n'+x.head:'- '+ingText(x,1)).join('\n'));
+  const steps=(h,list)=>{ let n=0; return h+'\n'+arr(list).map(x=>rcpHead(x)?'\n'+String(x).replace(/:$/,''):(++n)+'. '+x).join('\n'); };
+  if(arr(r.prep_steps).length) L.push(steps('Preparing',r.prep_steps));
+  if(arr(r.cook_steps).length) L.push(steps('Cooking',r.cook_steps));
+  if(r.notes) L.push('Notes\n'+r.notes);
+  if(r.source_url) L.push(r.source_url);
+  if(r.video_url) L.push('Video: '+r.video_url);
+  const pic=arr(r.photos).find(p=>p&&(p.path||(p.url&&/^https:\/\//i.test(p.url))));
+  return {what:'this recipe', title:r.title, subject:'Recipe: '+r.title, text:L.join('\n\n'),
+    files:pic?()=>sendFiles([pic.path?{path:pic.path}:{url:pic.url}]):null, otherLabel:'Share with the photo', otherWhat:'with the photo'};
+}
+function sendWhen(it){
+  const day=d=>d.toLocaleDateString('en-GB',{weekday:'long'})+' '+d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const time=d=>d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  if(it.kind==='appointment'&&it.starts_at){
+    const a=new Date(it.starts_at), b=it.ends_at?new Date(it.ends_at):null, same=!!b&&b.toDateString()===a.toDateString();
+    if(it.all_day) return day(a)+(b&&!same?' to '+day(b):'');
+    return day(a)+', '+time(a)+(b?(same?' to '+time(b):' to '+day(b)+', '+time(b)):'');
+  }
+  if(it.due_at){ const d=new Date(it.due_at); return 'By '+day(d)+', '+time(d); }
+  return '';
+}
+function itemSendWhat(it){
+  return {what:it.kind==='appointment'?'this appointment':'this to-do', title:it.title||'', subject:it.title||'',
+    text:[it.title, sendWhen(it), String(it.notes||'').trim()].filter(Boolean).join('\n\n'), files:null};
 }
 
 function renderBrief(){

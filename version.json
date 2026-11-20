@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.20.5",
+  "version": "2026.11.20.6",
   "history": [
+    {
+      "version": "2026.11.20.6",
+      "changes": [
+        "Send to someone: send a book, film, series, recipe or diary entry to anyone by WhatsApp, a text or email, or another app.",
+        "Contacts: Send their details to someone, as words or as a contact card they can save in their own phone.",
+        "Pick who from Contacts, or type a mobile number or email address, with a tick to add them to Contacts."
+      ]
+    },
     {
       "version": "2026.11.20.5",
       "changes": [

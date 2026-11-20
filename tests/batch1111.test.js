@@ -210,9 +210,7 @@ const VCF_GAPS = ['BEGIN:VCARD', 'VERSION:3.0', 'N:Deal;Dickie;;;', 'FN:Dickie D
   ok('  with the month named where a new one starts', await ev(() => {
     const ps = [...document.querySelectorAll('#diaryBody .dmonth')];
     return ps.length >= 1 && ps.every(x => { const n = x.nextElementSibling; return n && (n.dataset.dkey.endsWith('-01') || n === document.querySelector('.dday')); }); }));
-  await ev(() => $('dToday').click()); await settle(200);
-  D = await days();
-  ok('Today goes back to the first view', D.length === 14 && D[0].key === K[-3]);
+  ok('no Today button on Days (ML343, 20 Nov 2026): it starts from today each time it opens', await ev(() => !$('dToday')));
   await closeAll();
   await ev(() => { DIARY_VIEW = 'days'; openDiary(); }); await settle(300);
   ok('opening the Calendar again starts afresh from today, all folded, without fetching the list again',

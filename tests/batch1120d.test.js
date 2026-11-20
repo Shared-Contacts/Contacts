@@ -187,9 +187,10 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     && /The buttons are on the title too; when the first photo comes they go, leaving just the photos/.test(hp)
     && /Tap the middle to bring the buttons back for a few seconds/.test(hp) && /They stay while it is paused/.test(hp));
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
-  ok('2026.11.20.4, the app and version.json agree', await ev(() => APP_VERSION) === '2026.11.20.4' && vj.version === '2026.11.20.4'
-    && vj.history[0].version === '2026.11.20.4');
-  const what = vj.history[0].changes.join(' ');
+  const V4 = vj.history.find(x => x.version === '2026.11.20.4');
+  ok('2026.11.20.4 is in version.json, and the page is the newest', !!V4 && await ev(() => APP_VERSION) === vj.version
+    && vj.history[0].version === vj.version);
+  const what = V4 ? V4.changes.join(' ') : '';
   ok('  what\'s new says all three', /stays about 10 seconds/.test(what) && /the buttons are back/.test(what) && /first page is centred/.test(what), what);
 
   console.log(errors.length ? '\n' + errors.join('\n') : '\nNo page errors.');

@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.20.2",
+  "version": "2026.11.20.3",
   "history": [
+    {
+      "version": "2026.11.20.3",
+      "changes": [
+        "Slideshow: How it plays is now at the top for every slideshow, with Upright, Sideways or Both ways. Tap a slideshow to start it.",
+        "Slideshow: each show opens with its title for a few seconds, then just the photos, with no buttons on top."
+      ]
+    },
     {
       "version": "2026.11.20.2",
       "changes": [

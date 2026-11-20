@@ -214,7 +214,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   await ev(() => openDetail(806)); await settle();
   k = await card();
   ok('a birthday still to come: what will happen on the day, no button yet', !k.href
-    && /On their birthday, Today has a button that opens WhatsApp/.test(k.text), k.text.slice(0, 200));
+    && /At 8pm the evening before their birthday \(morning in\s+New Zealand\), Today has a button that opens WhatsApp/.test(k.text), k.text.slice(0, 200));   // Fay is in New Zealand (ML316)
   await ev(() => openDetail(803)); await settle();
   k = await card();
   ok('nowhere to send it: a note saying what to add, no tick', !!k && !k.ticked && k.ways.length === 0

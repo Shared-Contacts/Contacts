@@ -368,9 +368,11 @@ const ROOT = path.join(__dirname, '..');
   const undoOff = () => ev(() => !!$('lkUndo') && $('lkUndo').disabled);
   ok('an Undo last move button on the bar, with nothing to take back yet', await undoOff()
     && /Undo last move/.test(await ev(() => $('lkUndo').textContent)));
+  // The words moved to the line of players below (ML323), leaving the bar to the buttons.
   ok('  it fits on the bar beside Done, big enough for a thumb', await ev(() => { const u = $('lkUndo').getBoundingClientRect(),
     d = $('lkDone').getBoundingClientRect(), s = $('lkStatus').getBoundingClientRect();
-    return u.right <= d.left && u.left >= s.right - 1 && u.height >= 40 && d.right <= innerWidth && s.width > 150; }));
+    return u.right <= d.left && u.height >= 40 && d.right <= innerWidth && s.width > 150
+      && !!$('lkUndo').closest('.lkbar') && !!$('lkStatus').closest('.lkwho') && s.top >= u.bottom - 1; }));
   await clear();
   await tap('red', 4); await tap('green', 10);
   ok('two marks on your own roll: Undo is ready', !(await undoOff()));

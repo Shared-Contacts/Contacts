@@ -96,8 +96,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
     && await ev(() => !!document.querySelector('[data-sldplay="bsky:up"]') && !!document.querySelector('[data-sldplay="bsky:side"]')));
   ok('  and it says where the photos are kept, and how music works', /kept on this (phone|computer) only, not online/.test(txt)
     && /start it in your own app first, then play a slideshow here: it carries on behind/.test(txt));
-  ok('the menu: New slideshow, and the Bluesky photos either way', await ev(() =>
-    areaItems('sld').map(x => x.label).join('|') === 'New slideshow|Play your Bluesky photos sideways|Play your Bluesky photos upright'));
+  ok('the menu: New slideshow, and the Bluesky photos sideways, upright or both ways (ML317)', await ev(() =>
+    areaItems('sld').map(x => x.label).join('|') === 'New slideshow|Play your Bluesky photos sideways|Play your Bluesky photos upright|Play your Bluesky photos both ways'));
   ok('Help knows where it is', await ev(() => currentScreen() === 'sld' && HELP_AT.sld === 'h-sld'));
 
   // ---------------------------------------------------------------

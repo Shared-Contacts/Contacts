@@ -118,7 +118,7 @@ const ok = (what, cond, extra='') => {
   await page.waitForTimeout(300);
   body = await page.textContent('#menuBody');
   ok('titled Contacts', (await page.textContent('#menuTitle')) === 'Contacts');
-  ok('delete several is there', /Delete several contacts/.test(body));
+  ok('delete several is there, as Multi Select (ML321)', /Multi Select: send or delete several/.test(body));
   ok('so is import and export', /Import and export contacts/.test(body));
   ok('and contacts sent to you', /Contacts sent to you/.test(body));
   ok('settings point at Contacts', /Settings for Contacts/.test(body));

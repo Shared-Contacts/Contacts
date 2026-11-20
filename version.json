@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.20.4",
+  "version": "2026.11.20.5",
   "history": [
+    {
+      "version": "2026.11.20.5",
+      "changes": [
+        "Sent to you: under Contacts you sent, the OK button no longer covers the words beside it.",
+        "Diary, Days: the Today button is gone. Days starts from today each time you open the Diary."
+      ]
+    },
     {
       "version": "2026.11.20.4",
       "changes": [

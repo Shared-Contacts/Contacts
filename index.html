@@ -581,6 +581,9 @@ input[name="postcode"]{text-transform:uppercase}
 .btn.primary{background:var(--hull);color:#F2EFE4}
 .btn.danger{background:none;color:var(--red);border:1.5px solid var(--red);margin-top:12px}
 .btn:disabled{opacity:.5}
+/* OK beside an answer under Contacts you sent: only as wide as it needs, so
+   the words beside it keep their room (ML342) */
+.btn.offok{flex:0 0 auto;width:auto;padding:6px 14px;border:1.5px solid var(--rule)}
 
 .setrow{display:flex;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid #F0EEE7}
 .setrow input{flex:1;min-width:0;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
@@ -773,6 +776,7 @@ i.key{vertical-align:middle}
 .dnav .dmore{font-weight:700}
 .dnavend{display:flex;justify-content:center;padding:12px 0 4px}
 .dnavend .dmore{color:var(--hull);padding:8px 14px;border-radius:8px;font-size:16px}
+.dnavtop{padding:0 0 6px}
 .dmonth{margin:10px 2px 6px;font-size:20px;font-weight:800;color:var(--ink)}
 .dday{background:var(--panel);border:1px solid var(--rule);border-left:0;border-radius:0 10px 10px 0;
   margin-bottom:4px;overflow:hidden}
@@ -6735,8 +6739,8 @@ function openHelp(where){
   and Wales) are named in small print, and the moon's quarters are marked:
   &#9679; new, &#9680; first quarter, &#9675; full, &#9681; last quarter. It opens
   a few days before today and runs about ten days ahead, with today shaded;
-  <em>Earlier days</em> and <em>Later days</em> add more, and <em>Today</em> comes
-  back. Tap a day to open it out with everything on it, to tick off, open or put
+  <em>Earlier days</em> and <em>Later days</em> add more, and it starts from today
+  again each time you open the Diary. Tap a day to open it out with everything on it, to tick off, open or put
   back; <em>+ Add on this day</em> adds something there. Tap the day again to fold
   it. Finished entries show too, crossed through, so the days gone by say what
   happened.</p>
@@ -7896,8 +7900,7 @@ function diaryDays(){
   const months={}, monthOf=d=>{ const k=d.getFullYear()+'-'+(d.getMonth()+1);
     return months[k]||(months[k]={cakes:monthBirthdays(d.getFullYear(),d.getMonth()+1),
       moon:moonPhasesIn(d.getFullYear(),d.getMonth()+1)}); };
-  let html=`<div class="mnav dnav"><button class="dmore" data-dmore="-7">&#9650; Earlier days</button>
-      <button class="mtoday" id="dToday">Today</button></div>`;
+  let html=`<div class="dnav dnavend dnavtop"><button class="dmore" data-dmore="-7">&#9650; Earlier days</button></div>`;
   for(let d=from;d<=to;d=dayPlus(d,1)){
     const key=dayKeyOf(d), n=d.getDate(), mo=monthOf(d);
     if(n===1||d.getTime()===from.getTime())
@@ -7960,7 +7963,6 @@ function wireDays(){
     else DAYS_TO=dayKeyOf(dayPlus(dayOfKey(DAYS_TO),n));
   }));
   b.querySelectorAll('[data-dadd]').forEach(x=>x.onclick=()=>newItem(null,x.dataset.dadd));
-  const t=$('dToday'); if(t) t.onclick=()=>{ daysReset(); renderDiary(); $('diaryBody').scrollTop=0; };
 }
 
 /* ---------- month ---------- */
@@ -19595,7 +19597,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.4';
+const APP_VERSION='2026.11.20.5';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -20306,8 +20308,7 @@ function offersBackHtml(){
         <strong>${esc(o.name||'a contact')}</strong></span>
         <span class="w">${esc(new Date(o.decided_at).toLocaleDateString('en-GB',
           {day:'numeric',month:'short'}))}</span></span>
-      <button class="btn" data-offseen="${o.id}" style="flex:0 0 auto;padding:6px 14px;
-        border:1.5px solid var(--rule)">OK</button></div>`).join('')}</div>
+      <button class="btn offok" data-offseen="${o.id}">OK</button></div>`).join('')}</div>
     ${back.length>1?`<button class="btn" data-offseen="all" style="margin-top:8px">
       OK to all ${back.length}</button>`:''}`;
 }

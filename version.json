@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.20.6",
+  "version": "2026.11.20.7",
   "history": [
+    {
+      "version": "2026.11.20.7",
+      "changes": [
+        "Slideshow: share one with everyone or with the people you choose, and tick who can change it. The photos never go online.",
+        "Slideshow: your slideshows are on every phone and computer you sign in on, and Find the photos picks out each one's copies.",
+        "Slideshow: each one opens with Made with It’s MY life at the top, above the photo."
+      ]
+    },
     {
       "version": "2026.11.20.6",
       "changes": [

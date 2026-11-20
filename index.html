@@ -1255,6 +1255,12 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .sldth{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#EEEBE3;padding:0}
 .sldth img{width:100%;height:100%;object-fit:cover;display:block}
 .sldnote{text-align:center;margin:14px 6px 24px}
+/* Shared and on every device (ML318) */
+.sldrow .sldwhat .sldaway{color:var(--hull)}
+.sldfrom{margin:2px 4px 12px;text-align:center}
+.sldmiss .btn{border:1.5px solid var(--rule);margin-top:8px}
+.sldshare .checks{margin-top:4px}
+.sldshare .sldcan{margin-top:16px}
 
 .sldplay{position:fixed;inset:0;z-index:120;background:#000;color:#fff;overflow:hidden;
   -webkit-user-select:none;user-select:none;touch-action:none}
@@ -1278,6 +1284,7 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .sldintro.gone{opacity:0;pointer-events:none}
 .sldintro img{width:min(46cqmin,240px);height:min(46cqmin,240px);object-fit:cover;border-radius:14px;margin-bottom:14px;background:#1a1a1a}
 .sldintro img:not([src]){visibility:hidden}
+.sldimade{margin:0 0 12px;font-size:14px;letter-spacing:.03em;opacity:.7}
 .sldintro h2{margin:0;font-size:30px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
 .sldidates{margin:0;font-size:18px;opacity:.92}
 .sldidates:empty{display:none}
@@ -1289,6 +1296,7 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
   .sldintro img{width:min(26cqmin,140px);height:min(26cqmin,140px);margin-bottom:8px}
   .sldintro h2{font-size:24px}
   .sldihow{margin-top:8px}
+  .sldimade{margin-bottom:4px;font-size:13px}
 }
 /* The buttons (ML335) */
 .sldctl{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -3163,7 +3171,7 @@ async function refreshAll(){
   if(!$('tv').classList.contains('hidden')){ await loadShows(); renderShows();
     if(!$('tvShow').classList.contains('hidden')) renderShow(); }
   if(!$('tml').classList.contains('hidden')){ await loadTimeline(); renderTimeline(); }
-  if(!$('sld').classList.contains('hidden')){ SLD_BSKY.at=0; await loadSlides(); renderSlides();
+  if(!$('sld').classList.contains('hidden')){ SLD_BSKY.at=0; await loadSlides(); await sldSync(); renderSlides();
     if(!$('sldTheme').classList.contains('hidden')) renderSlideTheme(); }
   toast('Up to date');
 }
@@ -6114,11 +6122,24 @@ function openHelp(where){
   own (Canals, Scenic, People, whatever suits), then <strong>Add photos</strong> and pick
   as many as you like from the gallery. On a computer you can add a whole folder. The app
   works out which are upright and which sideways; a square one goes in both.</p>
-  <p>The photos are kept on <strong>that phone or computer only</strong>, not online, so
-  they use none of the app&rsquo;s space and nobody else sees them. The gallery or folder
-  keeps the originals. A phone and a laptop each have their own slideshows. The
-  <em>Photos</em> button beside a slideshow opens its own page: add more, tap a photo to
-  take it out, <em>Rename</em> it, or <em>Delete this slideshow</em> at the bottom.</p>
+  <p>The photos are kept on <strong>each phone or computer</strong>, not online, so they
+  use none of the app&rsquo;s space. The gallery or folder keeps the originals. Your
+  slideshows themselves are on every phone and computer you sign in on: only each
+  one&rsquo;s name and its list of photos go online. On one that hasn&rsquo;t got the
+  photos yet, copy them there by Google Drive or a memory stick (not WhatsApp, which
+  renames and shrinks them), then press <em>Find the photos</em> on the slideshow&rsquo;s
+  page and pick them: it keeps the ones that belong, matched by name or by when they were
+  taken. The <em>Photos</em> button beside a slideshow opens its own page: add more, tap a
+  photo to take it out, <em>Rename</em> it, or <em>Delete this slideshow</em> at the bottom,
+  which deletes it from every phone and computer.</p>
+  <p><strong>Sharing a slideshow:</strong> on its page, under <em>Share with</em>, tick
+  <em>Everyone</em> (anyone who joins later too) or the people you want; then under
+  <em>Who can change it</em>, those who may add photos, take them out or rename it. Only
+  you can delete it or change who it&rsquo;s shared with. They find it under <em>Shared
+  with you</em> in their Slideshow and pick out their own copies of the photos, so send
+  them the photos too. <em>Take it off my list</em>, at the bottom of one shared with you,
+  takes it off for you alone. Every slideshow opens with <em>Made with It&rsquo;s MY
+  life</em> at the top.</p>
   <p><strong>Your Bluesky photos</strong> is ready-made, first in the list: the photo posts
   from your Bluesky name (Barry&rsquo;s unless you chose another under Settings &rsaquo;
   Home screen), fetched while it plays, so it needs a signal.</p>
@@ -18678,6 +18699,167 @@ function sldSortThemes(){
 }
 const sldNewId = k => k+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
+/* ---------- on every phone and computer, and shared (ML318) ----------
+   Each slideshow's name, who it is shared with, and the list of its photos
+   go online (step 67); the photos never do. Another phone or computer picks
+   out its own copies of the same photos: by name and size, then by when the
+   camera says it was taken, then by name. Anything gone from the list
+   online goes from here too, unless nothing at all came back, which is
+   never taken to mean everything was deleted. */
+let SLD_NET='';            // '' not tried yet, 'ok', 'off' (no signal, or a fault), 'none' (step 67 not run)
+let SLD_SHOWS=new Map();   // slideshow id -> its row online
+let SLD_ROWS=new Map();    // slideshow id -> its photos' rows online
+let SLD_HIDE=[];           // ones shared with you that you took off your list
+const sldRow = id => SLD_SHOWS.get(id)||null;
+const sldMine = t => { const r=sldRow(t.id), by=(r&&r.created_by)||t.by; return !by||by===ME.id; };
+const sldSees = r => !!r&&(r.created_by===ME.id||!!r.share_all||arr(r.shared_with).includes(ME.id));
+const sldCanChange = t => { const r=sldRow(t.id);
+  if(!r) return sldMine(t);
+  return r.created_by===ME.id||(sldSees(r)&&(!!r.edit_all||arr(r.editors).includes(ME.id))); };
+const sldShared = t => { const r=sldRow(t.id); return !!r&&(!!r.share_all||arr(r.shared_with).length>0); };
+function sldWho(t){
+  const r=sldRow(t.id), by=(r&&r.created_by)||t.by, u=USERS.find(x=>x.id===by);
+  return u?personName(u):'someone';
+}
+// Photos in its list online that are not on this phone or computer yet.
+function sldMissing(id){
+  const have=new Set(sldOf(id).map(p=>p.id));
+  return arr(SLD_ROWS.get(id)).filter(r=>!have.has(r.id));
+}
+const sldPhotoRow = p => ({id:p.id, slideshow_id:p.theme, name:String(p.name||'').slice(0,255),
+  size:Number(String(p.src||'').split('|').pop())||null, taken:p.taken?Math.round(p.taken):null,
+  taken_by:['camera','file'].includes(p.takenBy)?p.takenBy:'', w:p.w||null, h:p.h||null, added_by:ME.id});
+// The one in the list this file is, if any.
+function sldMatch(f,tk,miss){
+  const n=String(f.name||'').toLowerCase(), cam=tk&&tk.takenBy==='camera'&&tk.taken?tk.taken:0;
+  return miss.find(r=>r.name===f.name&&Number(r.size)===f.size)
+    || (cam?miss.find(r=>r.taken_by==='camera'&&Number(r.taken)===cam):null)
+    || miss.find(r=>String(r.name||'').toLowerCase()===n
+         &&!(cam&&r.taken_by==='camera'&&r.taken&&Number(r.taken)!==cam))
+    || null;
+}
+async function sldPutTheme(t){ try{ await sldTx('themes','readwrite',s=>s.put(t)); }catch(e){ console.error(e); } }
+async function sldPutPhotos(list){
+  if(!list.length) return;
+  try{ await sldTx('photos','readwrite',s=>{ list.forEach(p=>s.put(p)); }); }catch(e){ console.error(e); }
+}
+// Off this phone or computer only; the list online is not touched.
+async function sldDropPhotosLocal(list){
+  if(!list.length) return;
+  try{ await sldTx('photos','readwrite',s=>{ list.forEach(p=>s.delete(p.id)); }); }
+  catch(e){ console.error(e); return; }
+  const ids=new Set(list.map(p=>p.id));
+  list.forEach(p=>sldForget(p.id));
+  SLD_PHOTOS=SLD_PHOTOS.filter(p=>!ids.has(p.id));
+}
+async function sldDropLocal(t){
+  try{
+    await sldTx(['themes','photos'],'readwrite',(ts,ps)=>{
+      ts.delete(t.id);
+      ps.index('theme').openCursor(IDBKeyRange.only(t.id)).onsuccess=e=>{
+        const c=e.target.result; if(c){ c.delete(); c.continue(); } };
+    });
+  }catch(e){ console.error(e); return false; }
+  sldOf(t.id).forEach(p=>sldForget(p.id));
+  SLD_PHOTOS=SLD_PHOTOS.filter(p=>p.theme!==t.id);
+  SLD_THEMES=SLD_THEMES.filter(x=>x!==t);
+  return true;
+}
+async function sldUpTheme(t){
+  const made=new Date(t.made||Date.now()).toISOString();
+  const {error}=await sb.from('slideshows').insert({id:t.id, created_by:ME.id, name:t.name, made_at:made});
+  if(error){ console.warn('Slideshow online',error); return false; }
+  SLD_SHOWS.set(t.id,{id:t.id, created_by:ME.id, name:t.name, shared_with:[], share_all:false,
+    editors:[], edit_all:false, made_at:made});
+  if(!SLD_ROWS.has(t.id)) SLD_ROWS.set(t.id,[]);
+  t.synced=true; t.by=ME.id; await sldPutTheme(t);
+  return true;
+}
+async function sldUpPhotos(id,list){
+  if(!list.length||SLD_NET!=='ok'||!SLD_SHOWS.has(id)) return false;
+  for(let i=0;i<list.length;i+=200){
+    const part=list.slice(i,i+200), rows=part.map(sldPhotoRow);
+    const {error}=await sb.from('slideshow_photos').upsert(rows,{onConflict:'id', ignoreDuplicates:true});
+    if(error){ console.warn('Slideshow photos online',error); return false; }
+    part.forEach(p=>{ p.synced=true; });
+    await sldPutPhotos(part);
+    const now=new Date().toISOString();
+    SLD_ROWS.set(id, arr(SLD_ROWS.get(id)).concat(rows.map(r=>({...r, added_at:now}))));
+  }
+  return true;
+}
+async function sldFetch(){
+  try{
+    const a=await sb.from('slideshows').select('*');
+    if(a.error) throw a.error;
+    const rows=[];
+    for(let i=0;;i+=1000){
+      const b=await sb.from('slideshow_photos')
+        .select('id,slideshow_id,name,size,taken,taken_by,w,h,added_by,added_at').order('id').range(i,i+999);
+      if(b.error) throw b.error;
+      const got=arr(b.data); rows.push(...got);
+      if(got.length<1000) break;
+    }
+    return {shows:arr(a.data), rows};
+  }catch(e){
+    const none=/does not exist|schema cache|PGRST205|42P01/i.test(String((e&&e.code)||'')+' '+String((e&&e.message)||''));
+    if(!none) console.warn('Slideshows online',e);
+    SLD_NET=none?'none':'off';
+    return null;
+  }
+}
+// Brings this phone or computer into line with the lists online. Says
+// whether anything here changed.
+async function sldSync(){
+  if(!ME||!ME.id||!SLD_OK) return false;
+  const got=await sldFetch(); if(!got) return false;
+  SLD_NET='ok';
+  // Something new in the lists online (a photo added elsewhere, a change to
+  // who it is shared with) changes what is shown, even with nothing to do here.
+  const sig=()=>JSON.stringify([[...SLD_SHOWS.values()].map(r=>[r.id,r.name,!!r.share_all,!!r.edit_all,
+    arr(r.shared_with),arr(r.editors)]), [...SLD_ROWS].map(([k,v])=>[k,v.map(r=>r.id).join()])]);
+  const before=sig();
+  let changed=false;
+  const wary=!got.shows.length&&SLD_THEMES.some(t=>t.synced);
+  if(!wary){
+    SLD_SHOWS=new Map(got.shows.filter(sldSees).map(r=>[r.id,r]));
+    SLD_ROWS=new Map();
+    got.rows.forEach(r=>{ if(!SLD_ROWS.has(r.slideshow_id)) SLD_ROWS.set(r.slideshow_id,[]);
+      SLD_ROWS.get(r.slideshow_id).push(r); });
+  }
+  for(const t of SLD_THEMES.slice()){
+    const r=SLD_SHOWS.get(t.id);
+    if(r&&r.created_by!==ME.id&&SLD_HIDE.includes(t.id)){ if(await sldDropLocal(t)) changed=true; continue; }
+    if(r){
+      if(r.name!==t.name||!t.synced||t.by!==r.created_by){
+        t.name=r.name||t.name; t.synced=true; t.by=r.created_by; await sldPutTheme(t); changed=true; }
+      continue;
+    }
+    if(t.synced){ if(!wary&&await sldDropLocal(t)) changed=true; continue; }   // deleted, or no longer shared with you
+    if(await sldUpTheme(t)) changed=true;                                    // yours, not online yet
+  }
+  for(const r of SLD_SHOWS.values()){
+    if(SLD_THEMES.some(t=>t.id===r.id)) continue;
+    if(r.created_by!==ME.id&&SLD_HIDE.includes(r.id)) continue;
+    const t={id:r.id, name:r.name, made:Date.parse(r.made_at)||Date.now(), synced:true, by:r.created_by};
+    await sldPutTheme(t); SLD_THEMES.push(t); changed=true;
+  }
+  sldSortThemes();
+  for(const t of SLD_THEMES){
+    if(!SLD_SHOWS.has(t.id)) continue;
+    const ids=new Set(arr(SLD_ROWS.get(t.id)).map(r=>r.id)), fix=[], gone=[], up=[];
+    sldOf(t.id).forEach(p=>{
+      if(ids.has(p.id)){ if(!p.synced){ p.synced=true; fix.push(p); } }
+      else if(p.synced){ if(!wary) gone.push(p); }       // taken out somewhere else
+      else up.push(p);                                   // added here, not online yet
+    });
+    if(fix.length){ await sldPutPhotos(fix); changed=true; }
+    if(gone.length){ await sldDropPhotosLocal(gone); changed=true; }
+    if(up.length&&sldCanChange(t)&&await sldUpPhotos(t.id,up)) changed=true;
+  }
+  return changed||sig()!==before;
+}
+
 /* ---------- which way up ---------- */
 // Upright, sideways, or square enough to go in either. One whose shape is
 // not known yet (a Bluesky post that did not say) is tried, and skipped if
@@ -18759,16 +18941,29 @@ async function openSlides(){
   if(!SLD_LOADED) $('sldBody').innerHTML='<p class="empty">Fetching your slideshows…</p>';
   await loadSlides();
   renderSlides(); $('sldBody').scrollTop=0;
+  // Then whatever changed on your other phone or computer, or was shared with you.
+  const was=SLD_NET;
+  if(await sldSync()||was!==SLD_NET) sldRepaint();
+}
+function sldRepaint(){
+  if(!$('sld').classList.contains('hidden')) renderSlides();
+  if(!$('sldTheme').classList.contains('hidden')) renderSlideTheme();
 }
 function renderSlides(){
   const body=$('sldBody'); if(!body) return;
   const pr=sldPrefs(), dev=sldDevice(), h=sldBskyHandle();
-  const row=t=>{ const ps=sldOf(t.id), c=sldCounts(ps), first=ps[ps.length-1];
+  const row=t=>{ const ps=sldOf(t.id), c=sldCounts(ps), first=ps[ps.length-1], m=sldMissing(t.id).length;
+    const lines=[];
+    if(!sldMine(t)) lines.push(`<span>From ${esc(sldWho(t))}</span>`);
+    if(c.n) lines.push(`<span>${c.n} photo${c.n===1?'':'s'}: ${c.up} upright, ${c.side} sideways</span>`);
+    else if(!m) lines.push('<span>No photos yet</span>');
+    if(m) lines.push(`<span class="sldaway">${c.n?`${m} more not on this ${dev} yet`
+      :`${m} photo${m===1?'':'s'}, none on this ${dev} yet`}</span>`);
     return `<div class="sldrow"><button type="button" class="sldgo" data-sldgo="${esc(t.id)}">
       ${first?`<img src="${esc(sldThumb(first))}" alt="">`:'<span class="sldnone" aria-hidden="true">&#128444;&#65039;</span>'}
-      <span class="sldwhat"><b>${esc(t.name)}</b><span>${c.n
-        ?`${c.n} photo${c.n===1?'':'s'}: ${c.up} upright, ${c.side} sideways`:'No photos yet'}</span></span></button>
+      <span class="sldwhat"><b>${esc(t.name)}</b>${lines.join('')}</span></button>
       <button type="button" class="sldph" data-sldopen="${esc(t.id)}">Photos</button></div>`; };
+  const mine=SLD_THEMES.filter(sldMine), theirs=SLD_THEMES.filter(t=>!sldMine(t));
   const bp=SLD_BSKY.handle===h&&SLD_BSKY.list.length?SLD_BSKY.list[0]:null;
   body.innerHTML=`<div class="sldmain">
     ${SLD_OK?'':`<div class="card"><div class="field"><dd style="color:var(--red)">This ${dev}
@@ -18799,12 +18994,16 @@ function renderSlides(){
         ${bp?`<img src="${esc(bp.thumb||bp.url)}" alt="">`:'<span class="sldnone" aria-hidden="true">&#129419;</span>'}
         <span class="sldwhat"><b>Your Bluesky photos</b><span>Photo posts from @${esc(h)}, fetched
           while it plays, so it needs a signal</span></span></button></div>
-      ${SLD_THEMES.map(row).join('')}</div>
-    ${SLD_THEMES.length?'':`<p class="coords sldhow">None of your own yet. Press the red + to start
+      ${mine.map(row).join('')}</div>
+    ${mine.length?'':`<p class="coords sldhow">None of your own yet. Press the red + to start
       one, such as Canals, Scenic or People, then add photos to it.</p>`}
+    ${theirs.length?`<p class="dsec">Shared with you</p>
+    <div class="card">${theirs.map(row).join('')}</div>`:''}
     <p class="coords sldnote">The photos are kept on this ${dev} only, not online, and the
-      ${dev==='phone'?'gallery':'folder'} keeps the originals. For music or a podcast, start it
-      in your own app first, then play a slideshow here: it carries on behind.</p></div>`;
+      ${dev==='phone'?'gallery':'folder'} keeps the originals.${SLD_NET==='none'?'':` Your slideshows
+      are on every phone and computer you sign in on: only their names and lists of photos go online.`}
+      For music or a podcast, start it in your own app first, then play a slideshow here: it
+      carries on behind.</p></div>`;
   body.querySelectorAll('[data-sldgo]').forEach(b=>b.onclick=()=>sldPlay(b.dataset.sldgo));
   body.querySelectorAll('[data-sldopen]').forEach(b=>b.onclick=()=>openSlideTheme(b.dataset.sldopen));
   sldWireSecs(body, renderSlides);
@@ -18844,7 +19043,11 @@ function renderSlideTheme(){
   $('sldThemeTitle').textContent=t.name;
   const ps=sldOf(t.id).sort((a,b)=>(b.added||0)-(a.added||0)), dev=sldDevice();
   const pr=sldPrefs(), undated=ps.filter(p=>!p.taken).length;
+  const mine=sldMine(t), can=sldCanChange(t), miss=sldMissing(t.id), who=esc(sldWho(t)), m=miss.length;
+  $('sldThemeName').hidden=!can;
   $('sldThemeBody').innerHTML=`
+    ${mine?'':`<p class="coords sldfrom">From ${who}. ${can
+      ?'You can change it too: add photos, take them out or rename it.':`Only ${who} can change it.`}</p>`}
     <p class="coords sldhow">To play it, go Back and tap it in the list, where How it plays is too.</p>
     ${pr.order==='date'&&undated?`<p class="coords sldundated">${undated===ps.length
         ?(undated===1?'This one has no date taken yet':'None of these has a date taken yet')
@@ -18852,7 +19055,14 @@ function renderSlideTheme(){
       as ${undated===1?'it was':'they were'} added before the app read dates. Pick
       ${undated===1?'it':'them'} again with Add photos and the dates are filled in; until then
       ${undated===1?'it plays':'they play'} last.</p>`:''}
-    <div class="card"><div class="setadd">
+    ${m?`<div class="card sldmiss"><div class="setadd">
+      <p class="coords" style="margin-top:0"><b>${m} of its photos ${m===1?'is':'are'} not on this
+        ${dev} yet.</b> Copy them here first, by Google Drive or a memory stick (not WhatsApp, which
+        renames and shrinks them). Then pick them, or more: only the ones in this slideshow are kept.</p>
+      <button class="btn" id="sldFind">Find the photos</button>
+      ${dev==='computer'?'<button class="btn" id="sldFindDir">Find them in a folder</button>':''}
+      <p class="coords" id="sldFindBusy" role="status" hidden></p></div></div>`:''}
+    ${can?`<div class="card"><div class="setadd">
       <button class="btn" id="sldPick" style="border:1.5px solid var(--rule)">Add photos</button>
       ${dev==='computer'?`<button class="btn" id="sldFolder"
         style="border:1.5px solid var(--rule);margin-top:8px">Add a whole folder</button>`:''}
@@ -18861,24 +19071,72 @@ function renderSlideTheme(){
         :'Pick photos, or a whole folder of them.'} A copy of each is kept on this ${dev}
         for the slideshow; the originals stay where they are. Upright and sideways are
         sorted out for you.</p>
-      <p class="coords" id="sldBusy" role="status" hidden></p></div></div>
-    ${ps.length?`<p class="dsec">${ps.length} photo${ps.length===1?'':'s'}, newest first:
-        tap one to take it out</p>
-      <div class="sldgrid">${ps.map(p=>`<button class="sldth" data-sldph="${esc(p.id)}"
-        aria-label="Take this photo out"><img src="${esc(sldThumb(p))}" alt="" loading="lazy"></button>`).join('')}</div>`
-     :'<p class="empty">No photos in it yet.</p>'}
-    <button class="btn danger" id="sldDrop" style="margin-top:18px">Delete this slideshow</button>`;
+      <p class="coords" id="sldBusy" role="status" hidden></p></div></div>`:''}
+    ${ps.length?`<p class="dsec">${ps.length} photo${ps.length===1?'':'s'}${m?` on this ${dev}`:''}, newest first${
+        can?': tap one to take it out':''}</p>
+      <div class="sldgrid">${ps.map(p=>can?`<button class="sldth" data-sldph="${esc(p.id)}"
+        aria-label="Take this photo out"><img src="${esc(sldThumb(p))}" alt="" loading="lazy"></button>`
+        :`<span class="sldth"><img src="${esc(sldThumb(p))}" alt="" loading="lazy"></span>`).join('')}</div>`
+     :m?'':'<p class="empty">No photos in it yet.</p>'}
+    ${mine?sldShareHtml(t):''}
+    <button class="btn danger" id="sldDrop" style="margin-top:18px">${mine?'Delete this slideshow':'Take it off my list'}</button>`;
   const body=$('sldThemeBody');
-  $('sldPick').onclick=()=>sldChoose(false);
+  const pick=$('sldPick'); if(pick) pick.onclick=()=>sldChoose(false);
   const fo=$('sldFolder'); if(fo) fo.onclick=()=>sldChoose(true);
+  const fd=$('sldFind'); if(fd) fd.onclick=()=>sldChoose(false,true);
+  const fdd=$('sldFindDir'); if(fdd) fdd.onclick=()=>sldChoose(true,true);
   body.querySelectorAll('[data-sldph]').forEach(b=>b.onclick=()=>sldDropPhoto(b.dataset.sldph));
   $('sldDrop').onclick=sldDropTheme;
+  const all=$('sldAll'); if(all) all.onchange=()=>sldShareSet({share_all:all.checked});
+  body.querySelectorAll('[data-sldwho]').forEach(b=>b.onchange=()=>{
+    const r=sldRow(t.id); if(!r) return;
+    const sw=arr(r.shared_with).filter(x=>x!==b.dataset.sldwho); if(b.checked) sw.push(b.dataset.sldwho);
+    sldShareSet({shared_with:sw, editors:arr(r.editors).filter(x=>sw.includes(x))}); });
+  const ea=$('sldEditAll'); if(ea) ea.onchange=()=>sldShareSet({edit_all:ea.checked});
+  body.querySelectorAll('[data-sldedit]').forEach(b=>b.onchange=()=>{
+    const r=sldRow(t.id); if(!r) return;
+    const ed=arr(r.editors).filter(x=>x!==b.dataset.sldedit); if(b.checked) ed.push(b.dataset.sldedit);
+    sldShareSet({editors:ed}); });
 }
-function sldChoose(folder){
+// Who sees it, and who can change it: yours to choose.
+function sldShareHtml(t){
+  const r=sldRow(t.id);
+  if(!r) return SLD_NET==='off'?'<p class="coords sldnote">Sharing it needs a signal.</p>':'';
+  if(!USERS.length) return '';
+  const sw=arr(r.shared_with), ed=arr(r.editors);
+  const seen=r.share_all?USERS:USERS.filter(u=>sw.includes(u.id));
+  return `<p class="dsec">Share with</p>
+    <div class="card"><div class="setadd sldshare">
+      <div class="checks ppl" id="sldWho">
+        <label><input type="checkbox" id="sldAll"${r.share_all?' checked':''}>
+          <span class="pplwho"><b>Everyone</b><small>Anyone who joins later too</small></span></label>
+        ${USERS.map(u=>`<label><input type="checkbox" data-sldwho="${esc(u.id)}"${
+          r.share_all||sw.includes(u.id)?' checked':''}${r.share_all?' disabled':''}> ${pplWho(u)}</label>`).join('')}</div>
+      ${seen.length?`<p class="coords sldcan">Who can change it</p>
+        <div class="checks ppl" id="sldCan">
+          <label><input type="checkbox" id="sldEditAll"${r.edit_all?' checked':''}>
+            <span class="pplwho"><b>Everyone it&rsquo;s shared with</b></span></label>
+          ${seen.map(u=>`<label><input type="checkbox" data-sldedit="${esc(u.id)}"${
+            r.edit_all||ed.includes(u.id)?' checked':''}${r.edit_all?' disabled':''}> ${pplWho(u)}</label>`).join('')}</div>
+        <p class="coords">They can add photos, take photos out and rename it. Only you can delete
+          it or change who it&rsquo;s shared with.</p>
+        <p class="coords">Each of them finds it under Shared with you in their Slideshow and picks out
+          their own copies of the photos, so send them the photos too, by Google Drive or a memory stick.</p>`
+       :`<p class="coords">Only you see it, on each phone or computer you sign in on.</p>`}
+    </div></div>`;
+}
+async function sldShareSet(patch){
+  const t=SLD_THEMES.find(x=>x.id===SLD_CUR), r=t&&sldRow(t.id); if(!r) return;
+  const {error}=await sb.from('slideshows').update(patch).eq('id',r.id);
+  if(error){ console.error(error); toast('Could not save that. Try again when there is a signal'); renderSlideTheme(); return; }
+  Object.assign(r,patch); toast('Saved');
+  renderSlideTheme();
+}
+function sldChoose(folder,find){
   const inp=document.createElement('input');
   inp.type='file'; inp.accept='image/*'; inp.multiple=true;
   if(folder) inp.webkitdirectory=true;
-  inp.onchange=()=>sldAddFiles([...(inp.files||[])]);
+  inp.onchange=()=>(find?sldFindFiles:sldAddFiles)([...(inp.files||[])]);
   inp.click();
 }
 // A copy the size of a big screen, and a little one for the list. The
@@ -18906,8 +19164,8 @@ async function sldAddFiles(files){
   if(!files.length){ toast('No photos in that'); return; }
   // Asked once: keep these even when the phone is short of space.
   try{ if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
-  const have=new Set(sldOf(id).map(p=>p.src));
-  let added=0, same=0, bad=0, dated=0, stuck='';
+  const have=new Set(sldOf(id).map(p=>p.src)), miss=sldMissing(id), fresh=[];
+  let added=0, same=0, bad=0, dated=0, found=0, stuck='';
   const busy=$('sldBusy');
   for(let i=0;i<files.length;i++){
     const f=files[i];
@@ -18927,21 +19185,66 @@ async function sldAddFiles(files){
     let made;
     try{ made=await sldMake(f); }catch(e){ bad++; continue; }
     const tk=await sldTaken(f);
-    const p={id:sldNewId('p'), theme:id, src, name:f.name, w:made.w, h:made.h,
-      img:made.img, thumb:made.thumb, added:Date.now()+i, ...tk};
+    // One already in its list online, missing here: filled in, not added again.
+    const r=sldMatch(f,tk,miss);
+    const p=r?{id:r.id, theme:id, src, name:f.name, w:made.w, h:made.h, img:made.img, thumb:made.thumb,
+        added:Date.parse(r.added_at)||Date.now()+i, ...sldWhen(tk,r), synced:true}
+      :{id:sldNewId('p'), theme:id, src, name:f.name, w:made.w, h:made.h,
+        img:made.img, thumb:made.thumb, added:Date.now()+i, ...tk};
     try{ await sldTx('photos','readwrite',s=>s.put(p)); }
     catch(e){ console.error(e);
       stuck=/quota/i.test(String((e&&e.name)||'')+String((e&&e.message)||''))?'full':'error'; break; }
-    SLD_PHOTOS.push(p); have.add(src); added++;
+    SLD_PHOTOS.push(p); have.add(src);
+    if(r){ miss.splice(miss.indexOf(r),1); found++; } else { fresh.push(p); added++; }
   }
+  if(fresh.length) await sldUpPhotos(id,fresh);
   if(busy) busy.hidden=true;
   const bits=[added+' added'];
+  if(found) bits.push(found+' of the missing ones found');
   if(same) bits.push(same+' already in it');
   if(dated) bits.push('dates found for '+dated);
   if(bad) bits.push(bad+' could not be read');
   toast(stuck==='full'?`This ${sldDevice()} has no room for more. `+bits.join(', ')
     : stuck?'Could not keep the rest. '+bits.join(', ') : bits.join(', '));
   if(SLD_CUR===id&&!$('sldTheme').classList.contains('hidden')) renderSlideTheme();
+}
+// Its date taken: the photo's own, else the one in the list online.
+const sldWhen = (tk,r) => tk.takenBy==='camera'||!r||!r.taken ? tk : {taken:Number(r.taken), takenBy:r.taken_by||''};
+// Copies of photos already in its list, picked on this phone or computer:
+// only the ones that belong are kept.
+async function sldFindFiles(files){
+  const id=SLD_CUR, t=SLD_THEMES.find(x=>x.id===id); if(!t) return;
+  files=files.filter(f=>/^image\//.test(f.type||'')||/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(f.name||''));
+  if(!files.length){ toast('No photos in that'); return; }
+  const miss=sldMissing(id);
+  if(!miss.length){ toast('All its photos are here already'); return; }
+  try{ if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
+  let found=0, other=0, bad=0, stuck='', i=0;
+  const busy=$('sldFindBusy');
+  for(;i<files.length&&miss.length;i++){
+    const f=files[i];
+    if(busy){ busy.hidden=false; busy.textContent=`Looking at ${i+1} of ${files.length}…`; }
+    const tk=await sldTaken(f), r=sldMatch(f,tk,miss);
+    if(!r){ other++; continue; }
+    let made;
+    try{ made=await sldMake(f); }catch(e){ bad++; continue; }
+    const p={id:r.id, theme:id, src:[f.name,f.size].join('|'), name:f.name, w:made.w, h:made.h,
+      img:made.img, thumb:made.thumb, added:Date.parse(r.added_at)||Date.now()+i, ...sldWhen(tk,r), synced:true};
+    try{ await sldTx('photos','readwrite',s=>s.put(p)); }
+    catch(e){ console.error(e);
+      stuck=/quota/i.test(String((e&&e.name)||'')+String((e&&e.message)||''))?'full':'error'; break; }
+    SLD_PHOTOS.push(p); miss.splice(miss.indexOf(r),1); found++;
+  }
+  if(!stuck) other+=files.length-i;
+  if(busy) busy.hidden=true;
+  const bits=[found+' found'];
+  if(other) bits.push(other+' not in this slideshow');
+  if(bad) bits.push(bad+' could not be read');
+  const left=miss.length?`${miss.length} still to find`:'all of them here now';
+  toast(stuck==='full'?`This ${sldDevice()} has no room for more. `+bits.join(', ')
+    : stuck?'Could not keep the rest. '+bits.join(', ') : bits.join(', ')+'; '+left);
+  if(SLD_CUR===id&&!$('sldTheme').classList.contains('hidden')) renderSlideTheme();
+  if(!$('sld').classList.contains('hidden')) renderSlides();
 }
 async function sldNew(){
   const n=(prompt('What is the new slideshow called?\n\nCanals, Scenic, People, whatever suits.')||'').trim().slice(0,60);
@@ -18950,21 +19253,37 @@ async function sldNew(){
   const t={id:sldNewId('t'), name:n, made:Date.now()};
   try{ await sldTx('themes','readwrite',s=>s.put(t)); }
   catch(e){ console.error(e); toast('Could not start it'); return; }
-  SLD_THEMES.push(t); sldSortThemes(); renderSlides();
+  SLD_THEMES.push(t); sldSortThemes();
+  if(SLD_NET==='ok') await sldUpTheme(t);        // otherwise next time the Slideshow opens
+  renderSlides();
   openSlideTheme(t.id);
 }
 async function sldRename(){
-  const t=SLD_THEMES.find(x=>x.id===SLD_CUR); if(!t) return;
+  const t=SLD_THEMES.find(x=>x.id===SLD_CUR); if(!t||!sldCanChange(t)) return;
   const n=(prompt('Call this slideshow:',t.name)||'').trim().slice(0,60);
   if(!n||n===t.name) return;
   if(SLD_THEMES.some(x=>x!==t&&x.name.toLowerCase()===n.toLowerCase())){ toast('You already have one called '+n); return; }
+  if(t.synced){
+    if(SLD_NET!=='ok'||!SLD_SHOWS.has(t.id)){ toast('Renaming it needs a signal'); return; }
+    const {error}=await sb.from('slideshows').update({name:n}).eq('id',t.id);
+    if(error){ console.error(error); toast('Could not rename it'); return; }
+    SLD_SHOWS.get(t.id).name=n;
+  }
   try{ await sldTx('themes','readwrite',s=>s.put({...t,name:n})); }
   catch(e){ console.error(e); toast('Could not rename it'); return; }
   t.name=n; sldSortThemes(); renderSlideTheme(); renderSlides();
 }
 async function sldDropPhoto(pid){
-  const p=SLD_PHOTOS.find(x=>x.id===pid), t=p&&SLD_THEMES.find(x=>x.id===p.theme); if(!p) return;
-  if(!confirm('Take this photo out of '+(t?t.name:'this slideshow')+'? The original stays where it is.')) return;
+  const p=SLD_PHOTOS.find(x=>x.id===pid), t=p&&SLD_THEMES.find(x=>x.id===p.theme); if(!p||!t||!sldCanChange(t)) return;
+  const on=!!p.synced;
+  if(on&&(SLD_NET!=='ok'||!SLD_SHOWS.has(t.id))){ toast('Taking it out needs a signal'); return; }
+  if(!confirm('Take this photo out of '+t.name+'?'+(on?' It goes from it on every phone and computer'
+    +(sldShared(t)?', and for everyone it is shared with':'')+'.':'')+' The original stays where it is.')) return;
+  if(on){
+    const {error}=await sb.from('slideshow_photos').delete().eq('id',pid);
+    if(error){ console.error(error); toast('Could not take it out'); return; }
+    SLD_ROWS.set(t.id, arr(SLD_ROWS.get(t.id)).filter(r=>r.id!==pid));
+  }
   try{ await sldTx('photos','readwrite',s=>s.delete(pid)); }
   catch(e){ console.error(e); toast('Could not take it out'); return; }
   SLD_PHOTOS=SLD_PHOTOS.filter(x=>x.id!==pid); sldForget(pid);
@@ -18972,21 +19291,28 @@ async function sldDropPhoto(pid){
 }
 async function sldDropTheme(){
   const t=SLD_THEMES.find(x=>x.id===SLD_CUR); if(!t) return;
-  const n=sldOf(t.id).length;
-  if(!confirm(`Delete ${t.name}${n?` and its ${n} photo${n===1?'':'s'}`:''} from this ${sldDevice()}?`
-    +' The originals stay where they are.')) return;
-  try{
-    await sldTx(['themes','photos'],'readwrite',(ts,ps)=>{
-      ts.delete(t.id);
-      ps.index('theme').openCursor(IDBKeyRange.only(t.id)).onsuccess=e=>{
-        const c=e.target.result; if(c){ c.delete(); c.continue(); } };
-    });
-  }catch(e){ console.error(e); toast('Could not delete it'); return; }
-  sldOf(t.id).forEach(p=>sldForget(p.id));
-  SLD_PHOTOS=SLD_PHOTOS.filter(p=>p.theme!==t.id);
-  SLD_THEMES=SLD_THEMES.filter(x=>x!==t);
-  SLD_CUR=null; $('sldTheme').classList.add('hidden'); lockBackground();
-  renderSlides(); toast(t.name+' deleted');
+  const dev=sldDevice(), close=()=>{ SLD_CUR=null; $('sldTheme').classList.add('hidden'); lockBackground(); renderSlides(); };
+  // One shared with you: off your own list, and its copies off this phone.
+  if(!sldMine(t)){
+    if(!confirm(`Take ${t.name} off your list? Its copies of the photos go from this ${dev} too. `
+      +`${sldWho(t)} still has it.`)) return;
+    SLD_HIDE=[...new Set(SLD_HIDE.concat(t.id))]; saveTiles();
+    if(!await sldDropLocal(t)){ toast('Could not take it off'); return; }
+    close(); toast(t.name+' taken off your list'); return;
+  }
+  const on=!!t.synced, n=sldOf(t.id).length;
+  if(on&&(SLD_NET!=='ok'||!SLD_SHOWS.has(t.id))){ toast('Deleting it needs a signal, so it goes from every phone and computer'); return; }
+  if(!confirm(on?`Delete ${t.name}? It goes from every phone and computer you use${
+      sldShared(t)?', and from everyone you shared it with':''}. The originals stay where they are.`
+    :`Delete ${t.name}${n?` and its ${n} photo${n===1?'':'s'}`:''} from this ${dev}?`
+      +' The originals stay where they are.')) return;
+  if(on){
+    const {error}=await sb.from('slideshows').delete().eq('id',t.id);
+    if(error){ console.error(error); toast('Could not delete it'); return; }
+    SLD_SHOWS.delete(t.id); SLD_ROWS.delete(t.id);
+  }
+  if(!await sldDropLocal(t)){ toast('Could not delete it'); return; }
+  close(); toast(t.name+' deleted');
 }
 
 /* ---------- Bluesky ---------- */
@@ -19054,7 +19380,9 @@ async function sldPlay(from,shape){
   let list=[];
   if(!bsky){
     list=sldOf(from).filter(p=>sldFits(p,shape));
-    if(!list.length){ toast(shape==='both'?`No photos in ${t.name} yet`:`No ${sldWord(shape)} photos in ${t.name} yet`); return; }
+    if(!list.length){ toast(!sldOf(from).length&&sldMissing(from).length
+      ?`None of the photos in ${t.name} are on this ${sldDevice()} yet. Tap Photos beside it, then Find the photos`
+      :shape==='both'?`No photos in ${t.name} yet`:`No ${sldWord(shape)} photos in ${t.name} yet`); return; }
   }
   const title=bsky?'Your Bluesky photos':t.name;
   const box=document.createElement('div');
@@ -19062,7 +19390,7 @@ async function sldPlay(from,shape){
   box.setAttribute('role','dialog'); box.setAttribute('aria-label','Slideshow: '+title);
   box.innerHTML=`<div class="sldstage" id="sldStage">
       <img class="sldimg" alt=""><img class="sldimg" alt="">
-      <div class="sldintro" id="sldIntro"><img id="sldIpic" alt="">
+      <div class="sldintro" id="sldIntro"><p class="sldimade">Made with It&rsquo;s MY life</p><img id="sldIpic" alt="">
         <h2>${esc(title)}</h2><p class="sldidates" id="sldIdates"></p><p class="sldidet" id="sldIdet"></p>
         <p class="sldihow">${sldDevice()==='phone'
           ?'Tap or swipe at the sides for back and next &middot; tap the middle for the buttons &middot; Back to finish'
@@ -19487,6 +19815,7 @@ function loadTiles(){
   LINK_PREFS = linkPrefsFrom(saved);
   RCP_PREFS = rcpPrefsFrom(saved);
   NOT_SAME = arr(saved&&saved.notsame).filter(x=>typeof x==='string');
+  SLD_HIDE = arr(saved&&saved.sldhide).filter(x=>typeof x==='string');
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -19505,7 +19834,7 @@ function loadTiles(){
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, wxoff:WX_OFF, menuof:MENU_OF, links:LINK_PREFS,
-              recipes:RCP_PREFS, notsame:NOT_SAME,
+              recipes:RCP_PREFS, notsame:NOT_SAME, sldhide:SLD_HIDE,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
@@ -19647,7 +19976,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.6';
+const APP_VERSION='2026.11.20.7';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

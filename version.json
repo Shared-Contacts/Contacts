@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.20.3",
+  "version": "2026.11.20.4",
   "history": [
+    {
+      "version": "2026.11.20.4",
+      "changes": [
+        "Slideshow: the title at the start stays about 10 seconds, long enough for Chrome's message to go before the first photo.",
+        "Slideshow: the buttons are back. They show over the title and go when the photos start; tap the middle to bring them back.",
+        "Slideshow: the first page is centred, with the seconds as numbers in circles and Upright, Sideways and Both on one line."
+      ]
+    },
     {
       "version": "2026.11.20.3",
       "changes": [

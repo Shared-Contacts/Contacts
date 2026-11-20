@@ -1220,6 +1220,14 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .sldph{flex:0 0 auto;min-height:40px;padding:0 14px;border:1.5px solid var(--rule);border-radius:999px;
   font-weight:600;font-size:15px;color:inherit}
 .sldhow{margin:2px 4px 14px}
+/* The first page centred (ML337), and the seconds as numbers in circles (ML336) */
+.sldmain .dsec,.sldmain .setadd,.sldmain .sldhow,.sldmain .sldnote{text-align:center}
+.sldmain .setadd .pickrow{justify-content:center}
+.pickrow.sldsecs{gap:12px}
+.pickrow.sldshape{gap:6px}
+.pickrow.sldshape button{padding:9px 12px}
+.pickrow.sldsecs button{width:50px;height:50px;padding:0;border-radius:50%;font-size:18px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center}
 .sldundated{margin:-4px 2px 12px}
 .sldplay.fill .sldimg.whole{object-fit:contain}
 .sldgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
@@ -1229,7 +1237,7 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 
 .sldplay{position:fixed;inset:0;z-index:120;background:#000;color:#fff;overflow:hidden;
   -webkit-user-select:none;user-select:none;touch-action:none}
-.sldstage{position:absolute;inset:0}
+.sldstage{position:absolute;inset:0;container-type:size}
 @media (orientation:portrait){
   .sldplay.side .sldstage{inset:auto;top:0;left:100vw;width:var(--vh,100dvh);height:100vw;
     transform-origin:0 0;transform:rotate(90deg)}
@@ -1240,21 +1248,44 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .sldimg.on{opacity:1}
 .sldsay{position:absolute;left:16px;right:16px;top:44%;margin:0;text-align:center;font-size:17px}
 .sldsay:empty{display:none}
-/* The title at the start (ML331): up while the phone shows, and then puts
-   away, its own message about full screen; then just the photos. */
+/* The title at the start (ML331, ML334): up while the phone shows, and then
+   puts away, its own message about full screen, with the buttons over it
+   (ML335); then just the photos. */
 .sldintro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:6px;padding:24px 20px 64px;text-align:center;background:#000;transition:opacity .8s ease}
+  gap:6px;padding:calc(64px + env(safe-area-inset-top)) 20px calc(96px + env(safe-area-inset-bottom));
+  text-align:center;background:#000;transition:opacity .8s ease}
 .sldintro.gone{opacity:0;pointer-events:none}
-.sldintro img{width:min(46vmin,240px);height:min(46vmin,240px);object-fit:cover;border-radius:14px;margin-bottom:14px;background:#1a1a1a}
+.sldintro img{width:min(46cqmin,240px);height:min(46cqmin,240px);object-fit:cover;border-radius:14px;margin-bottom:14px;background:#1a1a1a}
 .sldintro img:not([src]){visibility:hidden}
 .sldintro h2{margin:0;font-size:30px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
 .sldidates{margin:0;font-size:18px;opacity:.92}
 .sldidates:empty{display:none}
 .sldidet{margin:4px 0 0;font-size:16px;opacity:.8}
-.sldihow{position:absolute;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));margin:0;font-size:14px;opacity:.6}
-.sldpaused{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);
-  max-width:calc(100% - 32px);margin:0;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.55);
-  font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sldihow{margin:14px 0 0;max-width:34em;font-size:14px;opacity:.6}
+/* A short screen (a phone on its side): a smaller title, clear of the buttons */
+@container (max-height:520px){
+  .sldintro{gap:4px;padding-top:56px;padding-bottom:84px}
+  .sldintro img{width:min(26cqmin,140px);height:min(26cqmin,140px);margin-bottom:8px}
+  .sldintro h2{font-size:24px}
+  .sldihow{margin-top:8px}
+}
+/* The buttons (ML335) */
+.sldctl{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
+.sldctl.on{opacity:1}
+.sldctl.on button{pointer-events:auto}
+.sldtop{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;
+  padding:calc(8px + env(safe-area-inset-top)) 8px 22px 16px;background:linear-gradient(rgba(0,0,0,.65),transparent)}
+.sldtitle{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sldtitle small{font-weight:400;font-size:15px;opacity:.9}
+.sldcount{flex:0 0 auto;font-size:15px;opacity:.9}
+.sldplay.intro .sldtitle,.sldplay.intro .sldcount{visibility:hidden}
+.sldx{flex:0 0 auto;color:#fff;font-size:34px;line-height:1;padding:4px 10px}
+.sldbtm{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;align-items:center;
+  gap:10px;padding:22px 8px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.sldbtm button{color:#fff;min-width:48px;min-height:48px;border-radius:999px;background:rgba(255,255,255,.16);
+  display:inline-flex;align-items:center;justify-content:center;padding:0 12px;font-size:15px;font-weight:700}
+.sldbtm svg{width:24px;height:24px}
 
 /* Accounts gathered under the bank they belong to */
 .accgrp>summary{display:flex;align-items:baseline;gap:10px;
@@ -6056,23 +6087,27 @@ function openHelp(where){
   <p><strong>Your Bluesky photos</strong> is ready-made, first in the list: the photo posts
   from your Bluesky name (Barry&rsquo;s unless you chose another under Settings &rsaquo;
   Home screen), fetched while it plays, so it needs a signal.</p>
-  <p><strong>How it plays</strong> is at the top of the Slideshow, for every slideshow: how
-  long each photo shows (5, 8, 15 or 30 seconds); the whole photo, or <em>Fill the
-  screen</em> (which trims the edges off a photo a different shape from the screen); the
-  order; and which way. <em>Upright</em> or <em>Sideways</em> turns the screen to suit and
-  plays only the photos that way round. <em>Both ways</em> plays them all, which suits a
-  laptop; on a phone, one the other shape from the screen is shown whole.</p>
+  <p><strong>How it plays</strong> is at the top of the Slideshow, for every slideshow:
+  <em>Seconds slide shows for</em>, how long each photo shows (5, 8, 15 or 30 seconds); the
+  whole photo, or <em>Fill the screen</em> (which trims the edges off a photo a different
+  shape from the screen); the order; and <em>Which Slideshow Images to view</em>.
+  <em>Upright</em> or <em>Sideways</em> turns the screen to suit and plays only the photos
+  that way round. <em>Both</em> plays them all, which suits a laptop; on a phone, one the
+  other shape from the screen is shown whole.</p>
   <p><strong>In what order:</strong> at random, or by <em>Date taken</em>, oldest first. The
   date comes from the camera&rsquo;s own note inside the photo, or failing that the
   file&rsquo;s date; a Bluesky photo has the date it was posted. Photos added before the app
   read dates have none: pick them again with <em>Add photos</em> and their dates are filled
   in (nothing is added twice).</p>
-  <p><strong>Playing:</strong> tap a slideshow in the list. It opens with a title for a few
-  seconds (its name, when the photos were taken, how it will play and a small photo from
-  it) while the phone shows and puts away its own message about full screen. Then just the
-  photos, with nothing on top. Tap or swipe at either side to go back or on. Tap the middle
-  to pause, and a line shows where you are and when the photo was taken; tap again to carry
-  on. The phone&rsquo;s Back ends it (on a computer, Esc).</p>
+  <p><strong>Playing:</strong> tap a slideshow in the list. It opens with a title for about
+  10 seconds (its name, when the photos were taken, how it will play and a small photo from
+  it) while the phone shows and puts away its own message about full screen. The buttons
+  are on the title too; when the first photo comes they go, leaving just the photos. Tap or
+  swipe at either side to go back or on. Tap the middle to bring the buttons back for a few
+  seconds: back, pause, next, the seconds (8 sec) and <em>Fill</em> or <em>Whole
+  photo</em>, with the name, the date taken and where you are along the top. They stay
+  while it is paused. The &times; or the phone&rsquo;s Back ends it (on a computer, Esc;
+  the arrow keys and the space bar work too).</p>
   <p><strong>Music or a podcast:</strong> start it in your own app first (Spotify, BBC
   Sounds, a podcast app or the radio), then play a slideshow. It carries on behind, and
   you control it in that app as usual.</p>
@@ -18683,14 +18718,14 @@ function renderSlides(){
         ?`${c.n} photo${c.n===1?'':'s'}: ${c.up} upright, ${c.side} sideways`:'No photos yet'}</span></span></button>
       <button type="button" class="sldph" data-sldopen="${esc(t.id)}">Photos</button></div>`; };
   const bp=SLD_BSKY.handle===h&&SLD_BSKY.list.length?SLD_BSKY.list[0]:null;
-  body.innerHTML=`
+  body.innerHTML=`<div class="sldmain">
     ${SLD_OK?'':`<div class="card"><div class="field"><dd style="color:var(--red)">This ${dev}
       would not open the place it keeps the Slideshow's photos. Close the app and open it
       again; if it still says this, tell the Code tab.</dd></div></div>`}
     <p class="dsec">How it plays</p>
     <div class="card"><div class="setadd">
-      <p class="coords" style="margin-top:0">Each photo shows for</p>
-      ${sldSecsRow(pr,'seconds')}
+      <p class="coords" style="margin-top:0">Seconds slide shows for</p>
+      ${sldSecsRow(pr)}
       <p class="coords" style="margin-top:14px">Each photo</p>
       <div class="pickrow"><button type="button" data-sldfill="0" aria-pressed="${!pr.fill}">Whole photo</button>
         <button type="button" data-sldfill="1" aria-pressed="${pr.fill}">Fill the screen</button></div>
@@ -18698,15 +18733,15 @@ function renderSlides(){
         from the screen. Whole photo leaves a black border instead.</p>
       <p class="coords" style="margin-top:14px">In what order</p>
       ${sldOrderRow(pr)}
-      <p class="coords" style="margin-top:14px">Which way</p>
+      <p class="coords" style="margin-top:14px">Which Slideshow Images to view</p>
       ${sldShapeRow(pr)}
       <p class="coords">${dev==='phone'
-        ?'Upright or Sideways turns the screen to suit and plays only the photos that way round. Both ways plays them all, and leaves the phone free to turn.'
-        :'Upright or Sideways plays only the photos that way round. Both ways plays them all.'}</p></div></div>
-    <p class="coords sldhow">Tap a slideshow to start it. It opens with its name for a few
-      seconds, then just the photos. ${dev==='phone'
-        ?'Tap or swipe at either side to go back or on, tap the middle to pause, and press the phone&rsquo;s Back to finish.'
-        :'Click either side or use the arrow keys to go back or on, click the middle or press the space bar to pause, and press Esc to finish.'}</p>
+        ?'Upright or Sideways turns the screen to suit and plays only the photos that way round. Both plays them all, and leaves the phone free to turn.'
+        :'Upright or Sideways plays only the photos that way round. Both plays them all.'}</p></div></div>
+    <p class="coords sldhow">Tap a slideshow to start it. It opens with its name and the
+      buttons for about 10 seconds, then just the photos. ${dev==='phone'
+        ?'Tap or swipe at either side to go back or on, tap the middle for the buttons (pause and the rest), and press the phone&rsquo;s Back to finish.'
+        :'Click either side or use the arrow keys to go back or on, click the middle for the buttons, press the space bar to pause, and press Esc to finish.'}</p>
     <p class="dsec">Your slideshows</p>
     <div class="card"><div class="sldrow"><button type="button" class="sldgo" data-sldgo="bsky">
         ${bp?`<img src="${esc(bp.thumb||bp.url)}" alt="">`:'<span class="sldnone" aria-hidden="true">&#129419;</span>'}
@@ -18717,7 +18752,7 @@ function renderSlides(){
       one, such as Canals, Scenic or People, then add photos to it.</p>`}
     <p class="coords sldnote">The photos are kept on this ${dev} only, not online, and the
       ${dev==='phone'?'gallery':'folder'} keeps the originals. For music or a podcast, start it
-      in your own app first, then play a slideshow here: it carries on behind.</p>`;
+      in your own app first, then play a slideshow here: it carries on behind.</p></div>`;
   body.querySelectorAll('[data-sldgo]').forEach(b=>b.onclick=()=>sldPlay(b.dataset.sldgo));
   body.querySelectorAll('[data-sldopen]').forEach(b=>b.onclick=()=>openSlideTheme(b.dataset.sldopen));
   sldWireSecs(body, renderSlides);
@@ -18726,8 +18761,8 @@ function renderSlides(){
   sldWireOrder(body, renderSlides);
   sldWireShape(body, renderSlides);
 }
-const sldSecsRow = (pr, word) => `<div class="pickrow">${SLD_SECS.map(s=>`<button type="button"
-    data-sldsecs="${s}" aria-pressed="${pr.secs===s}">${s} ${word}</button>`).join('')}</div>`;
+const sldSecsRow = pr => `<div class="pickrow sldsecs">${SLD_SECS.map(s=>`<button type="button"
+    data-sldsecs="${s}" aria-pressed="${pr.secs===s}" aria-label="${s} seconds">${s}</button>`).join('')}</div>`;
 function sldWireSecs(root, again){
   root.querySelectorAll('[data-sldsecs]').forEach(b=>b.onclick=()=>{
     sldSavePrefs({...sldPrefs(), secs:Number(b.dataset.sldsecs)}); again(); });
@@ -18735,8 +18770,8 @@ function sldWireSecs(root, again){
 const sldOrderRow = pr => `<div class="pickrow"><button type="button" data-sldorder="random"
     aria-pressed="${pr.order==='random'}">Random</button>
   <button type="button" data-sldorder="date" aria-pressed="${pr.order==='date'}">Date taken</button></div>`;
-const sldShapeRow = pr => `<div class="pickrow">${['up','side','both'].map(x=>`<button type="button"
-    data-sldshape="${x}" aria-pressed="${pr.shape===x}">${x==='up'?'Upright':x==='side'?'Sideways':'Both ways'}</button>`).join('')}</div>`;
+const sldShapeRow = pr => `<div class="pickrow sldshape">${['up','side','both'].map(x=>`<button type="button"
+    data-sldshape="${x}" aria-pressed="${pr.shape===x}">${x==='up'?'Upright':x==='side'?'Sideways':'Both'}</button>`).join('')}</div>`;
 function sldWireShape(root, again){
   root.querySelectorAll('[data-sldshape]').forEach(b=>b.onclick=()=>{
     sldSavePrefs({...sldPrefs(), shape:b.dataset.sldshape}); again(); });
@@ -18945,8 +18980,14 @@ async function sldLoadBsky(){
 
 /* ---------- playing ---------- */
 // The title stays this long: long enough for the phone's own message about
-// full screen, and its buttons, to come and go before the first photo.
-const SLD_INTRO=6000;
+// full screen, and its buttons, to come and go before the first photo. On
+// Barry's phone the message takes about 9 seconds (ML334).
+const SLD_INTRO=11000;
+const SLD_ICON={
+  prev:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2.4v14H6zM20 5v14L9.6 12z"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM4 5l10.4 7L4 19z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15L19.5 12z"/></svg>'};
 function sldShuffle(list){
   const a=list.slice();
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
@@ -18965,21 +19006,31 @@ async function sldPlay(from,shape){
   }
   const title=bsky?'Your Bluesky photos':t.name;
   const box=document.createElement('div');
-  box.id='sldPlay'; box.className='sldplay '+shape+(pr.fill?' fill':'');
+  box.id='sldPlay'; box.className='sldplay intro '+shape+(pr.fill?' fill':'');
   box.setAttribute('role','dialog'); box.setAttribute('aria-label','Slideshow: '+title);
   box.innerHTML=`<div class="sldstage" id="sldStage">
       <img class="sldimg" alt=""><img class="sldimg" alt="">
       <div class="sldintro" id="sldIntro"><img id="sldIpic" alt="">
         <h2>${esc(title)}</h2><p class="sldidates" id="sldIdates"></p><p class="sldidet" id="sldIdet"></p>
         <p class="sldihow">${sldDevice()==='phone'
-          ?'Tap or swipe at the sides for back and next &middot; tap the middle to pause &middot; Back to finish'
-          :'Arrow keys or click the sides for back and next &middot; space or click the middle to pause &middot; Esc to finish'}</p></div>
+          ?'Tap or swipe at the sides for back and next &middot; tap the middle for the buttons &middot; Back to finish'
+          :'Arrow keys or click the sides for back and next &middot; click the middle for the buttons, space to pause &middot; Esc to finish'}</p></div>
       <p class="sldsay" id="sldSay"></p>
-      <p class="sldpaused" id="sldPaused" hidden></p></div>`;
+      <div class="sldctl" id="sldCtl">
+        <div class="sldtop"><span class="sldtitle">${esc(title)}<small id="sldWhen"></small></span>
+          <span class="sldcount" id="sldCount"></span>
+          <button type="button" class="sldx" id="sldClose" aria-label="Close the slideshow">&times;</button></div>
+        <div class="sldbtm">
+          <button type="button" id="sldSecs" aria-label="How long each photo shows"></button>
+          <button type="button" id="sldPrev" aria-label="Back one">${SLD_ICON.prev}</button>
+          <button type="button" id="sldPause" aria-label="Pause"></button>
+          <button type="button" id="sldNext" aria-label="Next one">${SLD_ICON.next}</button>
+          <button type="button" id="sldFill"></button></div></div></div>`;
   document.body.appendChild(box);
   const s=SLD={from, shape, title, order:pr.order, list:[], i:-1, secs:pr.secs, fill:pr.fill, paused:false,
-       timer:null, intro:true, introTimer:null, introAt:Date.now(), held:['',''], front:1, wake:null, fs:false, turn:0};
-  sldWireCtl(box);
+       timer:null, ctlTimer:null, changed:false, intro:true, introTimer:null, introAt:Date.now(),
+       held:['',''], front:1, wake:null, fs:false, turn:0};
+  sldWireCtl(box); sldPaintCtl(); sldCtl(true);    // the buttons, over the title
   if(bsky) $('sldIdet').textContent='Fetching your photo posts\u2026';
   else sldSetList(list);
   await sldFull();                       // at once, while the tap still counts
@@ -19008,7 +19059,12 @@ function sldSetList(list){
   if(im&&pic){ const u=pic.url?(pic.thumb||pic.url):sldThumb(pic); if(u) im.src=u; }   // a Bluesky one has addresses; yours, a stored copy
   const span=sldSpan(s.list);
   $('sldIdates').textContent=span?(s.from==='bsky'?'Posted ':'Taken ')+span:'';
-  $('sldIdet').textContent=`${n} photo${n===1?'':'s'} \u00b7 ${sldWord(s.shape)} \u00b7 ${s.secs} seconds each \u00b7 `
+  sldPaintIntro(); sldPaintCtl();
+}
+function sldPaintIntro(){
+  const s=SLD, el=$('sldIdet'); if(!s||!el||!s.list.length) return;
+  const n=s.list.length;
+  el.textContent=`${n} photo${n===1?'':'s'} \u00b7 ${sldWord(s.shape)} \u00b7 ${s.secs} seconds each \u00b7 `
     +(s.order==='date'?'oldest first':'in random order');
 }
 // "June 2019", "March to June 2019" or "June 2010 to May 2024".
@@ -19020,11 +19076,14 @@ function sldSpan(list){
   if(y(a)===y(b)) return m(a)===m(b)?`${m(a)} ${y(a)}`:`${m(a)} to ${m(b)} ${y(a)}`;
   return `${m(a)} ${y(a)} to ${m(b)} ${y(b)}`;
 }
-// The title goes and the first photo comes.
+// The title goes and the first photo comes, and with it the buttons go
+// (unless it was paused on the title).
 function sldBegin(s){
   if(SLD!==s||!s.intro||!s.list.length) return;
   clearTimeout(s.introTimer); s.intro=false;
   const it=$('sldIntro'); if(it) it.classList.add('gone');
+  const box=$('sldPlay'); if(box) box.classList.remove('intro');
+  sldCtl(s.paused);
   sldShow(1);
 }
 // Full screen, turned to match, and the screen kept on. Each may be refused
@@ -19097,7 +19156,7 @@ async function sldShow(step){
       s.held[back]=p.url?'':url; s.front=back;
       if(was) setTimeout(()=>{ try{ URL.revokeObjectURL(was); }catch(e){} },1500);
       $('sldSay').textContent='';
-      sldPaintPaused();
+      sldPaintCtl();
       // The next one fetched ahead, so a Bluesky photo is there when wanted.
       const nx=s.list[s.i+1]; if(nx&&nx.url){ const pre=new Image(); pre.src=nx.url; }
       sldSchedule();
@@ -19108,37 +19167,57 @@ async function sldShow(step){
   }
   $('sldSay').textContent=s.from==='bsky'?'The photos would not load. Check the signal and try again.'
     :'The photos would not load.';
-  s.paused=true; sldPaintPaused();
+  s.paused=true; sldPaintCtl(); sldCtl(true);
 }
 function sldSchedule(){
   const s=SLD; if(!s) return;
   clearTimeout(s.timer);
   if(!s.paused) s.timer=setTimeout(()=>sldShow(1), s.secs*1000);
 }
-// No buttons on the photos. While paused, one line: the name, where you
-// are, and when it was taken.
-function sldPaintPaused(){
-  const s=SLD, el=$('sldPaused'); if(!s||!el) return;
-  const say=$('sldSay'), p=s.list[s.i];
-  el.hidden=!s.paused||s.intro||!!(say&&say.textContent);
-  el.textContent=['Paused', s.title, s.list.length&&s.i>=0?(s.i+1)+' of '+s.list.length:'',
-    p&&p.taken&&p.takenBy==='camera'?sldDateWord(p.taken):''].filter(Boolean).join(' \u00b7 ');
+// The buttons (ML335): up over the title, put away when the first photo
+// comes. A tap in the middle brings them back for a few seconds; they stay
+// while it is paused. Along the top: the name, the date taken, where you are.
+function sldPaintCtl(){
+  const s=SLD; if(!s) return;
+  const c=$('sldCount');
+  if(c) c.textContent=(s.paused?'Paused \u00b7 ':'')+(s.list.length&&s.i>=0?(s.i+1)+' of '+s.list.length:'');
+  const p=s.list[s.i], wh=$('sldWhen');
+  if(wh) wh.textContent=p&&p.taken&&p.takenBy==='camera'?' \u00b7 '+sldDateWord(p.taken):'';
+  const pa=$('sldPause');
+  if(pa){ pa.innerHTML=s.paused?SLD_ICON.play:SLD_ICON.pause; pa.setAttribute('aria-label',s.paused?'Play':'Pause'); }
+  const se=$('sldSecs'); if(se) se.textContent=s.secs+' sec';
+  const fi=$('sldFill'); if(fi) fi.textContent=s.fill?'Whole photo':'Fill';
   const box=$('sldPlay'); if(box) box.classList.toggle('fill',s.fill);
 }
+function sldCtl(on){
+  const s=SLD, c=$('sldCtl'); if(!s||!c) return;
+  c.classList.toggle('on',!!on); clearTimeout(s.ctlTimer);
+  if(on&&!s.paused&&!s.intro) s.ctlTimer=setTimeout(()=>{ if(SLD===s) c.classList.remove('on'); },4000);
+}
+// Paused on the title, the first photo comes and stays.
 function sldPause(){
-  const s=SLD; if(!s||s.intro) return;
-  s.paused=!s.paused; sldPaintPaused(); sldSchedule();
+  const s=SLD; if(!s) return;
+  s.paused=!s.paused; sldPaintCtl(); if(!s.intro) sldSchedule(); sldCtl(true);
 }
 function sldWireCtl(box){
-  const stage=$('sldStage');
-  // A tap at either side goes back or on; in the middle, pause and carry on.
+  const stage=$('sldStage'), btn=(id,fn)=>{ $(id).onclick=ev=>{ ev.stopPropagation(); const s=SLD; if(s){ fn(s); sldCtl(true); } }; };
+  // On the title, back or next starts the photos.
+  btn('sldPrev',s=>{ if(s.intro) sldBegin(s); else sldShow(-1); });
+  btn('sldNext',s=>{ if(s.intro) sldBegin(s); else sldShow(1); });
+  btn('sldPause',()=>sldPause());
+  btn('sldSecs',s=>{ s.secs=SLD_SECS[(SLD_SECS.indexOf(s.secs)+1)%SLD_SECS.length]; s.changed=true;
+    sldSavePrefs({...sldPrefs(), secs:s.secs}); sldPaintCtl(); sldPaintIntro(); if(!s.intro) sldSchedule(); });
+  btn('sldFill',s=>{ s.fill=!s.fill; s.changed=true; sldSavePrefs({...sldPrefs(), fill:s.fill}); sldPaintCtl(); });
+  $('sldClose').onclick=ev=>{ ev.stopPropagation(); sldStop(); };
+  // A tap at either side goes back or on; in the middle, the buttons.
   // On the title, a tap at the right (or a swipe on) starts the photos.
   stage.onclick=ev=>{
     const s=SLD; if(!s) return;
     const r=stage.getBoundingClientRect(), side=s.shape==='side'&&r.height>r.width;
     const at=side?(ev.clientY-r.top)/r.height:(ev.clientX-r.left)/r.width;
     if(s.intro){ if(at>0.75) sldBegin(s); return; }
-    if(at<0.25) sldShow(-1); else if(at>0.75) sldShow(1); else sldPause();
+    if(at<0.25) sldShow(-1); else if(at>0.75) sldShow(1);
+    else sldCtl(!$('sldCtl').classList.contains('on'));
   };
   let x0=null, y0=null;
   stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
@@ -19156,12 +19235,14 @@ function sldWireCtl(box){
 function sldStop(){
   const s=SLD; if(!s) return;
   SLD=null;
-  clearTimeout(s.timer); clearTimeout(s.introTimer);
+  clearTimeout(s.timer); clearTimeout(s.introTimer); clearTimeout(s.ctlTimer);
   s.held.forEach(u=>{ if(u) try{ URL.revokeObjectURL(u); }catch(e){} });
   try{ if(s.wake) s.wake.release(); }catch(e){}
   try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
   try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(e){}
   const box=$('sldPlay'); if(box) box.remove();
+  // The seconds or Fill changed on the show: the first page shows it too.
+  if(s.changed&&!$('sld').classList.contains('hidden')) try{ renderSlides(); }catch(e){}
   lockBackground();
 }
 // The phone's Back leaves full screen, and that ends the show.
@@ -19175,8 +19256,8 @@ document.addEventListener('keydown',ev=>{
   const s=SLD; if(!s) return;
   if(ev.key==='Escape'){ sldStop(); return; }
   if(s.intro){ if(ev.key==='ArrowRight'||ev.key===' '){ ev.preventDefault(); sldBegin(s); } return; }
-  if(ev.key==='ArrowRight') sldShow(1);
-  else if(ev.key==='ArrowLeft') sldShow(-1);
+  if(ev.key==='ArrowRight'){ sldShow(1); sldCtl(true); }
+  else if(ev.key==='ArrowLeft'){ sldShow(-1); sldCtl(true); }
   else if(ev.key===' '){ ev.preventDefault(); sldPause(); }
 });
 $('sldAdd').onclick=sldNew;
@@ -19514,7 +19595,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.3';
+const APP_VERSION='2026.11.20.4';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

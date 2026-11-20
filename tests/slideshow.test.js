@@ -4,6 +4,9 @@
 //          on the phone or computer only (the browser's own store, nothing in
 //          Supabase); your Bluesky photo posts are a ready-made one. No sound
 //          of its own: music plays from your own app behind it.
+// Laid out again on 20 Nov 2026 (ML331, version 2026.11.20.3): How it plays
+// at the top of the first page for every slideshow, Bluesky first in the
+// list, a tap on a slideshow plays it, a title first, nothing on the photos.
 // Pretend pictures (plain coloured squares and oblongs) and a pretend
 // Bluesky; nothing goes online.
 const { chromium } = require('playwright');
@@ -52,6 +55,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   const settle = (ms = 300) => p.waitForTimeout(ms);
   await ev(() => { window.__said = []; const t = toast; toast = s => { window.__said.push(s); t(s); }; });
   const said = () => ev(() => window.__said.join(' | '));
+  const begin = async (ms = 700) => { await ev(() => sldBegin(SLD)); await settle(ms); };   // past the title
   const png = async (w, h, c) => Buffer.from(await ev(([w, h, c]) => { const cv = document.createElement('canvas');
     cv.width = w; cv.height = h; const g = cv.getContext('2d'); g.fillStyle = c; g.fillRect(0, 0, w, h);
     return cv.toDataURL('image/png').split(',')[1]; }, [w, h, c]), 'base64');
@@ -91,13 +95,15 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   await settle(500);
   ok('  on the home screen as MY Slideshow, and tapping it opens it', tile && await ev(() => !$('sld').classList.contains('hidden')));
   let txt = await ev(() => $('sldBody').textContent.replace(/\s+/g, ' '));
-  ok('none yet: it says how to start one', /None yet\. Press the red \+ to start one, such as Canals, Scenic or People/.test(txt), txt.slice(0, 200));
-  ok('  the Bluesky one is there from the start, with Barry’s name', /Photo posts from @barryandsandra\.bsky\.social/.test(txt)
-    && await ev(() => !!document.querySelector('[data-sldplay="bsky:up"]') && !!document.querySelector('[data-sldplay="bsky:side"]')));
+  ok('none of your own yet: it says how to start one', /None of your own yet\. Press the red \+ to start one, such as Canals, Scenic or People/.test(txt), txt.slice(0, 200));
+  ok('  the Bluesky one is there from the start, with Barry’s name, and no Photos button', /Your Bluesky photos ?Photo posts from @barryandsandra\.bsky\.social/.test(txt)
+    && await ev(() => !!document.querySelector('[data-sldgo="bsky"]') && !document.querySelector('[data-sldopen]')));
+  ok('How it plays first, then Your slideshows', await ev(() => [...$('sldBody').querySelectorAll('.dsec')].map(x => x.textContent.trim()).join('|')
+    === 'How it plays|Your slideshows'));
   ok('  and it says where the photos are kept, and how music works', /kept on this (phone|computer) only, not online/.test(txt)
     && /start it in your own app first, then play a slideshow here: it carries on behind/.test(txt));
-  ok('the menu: New slideshow, and the Bluesky photos sideways, upright or both ways (ML317)', await ev(() =>
-    areaItems('sld').map(x => x.label).join('|') === 'New slideshow|Play your Bluesky photos sideways|Play your Bluesky photos upright|Play your Bluesky photos both ways'));
+  ok('the menu: New slideshow, and Play your Bluesky photos', await ev(() =>
+    areaItems('sld').map(x => x.label).join('|') === 'New slideshow|Play your Bluesky photos'));
   ok('Help knows where it is', await ev(() => currentScreen() === 'sld' && HELP_AT.sld === 'h-sld'));
 
   // ---------------------------------------------------------------
@@ -112,9 +118,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('  kept in this device’s own store, one for each person', await ev(async () =>
     (await indexedDB.databases()).some(d => d.name === 'myslides-me')));
   txt = await ev(() => $('sldThemeBody').textContent.replace(/\s+/g, ' '));
-  ok('  empty: both Play buttons there but greyed', /No photos in it yet/.test(txt) && await ev(() =>
-    document.querySelector('#sldThemeBody [data-sldplay$=":up"]').disabled
-    && document.querySelector('#sldThemeBody [data-sldplay$=":side"]').disabled));
+  ok('  empty: it says so, and says how to play it once there are some', /No photos in it yet/.test(txt)
+    && /To play it, go Back and tap it in the list/.test(txt) && await ev(() => !$('sldThemeBody').querySelector('[data-sldplay], [data-sldsecs]')));
   answers.push('canals');
   await ev(() => sldNew()); await settle();
   ok('a second with the same name is refused', /You already have one called canals/.test(await said()) && await ev(() => SLD_THEMES.length === 1));
@@ -132,8 +137,6 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('each sorted into upright, sideways or square', stored.shapes === 'lock.png:up,swan.png:both,towpath.png:side,tunnel.png:side', stored.shapes);
   ok('a big one kept the size of a big screen, with a little one for the list', stored.big === '4000,3000,2560,1920,360,270'
     && stored.type === 'image/jpeg', stored.big);
-  txt = await ev(() => $('sldThemeBody').textContent.replace(/\s+/g, ' '));
-  ok('Play upright (2) and Play sideways (3): the square one is in both', /Play upright \(2\)/.test(txt) && /Play sideways \(3\)/.test(txt), txt.slice(0, 120));
   ok('  the four shown small, newest first', await ev(() => document.querySelectorAll('#sldThemeBody .sldth img').length === 4
     && [...document.querySelectorAll('#sldThemeBody .sldth img')].every(i => /^blob:/.test(i.getAttribute('src')))));
   await ev(() => { window.__said.length = 0; });
@@ -150,68 +153,59 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('still there when the app is opened again', await ev(() => SLD_THEMES.length === 1 && sldOf(SLD_CUR).length === 4));
   await ev(() => { $('sldTheme').classList.add('hidden'); renderSlides(); });
   txt = await ev(() => $('sldBody').textContent.replace(/\s+/g, ' '));
-  ok('the list says Canals: 4 photos, 2 upright, 3 sideways, with a little picture', /Canals ?4 photos: 2 upright, 3 sideways/.test(txt)
-    && await ev(() => /^blob:/.test(document.querySelector('[data-sldopen] img').getAttribute('src'))), txt.slice(0, 160));
+  ok('the list says Canals: 4 photos, 2 upright, 3 sideways (the square one in both), with a little picture', /Canals ?4 photos: 2 upright, 3 sideways/.test(txt)
+    && await ev(() => /^blob:/.test(document.querySelector('[data-sldgo]:not([data-sldgo="bsky"]) img').getAttribute('src'))), txt.slice(0, 160));
+  ok('  and a Photos button beside it', await ev(() => !!document.querySelector('.sldrow [data-sldopen]')
+    && document.querySelector('.sldrow [data-sldopen]').textContent.trim() === 'Photos'));
 
   // ---------------------------------------------------------------
   console.log('\nPlaying upright');
-  await p.click('[data-sldopen]'); await settle();
-  await p.click('#sldThemeBody [data-sldplay$=":up"]'); await settle(700);
+  ok('Upright chosen to begin with', await ev(() => sldPrefs().shape === 'up'
+    && document.querySelector('#sldBody [data-sldshape="up"]').getAttribute('aria-pressed') === 'true'));
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(500);
+  ok('a tap on the slideshow starts it straight away, with its title first', await ev(() => !!SLD && SLD.intro
+    && document.querySelector('#sldIntro h2').textContent === 'Canals' && !document.querySelector('.sldimg.on')));
+  await begin();
   let show = await ev(() => { const s = SLD, box = $('sldPlay'), st = $('sldStage');
-    return s && { shape: s.shape, n: s.list.length, names: s.list.map(x => x.name).sort().join(), title: box.querySelector('.sldtitle').textContent,
-      count: $('sldCount').textContent, on: box.querySelectorAll('.sldimg.on').length, src: box.querySelector('.sldimg.on').getAttribute('src'),
+    return s && { shape: s.shape, n: s.list.length, names: s.list.map(x => x.name).sort().join(), i: s.i,
+      on: box.querySelectorAll('.sldimg.on').length, src: box.querySelector('.sldimg.on').getAttribute('src'),
+      buttons: box.querySelectorAll('button').length, paused: !$('sldPaused').hidden,
       fixed: getComputedStyle(box).position, z: Number(getComputedStyle(box).zIndex), t: getComputedStyle(st).transform,
       wake: window.__wake, locks: window.__locks.join() }; });
   ok('full screen and black, over everything', show && show.fixed === 'fixed' && show.z >= 100);
   ok('  only the upright ones and the square one', show.n === 2 && show.names === 'lock.png,swan.png', show.names);
-  ok('  one photo showing, with its name and 1 of 2', show.on === 1 && /^blob:/.test(show.src) && show.title === 'Canals'
-    && /^1 of 2$/.test(show.count), JSON.stringify(show));
+  ok('  one photo showing, the first of the two', show.on === 1 && /^blob:/.test(show.src) && show.i === 0, JSON.stringify(show));
+  ok('  nothing on top of it: no buttons, no words', show.buttons === 0 && !show.paused, JSON.stringify(show));
   ok('  the screen kept on and turned upright', show.wake === 1 && show.locks === 'portrait', show.wake + ' ' + show.locks);
   ok('  not turned round on an upright phone', show.t === 'none', show.t);
-  ok('  the buttons showing to start with', await ev(() => $('sldCtl').classList.contains('on')));
   const first = await ev(() => SLD.list[SLD.i].id);
-  await p.click('#sldNext'); await settle(500);
-  ok('Next: 2 of 2, a different photo', await ev(f => /^2 of 2$/.test($('sldCount').textContent) && SLD.list[SLD.i].id !== f, first));
+  await p.mouse.click(370, 420); await settle(500);
+  ok('a tap at the right: the next one', await ev(f => SLD.i === 1 && SLD.list[SLD.i].id !== f, first));
   const second = await ev(() => SLD.list[SLD.i].id);
-  await p.click('#sldNext'); await settle(500);
+  await p.mouse.click(370, 420); await settle(500);
   ok('after the last it starts again in a new order, never the same one twice running', await ev(s =>
-    /^1 of 2$/.test($('sldCount').textContent) && SLD.list[SLD.i].id !== s, second));
-  await p.click('#sldPrev'); await settle(500);
-  ok('Back goes back', await ev(() => /^2 of 2$/.test($('sldCount').textContent)));
+    SLD.i === 0 && SLD.list[SLD.i].id !== s, second));
+  await p.mouse.click(20, 420); await settle(500);
+  ok('a tap at the left goes back', await ev(() => SLD.i === 1));
   await ev(() => { SLD.secs = 0.3; sldSchedule(); });
   await settle(1100);
-  ok('it moves on by itself', await ev(() => /^1 of 2$/.test($('sldCount').textContent) || /^2 of 2$/.test($('sldCount').textContent))
-    && await ev(() => SLD.turn >= 5));
-  await p.click('#sldPause');
+  ok('it moves on by itself', await ev(() => SLD.turn >= 5));
+  await p.mouse.click(195, 420);
   const turnAt = await ev(() => SLD.turn); await settle(900);
-  ok('Pause stops it, and says so', await ev(t => SLD.paused && SLD.turn === t && /^Paused · /.test($('sldCount').textContent)
-    && $('sldPause').getAttribute('aria-label') === 'Play', turnAt));
-  await p.click('#sldPause');
-  ok('  and Play starts it again', await ev(() => !SLD.paused && !!SLD.timer));
+  ok('a tap in the middle pauses it, and one line says where you are', await ev(t => SLD.paused && SLD.turn === t
+    && !$('sldPaused').hidden && /^Paused · Canals · [12] of 2$/.test($('sldPaused').textContent), turnAt),
+    await ev(() => $('sldPaused').textContent));
+  await p.mouse.click(195, 420);
+  ok('  and another carries on, the line gone', await ev(() => !SLD.paused && !!SLD.timer && $('sldPaused').hidden));
   await ev(() => { SLD.secs = 8; sldSchedule(); });
-  await p.click('#sldSecs');
-  ok('the seconds button goes 8, 15, 30, 5, and is remembered', await ev(() => SLD.secs === 15 && $('sldSecs').textContent === '15 sec'
-    && sldPrefs().secs === 15));
-  await p.click('#sldFill');
-  ok('Fill fills the screen, and is remembered', await ev(() => $('sldPlay').classList.contains('fill')
-    && getComputedStyle(document.querySelector('.sldimg.on')).objectFit === 'cover' && sldPrefs().fill === true
-    && $('sldFill').textContent === 'Whole photo'));
-  await p.click('#sldFill');
-  ok('  Whole photo shows all of it', await ev(() => getComputedStyle(document.querySelector('.sldimg.on')).objectFit === 'contain'
-    && sldPrefs().fill === false));
-  await ev(() => { $('sldCtl').classList.remove('on'); });
-  await p.mouse.click(195, 420); await settle(200);
-  ok('a tap in the middle brings the buttons back', await ev(() => $('sldCtl').classList.contains('on')));
-  const before = await ev(() => SLD.i);
-  await p.mouse.click(370, 420); await settle(500);
-  ok('a tap at the right goes on', await ev(b => SLD.i !== b, before));
-  const fsWas = await ev(() => SLD.fs);
-  await p.click('#sldClose'); await settle(300);
-  ok('× ends it: gone, the screen let go, back where you were', await ev(() => !SLD && !$('sldPlay') && window.__rel === 1
-    && window.__unlock >= 1 && !$('sldTheme').classList.contains('hidden')));
+  await p.keyboard.press('Escape'); await settle(300);
+  ok('Esc ends it: gone, the screen let go, back at the list', await ev(() => !SLD && !$('sldPlay') && window.__rel === 1
+    && window.__unlock >= 1 && !$('sld').classList.contains('hidden')));
 
   console.log('\nPlaying sideways');
-  await p.click('#sldThemeBody [data-sldplay$=":side"]'); await settle(700);
+  await p.click('#sldBody [data-sldshape="side"]'); await settle(200);
+  ok('Sideways chosen under Which way: remembered', await ev(() => sldPrefs().shape === 'side'));
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(500); await begin();
   show = await ev(() => { const st = $('sldStage').getBoundingClientRect();
     return { n: SLD.list.length, names: SLD.list.map(x => x.name).sort().join(), t: getComputedStyle($('sldStage')).transform,
       w: Math.round(st.width), h: Math.round(st.height), locks: window.__locks.join() }; });
@@ -223,11 +217,12 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('  but not once the phone is turned', await ev(() => getComputedStyle($('sldStage')).transform === 'none'));
   await p.setViewportSize({ width: 390, height: 844 }); await settle(300);
   await ev(() => sldStop());
-  if (fsWas) ok('(full screen was on, and leaving it ends the show)', true);
 
   // ---------------------------------------------------------------
   console.log('\nTaking out, renaming, deleting');
   await ev(() => { window.__said.length = 0; });
+  await p.click('#sldBody [data-sldopen]'); await settle(400);
+  ok('its Photos button opens its own page', await ev(() => !$('sldTheme').classList.contains('hidden') && $('sldThemeTitle').textContent === 'Canals'));
   await p.click('#sldThemeBody .sldth'); await settle(400);
   ok('tap a photo to take it out (after asking)', await ev(async () => sldOf(SLD_CUR).length === 3
     && (await sldTx('photos', 'readonly', s => s.count())) === 3 && document.querySelectorAll('#sldThemeBody .sldth').length === 3));
@@ -239,8 +234,10 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   await ev(() => sldNew()); await settle(400);
   ok('a second one, People, opens empty', await ev(() => SLD_THEMES.map(t => t.name).join() === 'Canals and rivers,People'
     && $('sldThemeTitle').textContent === 'People'));
-  await p.click('#sldThemeBody [data-sldplay$=":up"]', { force: true }).catch(() => {}); await settle(200);
-  ok('  nothing plays from an empty one', await ev(() => !SLD));
+  await ev(() => { $('sldTheme').classList.add('hidden'); SLD_CUR = null; lockBackground(); renderSlides(); }); await settle(200);
+  await ev(() => { window.__said.length = 0; });
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"]) >> nth=1'); await settle(300);
+  ok('  nothing plays from an empty one, and it says so', await ev(() => !SLD) && /No sideways photos in People yet/.test(await said()), await said());
   await ev(() => openSlideTheme(SLD_THEMES[0].id)); await settle();
   await p.click('#sldDrop'); await settle(500);
   ok('Delete this slideshow takes it and its photos off this device', await ev(async () =>
@@ -251,27 +248,34 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   // ---------------------------------------------------------------
   console.log('\nYour Bluesky photos');
   await ev(() => { window.__said.length = 0; });
-  await p.click('[data-sldplay="bsky:side"]'); await settle(1200);
+  await p.click('[data-sldgo="bsky"]'); await settle(1200);
   const q = feeds.map(f => [f.get('actor'), f.get('filter'), f.get('limit'), f.get('cursor') || ''].join(' '));
   ok('fetched from Bluesky: their photo posts, a hundred at a time, then the next page', q.length === 2
     && q[0] === 'barryandsandra.bsky.social posts_with_media 100 ' && q[1] === 'barryandsandra.bsky.social posts_with_media 100 page2', q.join(' / '));
-  show = await ev(() => SLD && { ids: SLD.list.map(x => x.id.split('/').pop()).sort().join(), src: document.querySelector('.sldimg.on')
-    && document.querySelector('.sldimg.on').getAttribute('src'), title: document.querySelector('.sldtitle').textContent });
+  show = await ev(() => SLD && { ids: SLD.list.map(x => x.id.split('/').pop()).sort().join(), title: document.querySelector('#sldIntro h2').textContent,
+    pic: $('sldIpic').getAttribute('src'), dates: $('sldIdates').textContent });
   ok('playing sideways: the sideways picture and the one of no known shape, not the upright one, the repost or the video',
-    show && show.ids === '1#0,4#0' && show.title === 'Bluesky', JSON.stringify(show));
+    show && show.ids === '1#0,4#0' && show.title === 'Your Bluesky photos', JSON.stringify(show));
+  ok('  its title has a small copy of one of them, and when they were posted', show && /^https:\/\/cdn\.example\/t(wide1|mystery)\.png$/.test(show.pic)
+    && show.dates === 'Posted November 2026', JSON.stringify(show));
+  await begin(900);
+  ok('  then the photo itself, full size', await ev(() => /^https:\/\/cdn\.example\/(wide1|mystery)\.png$/.test(document.querySelector('.sldimg.on').getAttribute('src'))));
   await ev(() => sldShow(1)); await settle(800);
   ok('  the one of no known shape turned out upright, so it is skipped', await ev(() =>
     /cdn\.example\/wide1\.png$/.test(document.querySelector('.sldimg.on').getAttribute('src'))
     && SLD.list.find(x => /4#0$/.test(x.id)).h === 320));
   await ev(() => sldStop());
-  await p.click('[data-sldplay="bsky:up"]'); await settle(800);
+  await ev(() => renderSlides());
+  ok('  the list now shows a small copy of a Bluesky photo', await ev(() => /^https:\/\/cdn\.example\/t/.test(document.querySelector('[data-sldgo="bsky"] img').getAttribute('src'))));
+  await p.click('#sldBody [data-sldshape="up"]'); await settle(200);
+  await p.click('[data-sldgo="bsky"]'); await settle(800);
   ok('upright: kept from before, not fetched again', feeds.length === 2 && await ev(() => SLD
     && SLD.list.map(x => x.id.split('/').pop()).sort().join() === '1#1,4#0'));
   await ev(() => sldStop());
   bskyDown = true;
   await ev(() => { SLD_BSKY.at = 0; window.__said.length = 0; });
-  await p.click('[data-sldplay="bsky:up"]'); await settle(800);
-  ok('no signal: it says so and nothing opens', await ev(() => !SLD && !$('sldPlay'))
+  await p.click('[data-sldgo="bsky"]'); await settle(800);
+  ok('no signal: it says so and the show closes', await ev(() => !SLD && !$('sldPlay'))
     && /Could not reach Bluesky/.test(await said()), await said());
   bskyDown = false;
 
@@ -288,7 +292,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
     await ev(() => { renderSlides(); openSlideTheme(SLD_THEMES[0].id); });
     await settle(200);
     const fit = await ev(() => ['sldBody', 'sldThemeBody'].every(id => $(id).scrollWidth <= $(id).clientWidth + 1)
-      && [...document.querySelectorAll('#sldThemeBody .sldplays .btn')].every(b => b.getBoundingClientRect().right <= innerWidth));
+      && [...document.querySelectorAll('#sldBody .pickrow button, #sldBody .sldph')].every(b => b.getBoundingClientRect().right <= innerWidth));
     ok(`everything fits at ${w} wide`, fit);
     await ev(() => { $('sldTheme').classList.add('hidden'); lockBackground(); });
   }
@@ -304,7 +308,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   ok('  and they are back once it opens', await ev(() => SLD_OK && SLD_THEMES.length === 1));
 
   console.log('\nLeaving');
-  await p.click('[data-sldplay="bsky:side"]'); await settle(800);
+  await p.click('[data-sldgo="bsky"]'); await settle(800);
   await ev(() => backHome('sld')); await settle(300);
   ok('the home button ends a show and puts the Slideshow away', await ev(() => !SLD && !$('sldPlay')
     && $('sld').classList.contains('hidden') && !$('home').classList.contains('hidden')));
@@ -313,7 +317,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ServiceWorker
   console.log('\nHelp and the version');
   const help = await ev(() => { openHelp('sld'); const t = $('helpBody').textContent.replace(/\s+/g, ' ');
     document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden')); return t; });
-  ok('Help explains the Slideshow', /Slideshow plays your photos at random, full screen, either all upright or all sideways/.test(help)
+  ok('Help explains the Slideshow', /Slideshow plays your photos full screen, at random or by date, upright, sideways or both ways/.test(help)
+    && /Playing: tap a slideshow in the list\. It opens with a title for a few seconds/.test(help)
     && /kept on that phone or computer only, not online/.test(help) && /Your Bluesky photos is ready-made/.test(help)
     && /start it in your own app first/.test(help));
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));

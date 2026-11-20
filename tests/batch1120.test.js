@@ -197,53 +197,62 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   ok('  the one with no camera note has the file\'s own date', got['d.png'][0] === R(2021, 4, 1, 8, 0) && got['d.png'][1] === 'file'
     && got['a.jpg'][1] === 'camera', JSON.stringify(got));
   ok('  kept with it on this device', await ev(async () => (await sldTx('photos', 'readonly', s => s.getAll())).every(p => p.taken > 0)));
-  let txt = await ev(() => $('sldThemeBody').textContent.replace(/\s+/g, ' '));
-  ok('three Play buttons: upright (1), sideways (4) and both ways (5)', /Play upright \(1\)/.test(txt) && /Play sideways \(4\)/.test(txt)
-    && /Play both ways \(5\)/.test(txt), txt.slice(0, 120));
+  // Laid out again on 20 Nov (ML331): the choices at the top of the first page, a tap on a slideshow plays it.
+  await ev(() => { $('sldTheme').classList.add('hidden'); lockBackground(); renderSlides(); }); await settle(200);
+  let txt = await ev(() => $('sldBody').textContent.replace(/\s+/g, ' '));
+  ok('the list: Canals, 5 photos, 1 upright and 4 sideways', /Canals ?5 photos: 1 upright, 4 sideways/.test(txt), txt.slice(0, 200));
   ok('  and In what order: Random, chosen to begin with, or Date taken', await ev(() =>
-    document.querySelector('#sldThemeBody [data-sldorder="random"]').getAttribute('aria-pressed') === 'true'
-    && document.querySelector('#sldThemeBody [data-sldorder="date"]').getAttribute('aria-pressed') === 'false'));
-  await p.click('#sldThemeBody [data-sldorder="date"]'); await settle(200);
+    document.querySelector('#sldBody [data-sldorder="random"]').getAttribute('aria-pressed') === 'true'
+    && document.querySelector('#sldBody [data-sldorder="date"]').getAttribute('aria-pressed') === 'false'));
+  await p.click('#sldBody [data-sldorder="date"]'); await settle(200);
   ok('Date taken, chosen: remembered', await ev(() => sldPrefs().order === 'date'
-    && document.querySelector('#sldThemeBody [data-sldorder="date"]').getAttribute('aria-pressed') === 'true'));
-  ok('  and on the main Slideshow screen too', await ev(() => { renderSlides();
-    return document.querySelector('#sldBody [data-sldorder="date"]').getAttribute('aria-pressed') === 'true'; }));
+    && document.querySelector('#sldBody [data-sldorder="date"]').getAttribute('aria-pressed') === 'true'));
+  ok('  for every slideshow, not on each one\'s own page', await ev(() => { renderSlideTheme();
+    return !$('sldThemeBody').querySelector('[data-sldorder], [data-sldsecs], [data-sldplay]'); }));
   await ev(() => sldSavePrefs({ ...sldPrefs(), fill: true }));
   const locks0 = await ev(() => window.__locks.length);
-  await p.click('#sldThemeBody [data-sldplay$=":both"]'); await settle(900);
+  await p.click('#sldBody [data-sldshape="both"]'); await settle(200);
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(400);
+  await ev(() => sldBegin(SLD)); await settle(900);
   let show = await ev(() => SLD && { shape: SLD.shape, order: SLD.list.map(p => p.name).join(), i: SLD.i,
-    when: $('sldWhen').textContent, whole: document.querySelector('.sldimg.on').classList.contains('whole') });
+    whole: document.querySelector('.sldimg.on').classList.contains('whole') });
   ok('Play both ways: all five, oldest first', show && show.shape === 'both' && show.order === 'e.jpg,b.jpg,c.jpg,a.jpg,d.png', JSON.stringify(show));
-  ok('  the date at the top', show && show.when === ' · 1 Jan 2010', JSON.stringify(show));
+  await ev(() => sldPause());
+  ok('  paused, the date it was taken shows', await ev(() => !$('sldPaused').hidden && / · 1 Jan 2010$/.test($('sldPaused').textContent)),
+    await ev(() => $('sldPaused').textContent));
+  await ev(() => sldPause());
   ok('  the screen not turned or held: it turns as the phone does', (await ev(() => window.__locks.length)) === locks0);
   ok('  the upright one on an upright phone fills it', show && !show.whole);
   await ev(() => sldShow(1)); await settle(700);
   show = await ev(() => ({ name: SLD.list[SLD.i].name, whole: document.querySelector('.sldimg.on').classList.contains('whole'),
-    fit: getComputedStyle(document.querySelector('.sldimg.on')).objectFit, when: $('sldWhen').textContent }));
+    fit: getComputedStyle(document.querySelector('.sldimg.on')).objectFit, when: $('sldPaused').textContent }));
   ok('  a sideways one is shown whole, though Fill is on', show.name === 'b.jpg' && show.whole && show.fit === 'contain', JSON.stringify(show));
-  ok('  with its date', show.when === ' · 2 Mar 2015', show.when);
+  ok('  with its date', / · 2 Mar 2015$/.test(show.when), show.when);
   await ev(async () => { await sldShow(1); await sldShow(1); await sldShow(1); }); await settle(500);
-  show = await ev(() => ({ name: SLD.list[SLD.i].name, when: $('sldWhen').textContent }));
-  ok('  one with only the file\'s date shows no date', show.name === 'd.png' && show.when === '', JSON.stringify(show));
+  show = await ev(() => ({ name: SLD.list[SLD.i].name, when: $('sldPaused').textContent }));
+  ok('  one with only the file\'s date shows no date', show.name === 'd.png' && !/\d{4}$/.test(show.when), JSON.stringify(show));
   await ev(() => sldShow(1)); await settle(600);
   show = await ev(() => ({ name: SLD.list[SLD.i].name, i: SLD.i, order: SLD.list.map(p => p.name).join() }));
   ok('  after the newest it goes back to the oldest, in the same order', show.name === 'e.jpg' && show.i === 0
     && show.order === 'e.jpg,b.jpg,c.jpg,a.jpg,d.png', JSON.stringify(show));
   await ev(() => sldStop());
-  await p.click('#sldThemeBody [data-sldplay$=":side"]'); await settle(700);
+  await p.click('#sldBody [data-sldshape="side"]'); await settle(200);
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(700);
   show = await ev(() => ({ order: SLD.list.map(p => p.name).join(), locks: window.__locks.slice(-1)[0] }));
   ok('Play sideways by date: the four sideways ones, oldest first, the screen turned', show.order === 'b.jpg,c.jpg,a.jpg,d.png'
     && show.locks === 'landscape', JSON.stringify(show));
   await ev(() => sldStop());
-  await p.click('#sldThemeBody [data-sldorder="random"]'); await settle(200);
-  await p.click('#sldThemeBody [data-sldplay$=":side"]'); await settle(700);
-  ok('Random again: the four, no date at the top', await ev(() => SLD.order === 'random' && SLD.list.length === 4 && $('sldWhen').textContent === ''));
+  await p.click('#sldBody [data-sldorder="random"]'); await settle(200);
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(700);
+  ok('Random again: the four, and the title says so', await ev(() => SLD.order === 'random' && SLD.list.length === 4
+    && /in random order/.test($('sldIdet').textContent)));
   await ev(() => sldStop());
 
   // Photos added before the app read dates.
   await ev(async () => { for (const p of sldOf(SLD_CUR).filter(p => /^(a\.jpg|d\.png)$/.test(p.name))) {
     delete p.taken; delete p.takenBy; await sldTx('photos', 'readwrite', s => s.put(p)); } });
-  await p.click('#sldThemeBody [data-sldorder="date"]'); await settle(200);
+  await p.click('#sldBody [data-sldorder="date"]'); await settle(200);
+  await p.click('#sldBody [data-sldopen]'); await settle(300);
   txt = await ev(() => $('sldThemeBody').textContent.replace(/\s+/g, ' '));
   ok('two from before: Date taken says so, and how to fill them in', /2 of these have no date taken yet, as they were added before the app read dates\. Pick them again with Add photos/.test(txt), txt.slice(0, 400));
   ok('  until then they play last, in the order they were added', await ev(() =>
@@ -257,22 +266,23 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   ok('  the note has gone', await ev(() => !document.querySelector('#sldThemeBody .sldundated')));
   for (const w of [320, 390]) {
     await p.setViewportSize({ width: w, height: 760 }); await settle(200);
-    await ev(() => renderSlideTheme()); await settle(100);
-    ok(`the three buttons and the order fit at ${w} wide`, await ev(() => [...document.querySelectorAll('#sldThemeBody .sldplays .btn, #sldThemeBody [data-sldorder]')]
+    await ev(() => { renderSlides(); renderSlideTheme(); }); await settle(100);
+    ok(`which way, the order and the Photos button fit at ${w} wide`, await ev(() => [...document.querySelectorAll('#sldBody [data-sldshape], #sldBody [data-sldorder], #sldBody .sldph')]
       .every(e => e.getBoundingClientRect().right <= innerWidth && e.getBoundingClientRect().left >= 0)
-      && $('sldThemeBody').scrollWidth <= $('sldThemeBody').clientWidth + 1));
+      && $('sldThemeBody').scrollWidth <= $('sldThemeBody').clientWidth + 1 && $('sldBody').scrollWidth <= $('sldBody').clientWidth + 1));
   }
   await p.setViewportSize({ width: 390, height: 844 });
 
   // Bluesky
   ok('a Bluesky photo has the date it was posted', await ev(() => { const l = sldBskyPics([{ post: { uri: 'u', record: { createdAt: '2024-05-01T09:00:00Z' },
     embed: { images: [{ fullsize: 'https://cdn.example/a.png' }] } } }]); return l[0].taken === Date.parse('2024-05-01T09:00:00Z') && l[0].takenBy === 'camera'; }));
-  ok('the Bluesky card has Play both ways too, and so has the menu', await ev(() => { renderSlides();
-    return !!document.querySelector('#sldBody [data-sldplay="bsky:both"]') && areaItems('sld').some(x => x.label === 'Play your Bluesky photos both ways'); }));
+  ok('Your Bluesky photos first in the list, and the menu plays it', await ev(() => { renderSlides();
+    const rows = [...document.querySelectorAll('#sldBody .sldrow')];
+    return !!rows[0].querySelector('[data-sldgo="bsky"]') && areaItems('sld').some(x => x.label === 'Play your Bluesky photos'); }));
   h = await help();
-  ok('Help knows about both ways and Date taken', /Play both ways plays them all together/.test(h) && /In what order: at random, or by Date taken/.test(h)
+  ok('Help knows about both ways and Date taken', /Both ways plays them all, which suits a laptop/.test(h) && /In what order: at random, or by Date taken/.test(h)
     && /pick them again with Add photos and their dates are filled in/.test(h));
-  await ev(() => sldSavePrefs({ secs: 8, fill: false, order: 'random' }));
+  await ev(() => sldSavePrefs({ secs: 8, fill: false, order: 'random', shape: 'up' }));
   await closeAll();
 
   // ---------------------------------------------------------------
@@ -405,12 +415,12 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   await back();
   ok('  and Back again straight away: out of Settings', !(await open('settings')) && await still());
   await ev(() => openSlides()); await settle(300);
-  await ev(() => openSlideTheme(SLD_THEMES[0].id)); await settle(300);
-  await p.click('#sldThemeBody [data-sldplay$=":both"]'); await settle(800);
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(800);
   await back();
-  ok('a slideshow playing, then Back: it stops, the slideshow\'s page still there', await ev(() => !SLD && !$('sldPlay')) && await open('sldTheme') && await still());
+  ok('a slideshow playing, then Back: it stops, the list of slideshows still there', await ev(() => !SLD && !$('sldPlay')) && await open('sld') && await still());
+  await p.click('#sldBody [data-sldopen]'); await settle(300);
   await back();
-  ok('  Back: the list of slideshows', !(await open('sldTheme')) && await open('sld') && await still());
+  ok('  a slideshow\'s photos, then Back: the list', !(await open('sldTheme')) && await open('sld') && await still());
   await back();
   ok('  Back: home', !(await open('sld')) && await open('home') && await still());
   // Loxx

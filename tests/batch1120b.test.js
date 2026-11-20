@@ -98,7 +98,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   ok('the page itself never changed', p.url() === url0);
 
   // ---------------------------------------------------------------
-  console.log('\nML327 Slideshow: how long each photo shows, before it starts');
+  console.log('\nML327 How long each photo shows, chosen before it starts (moved to the top by ML331)');
   await ev(() => openSlides()); await settle(300);
   answers.push('Canals');
   await ev(() => sldNew()); await settle(400);
@@ -107,47 +107,31 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     return new File([await new Promise(o => cv.toBlob(o, 'image/jpeg'))], n, { type: 'image/jpeg' }); };
     await sldAddFiles([await mk('a.jpg', 300, 200, '#468'), await mk('b.jpg', 200, 300, '#846'), await mk('c.jpg', 300, 200, '#684')]); });
   await settle(400);
-  const row = () => ev(() => { const r = [...$('sldThemeBody').querySelectorAll('.sldorder')].find(x => /Each photo shows for/.test(x.textContent));
-    return r ? { words: [r.querySelector('span'), ...r.querySelectorAll('button')].map(x => x.textContent.trim()).join(' '), on: [...r.querySelectorAll('[aria-pressed="true"]')].map(x => x.textContent.trim()),
-      beforePhotos: !!(r.compareDocumentPosition($('sldPick')) & Node.DOCUMENT_POSITION_FOLLOWING),
-      seen: r.getBoundingClientRect().bottom <= innerHeight } : null; });
-  let r1 = await row();
-  ok('your own slideshow\'s page: Each photo shows for 5, 8, 15 or 30 sec', !!r1 && r1.words === 'Each photo shows for 5 sec 8 sec 15 sec 30 sec', JSON.stringify(r1));
-  ok('  8 sec chosen to start with', !!r1 && r1.on.join() === '8 sec', JSON.stringify(r1));
-  ok('  by the Play buttons, above the photos, without scrolling', !!r1 && r1.beforePhotos && r1.seen, JSON.stringify(r1));
-  await p.click('#sldThemeBody [data-sldsecs="15"]'); await settle(300);
-  r1 = await row();
-  ok('press 15 sec: it is chosen and kept, and the page stays', !!r1 && r1.on.join() === '15 sec' && await ev(() => sldPrefs().secs === 15)
-    && await open('sldTheme'), JSON.stringify(r1));
-  await p.click('#sldThemeBody [data-sldplay$=":up"]'); await settle(800);
-  ok('Play upright: each photo shows for 15 seconds', await ev(() => !!SLD && SLD.secs === 15 && $('sldSecs').textContent === '15 sec'),
-    await ev(() => SLD && SLD.secs + ' / ' + ($('sldSecs') || {}).textContent));
-  await ev(() => sldStop()); await settle(300);
-  await ev(() => { $('sldTheme').classList.add('hidden'); SLD_CUR = null; lockBackground(); renderSlides(); }); await settle(300);
-  ok('the same choice under How it plays on the first page', await ev(() =>
-    $('sld').querySelector('[data-sldsecs="15"]').getAttribute('aria-pressed') === 'true'
-    && /15 seconds/.test($('sld').querySelector('[data-sldsecs="15"]').textContent)));
-  await p.click('#sld [data-sldsecs="5"]'); await settle(300);
-  await ev(() => openSlideTheme(SLD_THEMES[0].id)); await settle(300);
-  ok('  and changing it there shows on the slideshow\'s page', (await row()).on.join() === '5 sec');
-  for (const w of [320, 360]) {
-    await p.setViewportSize({ width: w, height: 700 }); await settle(250);
-    const fit = await ev(() => [...$('sldThemeBody').querySelectorAll('[data-sldsecs], [data-sldorder]')].map(x => {
-      const q = x.getBoundingClientRect(); return [Math.round(q.left), Math.round(q.right), Math.round(q.height)]; }));
-    ok(`  at ${w} wide the buttons fit, big enough for a thumb`, fit.length === 6 && fit.every(([l, rt, h]) => l >= 0 && rt <= w && h >= 36)
-      && await ev(() => document.documentElement.scrollWidth <= innerWidth), JSON.stringify(fit));
-  }
-  await p.setViewportSize({ width: 390, height: 844 }); await settle(200);
+  ok('a slideshow\'s own page: its photos only, no choices', await ev(() =>
+    !$('sldThemeBody').querySelector('[data-sldsecs], [data-sldorder], [data-sldplay], [data-sldshape]')));
+  await ev(() => { $('sldTheme').classList.add('hidden'); SLD_CUR = null; lockBackground(); renderSlides(); $('sldBody').scrollTop = 0; }); await settle(300);
+  ok('Each photo shows for: at the top of the first page, above the list, without scrolling', await ev(() => {
+    const se = $('sldBody').querySelector('[data-sldsecs]'), l = $('sldBody').querySelector('[data-sldgo]');
+    return !!se && !!l && !!(se.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING) && se.getBoundingClientRect().bottom <= innerHeight; }));
+  await p.click('#sldBody [data-sldsecs="15"]'); await settle(300);
+  ok('press 15 seconds: chosen and kept', await ev(() => sldPrefs().secs === 15
+    && $('sldBody').querySelector('[data-sldsecs="15"]').getAttribute('aria-pressed') === 'true'));
+  await p.click('#sldBody [data-sldshape="up"]'); await settle(200);
+  await p.click('#sldBody [data-sldgo]:not([data-sldgo="bsky"])'); await settle(600);
+  ok('tap the slideshow: it starts, and its title says 15 seconds each', await ev(() => !!SLD && SLD.secs === 15
+    && /15 seconds each/.test($('sldIdet').textContent)));
+  await ev(() => sldStop()); await settle(200);
   const h = await help();
-  ok('Help says where', /How long each photo shows \(5, 8, 15 or 30 seconds\) is chosen on a slideshow’s own page, before you press Play/.test(h));
+  ok('Help says where', /how long each photo shows \(5, 8, 15 or 30 seconds\)/.test(h) && /How it plays is at the top of the Slideshow, for every slideshow/.test(h));
 
   // ---------------------------------------------------------------
   console.log('\nThe version');
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
-  ok('2026.11.20.2, the app and version.json agree', await ev(() => APP_VERSION) === '2026.11.20.2' && vj.version === '2026.11.20.2'
-    && vj.history[0].version === '2026.11.20.2');
-  ok('  what\'s new says both', /twice or more in a row no longer closes the app/.test(vj.history[0].changes.join(' '))
-    && /before you press Play/.test(vj.history[0].changes.join(' ')));
+  const V2 = vj.history.find(x => x.version === '2026.11.20.2');
+  ok('2026.11.20.2 is in version.json, and the page is the newest', !!V2 && await ev(() => APP_VERSION) === vj.version
+    && vj.history[0].version === vj.version);
+  ok('  what\'s new says both', !!V2 && /twice or more in a row no longer closes the app/.test(V2.changes.join(' '))
+    && /before you press Play/.test(V2.changes.join(' ')));
 
   // ---------------------------------------------------------------
   console.log('\nML326 After the page is reloaded on a spare step');

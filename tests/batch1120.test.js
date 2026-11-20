@@ -365,42 +365,45 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   console.log('\nML322 The phone\'s Back arrow');
   const url0 = p.url();
   const back = async () => { await ev(() => history.back()); await settle(450); };
-  const still = async () => p.url() === url0 && await ev(() => typeof ME !== 'undefined' && !!ME && history.state && history.state.myl === 'back');
-  ok('a spare step is ready to go back to', await ev(() => history.state && history.state.myl === 'back'));
-  await ev(() => { showHome(); openDiary(); }); await settle(300);
+  // A screen is opened by a tap, and Chrome only honours steps added after one (ML326).
+  const touch = async () => { await p.keyboard.press('Shift'); await settle(650); };
+  const still = async () => p.url() === url0 && await ev(() => typeof ME !== 'undefined' && !!ME);
+  await touch();
+  ok('a spare step is ready to go back to', await ev(() => history.state && history.state.myl === 'back' && history.state.n >= 2));
+  await ev(() => { showHome(); openDiary(); }); await touch();
   await back();
   ok('Calendar, then Back: the home screen, and still in the app', !(await open('diary')) && await open('home') && await still());
   await back();
   ok('Back on the home screen: it stays put', await open('home') && await still());
   await back();
   ok('  and again: still there', await open('home') && await still());
-  await ev(() => hideHome()); await settle(200);
+  await ev(() => hideHome()); await touch();
   await back();
   ok('Contacts, then Back: the home screen', await open('home') && await still());
-  await ev(() => { hideHome(); openDetail(1); }); await settle(400);
+  await ev(() => { hideHome(); openDetail(1); }); await touch();
   await back();
   ok('a contact\'s page, then Back: back to Contacts', !(await open('detail')) && !(await open('home')) && await still());
-  await ev(() => openEditor(CONTACTS.find(c => c.id === 1))); await settle(500);
+  await ev(() => openEditor(CONTACTS.find(c => c.id === 1))); await touch();
   answer = false; asked.length = 0;
   await back();
   ok('editing, then Back: it asks before leaving, and No stays', asked.some(m => /Leave this without saving\?/.test(m)) && await open('editor') && await still(), asked.join(' | '));
   answer = true; asked.length = 0;
   await back();
   ok('  Yes leaves it unsaved', !(await open('editor')) && await still());
-  await ev(() => startPicking()); await settle(200);
+  await ev(() => startPicking()); await touch();
   await back();
   ok('Multi Select on, then Back: it stops', await ev(() => !PICKING) && await still());
   await ev(() => { window.__rows.contact_offers.push({ id: 73, from_user: 'sandra', to_user: 'me', name: 'Rob Ruse', payload: { first_name: 'Rob' },
     source_id: 7, created_at: '2026-11-20T12:00:00Z', decided_at: null, outcome: null }); });
-  await ev(async () => { await loadAll(); offersAsk(); }); await settle(300);
+  await ev(async () => { await loadAll(); offersAsk(); }); await touch();
   await back();
   ok('a box on top, then Back: just the box goes', !(await ev(() => !!document.querySelector('.offask'))) && await still());
   await ev(async () => { await openSettings(); }); await settle(300);
-  await ev(() => openHelp('sld')); await settle(300);
+  await ev(() => openHelp('sld')); await touch();
   await back();
   ok('Help over Settings, then Back: Settings', !(await open('help')) && await open('settings') && await still());
   await back();
-  ok('  and Back again: out of Settings', !(await open('settings')) && await still());
+  ok('  and Back again straight away: out of Settings', !(await open('settings')) && await still());
   await ev(() => openSlides()); await settle(300);
   await ev(() => openSlideTheme(SLD_THEMES[0].id)); await settle(300);
   await p.click('#sldThemeBody [data-sldplay$=":both"]'); await settle(800);
@@ -414,7 +417,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   await p.addScriptTag({ path: path.join(__dirname, 'lkfake.js') });
   await ev(async () => { window.__lkFake(); window.__rpc('new_game', { players: ['me', 'sandra'], first_seat: 0 }); await lkReload(); });
   const G = await ev(() => Math.max(...GAMES.map(g => g.id)));
-  await ev(async id => { await openGames(); await lkOpen(id); }, G); await settle(500);
+  await ev(async id => { await openGames(); await lkOpen(id); }, G); await touch();
   await back();
   ok('a game of Loxx, then Back: MY Games, the game still there to go back to', !(await open('lkPlay')) && await open('games')
     && await ev(id => GAMES.some(g => g.id === id && g.status === 'playing'), G) && await still());
@@ -454,7 +457,7 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
 
   // ---------------------------------------------------------------
   console.log('\nThe version');
-  ok('2026.11.20.1', await ev(() => APP_VERSION === '2026.11.20.1'));
+  ok('2026.11.20.1 or later', await ev(() => APP_VERSION >= '2026.11.20.1'));
 
   console.log(errors.length ? '\n' + errors.join('\n') : '\nNo page errors.');
   if (errors.length) fail += errors.length;

@@ -3105,7 +3105,68 @@ async function deletePicked(){
 
 /* ---------- maps ---------- */
 /* ---------- photos ---------- */
-let SIGNED={};   // storage path -> temporary viewing URL
+let SIGNED={};   // storage path -> viewing URL
+
+/* Photo links (ML370, 21 Nov 2026). Supabase only shows a photo through a
+   link that stops working after a while. They used to last an hour and were
+   forgotten when the app closed, so every start asked for new ones, and the
+   browser, seeing a new address, downloaded every photo again: about 80% of
+   what the app sent out. Now a link lasts a week, each phone or computer
+   remembers its own (one list per person, cleared at sign-out), and a new one
+   is only asked for with under two days to go. Finances (fin/) and My Stuff
+   (stf/) keep one-hour links that are never remembered: they are the most
+   private, and My Stuff has its own lock. */
+let SIGNED_TILL={};                    // storage path -> when its link stops (ms)
+const LINK_SECS=7*24*3600, LINK_SHORT=3600;
+const linkShort=p=>/^(fin|stf)\//.test(p||'');
+// Renewed with two days to go (a phone's clock can be out), or five minutes for a short one.
+const linkDue=p=>!SIGNED[p]||(SIGNED_TILL[p]||0)-(linkShort(p)?5*60e3:2*86400e3)<Date.now();
+// New photos are marked as never changing, so the browser keeps them as long as the link lasts.
+const photoKeep=p=>String(linkShort(p)?LINK_SHORT:LINK_SECS);
+const linksKey=()=>ME&&ME.id?'photolinks-'+ME.id:'';
+function linksLoad(){
+  const k=linksKey(); if(!k) return;
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ saved=null; }
+  if(!saved||typeof saved!=='object') return;
+  const now=Date.now();
+  Object.entries(saved).forEach(([p,v])=>{
+    if(!Array.isArray(v)||typeof v[0]!=='string'||!/^https:\/\//.test(v[0])) return;
+    if(!(Number(v[1])>now)||linkShort(p)) return;
+    SIGNED[p]=v[0]; SIGNED_TILL[p]=Number(v[1]);
+  });
+}
+function linksSave(){
+  const k=linksKey(); if(!k) return;
+  const now=Date.now(), keep={};
+  Object.keys(SIGNED_TILL).forEach(p=>{
+    if(SIGNED[p]&&SIGNED_TILL[p]>now&&!linkShort(p)) keep[p]=[SIGNED[p],SIGNED_TILL[p]]; });
+  try{ localStorage.setItem(k,JSON.stringify(keep)); }catch(e){}
+}
+function linksForget(){
+  const k=linksKey();
+  try{ if(k) localStorage.removeItem(k); }catch(e){}
+}
+// A photo that won't load (its link ran out early because this phone's clock
+// is wrong, say) gets a new link and one more try, once a session. It is
+// caught on the way down, so the picture's own onerror (a letter instead, in
+// the contacts list) only happens if the second try fails too.
+const LINK_RETRIED=new Set();
+document.addEventListener('error',ev=>{
+  const img=ev.target;
+  if(!img||img.tagName!=='IMG') return;
+  const src=img.getAttribute('src')||'';
+  const p=src&&Object.keys(SIGNED).find(k=>SIGNED[k]===src);
+  if(!p||LINK_RETRIED.has(p)) return;
+  LINK_RETRIED.add(p);
+  ev.stopImmediatePropagation();
+  delete SIGNED[p]; delete SIGNED_TILL[p];
+  signPaths([p]).then(()=>{
+    if(!img.isConnected) return;
+    if(SIGNED[p]) img.src=SIGNED[p];
+    else img.dispatchEvent(new Event('error'));
+  });
+},true);
 
 async function shrink(file, max){
   const url=URL.createObjectURL(file);
@@ -3121,29 +3182,34 @@ async function shrink(file, max){
 }
 
 async function signPaths(paths,force){
-  const need=paths.filter(p=>p&&(force||!SIGNED[p]));
+  const need=[...new Set(paths.filter(p=>p&&(force||linkDue(p))))];
   if(!need.length)return;
-  // In batches: a few hundred at once is refused
-  for(let i=0;i<need.length;i+=100){
-    const {data,error}=await sb.storage.from('photos')
-      .createSignedUrls(need.slice(i,i+100),3600);
-    if(error){console.error(error);continue;}
-    (data||[]).forEach(d=>{ if(d.signedUrl) SIGNED[d.path]=d.signedUrl; });
+  const long=need.filter(p=>!linkShort(p)), short=need.filter(linkShort);
+  for(const [list,secs] of [[long,LINK_SECS],[short,LINK_SHORT]]){
+    // In batches: a few hundred at once is refused
+    for(let i=0;i<list.length;i+=100){
+      const at=Date.now();
+      const {data,error}=await sb.storage.from('photos')
+        .createSignedUrls(list.slice(i,i+100),secs);
+      if(error){console.error(error);continue;}
+      (data||[]).forEach(d=>{ if(d.signedUrl){ SIGNED[d.path]=d.signedUrl; SIGNED_TILL[d.path]=at+secs*1000; } });
+    }
   }
+  if(long.length) linksSave();
 }
 
-// Links to photos expire after an hour. Leave the app open longer than that
-// and pictures start failing; this fetches them all again.
+// Photos with no link yet, or one close to running out, get a new one. Since
+// ML370 the rest keep theirs: a new link would only make the phone download
+// the photo again.
 async function refreshPhotos(quiet){
   if(!quiet) toast('Fetching the photos again\u2026');
-  SIGNED={};
   const all=[];
   CONTACTS.forEach(c=>{
     if(c.avatar_path) all.push(c.avatar_path);
     arr(c.photos).forEach(p=>{ if(p.path) all.push(p.path); });
   });
-  await signPaths(all,true);
-  await signLogPhotos(true);
+  await signPaths(all);
+  await signLogPhotos();
   render();
   if(!$('log').classList.contains('hidden')) renderLog();
   if(!$('detail').classList.contains('hidden')&&CURRENT) openDetail(CURRENT.id,true);
@@ -3151,9 +3217,9 @@ async function refreshPhotos(quiet){
 }
 
 /* The figures and the pictures, in one command. They were two, which only ever
-   raised the question of which to try first when something looked wrong. The
-   links to photos expire after an hour, so anything left open overnight needs
-   both anyway. */
+   raised the question of which to try first when something looked wrong.
+   Since ML370 the pictures part only fetches photos with no link yet, or one
+   close to running out. */
 async function refreshAll(){
   await loadAll();
   await refreshPhotos(true);
@@ -3196,7 +3262,7 @@ async function uploadPhoto(file, asAvatar, quiet){
     const blob=await shrink(file, asAvatar?600:1400);
     const path=`${CURRENT.id}/${crypto.randomUUID()}.jpg`;
     const {error}=await sb.storage.from('photos')
-      .upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      .upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:photoKeep(path)});
     if(error){toast('Could not upload it');console.error(error);return;}
     const patch = asAvatar
       ? {avatar_path:path}
@@ -6874,9 +6940,9 @@ function openHelp(where){
 
   <h4 id="h-trouble">If something looks wrong</h4>
   <ul>
-    <li>Photos missing or showing as broken? The links they use expire after an
-        hour. Menu &rsaquo; <strong>Photos not showing? Fetch them again</strong>
-        gets fresh ones.</li>
+    <li>Photos missing or showing as broken? Press the refresh button at the top
+        (<strong>Refresh Data and Images</strong>): it fetches any that are missing.
+        A photo that won&rsquo;t load is also tried once more by itself.</li>
     <li>Close the app fully and reopen it. It reloads everything on start.</li>
     <li>Menu &rsaquo; <strong>What&rsquo;s new</strong> says which version you have,
         and offers a restart if there is a newer one.</li>
@@ -7725,7 +7791,7 @@ async function dphAdd(files){
     try{
       const blob=await shrink(files[i],1600);
       const path=`${into.pre}/${ME.id}/${crypto.randomUUID()}.jpg`;
-      const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:photoKeep(path)});
       if(error){ toast('Could not upload it'); console.error(error); continue; }
       // Closed while it was uploading: nothing will save it, so tidy it away.
       if(DPH!==into){ await sb.storage.from('photos').remove([path]); return; }
@@ -9473,7 +9539,7 @@ async function addLogPhotos(files){
       // Into the owner's folder, so the photo belongs to their log.
       const path=`log/${logOwner()}/${crypto.randomUUID()}.jpg`;
       const {error}=await sb.storage.from('photos')
-        .upload(path,blob,{contentType:'image/jpeg',upsert:false});
+        .upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:photoKeep(path)});
       if(error){ toast('Could not upload it'); console.error(error); continue; }
       added.push({path});
     }catch(err){ console.error(err); toast('Could not read that image'); }
@@ -12470,7 +12536,7 @@ async function rcpAddPhotos(files){
     try{
       const blob=await shrink(files[i],1400);
       const path=`rec/${ME.id}/${crypto.randomUUID()}.jpg`;
-      const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      const {error}=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:photoKeep(path)});
       if(error){ toast('Could not upload it'); console.error(error); continue; }
       if(!RE) { await sb.storage.from('photos').remove([path]); return; }
       RE.fresh.push(path);
@@ -19976,7 +20042,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.20.7';
+const APP_VERSION='2026.11.21.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -21845,7 +21911,7 @@ $('signinBtn').onclick=async()=>{
   start();
 };
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')$('signinBtn').click();});
-$('signoutBtn').onclick=async()=>{await sb.auth.signOut();backRewind(()=>location.reload());};
+$('signoutBtn').onclick=async()=>{linksForget();await sb.auth.signOut();backRewind(()=>location.reload());};
 $('search').oninput=render;
 $('addBtn').onclick=()=>openEditor(null);
 $('detBack').onclick=()=>{killMaps();$('detail').classList.add('hidden');lockBackground();};
@@ -22999,7 +23065,7 @@ async function addReceipts(files){
       const blob=await shrink(f,1600);
       const path=`fin/${TX.account_id}/${crypto.randomUUID()}.jpg`;
       const {error}=await sb.storage.from('photos')
-        .upload(path,blob,{contentType:'image/jpeg',upsert:false});
+        .upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:photoKeep(path)});
       if(error) throw error;
       const now=[...arr(TX.photos),{path, at:new Date().toISOString()}];
       const {error:e2}=await sb.from('transactions')
@@ -26966,7 +27032,7 @@ async function start(){
   const {data:{user}}=await sb.auth.getUser();
   if(!user){$('signin').classList.remove('hidden');$('app').classList.add('hidden');
     $('home').classList.add('hidden');return;}
-  ME=user;$('signin').classList.add('hidden');
+  ME=user;linksLoad();$('signin').classList.add('hidden');
   // The front door goes up first. It used to unhide the contacts list, spend a
   // second or two fetching everything, and only then put the home screen over
   // the top — so every start flashed the wrong screen at you. The list is only

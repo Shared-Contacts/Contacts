@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.20.7",
+  "version": "2026.11.21.1",
   "history": [
+    {
+      "version": "2026.11.21.1",
+      "changes": [
+        "Photos: each phone and computer keeps its photo links for a week, so it shows the copies it already has instead of downloading them again.",
+        "Photos: pictures no longer break when the app is open for over an hour, and one that won’t load gets one more try by itself."
+      ]
+    },
     {
       "version": "2026.11.20.7",
       "changes": [

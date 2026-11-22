@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.22.1",
+  "version": "2026.11.22.2",
   "history": [
+    {
+      "version": "2026.11.22.2",
+      "changes": [
+        "MY Music and MY Podcasts: two new tiles that keep your favourite playlists, albums, stations and podcasts as big pictures. Tap one to play it.",
+        "To add one, press Share in Spotify or BBC Sounds and choose MY life, then Music or A podcast. Each one is kept in URL Links too.",
+        "URL Links: Open with now knows Spotify, BBC Sounds, BBC iPlayer, YouTube Music and Amazon Music, so their links open in their own app."
+      ]
+    },
     {
       "version": "2026.11.22.1",
       "changes": [

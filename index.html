@@ -576,6 +576,23 @@ input[name="postcode"]{text-transform:uppercase}
 .lsub{color:var(--muted);font-size:15px;margin:0 0 8px;overflow-wrap:anywhere}
 .lhid{color:var(--muted);font-size:15px;margin:12px 4px}
 .lhid button{color:var(--hull);font-weight:600;font-size:15px;padding:0 0 0 6px}
+/* MY Music and MY Podcasts (ML380, ML381): links from URL Links as big
+   pictures, two to a row. The pencil sits on the picture's corner, apart from
+   the rest of the card, so a tap meant to play never opens the editor. */
+.mugrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mucard{position:relative;min-width:0;background:var(--panel);border:1px solid var(--rule);
+  border-radius:var(--radius);overflow:hidden}
+.mucard .mugo{display:block;color:inherit;text-decoration:none}
+.mupic{display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;
+  background:var(--hull);color:var(--paper);font-size:44px;font-weight:700;overflow:hidden}
+.mupic img{width:100%;height:100%;object-fit:cover;display:block}
+.mucard b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  padding:8px 10px 0;font-weight:600;color:var(--hull);overflow-wrap:anywhere;line-height:1.25}
+.mumeta{display:block;padding:2px 10px 10px;font-size:13px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muedit{position:absolute;top:6px;right:6px;width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,.92);color:var(--ink);font-size:17px;line-height:1;
+  box-shadow:0 1px 3px rgba(0,0,0,.25)}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
@@ -1999,6 +2016,18 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
   <div class="sheetbody" id="linksBody"></div>
 </div>
 
+<div id="music" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="music" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="musicMenu" data-menu="music" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">MY Music</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="musicBody"></div>
+</div>
+
+<div id="pods" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="pods" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="podsMenu" data-menu="pods" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">MY Podcasts</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="podsBody"></div>
+</div>
+
 <div id="recipes" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="recipes" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="recipesMenu" data-menu="recipes" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Recipes</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -2400,7 +2429,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','invite','diary','itemEd','rtEd','log',
-  'logEd','where','wish','links','recipes','recipe','recipeEd','ideas','cook','weekMenu',
+  'logEd','where','wish','links','music','pods','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
   'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys','sld','sldTheme'];
@@ -3225,6 +3254,7 @@ async function refreshAll(){
   await refreshPhotos(true);
   if(!$('home').classList.contains('hidden')) renderHome();
   if(!$('links').classList.contains('hidden')){ await loadLinks(); renderLinks(); }
+  if(tunesOpen().length){ await loadLinks(); renderTunes(); }
   if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
     if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
   if(!$('reports').classList.contains('hidden')) await repLoad();
@@ -5522,7 +5552,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
-  ['recipes','recipes'],['links','links'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
+  ['recipes','recipes'],['links','links'],['music','music'],['pods','pods'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
   ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['sldTheme','sld'],['sld','sld'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
@@ -5536,14 +5566,14 @@ function currentScreen(){
   return 'contacts';
 }
 const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop',
-  where:'h-where', wish:'h-wish', links:'h-urllinks', io:'h-io', settings:'h-settings',
+  where:'h-where', wish:'h-wish', links:'h-urllinks', music:'h-music', pods:'h-music', io:'h-io', settings:'h-settings',
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff',
   books:'h-books', tv:'h-tv', tml:'h-tml', sld:'h-sld'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
-  money:'Finances', links:'URL Links', recipes:'Recipes'};
+  money:'Finances', links:'URL Links', music:'URL Links', pods:'URL Links', recipes:'Recipes'};
 
 function openHelp(where){
   const anchor = HELP_AT[where===undefined?currentScreen():where] || '';
@@ -5996,9 +6026,12 @@ function openHelp(where){
   <p>Tap a link to open it. The pencil at the end changes it, or deletes it.</p>
   <p><strong>Open with</strong> chooses, once, where a link opens:
   <strong>Firefox</strong>, the <strong>YouTube app</strong>, the
-  <strong>Barclays app</strong>, or <strong>Phone decides</strong>, the ordinary
-  way. It is filled in for you when you add a link: YouTube and Barclays pages
-  get their own app, and everything else gets Phone decides. If the phone does
+  <strong>Barclays app</strong>, a music or podcast app (<strong>Spotify</strong>,
+  <strong>BBC Sounds</strong>, <strong>BBC iPlayer</strong>, <strong>YouTube
+  Music</strong> or <strong>Amazon Music</strong>), or <strong>Phone
+  decides</strong>, the ordinary way. It is filled in for you when you add a link:
+  a page from one of those gets its own app, and everything else gets Phone
+  decides. If the phone does
   not have that app, or the app will not take the link, it opens the ordinary
   way instead.</p>
   <p><strong>Firefox</strong> opens the page as a browser of its own, so this
@@ -6014,6 +6047,21 @@ function openHelp(where){
   your own level, or stop seeing it.</p>
   <p>Your levels and subjects are under <strong>Settings &rsaquo; URL
   Links</strong>, to rename, reorder, add or remove.</p>
+
+  <h4 id="h-music">MY Music and MY Podcasts</h4>
+  <p><strong>MY Music</strong> and <strong>MY Podcasts</strong> keep your
+  favourite playlists, albums, artists, stations and podcasts as big pictures,
+  one tap from playing. Tap one and it opens in its own app (Spotify, BBC
+  Sounds and the rest) if the phone has it, or on its web page if not.</p>
+  <p>To add one, find it in Spotify or BBC Sounds, press <strong>Share</strong>
+  and choose <strong>MY life</strong>, then <strong>Music</strong> or <strong>A
+  podcast</strong>. Or copy its link and press <strong>+ Add</strong> at the top.
+  The picture and the name are fetched by themselves.</p>
+  <p>Each one is a link in <strong>URL Links</strong> under the subject
+  <strong>Music</strong> or <strong>Podcasts</strong>, so it shows there too and
+  can be shared the same way. The pencil on a picture changes it or deletes it;
+  taking Music or Podcasts off its subjects takes it off this screen. The ones
+  you play most come first.</p>
 
   <h4 id="h-stuff">My Stuff</h4>
   <p><strong>My Stuff</strong> keeps track of the things you own and the papers
@@ -11159,7 +11207,7 @@ const LINK_LEVELS_DEFAULT=[{id:'everyday',name:'Everyday'},{id:'favourites',name
 const LINK_SUBJECTS_DEFAULT=['Mapping','Weather','New Zealand','News','Canals',
   'Photography','Shopping','Reference'];
 let LINK_PREFS={levels:LINK_LEVELS_DEFAULT.map(x=>({...x})),
-  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[], where:{}};
+  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[], where:{}, pics:{}};
 
 function linkPrefsFrom(saved){
   const lp=saved&&saved.links;
@@ -11169,7 +11217,9 @@ function linkPrefsFrom(saved){
     subjects: lp&&Array.isArray(lp.subjects)
       ? lp.subjects.filter(Boolean) : LINK_SUBJECTS_DEFAULT.slice(),
     hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [],
-    where: lp&&lp.where&&typeof lp.where==='object' ? {...lp.where} : {} };
+    where: lp&&lp.where&&typeof lp.where==='object' ? {...lp.where} : {},
+    // MY Music and MY Podcasts: each link's picture and name, fetched once (ML380).
+    pics: lp&&lp.pics&&typeof lp.pics==='object'&&!Array.isArray(lp.pics) ? {...lp.pics} : {} };
 }
 
 function linkHost(u){
@@ -11206,7 +11256,10 @@ function levelName(id){
    phone 29 Oct 2026 (ML84, ML85): the phone always asks Chrome or Firefox
    first, which the page cannot stop. Without Firefox, a link set to it goes to
    Firefox's Play Store page (store) rather than the ordinary way, so it can be
-   installed (ML86). */
+   installed (ML86).
+   The music and podcast apps came with MY Music and MY Podcasts (ML380).
+   BBC Sounds and BBC iPlayer share bbc.co.uk with the rest of the BBC, so
+   only their own part of it (paths) gets the app. */
 const LINK_APPS=[
   {k:'',         label:'Phone decides'},
   {k:'firefox',  label:'Firefox',      pkg:'org.mozilla.firefox',
@@ -11214,13 +11267,25 @@ const LINK_APPS=[
   {k:'youtube',  label:'YouTube app',  pkg:'com.google.android.youtube',
    hosts:/(^|\.)(youtube\.com|youtu\.be)$/i},
   {k:'barclays', label:'Barclays app', pkg:'com.barclays.android.barclaysmobilebanking',
-   hosts:/(^|\.)barclays\.co\.uk$/i}];
+   hosts:/(^|\.)barclays\.co\.uk$/i},
+  {k:'spotify',  label:'Spotify',      pkg:'com.spotify.music',
+   hosts:/(^|\.)(spotify\.com|spotify\.link)$/i},
+  {k:'sounds',   label:'BBC Sounds',   pkg:'com.bbc.sounds',
+   hosts:/(^|\.)bbc\.co\.uk$/i, paths:/^\/sounds(\/|$)/i},
+  {k:'iplayer',  label:'BBC iPlayer',  pkg:'bbc.iplayer.android',
+   hosts:/(^|\.)bbc\.co\.uk$/i, paths:/^\/iplayer(\/|$)/i},
+  {k:'ytmusic',  label:'YouTube Music', pkg:'com.google.android.apps.youtube.music',
+   hosts:/^music\.youtube\.com$/i},
+  {k:'amazonmusic', label:'Amazon Music', pkg:'com.amazon.mp3',
+   hosts:/^music\.amazon\.[a-z.]+$/i}];
 const linkApp = k => LINK_APPS.find(a=>a.k===(k||''))||LINK_APPS[0];
 // The guess for a new link: the site's own app if it has one, else Phone decides.
+// The last that fits wins, so music.youtube.com is YouTube Music, not YouTube.
 function linkAppFor(url){
-  const h=linkHost(url);
-  const a=h&&LINK_APPS.find(x=>x.hosts&&x.hosts.test(h));
-  return a?a.k:'';
+  const h=linkHost(url); if(!h) return '';
+  let p=''; try{ p=new URL(url).pathname; }catch(e){}
+  const fits=LINK_APPS.filter(x=>x.hosts&&x.hosts.test(h)&&(!x.paths||x.paths.test(p)));
+  return fits.length?fits[fits.length-1].k:'';
 }
 const ON_ANDROID=/Android/i.test(navigator.userAgent);
 /* Show on: Laptop, Both or Phone, for each link (asked for 28 Oct 2026, ML71).
@@ -11415,14 +11480,14 @@ async function countLinkOpen(id){
 
 // Whatever is on the clipboard, straight into a new link. If the phone will
 // not hand the clipboard over, the box opens empty and you paste into it.
-async function pasteLink(){
+async function pasteLink(extra){
   let txt='', denied=false;
   try{
     if(navigator.clipboard&&navigator.clipboard.readText) txt=await navigator.clipboard.readText();
     else denied=true;
   }catch(e){ denied=true; }
   const url=findUrl(txt);
-  editLink(null, url?{url}:{});
+  editLink(null, {...(url?{url}:{}), ...(extra||{})});
   if(!url) toast(denied||!txt.trim()
     ? 'Press and hold in the web address box, then choose Paste'
     : 'What you copied is not a web address');
@@ -11538,8 +11603,9 @@ function editLink(id,start){
     if(!confirm('Delete "'+old.title+'"? Anyone you shared it with loses it too.')) return;
     const {error}=await sb.from('url_links').delete().eq('id',old.id);
     if(error){ toast('Could not delete it'); console.error(error); return; }
-    if(putLinkWhere(old.id,'')) await saveTiles();
-    close(); await loadLinks(); renderLinks(); toast('Deleted');
+    const hadPic=dropTunePic(old.id);
+    if(putLinkWhere(old.id,'')||hadPic) await saveTiles();
+    close(); await linksChanged(); toast('Deleted');
   };
 
   q('#leGo').onclick=async()=>{
@@ -11596,7 +11662,7 @@ function editLink(id,start){
     if(fresh.length) LINK_PREFS.subjects=LINK_PREFS.subjects.concat(fresh);
     const moved=putLinkWhere(lid,wb?wb.dataset.lewhere:'');
     if(fresh.length||moved) await saveTiles();
-    close(); await loadLinks(); renderLinks();
+    close(); await linksChanged();
     const gone=moved&&!LNK.elsewhere&&linkElsewhere({id:lid});
     toast(shareErr?'Saved, but who can see it did not change. Try again.'
       : appLost?'Saved, but Open with needs the step 45 file run first'
@@ -11634,7 +11700,7 @@ function linkActions(id){
   box.querySelectorAll('[data-lawhere]').forEach(b=>b.onclick=async()=>{
     box.querySelectorAll('[data-lawhere]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
     if(!putLinkWhere(id,b.dataset.lawhere)) return;
-    await saveTiles(); renderLinks(); toast('Saved'); });
+    await saveTiles(); renderLinks(); renderTunes(); toast('Saved'); });
   q('#laHide').onclick=async()=>{
     if(!confirm('Stop seeing "'+l.title+'"? Only '+whoWrote(l.created_by)
       +' can share it with you again.')) return;
@@ -11648,9 +11714,182 @@ function linkActions(id){
     if(l.share_all&&!LINK_PREFS.hide.includes(id)){
       LINK_PREFS.hide=LINK_PREFS.hide.concat(id); await saveTiles();
     }
-    close(); await loadLinks(); renderLinks(); toast('Gone from your list');
+    close(); await linksChanged(); toast('Gone from your list');
   };
 }
+
+// Something changed in URL Links: every screen that shows links draws again.
+async function linksChanged(){ await loadLinks(); renderLinks(); renderTunes(); }
+
+/* ============================================================
+   MY Music and MY Podcasts (asked for 22 Nov 2026, ML380 and ML381).
+   Not a store of their own: each is a link in URL Links under the
+   subject Music or Podcasts, drawn as a big picture that opens in its
+   own app (Spotify, BBC Sounds and so on). So there is no Supabase step,
+   and they can be shared like any other link.
+   The picture and the name come from the page. Spotify gives them itself
+   (its oEmbed, which a web page may read). Anything else goes through
+   the read-recipe edge function, which hands back any page's og:title
+   and og:image when it finds no recipe there. Both are kept with your
+   own settings (LINK_PREFS.pics), so each is fetched once rather than at
+   every opening. A fetch that fails is not kept, and is tried again the
+   next time the screen is opened, never more than once an opening. A
+   picture that will not load is fetched again once, at the next opening.
+   ============================================================ */
+const TUNES={
+  music:{sheet:'music', body:'musicBody', subject:'Music',
+    empty:'Nothing here yet. In Spotify, BBC Sounds or another music app, find a playlist, '
+      +'album, artist or station, press <strong>Share</strong> and choose <strong>MY life</strong>, '
+      +'then <strong>Music</strong>. Or copy its link and press <strong>+ Add</strong>.'},
+  pods:{sheet:'pods', body:'podsBody', subject:'Podcasts',
+    empty:'Nothing here yet. In Spotify, BBC Sounds or another podcast app, find a podcast, '
+      +'press <strong>Share</strong> and choose <strong>MY life</strong>, then <strong>A '
+      +'podcast</strong>. Or copy its link and press <strong>+ Add</strong>.'}};
+const TUNE_TRIED=new Set(), TUNE_AGAIN=new Set(), TUNE_REDONE=new Set();
+const tunesOpen = () => Object.keys(TUNES).filter(k=>$(TUNES[k].sheet)&&!$(TUNES[k].sheet).classList.contains('hidden'));
+const tuneSubj = (l,k) => arr(l.subjects).some(x=>String(x).toLowerCase()===TUNES[k].subject.toLowerCase());
+// A title nobody typed is only the site's name; the page's own name is better.
+const tuneBare = l => !l.title||l.title===l.url||l.title===linkHost(l.url)
+  ||/^(spotify|bbc sounds|bbc iplayer|youtube music|amazon music)$/i.test(String(l.title).trim());
+const tunePic = l => { const p=(LINK_PREFS.pics||{})[l.id]; return p&&p.u===l.url?p:null; };
+function tuneTitle(l){
+  const p=tunePic(l);
+  return tuneBare(l)&&p&&p.t ? p.t : (l.title||linkHost(l.url)||l.url);
+}
+function tunesOf(k){
+  const az=(a,b)=>tuneTitle(a).localeCompare(tuneTitle(b),'en',{sensitivity:'base'});
+  return linksKept().filter(l=>tuneSubj(l,k)&&!linkElsewhere(l)).sort((a,b)=>
+    (b.opens||0)-(a.opens||0)||String(b.last_opened||'').localeCompare(String(a.last_opened||''))||az(a,b));
+}
+// True when there was one to take away, so the caller knows to save.
+function dropTunePic(id){
+  const all=LINK_PREFS.pics||{};
+  if(!(id in all)) return false;
+  const left={...all}; delete left[id]; LINK_PREFS.pics=left; return true;
+}
+
+async function openTunes(k){
+  const T=TUNES[k]; if(!T) return;
+  showSheet(T.sheet); lockBackground();
+  TUNE_TRIED.clear();
+  $(T.body).innerHTML='<p class="empty">Fetching your links…</p>';
+  await loadLinks(); renderTunes(k); $(T.body).scrollTop=0;
+}
+
+function tuneCard(l){
+  const mine=linkMine(l), t=tuneTitle(l), p=tunePic(l);
+  const img=p&&p.i&&!TUNE_AGAIN.has(l.id)?p.i:'';
+  const href=linkHref(l), app=linkApp(l.open_with);
+  const letter=esc((t.match(/[A-Za-z0-9]/)||['?'])[0].toUpperCase());
+  const meta=[app.k?app.label:linkHost(l.url)].concat(mine?[]:['from '+whoWrote(l.created_by)]);
+  // An app is asked for from the page itself; a new tab would be left blank.
+  return `<div class="mucard">
+    <a class="mugo" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
+      data-lopen="${l.id}"><span class="mupic" data-mul="${letter}">${img
+        ?`<img data-mupic="${l.id}" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+        :letter}</span>
+      <b>${esc(t)}</b><span class="mumeta">${meta.map(esc).join(' &middot; ')}</span></a>
+    <button class="muedit" data-ledit="${l.id}" aria-label="${
+      mine?'Change this one':'What you can do with this one'}">${mine?'&#9998;':'&#8942;'}</button>
+  </div>`;
+}
+
+// Drawn again for whichever of the two is open, or just the one asked for.
+function renderTunes(only){
+  (only?[only]:tunesOpen()).forEach(k=>{
+    const T=TUNES[k], body=$(T.body); if(!body) return;
+    const y=body.scrollTop;
+    if(ULINKS_WHY){
+      body.innerHTML=`<div class="card"><div class="field"><dd style="color:${
+        ULINKS_WHY==='notset'?'var(--muted)':'var(--red)'}">${ULINKS_WHY==='notset'
+        ? 'This needs URL Links&rsquo; place in the database first. Run the step 42 file in '
+          +'Supabase, then press refresh at the top.'
+        : 'Could not load these just now. Nothing has been lost &mdash; check your signal '
+          +'and press refresh at the top.'}</dd></div></div>`;
+      return;
+    }
+    const list=tunesOf(k);
+    const away=linksKept().filter(l=>tuneSubj(l,k)&&linkElsewhere(l)).length;
+    body.innerHTML=`<button class="btn primary lnkpaste" data-tuneadd="${k}">+ Add</button>`
+      +(list.length?`<div class="mugrid">${list.map(tuneCard).join('')}</div>`
+        :`<div class="card"><div class="field"><dd style="color:var(--muted)">${T.empty}</dd></div></div>`)
+      +(away?`<p class="lhid">${away} more kept for the ${ON_PHONE?'laptop':'phone'} only, in URL Links.</p>`:'');
+    body.scrollTop=y;
+    tuneFetch(list);
+  });
+}
+
+// The name as the page gives it, less the site's own name around it.
+function tuneTidy(t){
+  return String(t||'').replace(/\s+/g,' ').trim()
+    .replace(/^BBC Sounds\s*[-–|:]\s*/i,'')
+    .replace(/\s*[-–|]\s*(Available Episodes|BBC Sounds|BBC iPlayer)\s*$/i,'')
+    .slice(0,200);
+}
+// {i:picture, t:name}, or null when it could not be asked (not kept, so tried again).
+async function tuneLook(url){
+  if(/(^|\.)spotify\.com$/i.test(linkHost(url))){
+    try{
+      const r=await fetch('https://open.spotify.com/oembed?url='+encodeURIComponent(url));
+      if(r.ok){ const j=await r.json();
+        if(j&&(j.thumbnail_url||j.title)) return {i:String(j.thumbnail_url||''), t:String(j.title||'')}; }
+    }catch(e){ console.error(e); }
+  }
+  try{
+    const {data,error}=await sb.functions.invoke('read-recipe',{body:{url}});
+    if(error){ console.error(error); return null; }
+    if(!data||typeof data!=='object') return null;
+    const im=Array.isArray(data.image)?data.image[0]:data.image;
+    return {i:typeof im==='string'?im:'', t:typeof data.title==='string'?data.title:''};
+  }catch(e){ console.error(e); return null; }
+}
+async function tuneFetch(list){
+  const want=list.filter(l=>!TUNE_TRIED.has(l.id)&&(!tunePic(l)||TUNE_AGAIN.has(l.id)));
+  if(!want.length) return;
+  want.forEach(l=>TUNE_TRIED.add(l.id));
+  const got={};
+  let n=0;
+  const worker=async()=>{ while(n<want.length){ const l=want[n++];
+    const r=await tuneLook(l.url); if(!r) continue;
+    got[l.id]={u:l.url, i:/^https:\/\//i.test(r.i)?r.i.slice(0,1000):'', t:tuneTidy(r.t)};
+    // One of your own, saved with only the site's name, takes the page's name.
+    if(linkMine(l)&&tuneBare(l)&&got[l.id].t){
+      const {error}=await sb.from('url_links').update({title:got[l.id].t}).eq('id',l.id);
+      if(error) console.error(error); else l.title=got[l.id].t;
+    }
+  } };
+  await Promise.all([worker(),worker(),worker()]);
+  const ids=Object.keys(got);
+  if(!ids.length) return;
+  ids.forEach(id=>TUNE_AGAIN.delete(Number(id)));
+  // Pictures of links that have gone go with them.
+  const keep=ULINKS_WHY?null:new Set(ULINKS.map(l=>String(l.id)));
+  const all={...(LINK_PREFS.pics||{}), ...got};
+  if(keep) Object.keys(all).forEach(id=>{ if(!keep.has(id)) delete all[id]; });
+  LINK_PREFS.pics=all;
+  await saveTiles();
+  renderTunes();
+}
+// A picture that will not load: the letter instead, and one more fetch next time.
+function tuneBroke(img){
+  const id=Number(img.dataset.mupic), box=img.parentNode;
+  if(box){ box.textContent=box.dataset.mul||'?'; }
+  if(!TUNE_REDONE.has(id)){ TUNE_REDONE.add(id); TUNE_AGAIN.add(id); }
+}
+
+Object.keys(TUNES).forEach(k=>{
+  const body=$(TUNES[k].body); if(!body) return;
+  body.addEventListener('click',ev=>{
+    const o=ev.target.closest('[data-lopen]');
+    if(o){ countLinkOpen(Number(o.dataset.lopen)); return; }   // the link itself opens it
+    const e=ev.target.closest('[data-ledit]');
+    if(e){ editLink(Number(e.dataset.ledit)); return; }
+    if(ev.target.closest('[data-tuneadd]')) pasteLink({subjects:[TUNES[k].subject]});
+  });
+  // Pictures that fail say so here: an error does not bubble, so it is caught on the way down.
+  body.addEventListener('error',ev=>{
+    const im=ev.target; if(im&&im.dataset&&im.dataset.mupic) tuneBroke(im); },true);
+});
 
 $('linksBody').addEventListener('click',ev=>{
   const o=ev.target.closest('[data-lopen]');
@@ -13046,7 +13285,9 @@ function sharedIn(s){
     <p class="dsec" style="padding-top:0">Save this as</p>
     <p class="lsub">${esc(s.title||words.name||linkHost(s.url))}</p>
     ${s.url?`<button class="menuitem" id="siRecipe">A recipe &rsaquo;</button>
-    <button class="menuitem" id="siLink">A link in URL Links &rsaquo;</button>`:''}
+    <button class="menuitem" id="siLink">A link in URL Links &rsaquo;</button>
+    <button class="menuitem" id="siMusic">Music &rsaquo;</button>
+    <button class="menuitem" id="siPod">A podcast &rsaquo;</button>`:''}
     <button class="menuitem" id="siBook">A book &rsaquo;</button>
     <button class="menuitem" id="siShow">A film or TV series &rsaquo;</button>
     <div class="pfoot"><button id="siShut">Cancel</button></div></div>`;
@@ -13057,6 +13298,10 @@ function sharedIn(s){
   if(s.url){
     box.querySelector('#siRecipe').onclick=async()=>{ close(); await openRecipes(); readRecipe(s.url,s.title); };
     box.querySelector('#siLink').onclick=async()=>{ close(); await openLinks(); editLink(null,s); };
+    box.querySelector('#siMusic').onclick=async()=>{ close(); await openTunes('music');
+      editLink(null,{...s, subjects:[TUNES.music.subject]}); };
+    box.querySelector('#siPod').onclick=async()=>{ close(); await openTunes('pods');
+      editLink(null,{...s, subjects:[TUNES.pods.subject]}); };
   }
   box.querySelector('#siBook').onclick=()=>{ close(); sharedBook(s); };
   box.querySelector('#siShow').onclick=()=>{ close(); sharedShow(s); };
@@ -19758,6 +20003,8 @@ const TILE_DEST={
   stuff:   {label:'My Stuff',   go:openStuff},
   books:   {label:'Books',      go:openBooks},
   tv:      {label:'TV/Movies',  go:openShows},
+  music:   {label:'Music',      go:()=>openTunes('music')},
+  pods:    {label:'Podcasts',   go:()=>openTunes('pods')},
   tml:     {label:'Timeline',   go:openTimeline},
   sld:     {label:'Slideshow',  go:openSlides},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
@@ -19770,9 +20017,10 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52', sld:'#6B3F2A'};
+  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52', sld:'#6B3F2A',
+  music:'#6B3030', pods:'#4A5340'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','sld','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','sld','music','pods','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -19793,7 +20041,8 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   chats:['chats','chat'], money:['money','moneyEd','recon','moneyImp','pairs','reports'],
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
-  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys'], sld:['sld','sldTheme']};
+  books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys'], sld:['sld','sldTheme'],
+  music:['music'], pods:['pods']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -20063,7 +20312,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.22.1';
+const APP_VERSION='2026.11.22.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -26696,6 +26945,8 @@ const AREAS={
   stuff:   {title:'My Stuff',     set:null,        help:'stuff'},
   books:   {title:'Books',        set:null,        help:'books'},
   tv:      {title:'TV/Movies',    set:null,        help:'tv'},
+  music:   {title:'MY Music',     set:'URL Links', help:'music'},
+  pods:    {title:'MY Podcasts',  set:'URL Links', help:'pods'},
   tml:     {title:'Timeline',     set:null,        help:'tml'},
   sld:     {title:'Slideshow',    set:null,        help:'sld'},
   where:   {title:'Where we are', set:null,        help:'where'},
@@ -26716,6 +26967,8 @@ const AREA_SHUT={
   shop: ()=>$('shop').classList.add('hidden'),
   wish: ()=>{ if(DPH&&DPH.box==='wPics') dphCancel(); $('wish').classList.add('hidden'); },
   links:()=>$('links').classList.add('hidden'),
+  music:()=>$('music').classList.add('hidden'),
+  pods: ()=>$('pods').classList.add('hidden'),
   recipes:()=>{ if(COOK&&!shutCook()) return;
     ['recipes','recipe','recipeEd','ideas','weekMenu'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
@@ -26737,7 +26990,7 @@ const AREA_SHUT={
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, tml:openTimeline, sld:openSlides, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, music:()=>openTunes('music'), pods:()=>openTunes('pods'), tml:openTimeline, sld:openSlides, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -26760,6 +27013,8 @@ function areaItems(area){
     it('Add an entry',            ()=>{ shutMenu(); newItem(); })];
   if(area==='links') return [
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
+  if(area==='music'||area==='pods') return [
+    it('Paste a link',            ()=>{ shutMenu(); pasteLink({subjects:[TUNES[area].subject]}); })];
   if(area==='stuff') return [
     it('Add something',           ()=>{ shutMenu(); stfPickKind(); }),
     it('Change the lock password', ()=>{ shutMenu(); stfChangeLock(); })];

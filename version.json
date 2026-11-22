@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.21.1",
+  "version": "2026.11.22.1",
   "history": [
+    {
+      "version": "2026.11.22.1",
+      "changes": [
+        "Finances: Find transfers has a Not these two button, so two that don’t go together are never offered again, with a way to put them back.",
+        "Diary: ticking or removing a regular job keeps its done list open and the screen where it was, instead of jumping."
+      ]
+    },
     {
       "version": "2026.11.21.1",
       "changes": [

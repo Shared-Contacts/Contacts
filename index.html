@@ -5744,6 +5744,11 @@ function openHelp(where){
   same number with opposite signs a few days apart, which is a confident match,
   so those are listed for you to join with one tap. Nothing is deleted and no
   amount is altered: the two simply become one transfer.</p>
+  <p>Two that happen to match but don&rsquo;t go together? Tap <strong>Not these
+  two</strong> and they won&rsquo;t be offered again. They wait at the bottom of the
+  list, folded away, with <strong>Offer these two again</strong> in case you change
+  your mind. That choice is yours alone: someone who shares the account decides
+  for themselves.</p>
   <p>Across currencies there is nothing dependable to match on &mdash; £100 and
   €120.83 are not the same number, and guessing would join the wrong things. For
   those, open either side and use <strong>"This is money moved between my own
@@ -7047,6 +7052,7 @@ function helpMark(root,words){
 let ITEMS=[], ITEM_SHARES=[], DIARY_DONE=false, EDIT_ITEM=null, ITEM_KIND='todo';
 let ROUTINES=[];
 let DIARY_VIEW='list', DIARY_DAY=null;
+let DIARY_SHOWN=null;   // the view last drawn, so drawing it again keeps its place (ML376)
 let DIARY_MONTH=new Date().toISOString().slice(0,7);
 try{ DIARY_VIEW=localStorage.getItem('dview')||'list'; }catch(e){}
 
@@ -7140,6 +7146,7 @@ function tilePip(dest){
 /* ---------- the diary list ---------- */
 function openDiary(){
   daysReset(); bankHolFetch();
+  DIARY_SHOWN=null;      // opened afresh: folded as it comes, at the top
   renderDiary();
   showSheet('diary'); $('diaryBody').scrollTop=0; lockBackground();
 }
@@ -7223,6 +7230,13 @@ async function delayItem(id,hours){
 }
 
 function renderDiary(){
+  // Drawn again in place (a regular job ticked or removed, say), the screen
+  // stays as it was: the same lists folded open or shut, at the same place
+  // (ML376). Before, the "done" lists folded shut and the screen jumped to
+  // another part of the list.
+  const body=$('diaryBody'), again=DIARY_SHOWN===DIARY_VIEW;
+  const kept=new Map(), at=body.scrollTop;
+  if(again) body.querySelectorAll('details[data-keep]').forEach(d=>kept.set(d.dataset.keep,d.open));
   let html=`<div class="kindpick">
       <button data-dview="list"    aria-pressed="${DIARY_VIEW==='list'}">List</button>
       <button data-dview="week"    aria-pressed="${DIARY_VIEW==='week'}">Week</button>
@@ -7240,6 +7254,12 @@ function renderDiary(){
   if(DIARY_VIEW!=='routine') html+='<div id="pushSlot"></div>';
 
   $('diaryBody').innerHTML=html;
+  if(again){
+    body.querySelectorAll('details[data-keep]').forEach(d=>{
+      if(kept.has(d.dataset.keep)) d.open=kept.get(d.dataset.keep); });
+    body.scrollTop=at;
+  }
+  DIARY_SHOWN=DIARY_VIEW;
   if(DIARY_VIEW!=='routine') pushCard().then(h=>{
     const slot=$('pushSlot'); if(!slot) return;
     slot.innerHTML=h;
@@ -7287,7 +7307,7 @@ function renderDiary(){
 /* ---------- the standing list of regular jobs ---------- */
 function diaryRoutine(){
   const headings=[...new Set(ROUTINES.map(r=>r.heading||''))];
-  let html=`<details class="card logsec" open><summary>Add a regular job</summary>
+  let html=`<details class="card logsec" open data-keep="rtadd"><summary>Add a regular job</summary>
     <div class="setadd">
       <input id="rtHead" list="dlHead" value="ASAP" placeholder="Heading (optional), e.g. Boat">
       <p class="coords" style="margin:2px 0 0">Change heading to whatever you want, e.g. Car,
@@ -7322,7 +7342,7 @@ function diaryRoutine(){
         ${todo.length} to do</span></p><div class="card rtlist">`;
     todo.forEach(r=>{ html+=routineRow(r,true); });
     if(done.length)
-      html+=`<details class="rtdone"><summary>${done.length} done &mdash; show</summary>
+      html+=`<details class="rtdone" data-keep="done:${esc(h)}"><summary>${done.length} done &mdash; show</summary>
         ${done.map(routineRow).join('')}</details>`;
     html+='</div>';
   });
@@ -19881,6 +19901,7 @@ function loadTiles(){
   LINK_PREFS = linkPrefsFrom(saved);
   RCP_PREFS = rcpPrefsFrom(saved);
   NOT_SAME = arr(saved&&saved.notsame).filter(x=>typeof x==='string');
+  NOT_PAIR = arr(saved&&saved.notpair).filter(x=>typeof x==='string');
   SLD_HIDE = arr(saved&&saved.sldhide).filter(x=>typeof x==='string');
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
@@ -19900,7 +19921,7 @@ function loadTiles(){
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, wxoff:WX_OFF, menuof:MENU_OF, links:LINK_PREFS,
-              recipes:RCP_PREFS, notsame:NOT_SAME, sldhide:SLD_HIDE,
+              recipes:RCP_PREFS, notsame:NOT_SAME, notpair:NOT_PAIR, sldhide:SLD_HIDE,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
@@ -20042,7 +20063,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.21.1';
+const APP_VERSION='2026.11.22.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -23317,6 +23338,10 @@ function pickPayee(){
    currencies there is nothing reliable to match on — that is what the rate is
    for — so those are left to be paired by hand from the transaction itself. */
 let PAIRS=[];
+// Pairs you said don't go together, as "out id-in id", kept with your own
+// settings so they are never offered again (ML375); and those of them still
+// about, listed at the bottom with a way back.
+let NOT_PAIR=[], PAIRS_NO=[];
 
 /* ============================================================
    Finances > Reports
@@ -23896,7 +23921,7 @@ async function openPairs(){
 }
 
 async function findPairs(){
-  PAIRS=[];
+  PAIRS=[]; PAIRS_NO=[];
   const {data,error}=await sb.from('transactions').select('*')
     .is('transfer_id',null).order('tdate',{ascending:false}).limit(1500);
   if(error){ console.error(error); return; }
@@ -23922,6 +23947,7 @@ async function findPairs(){
     if(taken.has(out.id)) return;
     const mate=usable.find(inn=>
       !taken.has(inn.id) && inn.id!==out.id
+      && !NOT_PAIR.includes(out.id+'-'+inn.id)
       && inn.account_id!==out.account_id
       && accCur(inn.account_id)===accCur(out.account_id)
       && Math.abs(Number(inn.total)+Number(out.total))<0.005
@@ -23932,13 +23958,19 @@ async function findPairs(){
         outName:txLabel(out,lines), innName:txLabel(mate,lines)});
     }
   });
+  NOT_PAIR.forEach(key=>{
+    const [a,b]=key.split('-').map(Number);
+    const out=usable.find(t=>t.id===a), inn=usable.find(t=>t.id===b);
+    if(out&&inn) PAIRS_NO.push({key,out,inn,
+      outName:txLabel(out,lines), innName:txLabel(inn,lines)});
+  });
 }
 
 function renderPairs(){
   if(!PAIRS.length){
     $('pairsBody').innerHTML=`<div class="card"><div class="field"><dd>
       Nothing here looks like two halves of the same transfer.</dd></div></div>
-      ${pairsFootnote()}`;
+      ${pairsNoHtml()}${pairsFootnote()}`;
     return;
   }
   $('pairsBody').innerHTML=`
@@ -23946,19 +23978,35 @@ function renderPairs(){
     <div class="card"><div class="field"><dd style="color:var(--muted);font-size:15px">
       Each of these is the same amount leaving one account and arriving at
       another within ${PAIR_DAYS} days. Join one and the two become a single
-      transfer; nothing is deleted and no amount changes.</dd></div></div>
-    ${PAIRS.map((p,i)=>`<div class="card">
-      <div class="txn"><span class="td wide">${esc(shortDate(p.out.tdate))}</span>
+      transfer; nothing is deleted and no amount changes. If two don't go
+      together, tap Not these two and they won't be offered again.</dd></div></div>
+    ${PAIRS.map((p,i)=>`<div class="card">${pairRows(p)}
+      <div class="setadd"><button class="btn primary" data-join="${i}">Join these two</button>
+        <button class="btn" data-notpair="${i}" style="margin-top:10px;border:1.5px solid var(--rule)">Not these two</button></div>
+    </div>`).join('')}
+    ${pairsNoHtml()}${pairsFootnote()}`;
+}
+
+// The two halves, money out above money in.
+function pairRows(p){
+  return `<div class="txn"><span class="td wide">${esc(shortDate(p.out.tdate))}</span>
         <span class="tn"><b>${esc(p.outName)}</b>
           <span>out of ${esc((accOf(p.out.account_id)||{}).name||'')}</span></span>
         <span class="ta neg">${esc(money(p.out.total,accCur(p.out.account_id)))}</span></div>
       <div class="txn"><span class="td wide">${esc(shortDate(p.inn.tdate))}</span>
         <span class="tn"><b>${esc(p.innName)}</b>
           <span>into ${esc((accOf(p.inn.account_id)||{}).name||'')}</span></span>
-        <span class="ta">${esc(money(p.inn.total,accCur(p.inn.account_id)))}</span></div>
-      <div class="setadd"><button class="btn primary" data-join="${i}">Join these two</button></div>
-    </div>`).join('')}
-    ${pairsFootnote()}`;
+        <span class="ta">${esc(money(p.inn.total,accCur(p.inn.account_id)))}</span></div>`;
+}
+
+// The ones you said don't go together (ML375), folded away, each with a way back.
+function pairsNoHtml(){
+  if(!PAIRS_NO.length) return '';
+  return `<details class="card" id="pairsNo"><summary style="padding:12px 14px;color:var(--muted);cursor:pointer">
+      ${PAIRS_NO.length} you said don&rsquo;t go together &mdash; show</summary>
+    ${PAIRS_NO.map((p,i)=>`<div style="border-top:1px solid var(--rule)">${pairRows(p)}
+      <div class="setadd"><button class="btn" data-pairback="${i}" style="border:1.5px solid var(--rule)">Offer these two again</button></div></div>`).join('')}
+  </details>`;
 }
 
 function pairsFootnote(){
@@ -24783,6 +24831,27 @@ $('reconBack').onclick=()=>{ $('recon').classList.add('hidden'); lockBackground(
 $('pairsBack').onclick=()=>{ $('pairs').classList.add('hidden'); lockBackground(); };
 $('repBack').onclick=()=>{ $('reports').classList.add('hidden'); lockBackground(); };
 $('pairsBody').addEventListener('click',async ev=>{
+  // Not these two (ML375): never offered again, by this person.
+  const n=ev.target.closest('[data-notpair]');
+  if(n){
+    const p=PAIRS[+n.dataset.notpair]; if(!p) return;
+    n.disabled=true;
+    NOT_PAIR=[...new Set([...NOT_PAIR, p.out.id+'-'+p.inn.id])];
+    await saveTiles();
+    await findPairs(); renderPairs();
+    toast('They won\u2019t be offered again');
+    return;
+  }
+  const k=ev.target.closest('[data-pairback]');
+  if(k){
+    const p=PAIRS_NO[+k.dataset.pairback]; if(!p) return;
+    k.disabled=true;
+    NOT_PAIR=NOT_PAIR.filter(x=>x!==p.key);
+    await saveTiles();
+    await findPairs(); renderPairs();
+    toast('Offered again');
+    return;
+  }
   const j=ev.target.closest('[data-join]');
   if(!j) return;
   const p=PAIRS[+j.dataset.join]; if(!p) return;

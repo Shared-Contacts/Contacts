@@ -324,13 +324,29 @@ const seed = () => {
   ok('the feed it found is kept, so it is not looked up again', lp && lp.tune[411] && lp.tune[411].f === 'https://feeds.example/crime.rss'
      && lp.tune[411].fn === 'Pretend Crime', JSON.stringify(lp && lp.tune[411]));
   t = await bodyText();
-  ok('120 episodes, and a note that Spotify opens the podcast, not the episode',
-     /120 episodes · 0 listened/.test(t) && /An episode opens the podcast in Spotify: choose the episode there\./.test(t), t.slice(0, 300));
+  ok('120 episodes, and a note that Spotify opens a search for the episode (ML391)',
+     /120 episodes · 0 listened/.test(t) && /An episode opens Spotify searching for it: it is usually the top result\./.test(t)
+     && !/choose the episode there/.test(t), t.slice(0, 300));
   r = await rows();
   ok('the feed\'s own numbers and series are shown', r.length === 100 && /^Series 2, Ep 120 · /.test(r[0].m), r[0] && r[0].m);
-  ok('an episode opens the podcast in Spotify', await ev(() =>
+  ok('an episode opens Spotify searching for its title and the podcast\'s name', await ev(() =>
+     document.querySelector('#epList [data-epgo]').getAttribute('href')
+       .startsWith('intent://open.spotify.com/search/Case%20120%20Pretend%20Crime#Intent;scheme=https;package=com.spotify.music;')),
+     await ev(() => document.querySelector('#epList [data-epgo]').getAttribute('href')));
+  ok('the button at the top still opens the podcast in Spotify', await ev(() =>
      /^intent:\/\/open\.spotify\.com\/show\/2MAi0BvDc6#Intent;.*package=com\.spotify\.music;/
-       .test(document.querySelector('#epList [data-epgo]').getAttribute('href'))));
+       .test(document.querySelector('[data-epopen]').getAttribute('href'))));
+  ok('the search: a title with the podcast\'s name in it, a slash, and no title at all', await ev(() => {
+    const l = { url:'https://open.spotify.com/show/x', open_with:'spotify' }, e = t => ({ t, guid:'', link:'' });
+    return epHref(l, e('Pretend Crime: Case 1'), 'Pretend Crime').url === 'https://open.spotify.com/search/Pretend%20Crime%3A%20Case%201'
+      && epHref(l, e('AC/DC  and me'), 'Pod').url === 'https://open.spotify.com/search/AC%20DC%20and%20me%20Pod'
+      && epHref(l, e('(no title)'), 'Pod').url === 'https://open.spotify.com/show/x'; }));
+  ok('a Spotify podcast left to Phone decides searches the same way, as an ordinary link', await ev(() => {
+    const g = epHref({ url:'https://open.spotify.com/show/x', open_with:'' }, { t:'One', guid:'', link:'' }, 'Pod');
+    return g.find && g.href === g.url && g.url === 'https://open.spotify.com/search/One%20Pod'; }));
+  ok('a podcast that opens somewhere else still opens the podcast', await ev(() => {
+    const g = epHref({ url:'https://podcasts.apple.com/gb/podcast/x/id1', open_with:'' }, { t:'One', guid:'', link:'' }, 'Pod');
+    return !g.find && g.url === 'https://podcasts.apple.com/gb/podcast/x/id1'; }));
   ok('100 at a time, with a button for the rest', await ev(() => /Show 20 more of 20/.test(document.querySelector('[data-epmore]').textContent)));
   await p.click('[data-epmore]'); await settle(200);
   ok('which shows them all', (await rows()).length === 120 && !(await p.$('[data-epmore]')));

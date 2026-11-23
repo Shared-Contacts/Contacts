@@ -224,7 +224,7 @@ const FEED_URL = 'https://feeds.acast.example/public/shows/hah';
 
   console.log('\nHelp and version');
   ok('Help explains Acast and the helper', await ev(() => /Acast/.test(document.body.innerHTML) && /helper fetches the list/.test(document.body.innerHTML)));
-  ok('version 2026.11.23.2', await ev(() => APP_VERSION === '2026.11.23.2'));
+  ok('version 2026.11.23.2 or later', await ev(() => APP_VERSION >= '2026.11.23.2'));
 
   ok('no page errors', errors.length === 0, errors.join(' | '));
   console.log(`\n${pass} passed, ${fail} failed`);

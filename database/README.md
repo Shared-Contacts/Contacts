@@ -1,6 +1,6 @@
 # Database files
 
-The SQL files that built the app's Supabase database, plus the reminders edge function.
+The SQL files that built the app's Supabase database, plus the edge functions.
 They hold instructions only: no keys, and no one's contacts, log entries or money.
 
 - `contacts-schema.sql`, `contacts-security.sql`: the first tables and their rules.
@@ -10,6 +10,10 @@ They hold instructions only: no keys, and no one's contacts, log entries or mone
 - The others are one-off tidy-ups and checks.
 - `send-reminders.ts`: the edge function that sends reminders. Its keys live in
   Supabase's settings, never in this file.
+- `read-recipe.ts`: the edge function that reads a recipe page for Recipes, and a
+  page's title and picture for URL Links. No keys.
+- `read-feed.ts`: the edge function that reads a podcast's list of episodes when its
+  host won't let the app read it from the phone (Acast, for one). No keys.
 
 Where a file says `YOUR-EMAIL-HERE`, put the owner's email in before running it.
 

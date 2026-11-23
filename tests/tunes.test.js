@@ -193,10 +193,12 @@ const seed = () => {
     value:{ readText:async () => 'Listen to this https://open.spotify.com/album/1ATL5GLyefJaxhQzSPVrLX?si=abc' } }); });
   await p.click('#musicBody [data-tuneadd]'); await settle(400);
   const box = await ev(() => ({ url:$('leUrl') && $('leUrl').value,
-    subs:[...document.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b => b.dataset.lesub),
+    subs:[...document.querySelectorAll('[data-lesub]')].length, lv:[...document.querySelectorAll('[data-lelv]')].length,
+    ty:[...document.querySelectorAll('[data-lety][aria-pressed="true"]')].map(b => b.dataset.lety),
     app:[...document.querySelectorAll('[data-leapp][aria-pressed="true"]')].map(b => b.dataset.leapp) }));
   ok('+ Add opens the link box with what was copied', box.url === 'https://open.spotify.com/album/1ATL5GLyefJaxhQzSPVrLX?si=abc', JSON.stringify(box));
-  ok('already under Music', JSON.stringify(box.subs) === '["Music"]', JSON.stringify(box.subs));
+  ok('no Level or Subjects to choose, and its Type filled in from the link (ML384)',
+     box.subs === 0 && box.lv === 0 && JSON.stringify(box.ty) === '["album"]', JSON.stringify(box));
   ok('and set to open in Spotify', JSON.stringify(box.app) === '["spotify"]', JSON.stringify(box.app));
   await ev(() => { window.__writes = []; });
   await p.click('#leGo'); await settle(700);
@@ -213,11 +215,11 @@ const seed = () => {
   console.log('\nMY Podcasts');
   await ev(() => { backHome('music'); window.__writes = []; }); oembeds = [];
   await ev(() => openTunes('pods')); await settle(900);
-  const pids = await ev(() => [...document.querySelectorAll('#podsBody .mucard [data-lopen]')].map(a => +a.dataset.lopen));
+  const pids = await ev(() => [...document.querySelectorAll('#podsBody .mucard [data-podopen]')].map(a => +a.dataset.podopen));
   ok('only the Podcasts ones', JSON.stringify(pids.slice().sort()) === '[303,304]', JSON.stringify(pids));
   ok('with its own title', await ev(() => $('pods').querySelector('.title').textContent === 'MY Podcasts'));
   ok('the Spotify show gets its name', await ev(() =>
-     document.querySelector('#podsBody [data-lopen="303"]').closest('.mucard').querySelector('b').textContent === 'Pretend Podcast'));
+     document.querySelector('#podsBody [data-podopen="303"]').closest('.mucard').querySelector('b').textContent === 'Pretend Podcast'));
   ok('the one already fetched for Music is not fetched again', !(await invokes()).some(u => /b006qykl/.test(u)));
   ok('the help button finds the same help', await ev(() => HELP_AT.pods === 'h-music' && HELP_AT[currentScreen()] === 'h-music'));
 
@@ -227,9 +229,10 @@ const seed = () => {
   ok('Save this as offers Music and A podcast', await ev(() => !!$('siMusic') && !!$('siPod')));
   await p.click('#siPod'); await settle(900);
   const sbox = await ev(() => ({ open:!$('pods').classList.contains('hidden'),
-    subs:[...document.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b => b.dataset.lesub),
+    st:[...document.querySelectorAll('[data-lest][aria-pressed="true"]')].map(b => b.dataset.lest),
     app:[...document.querySelectorAll('[data-leapp][aria-pressed="true"]')].map(b => b.dataset.leapp) }));
-  ok('A podcast opens MY Podcasts with the link box over it', sbox.open && JSON.stringify(sbox.subs) === '["Podcasts"]', JSON.stringify(sbox));
+  ok('A podcast opens MY Podcasts with the link box over it, starting as Interesting',
+     sbox.open && JSON.stringify(sbox.st) === '["interesting"]', JSON.stringify(sbox));
   ok('set to open in BBC Sounds', JSON.stringify(sbox.app) === '["sounds"]', JSON.stringify(sbox.app));
   await p.click('#leCancel'); await settle(200);
   await ev(() => sharedIn({ url:'', title:'The Hobbit', text:'' })); await settle(200);
@@ -254,8 +257,10 @@ const seed = () => {
   await p.setViewportSize({ width:320, height:700 });
   await ev(() => { backHome('links'); }); await ev(() => openTunes('music')); await settle(700);
   ok('nothing spills off the side', await ev(() => { const b = $('musicBody'); return b.scrollWidth <= b.clientWidth + 1; }));
-  ok('two to a row', await ev(() => { const c = [...document.querySelectorAll('#musicBody .mucard')];
-     return c.length > 1 && Math.abs(c[0].getBoundingClientRect().top - c[1].getBoundingClientRect().top) < 2; }));
+  ok('two to a row', await ev(() => { const g = [...document.querySelectorAll('#musicBody .mugrid')]
+       .find(x => x.querySelectorAll('.mucard').length > 1); if (!g) return false;
+     const c = [...g.querySelectorAll('.mucard')];
+     return Math.abs(c[0].getBoundingClientRect().top - c[1].getBoundingClientRect().top) < 2; }));
 
   console.log('\n' + '='.repeat(52));
   ok('no page errors', errors.length === 0, errors.join(' | '));

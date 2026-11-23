@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.23.2",
+  "version": "2026.11.23.3",
   "history": [
+    {
+      "version": "2026.11.23.3",
+      "changes": [
+        "In MY Podcasts, a Spotify episode now opens Spotify searching for it, so it's usually at the top, with no scrolling through the list."
+      ]
+    },
     {
       "version": "2026.11.23.2",
       "changes": [

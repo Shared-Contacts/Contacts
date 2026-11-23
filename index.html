@@ -6106,8 +6106,9 @@ function openHelp(where){
   the box finds an episode by its number; where the podcast gives no numbers they
   count from the oldest. The first time you tick one partway through, you are
   asked whether to tick the earlier ones too.</p>
-  <p>A BBC episode opens at that episode in BBC Sounds. Other episodes open the
-  podcast in its app, where you choose the episode. Podcasts only on Spotify have
+  <p>A BBC episode opens at that episode in BBC Sounds. A Spotify episode opens
+  Spotify searching for it, where it is usually the top result. Other episodes
+  open the podcast in its app, where you choose the episode. Podcasts only on Spotify have
   no public list of episodes. Some hosts, such as Acast, don&rsquo;t let the app read
   their lists from the phone, so the app&rsquo;s helper fetches the list and sends
   back just the episodes, which is much less data. If the app found the wrong podcast, press
@@ -12267,12 +12268,23 @@ async function epRead(f,force,via){
   if(!out.err) EP_FEEDS.set(f,out);
   return out;
 }
-// A BBC episode opens at that episode in BBC Sounds; anything else opens the podcast.
-function epHref(l,e){
+// A BBC episode opens at that episode in BBC Sounds. A Spotify one opens Spotify
+// searching for the episode's title and the podcast's name (ML391): a public feed
+// has no Spotify codes, but that search puts the episode at the top (checked
+// 23 Nov 2026 with Half-Arsed History). Anything else opens the podcast.
+function epHref(l,e,name){
   const pid=(String(e.guid).match(/^urn:bbc:podcast:([a-z0-9]+)$/i)
     ||String(e.link).match(/bbc\.co\.uk\/programmes\/([a-z0-9]{8,})/i)||[])[1];
   if(pid){ const u='https://www.bbc.co.uk/sounds/play/'+pid.toLowerCase();
     return {href:linkHref({url:u, open_with:'sounds'}), url:u, own:true}; }
+  const spot=linkApp(l.open_with).k==='spotify'
+    ||(!l.open_with&&/(^|\.)spotify\.(com|link)$/i.test(linkHost(l.url)));
+  const t=String(e.t||'').replace(/[\/\s]+/g,' ').trim(), n=String(name||'').replace(/[\/\s]+/g,' ').trim();
+  if(spot&&t&&t!=='(no title)'){
+    const q=n&&!t.toLowerCase().includes(n.toLowerCase())?t+' '+n:t;
+    const u='https://open.spotify.com/search/'+encodeURIComponent(q);
+    return {href:linkHref({url:u, open_with:l.open_with}), url:u, own:false, find:true};
+  }
   return {href:linkHref(l), url:l.url, own:false};
 }
 // Next up: the first not heard after the last one heard.
@@ -12319,8 +12331,8 @@ function paintEpsNone(l,msg){
     <a class="btn primary" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
       data-epopen>Open ${app.k?'in '+esc(app.label):'its page'}</a></div>`;
 }
-function epRow(e,l,heard){
-  const on=heard.has(e.id), go=epHref(l,e);
+function epRow(e,l,heard,name){
+  const on=heard.has(e.id), go=epHref(l,e,name);
   const when=e.d?new Date(e.d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
   const num=e.n?(e.s?'Series '+e.s+', ':'')+'Ep '+e.n:'';
   return `<div class="eprow${on?' heard':''}">
@@ -12337,7 +12349,8 @@ function paintEps(){
   const y=body.scrollTop;
   const heard=epHeard(D.id), eps=D.eps, done=eps.filter(e=>heard.has(e.id)).length;
   const app=linkApp(l.open_with), href=linkHref(l), st=podStatus(l);
-  const own=eps.length&&epHref(l,eps[eps.length-1]).own, nx=epNext(eps,heard);
+  const name=D.title||tuneTitle(l), last=eps.length?epHref(l,eps[eps.length-1],name):{};
+  const own=last.own, nx=epNext(eps,heard);
   const shows=[['all','All'],['todo','Not listened'],['done','Listened']];
   body.innerHTML=`
     <div class="card epshead">
@@ -12348,10 +12361,12 @@ function paintEps(){
         aria-pressed="${st===x.k}">${x.one}</button>`).join('')}</span>
       <a class="btn primary" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
         data-epopen>Open ${app.k?'in '+esc(app.label):'its page'}</a>
-      ${own?'':`<p class="epnote">An episode opens the podcast${app.k?' in '+esc(app.label):''}:
+      ${own?'':last.find?`<p class="epnote">An episode opens ${app.k?esc(app.label):'Spotify'} searching for it:
+        it is usually the top result.</p>`
+        :`<p class="epnote">An episode opens the podcast${app.k?' in '+esc(app.label):''}:
         choose the episode there.</p>`}
     </div>
-    ${nx.next?`<p class="dsec">Next up</p><div class="card">${epRow(nx.next,l,heard)}</div>`
+    ${nx.next?`<p class="dsec">Next up</p><div class="card">${epRow(nx.next,l,heard,name)}</div>`
       :nx.caught?'<p class="epnote" style="margin:0 2px 14px">You have listened to every episode so far.</p>':''}
     <div class="kindpick epshow">${shows.map(([k,t])=>`<button type="button" data-epshow="${k}"
       aria-pressed="${EP_VIEW.show===k}">${t}</button>`).join('')}</div>
@@ -12367,14 +12382,14 @@ function paintEps(){
 function paintEpList(){
   const D=EP_DATA, box=$('epList'); if(!D||!box) return;
   const l=ULINKS.find(x=>x.id===D.id); if(!l) return;
-  const heard=epHeard(D.id), num=EP_VIEW.num.replace(/\D/g,'');
+  const heard=epHeard(D.id), num=EP_VIEW.num.replace(/\D/g,''), name=D.title||tuneTitle(l);
   let rows=EP_VIEW.show==='todo'?D.eps.filter(e=>!heard.has(e.id))
     :EP_VIEW.show==='done'?D.eps.filter(e=>heard.has(e.id)):D.eps.slice();
   if(num) rows=rows.filter(e=>String(e.n)===num);
   if(!EP_VIEW.old) rows.reverse();
   const shown=rows.slice(0,EP_VIEW.more), left=rows.length-shown.length;
   box.innerHTML=rows.length
-    ? `<div class="card">${shown.map(e=>epRow(e,l,heard)).join('')}</div>`
+    ? `<div class="card">${shown.map(e=>epRow(e,l,heard,name)).join('')}</div>`
       +(left?`<button type="button" class="btn epmore" data-epmore>Show ${Math.min(100,left)} more of ${left}</button>`:'')
     : `<div class="card"><div class="field"><dd style="color:var(--muted)">${num
         ? 'No episode '+esc(num)+(EP_VIEW.show==='all'?'':' among these')+'.'
@@ -20922,7 +20937,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.23.2';
+const APP_VERSION='2026.11.23.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

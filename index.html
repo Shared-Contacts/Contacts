@@ -6108,7 +6108,9 @@ function openHelp(where){
   asked whether to tick the earlier ones too.</p>
   <p>A BBC episode opens at that episode in BBC Sounds. Other episodes open the
   podcast in its app, where you choose the episode. Podcasts only on Spotify have
-  no public list of episodes. If the app found the wrong podcast, press
+  no public list of episodes. Some hosts, such as Acast, don&rsquo;t let the app read
+  their lists from the phone, so the app&rsquo;s helper fetches the list and sends
+  back just the episodes, which is much less data. If the app found the wrong podcast, press
   <strong>Not the right podcast?</strong> to choose another, or paste the address
   of its feed.</p>
   <p><strong>Genres</strong>, such as Rock, Motown, Blues, True crime or History,
@@ -12156,6 +12158,10 @@ function tuneRegenre(kind,from,to){
    podcasts.files.bbci.co.uk/<programme>.rss, and anything else is looked up
    by name in Apple's public podcast directory. Both were checked on 23 Nov
    2026 and let a web page read them. Podcasts only on Spotify have no feed.
+   Some hosts give web pages no permission to read their feeds: Acast, which
+   hosts many UK podcasts, is one (checked 23 Nov 2026 with Half-Arsed History
+   and British Murders). Those go through the read-feed edge function (ML390),
+   which hands back only the fields read here, so the tick codes match.
    What you have heard is ticked by hand, since the app cannot see what was
    played in another app, and kept with your own settings as a short code for
    each episode (LINK_PREFS.heard). A feed is kept in memory while the app is
@@ -12204,9 +12210,26 @@ function epDur(s){
   const m=Math.round(secs/60); return m>0?m+' min':'';
 }
 // The feed read and cut down to what is shown: oldest first, numbered that way
-// when the feed numbers none of them. {err} when it could not be read.
-async function epRead(f,force){
-  if(EP_FEEDS.has(f)&&!force) return EP_FEEDS.get(f);
+// when the feed numbers none of them. {err} when it could not be read: blocked
+// (not allowed, or no answer), missing, notfeed, offline or nohelper.
+// A feed the phone may not read is fetched by read-feed instead (ML390). It
+// hands back the same fields (t, p, n, s, g, a, l, dur) as epDirect reads, so
+// an episode's tick code is the same however its list was read.
+const EP_VIA_HOSTS=new Set();   // hosts that refused the phone, while the app is open
+const epHost = f => { try{ return new URL(f).hostname.toLowerCase(); }catch(e){ return ''; } };
+function epTidy(raw,title){
+  const str=v=>typeof v==='string'?v:'';
+  const eps=raw.filter(x=>x&&typeof x==='object').map(x=>{
+    const t=str(x.t)||'(no title)', g=str(x.g), a=str(x.a), link=str(x.l);
+    const n=parseInt(str(x.n),10), se=parseInt(str(x.s),10);
+    return {id:epCode(g||a||link||t), t:t.slice(0,300), d:Date.parse(str(x.p))||0,
+      n:n>0?n:null, s:se>0?se:null, guid:g, link, dur:epDur(str(x.dur))};
+  });
+  eps.sort((x,y)=>x.d-y.d);
+  if(!eps.some(e=>e.n)) eps.forEach((e,i)=>{ e.n=i+1; });
+  return {eps, title:str(title)};
+}
+async function epDirect(f,force){
   let txt;
   try{
     const r=await fetch(f,{cache:force?'no-cache':'default'});
@@ -12217,17 +12240,31 @@ async function epRead(f,force){
   const ch=doc.getElementsByTagName('channel')[0];
   if(!ch||doc.getElementsByTagName('parsererror').length) return {err:'notfeed'};
   const get=(el,name)=>{ const x=el.getElementsByTagName(name)[0]; return x?x.textContent.trim():''; };
-  const eps=[...doc.getElementsByTagName('item')].map(it=>{
-    const enc=it.getElementsByTagName('enclosure')[0], a=enc?enc.getAttribute('url')||'':'';
-    const guid=get(it,'guid'), link=get(it,'link'), t=get(it,'title')||'(no title)';
-    const n=parseInt(get(it,'itunes:episode'),10), se=parseInt(get(it,'itunes:season'),10);
-    return {id:epCode(guid||a||link||t), t:t.slice(0,300), d:Date.parse(get(it,'pubDate'))||0,
-      n:n>0?n:null, s:se>0?se:null, guid, link, dur:epDur(get(it,'itunes:duration'))};
-  });
-  eps.sort((x,y)=>x.d-y.d);
-  if(!eps.some(e=>e.n)) eps.forEach((e,i)=>{ e.n=i+1; });
-  const out={eps, title:get(ch,'title')};
-  EP_FEEDS.set(f,out);
+  const own=[...ch.children].find(x=>x.tagName==='title');   // not the picture's <title>
+  return epTidy([...doc.getElementsByTagName('item')].map(it=>{
+    const enc=it.getElementsByTagName('enclosure')[0];
+    return {t:get(it,'title'), p:get(it,'pubDate'), n:get(it,'itunes:episode'), s:get(it,'itunes:season'),
+      g:get(it,'guid'), a:enc?enc.getAttribute('url')||'':'', l:get(it,'link'), dur:get(it,'itunes:duration')};
+  }), own?own.textContent.trim():get(ch,'title'));
+}
+async function epVia(f){
+  try{
+    const {data,error}=await sb.functions.invoke('read-feed',{body:{url:f}});
+    if(error){
+      console.error(error);
+      if(error.context&&error.context.status===404) return {err:'nohelper'};
+      return {err:error.name==='FunctionsFetchError'?'offline':'blocked'};
+    }
+    if(!data||typeof data!=='object'||!Array.isArray(data.eps)) return {err:'blocked'};
+    return {...epTidy(data.eps,data.title), via:true};
+  }catch(e){ console.error(e); return {err:'offline'}; }
+}
+async function epRead(f,force,via){
+  if(EP_FEEDS.has(f)&&!force) return EP_FEEDS.get(f);
+  const h=epHost(f);
+  let out=via||EP_VIA_HOSTS.has(h)?{err:'blocked'}:await epDirect(f,force);
+  if(out.err==='blocked'){ out=await epVia(f); if(out.via&&h) EP_VIA_HOSTS.add(h); }
+  if(!out.err) EP_FEEDS.set(f,out);
   return out;
 }
 // A BBC episode opens at that episode in BBC Sounds; anything else opens the podcast.
@@ -12257,14 +12294,20 @@ async function openEps(id,force){
   if(EP_CUR!==id) return;
   if(!found) return paintEpsNone(l,'Could not look for the episodes just now. Nothing has been lost: check your signal and press refresh at the top.');
   if(!found.f) return paintEpsNone(l,'No list of episodes was found for this podcast. Podcasts that are only on Spotify don’t have one.');
-  const got=await epRead(found.f,force);
+  const got=await epRead(found.f,force,tuneOf(id).fx===found.f);
   if(EP_CUR!==id) return;
   if(got.err) return paintEpsNone(l, got.err==='blocked'
     ? 'This podcast doesn’t let the app read its list of episodes. Some don’t.'
+    : got.err==='offline' ? 'Could not fetch the episodes just now. Nothing has been lost: check your signal and press refresh at the top.'
+    : got.err==='nohelper' ? 'This podcast’s list has to be fetched by the app’s helper, read-feed, which isn’t set up in Supabase yet.'
     : found.bbc ? 'The BBC has no list of episodes for this programme.'
     : 'The list of episodes could not be read.');
-  // Found by name: kept, so it isn't looked up every time.
-  if(!found.bbc&&tuneOf(id).f!==found.f){ setTune(id,{f:found.f, fn:found.n||got.title||''}); tuneSave(); }
+  // Found by name: kept, so it isn't looked up every time. One the phone may
+  // not read is marked (fx), so next time it goes straight to read-feed.
+  const keep={};
+  if(!found.bbc&&tuneOf(id).f!==found.f) Object.assign(keep,{f:found.f, fn:found.n||got.title||''});
+  if(got.via&&tuneOf(id).fx!==found.f) keep.fx=found.f;
+  if(Object.keys(keep).length){ setTune(id,keep); tuneSave(); }
   EP_DATA={id, f:found.f, eps:got.eps, title:got.title||found.n||'', also:found.also||null};
   paintEps();
 }
@@ -20879,7 +20922,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.23.1';
+const APP_VERSION='2026.11.23.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

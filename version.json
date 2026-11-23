@@ -1,6 +1,15 @@
 {
-  "version": "2026.11.22.2",
+  "version": "2026.11.23.1",
   "history": [
+    {
+      "version": "2026.11.23.1",
+      "changes": [
+        "MY Music now opens sorted into Playlists, Albums, Songs, Artists and Stations, with genres such as Rock, Motown and Blues, and no Level to choose.",
+        "MY Podcasts opens sorted into Ongoing, Interesting and Finished, with genres such as True crime, History and Comedy.",
+        "Tap a podcast to see its episodes: tick the ones you've heard, see what's next up, show only those not listened to, or find one by its number.",
+        "Rename, remove or add genres in Settings > URL Links. Your Types, genres and ticks are yours alone."
+      ]
+    },
     {
       "version": "2026.11.22.2",
       "changes": [

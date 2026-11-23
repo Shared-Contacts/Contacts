@@ -593,6 +593,30 @@ input[name="postcode"]{text-transform:uppercase}
 .muedit{position:absolute;top:6px;right:6px;width:38px;height:38px;border-radius:50%;
   background:rgba(255,255,255,.92);color:var(--ink);font-size:17px;line-height:1;
   box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.mucard button.mugo{width:100%;text-align:left;padding:0;font:inherit;color:inherit}
+.mugrid+.dsec{margin-top:18px}
+/* A podcast's episodes (ML386): a tick circle on the left, the episode itself
+   to the right of it, so ticking never opens the episode by mistake. */
+.epshead{padding:12px 14px}
+.epshead p{margin:0 0 10px;color:var(--muted);font-size:15px;overflow-wrap:anywhere}
+.epshead .pickrow{margin:0 0 12px}
+.epshead .btn{margin-top:10px;text-decoration:none}
+.epshead .btn:not(.primary){border:1.5px solid var(--rule);color:var(--hull);background:#fff}
+.eplink{display:block;color:var(--hull);font-weight:600;font-size:15px;padding:6px 0 0}
+.epnote{color:var(--muted);font-size:14px;margin:10px 2px 0}
+.epshow button{padding:9px 4px;font-size:14px}
+.eptools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+.eptools input{flex:1 1 110px;min-width:0;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
+.eprow{display:flex;align-items:flex-start;gap:4px;border-bottom:1px solid #F0EEE7}
+.card .eprow:last-child{border-bottom:none}
+.eptick{flex:0 0 auto;width:30px;height:30px;margin:10px 0 10px 12px;border:2px solid var(--rule);
+  border-radius:50%;background:#fff;color:#F2EFE4;font-size:16px;font-weight:700;line-height:1;padding:0}
+.eptick[aria-pressed="true"]{background:var(--hull);border-color:var(--hull)}
+.epgo{flex:1;min-width:0;display:block;padding:11px 14px 11px 6px;color:inherit;text-decoration:none}
+.epgo b{display:block;font-weight:600;color:var(--hull);overflow-wrap:anywhere}
+.eprow.heard .epgo b{color:var(--muted);font-weight:400}
+.epmeta{display:block;font-size:14px;color:var(--muted)}
+.epmore{margin:0 0 16px;border:1.5px solid var(--rule);color:var(--hull);background:#fff}
 
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
@@ -2028,6 +2052,12 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
   <div class="sheetbody" id="podsBody"></div>
 </div>
 
+<div id="podEps" class="sheet hidden">
+  <div class="sheetbar"><button id="podEpsBack">Back</button>
+    <span class="title" id="podEpsTitle">Episodes</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button><button class="bt" data-barhelp="pods" aria-label="How MY Podcasts works" title="How MY Podcasts works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M9.3 9.1a2.8 2.8 0 1 1 3.6 2.7c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17.2" r="1.05" fill="currentColor" stroke="none"/></svg></button></span></div>
+  <div class="sheetbody" id="podEpsBody"></div>
+</div>
+
 <div id="recipes" class="sheet hidden">
   <div class="sheetbar"><button class="bt" data-home="recipes" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="recipesMenu" data-menu="recipes" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <span class="title">Recipes</span><span class="bartools"><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
@@ -2429,7 +2459,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const arr = v => Array.isArray(v) ? v : [];
 
 const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','invite','diary','itemEd','rtEd','log',
-  'logEd','where','wish','links','music','pods','recipes','recipe','recipeEd','ideas','cook','weekMenu',
+  'logEd','where','wish','links','music','pods','podEps','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
   'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys','sld','sldTheme'];
@@ -3255,6 +3285,7 @@ async function refreshAll(){
   if(!$('home').classList.contains('hidden')) renderHome();
   if(!$('links').classList.contains('hidden')){ await loadLinks(); renderLinks(); }
   if(tunesOpen().length){ await loadLinks(); renderTunes(); }
+  if(!$('podEps').classList.contains('hidden')&&EP_CUR) await openEps(EP_CUR,true);
   if(!$('recipes').classList.contains('hidden')){ await loadRecipes(); renderRecipes();
     if(!$('recipe').classList.contains('hidden')) renderRecipe(); }
   if(!$('reports').classList.contains('hidden')) await repLoad();
@@ -5098,7 +5129,7 @@ const SET_CARDS=['groups','statuses','pet_types','link_kinds','logsections',
   'logcats','logshare','who_aboard','medication','bike_ride','alcohol',
   'coal_type','gas_bottle','service_kind','mecontact','hidegone','bdaymsg',
   'shareall','hometiles','people',
-  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects',
+  'accounts','fincats','finpayees','fincur','taxyear','linklevels','linksubjects','musicgenres','podgenres',
   'rcpcats','rcpcupboard','rcphidden'];
 const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   pet_types:'Kinds of pet',link_kinds:'Connection types',
@@ -5111,7 +5142,7 @@ const SET_LABEL={groups:'Groups',statuses:'Relationship statuses',
   people:'People who can sign in',
   accounts:'Accounts', fincats:'Categories', finpayees:'Payees',
   fincur:'Currencies', taxyear:'Tax year',
-  linklevels:'Levels', linksubjects:'Subjects',
+  linklevels:'Levels', linksubjects:'Subjects', musicgenres:'MY Music genres', podgenres:'MY Podcasts genres',
   rcpcats:'Categories', rcpcupboard:'Usually in the cupboard', rcphidden:'Recipes you chose not to see'};
 
 // Everything to do with one screen sits under that screen's heading.
@@ -5121,7 +5152,7 @@ const SET_GROUPS=[
   {label:'Daily Log',  cards:['logsections','logcats','logshare','who_aboard','medication',
                               'bike_ride','alcohol','coal_type','gas_bottle','service_kind']},
   {label:'Finances',   cards:['accounts','fincats','finpayees','fincur','taxyear']},
-  {label:'URL Links',  cards:['linklevels','linksubjects']},
+  {label:'URL Links',  cards:['linklevels','linksubjects','musicgenres','podgenres']},
   {label:'Recipes',    cards:['rcpcats','rcpcupboard','rcphidden']},
   {label:'Home screen',cards:['hometiles']},
   {label:'The app',    cards:['people']}
@@ -5256,6 +5287,8 @@ async function openSettings(goTo){
     taxyear:    taxYearRows(),
     linklevels:   linkLevelRows(),
     linksubjects: linkSubjectRows(),
+    musicgenres:  tuneGenreRows('music'),
+    podgenres:    tuneGenreRows('pods'),
     rcpcats:      rcpCatRows(),
     rcpcupboard:  rcpCupRows(),
     rcphidden:    rcpHidRows(),
@@ -5552,7 +5585,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['logEd','log'],['log','log'],['itemEd','diary'],['rtEd','diary'],['diary','diary'],
   ['editor','contacts'],['detail','contacts'],['shop','shop'],['where','where'],
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
-  ['recipes','recipes'],['links','links'],['music','music'],['pods','pods'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
+  ['recipes','recipes'],['links','links'],['music','music'],['podEps','pods'],['pods','pods'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
   ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['sldTheme','sld'],['sld','sld'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
@@ -6050,18 +6083,42 @@ function openHelp(where){
 
   <h4 id="h-music">MY Music and MY Podcasts</h4>
   <p><strong>MY Music</strong> and <strong>MY Podcasts</strong> keep your
-  favourite playlists, albums, artists, stations and podcasts as big pictures,
-  one tap from playing. Tap one and it opens in its own app (Spotify, BBC
-  Sounds and the rest) if the phone has it, or on its web page if not.</p>
+  favourite playlists, albums, songs, artists, stations and podcasts as big
+  pictures.</p>
   <p>To add one, find it in Spotify or BBC Sounds, press <strong>Share</strong>
   and choose <strong>MY life</strong>, then <strong>Music</strong> or <strong>A
   podcast</strong>. Or copy its link and press <strong>+ Add</strong> at the top.
   The picture and the name are fetched by themselves.</p>
-  <p>Each one is a link in <strong>URL Links</strong> under the subject
-  <strong>Music</strong> or <strong>Podcasts</strong>, so it shows there too and
-  can be shared the same way. The pencil on a picture changes it or deletes it;
-  taking Music or Podcasts off its subjects takes it off this screen. The ones
-  you play most come first.</p>
+  <p><strong>MY Music</strong> opens grouped by <strong>Type</strong>: Playlists,
+  Albums, Songs, Artists and Stations. The Type is filled in from the link where
+  it can be, and the pencil on a picture changes it. Tap a picture to play it in
+  its own app (Spotify, BBC Sounds and the rest) if the phone has it, or on its
+  web page if not.</p>
+  <p><strong>MY Podcasts</strong> opens grouped by where you are with each one:
+  <strong>Ongoing</strong>, <strong>Interesting</strong> or
+  <strong>Finished</strong>. A new one starts as Interesting, and moves to Ongoing
+  by itself when you tick its first episode.</p>
+  <p>Tap a podcast to see its episodes, read from the podcast&rsquo;s own public
+  list (a large one can be half a megabyte or more of data each time you open
+  it). Tick the circle by each one you have listened to: the app cannot see what
+  you play in Spotify or BBC Sounds. <strong>Next up</strong> is the next one
+  after the last you ticked. The buttons show All, Not listened or Listened, and
+  the box finds an episode by its number; where the podcast gives no numbers they
+  count from the oldest. The first time you tick one partway through, you are
+  asked whether to tick the earlier ones too.</p>
+  <p>A BBC episode opens at that episode in BBC Sounds. Other episodes open the
+  podcast in its app, where you choose the episode. Podcasts only on Spotify have
+  no public list of episodes. If the app found the wrong podcast, press
+  <strong>Not the right podcast?</strong> to choose another, or paste the address
+  of its feed.</p>
+  <p><strong>Genres</strong>, such as Rock, Motown, Blues, True crime or History,
+  are chosen with the pencil, as many as fit, and the buttons along the top show
+  one genre at a time. Rename, remove or add genres under <strong>Settings
+  &rsaquo; URL Links</strong>. Your Types, genres, ticks and where you are with
+  each podcast are yours alone.</p>
+  <p>Each one is also a link in <strong>URL Links</strong>, under the subject
+  Music or Podcasts, so it can be shared the same way. The ones you play most
+  come first.</p>
 
   <h4 id="h-stuff">My Stuff</h4>
   <p><strong>My Stuff</strong> keeps track of the things you own and the papers
@@ -11206,8 +11263,14 @@ const LINK_LEVELS_DEFAULT=[{id:'everyday',name:'Everyday'},{id:'favourites',name
   {id:'interesting',name:'Interesting'},{id:'maybe',name:'Maybe'}];
 const LINK_SUBJECTS_DEFAULT=['Mapping','Weather','New Zealand','News','Canals',
   'Photography','Shopping','Reference'];
+// The genres offered at first in MY Music and MY Podcasts (ML384, ML385).
+const MUSIC_GENRES_DEFAULT=['Rock','Pop','Motown','Soul','Blues','Jazz','Folk','Country',
+  'Classical','Reggae','Easy listening','Mixed'];
+const POD_GENRES_DEFAULT=['True crime','History','Comedy','Science','News','Documentary',
+  'Sport','Arts','Mixed'];
 let LINK_PREFS={levels:LINK_LEVELS_DEFAULT.map(x=>({...x})),
-  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[], where:{}, pics:{}};
+  subjects:LINK_SUBJECTS_DEFAULT.slice(), hide:[], where:{}, pics:{},
+  tune:{}, heard:{}, genres:tuneGenresFrom(null)};
 
 function linkPrefsFrom(saved){
   const lp=saved&&saved.links;
@@ -11219,7 +11282,12 @@ function linkPrefsFrom(saved){
     hide: lp&&Array.isArray(lp.hide) ? lp.hide.map(Number) : [],
     where: lp&&lp.where&&typeof lp.where==='object' ? {...lp.where} : {},
     // MY Music and MY Podcasts: each link's picture and name, fetched once (ML380).
-    pics: lp&&lp.pics&&typeof lp.pics==='object'&&!Array.isArray(lp.pics) ? {...lp.pics} : {} };
+    pics: lp&&lp.pics&&typeof lp.pics==='object'&&!Array.isArray(lp.pics) ? {...lp.pics} : {},
+    // Each one's Type or where you are with it, its genres and its feed (ML384 to ML386),
+    // the episodes you have ticked, and your genre lists.
+    tune: lp&&lp.tune&&typeof lp.tune==='object'&&!Array.isArray(lp.tune) ? {...lp.tune} : {},
+    heard: lp&&lp.heard&&typeof lp.heard==='object'&&!Array.isArray(lp.heard) ? {...lp.heard} : {},
+    genres: tuneGenresFrom(lp&&lp.genres) };
 }
 
 function linkHost(u){
@@ -11480,14 +11548,14 @@ async function countLinkOpen(id){
 
 // Whatever is on the clipboard, straight into a new link. If the phone will
 // not hand the clipboard over, the box opens empty and you paste into it.
-async function pasteLink(extra){
+async function pasteLink(extra,kind){
   let txt='', denied=false;
   try{
     if(navigator.clipboard&&navigator.clipboard.readText) txt=await navigator.clipboard.readText();
     else denied=true;
   }catch(e){ denied=true; }
   const url=findUrl(txt);
-  editLink(null, {...(url?{url}:{}), ...(extra||{})});
+  editLink(null, {...(url?{url}:{}), ...(extra||{})}, kind);
   if(!url) toast(denied||!txt.trim()
     ? 'Press and hold in the web address box, then choose Paste'
     : 'What you copied is not a web address');
@@ -11495,7 +11563,7 @@ async function pasteLink(extra){
 
 /* Adding or changing one of your own. start fills in a new one: from the
    clipboard, from Chrome's Share menu, or a copy of somebody else's. */
-function editLink(id,start){
+function editLink(id,start,kind){
   const old=id?ULINKS.find(x=>x.id===id):null;
   if(old&&!linkMine(old)) return linkActions(id);
   const d=old?{...old}:{url:'', title:'', description:'',
@@ -11509,7 +11577,8 @@ function editLink(id,start){
   const box=document.createElement('div');
   box.className='daypick lnked';
   box.innerHTML=`<div class="inner">
-    <p class="dsec" style="padding-top:0">${old?'Change this link':'Add a link'}</p>
+    <p class="dsec" style="padding-top:0">${old?(kind?'Change this one':'Change this link')
+      :kind==='music'?'Add to MY Music':kind==='pods'?'Add a podcast':'Add a link'}</p>
     <label>Web address<span class="ulrow">
       <input id="leUrl" type="url" inputmode="url" autocomplete="off" value="${esc(d.url)}"
         placeholder="https://">
@@ -11524,14 +11593,14 @@ function editLink(id,start){
     <p class="ulhead">Show on</p>
     <span class="pickrow" id="leWhere">${LINK_WHERE.map(w=>`<button type="button"
       data-lewhere="${w.k}" aria-pressed="${where===w.k}">${w.label}</button>`).join('')}</span>
-    <p class="ulhead">Level</p>
+    ${kind?tuneBoxRows(kind,d,old):`<p class="ulhead">Level</p>
     <span class="pickrow" id="leLevels">${LINK_PREFS.levels.map(x=>`<button type="button"
       data-lelv="${esc(x.id)}" aria-pressed="${d.level===x.id}">${esc(x.name)}</button>`).join('')}</span>
     <p class="ulhead">Subjects <span>as many as fit</span></p>
     <span class="pickrow" id="leSubs">${subjects.map(s=>`<button type="button"
       data-lesub="${esc(s)}" aria-pressed="${arr(d.subjects).includes(s)}">${esc(s)}</button>`).join('')}</span>
     <span class="ulrow"><input id="leNewSub" placeholder="A new subject" autocomplete="off">
-      <button type="button" id="leAddSub">Add</button></span>
+      <button type="button" id="leAddSub">Add</button></span>`}
     <p class="ulhead">Who can see it</p>
     <span class="pickrow">${[['me','Just me'],['all','Everyone'],['some','Choose people']]
       .map(([k,t])=>`<button type="button" data-lewho="${k}" aria-pressed="${mode===k}">${t}</button>`).join('')}</span>
@@ -11561,7 +11630,8 @@ function editLink(id,start){
     appPicked=true; pickApp(b.dataset.leapp); });
   const follow=()=>{ const u=findUrl(q('#leUrl').value);
     if(u&&!titled) q('#leTitle').value=linkHost(u);
-    if(u&&!appPicked) pickApp(linkAppFor(u)); };
+    if(u&&!appPicked) pickApp(linkAppFor(u));
+    if(u&&kind==='music'&&!box.dataset.typed) tuneBoxType(box,tuneTypeFor(u)); };
   q('#leUrl').oninput=follow; q('#leUrl').onchange=follow;
   q('#lePaste').onclick=async()=>{
     let t='';
@@ -11581,7 +11651,7 @@ function editLink(id,start){
   const subToggle=b=>b.onclick=()=>
     b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));
   box.querySelectorAll('[data-lesub]').forEach(subToggle);
-  q('#leAddSub').onclick=()=>{
+  if(!kind) q('#leAddSub').onclick=()=>{
     const v=q('#leNewSub').value.trim();
     if(!v) return;
     const have=[...box.querySelectorAll('[data-lesub]')]
@@ -11591,12 +11661,13 @@ function editLink(id,start){
     b.type='button'; b.dataset.lesub=v; b.textContent=v; b.setAttribute('aria-pressed','true');
     subToggle(b); q('#leSubs').appendChild(b); q('#leNewSub').value='';
   };
-  q('#leNewSub').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); q('#leAddSub').click(); } };
+  if(!kind) q('#leNewSub').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); q('#leAddSub').click(); } };
   box.querySelectorAll('[data-lewho]').forEach(b=>b.onclick=()=>{
     mode=b.dataset.lewho;
     box.querySelectorAll('[data-lewho]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
     q('#lePeople').hidden = mode!=='some';
   });
+  if(kind) wireTuneBox(box,kind);
   if(q('#leCopy')) q('#leCopy').onclick=async()=>{
     toast(await copyText(q('#leUrl').value.trim())?'Copied':'Could not copy it'); };
   if(q('#leDel')) q('#leDel').onclick=async()=>{
@@ -11614,10 +11685,13 @@ function editLink(id,start){
     const lvb=box.querySelector('[data-lelv][aria-pressed="true"]');
     const apb=box.querySelector('[data-leapp][aria-pressed="true"]');
     const wb=box.querySelector('[data-lewhere][aria-pressed="true"]');
-    const subs=[...box.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b=>b.dataset.lesub);
+    // From MY Music or MY Podcasts there are no Subjects or Level to choose: the
+    // link keeps what it had, and always its Music or Podcasts (ML384).
+    const subs=kind?tuneSubsFor(d.subjects,kind)
+      :[...box.querySelectorAll('[data-lesub][aria-pressed="true"]')].map(b=>b.dataset.lesub);
     const rec={url, title:q('#leTitle').value.trim()||linkHost(url)||url,
       description:q('#leDesc').value.trim()||null,
-      level:lvb?lvb.dataset.lelv:null, subjects:subs, share_all:mode==='all',
+      level:kind?(d.level??null):(lvb?lvb.dataset.lelv:null), subjects:subs, share_all:mode==='all',
       open_with:apb&&apb.dataset.leapp||null};
     if(!old){
       const dup=ULINKS.find(x=>linkMine(x)&&sameUrl(x.url,url));
@@ -11661,7 +11735,13 @@ function editLink(id,start){
     const fresh=subs.filter(s=>!LINK_PREFS.subjects.includes(s));
     if(fresh.length) LINK_PREFS.subjects=LINK_PREFS.subjects.concat(fresh);
     const moved=putLinkWhere(lid,wb?wb.dataset.lewhere:'');
-    if(fresh.length||moved) await saveTiles();
+    // MY Music and MY Podcasts keep the Type or where you are with it, and the
+    // genres, with your own settings (ML384, ML385).
+    if(kind){ const tb=tuneBoxRead(box,kind), have=(LINK_PREFS.genres||{})[kind]||[];
+      const newG=tb.g.filter(g=>!have.includes(g));
+      if(newG.length) LINK_PREFS.genres={...(LINK_PREFS.genres||{}), [kind]:have.concat(newG)};
+      setTune(lid,tb); }
+    if(fresh.length||moved||kind) await saveTiles();
     close(); await linksChanged();
     const gone=moved&&!LNK.elsewhere&&linkElsewhere({id:lid});
     toast(shareErr?'Saved, but who can see it did not change. Try again.'
@@ -11746,6 +11826,7 @@ const TUNES={
       +'press <strong>Share</strong> and choose <strong>MY life</strong>, then <strong>A '
       +'podcast</strong>. Or copy its link and press <strong>+ Add</strong>.'}};
 const TUNE_TRIED=new Set(), TUNE_AGAIN=new Set(), TUNE_REDONE=new Set();
+const TUNE_VIEW={music:'', pods:''};   // the genre button pressed on each screen
 const tunesOpen = () => Object.keys(TUNES).filter(k=>$(TUNES[k].sheet)&&!$(TUNES[k].sheet).classList.contains('hidden'));
 const tuneSubj = (l,k) => arr(l.subjects).some(x=>String(x).toLowerCase()===TUNES[k].subject.toLowerCase());
 // A title nobody typed is only the site's name; the page's own name is better.
@@ -11761,11 +11842,16 @@ function tunesOf(k){
   return linksKept().filter(l=>tuneSubj(l,k)&&!linkElsewhere(l)).sort((a,b)=>
     (b.opens||0)-(a.opens||0)||String(b.last_opened||'').localeCompare(String(a.last_opened||''))||az(a,b));
 }
-// True when there was one to take away, so the caller knows to save.
+// A link deleted: its picture, Type, genres and ticked episodes go with it.
+// True when there was something to take away, so the caller knows to save.
 function dropTunePic(id){
-  const all=LINK_PREFS.pics||{};
-  if(!(id in all)) return false;
-  const left={...all}; delete left[id]; LINK_PREFS.pics=left; return true;
+  let gone=false;
+  ['pics','tune','heard'].forEach(key=>{
+    const all=LINK_PREFS[key]||{};
+    if(!(id in all)) return;
+    const left={...all}; delete left[id]; LINK_PREFS[key]=left; gone=true;
+  });
+  return gone;
 }
 
 async function openTunes(k){
@@ -11776,19 +11862,24 @@ async function openTunes(k){
   await loadLinks(); renderTunes(k); $(T.body).scrollTop=0;
 }
 
-function tuneCard(l){
+function tuneCard(l,k){
   const mine=linkMine(l), t=tuneTitle(l), p=tunePic(l);
   const img=p&&p.i&&!TUNE_AGAIN.has(l.id)?p.i:'';
   const href=linkHref(l), app=linkApp(l.open_with);
   const letter=esc((t.match(/[A-Za-z0-9]/)||['?'])[0].toUpperCase());
-  const meta=[app.k?app.label:linkHost(l.url)].concat(mine?[]:['from '+whoWrote(l.created_by)]);
-  // An app is asked for from the page itself; a new tab would be left blank.
-  return `<div class="mucard">
-    <a class="mugo" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
-      data-lopen="${l.id}"><span class="mupic" data-mul="${letter}">${img
+  const n=k==='pods'?arr((LINK_PREFS.heard||{})[l.id]).length:0;
+  const meta=[app.k?app.label:linkHost(l.url)].concat(n?[n+' listened']:[])
+    .concat(mine?[]:['from '+whoWrote(l.created_by)]);
+  const inner=`<span class="mupic" data-mul="${letter}">${img
         ?`<img data-mupic="${l.id}" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
         :letter}</span>
-      <b>${esc(t)}</b><span class="mumeta">${meta.map(esc).join(' &middot; ')}</span></a>
+      <b>${esc(t)}</b><span class="mumeta">${meta.map(esc).join(' &middot; ')}</span>`;
+  // A podcast opens its episodes (ML386). Music opens in its app, asked for
+  // from the page itself; a new tab would be left blank.
+  return `<div class="mucard">${k==='pods'
+    ?`<button type="button" class="mugo" data-podopen="${l.id}">${inner}</button>`
+    :`<a class="mugo" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
+      data-lopen="${l.id}">${inner}</a>`}
     <button class="muedit" data-ledit="${l.id}" aria-label="${
       mine?'Change this one':'What you can do with this one'}">${mine?'&#9998;':'&#8942;'}</button>
   </div>`;
@@ -11808,14 +11899,32 @@ function renderTunes(only){
           +'and press refresh at the top.'}</dd></div></div>`;
       return;
     }
-    const list=tunesOf(k);
+    const all=tunesOf(k);
     const away=linksKept().filter(l=>tuneSubj(l,k)&&linkElsewhere(l)).length;
+    // Genre buttons: only the genres something has, your own order first.
+    const used=[...new Set(all.flatMap(tuneGenres))], mine=(LINK_PREFS.genres||{})[k]||[];
+    const gl=mine.filter(g=>used.includes(g)).concat(used.filter(g=>!mine.includes(g)).sort());
+    if(TUNE_VIEW[k]&&!gl.includes(TUNE_VIEW[k])) TUNE_VIEW[k]='';
+    const list=TUNE_VIEW[k]?all.filter(l=>tuneGenres(l).includes(TUNE_VIEW[k])):all;
+    const chip=(g,label,n)=>`<button class="chip" data-tgen="${esc(g)}"
+      aria-pressed="${TUNE_VIEW[k]===g}">${esc(label)} &middot; ${n}</button>`;
+    // Grouped as it opens (ML384, ML385): music by Type, podcasts by where you
+    // are with them. One group of untyped music needs no heading.
+    const groups=k==='music'
+      ? TUNE_TYPES.map(x=>({title:x.many, rows:list.filter(l=>tuneType(l)===x.k)}))
+          .concat([{title:'Other', rows:list.filter(l=>!tuneType(l))}])
+      : POD_STATUS.map(x=>({title:x.one, rows:list.filter(l=>podStatus(l)===x.k)}));
+    const full=groups.filter(g=>g.rows.length);
+    const heads=full.length>1||(!!full[0]&&full[0].title!=='Other');
     body.innerHTML=`<button class="btn primary lnkpaste" data-tuneadd="${k}">+ Add</button>`
-      +(list.length?`<div class="mugrid">${list.map(tuneCard).join('')}</div>`
+      +(gl.length?`<div class="chips lnkchips">${chip('','All',all.length)}${gl.map(g=>
+          chip(g,g,all.filter(l=>tuneGenres(l).includes(g)).length)).join('')}</div>`:'')
+      +(all.length?full.map(g=>(heads?`<p class="dsec">${esc(g.title)}<span class="lcount">${
+          g.rows.length}</span></p>`:'')+`<div class="mugrid">${g.rows.map(l=>tuneCard(l,k)).join('')}</div>`).join('')
         :`<div class="card"><div class="field"><dd style="color:var(--muted)">${T.empty}</dd></div></div>`)
       +(away?`<p class="lhid">${away} more kept for the ${ON_PHONE?'laptop':'phone'} only, in URL Links.</p>`:'');
     body.scrollTop=y;
-    tuneFetch(list);
+    tuneFetch(all);
   });
 }
 
@@ -11882,13 +11991,443 @@ Object.keys(TUNES).forEach(k=>{
   body.addEventListener('click',ev=>{
     const o=ev.target.closest('[data-lopen]');
     if(o){ countLinkOpen(Number(o.dataset.lopen)); return; }   // the link itself opens it
+    const po=ev.target.closest('[data-podopen]');
+    if(po){ const id=Number(po.dataset.podopen); countLinkOpen(id); openEps(id); return; }
     const e=ev.target.closest('[data-ledit]');
-    if(e){ editLink(Number(e.dataset.ledit)); return; }
-    if(ev.target.closest('[data-tuneadd]')) pasteLink({subjects:[TUNES[k].subject]});
+    if(e){ editLink(Number(e.dataset.ledit),undefined,k); return; }
+    const g=ev.target.closest('[data-tgen]');
+    if(g){ TUNE_VIEW[k]=g.dataset.tgen; renderTunes(k); return; }
+    if(ev.target.closest('[data-tuneadd]')) pasteLink({subjects:[TUNES[k].subject]},k);
   });
   // Pictures that fail say so here: an error does not bubble, so it is caught on the way down.
   body.addEventListener('error',ev=>{
     const im=ev.target; if(im&&im.dataset&&im.dataset.mupic) tuneBroke(im); },true);
+});
+
+/* ---------- Type, where you are with it, and genres (ML384, ML385) ----------
+   Asked for 23 Nov 2026. Kept with your own settings (LINK_PREFS.tune, keyed
+   by link): ty, the Type of a piece of music; st, Ongoing, Interesting or
+   Finished for a podcast; g, its genres; f and fn, the podcast's feed and its
+   name. So each person sorts their own, and there is no Supabase step. */
+const TUNE_TYPES=[{k:'playlist',one:'Playlist',many:'Playlists'},{k:'album',one:'Album',many:'Albums'},
+  {k:'song',one:'Song',many:'Songs'},{k:'artist',one:'Artist',many:'Artists'},
+  {k:'station',one:'Station',many:'Stations'}];
+const POD_STATUS=[{k:'ongoing',one:'Ongoing'},{k:'interesting',one:'Interesting'},{k:'finished',one:'Finished'}];
+function tuneGenresFrom(g){
+  const one=(v,def)=>Array.isArray(v)?v.filter(x=>typeof x==='string'&&x.trim()):def.slice();
+  return {music:one(g&&g.music,MUSIC_GENRES_DEFAULT), pods:one(g&&g.pods,POD_GENRES_DEFAULT)};
+}
+const tuneOf = id => ((LINK_PREFS.tune||{})[id])||{};
+function setTune(id,patch){ LINK_PREFS.tune={...(LINK_PREFS.tune||{}), [id]:{...tuneOf(id), ...patch}}; }
+const tuneGenres = l => arr(tuneOf(l.id).g);
+const podStatus = l => POD_STATUS.some(x=>x.k===tuneOf(l.id).st) ? tuneOf(l.id).st : 'interesting';
+// The Type chosen, or else what the link says it is. Taken off by hand, it stays off.
+function tuneType(l){ const t=tuneOf(l.id); return 'ty' in t ? t.ty||'' : tuneTypeFor(l.url); }
+// What a music link is, from its address. Spotify, YouTube Music, Amazon
+// Music, Apple Music and Deezer say so in the address; BBC Sounds live radio
+// is a station. Anything else is left for you to choose.
+function tuneTypeFor(url){
+  let u; try{ u=new URL(url); }catch(e){ return ''; }
+  const h=u.hostname.replace(/^www\./i,'').toLowerCase(), p=u.pathname.toLowerCase(), q=u.searchParams;
+  if(/(^|\.)(spotify|deezer)\.com$/.test(h)){
+    const m=p.match(/\/(playlist|album|track|artist)\//);
+    return m ? (m[1]==='track'?'song':m[1]) : '';
+  }
+  if(h==='music.youtube.com'){
+    if(p.startsWith('/watch')) return 'song';
+    if(p.startsWith('/playlist')) return /^OLAK5uy_/.test(q.get('list')||'')?'album':'playlist';
+    if(p.startsWith('/browse/mpreb')) return 'album';
+    if(p.startsWith('/channel/')) return 'artist';
+    return '';
+  }
+  if(/^music\.amazon\./.test(h)){
+    if(/\/(user-)?playlists\//.test(p)) return 'playlist';
+    if(/\/albums\//.test(p)) return q.get('trackAsin')?'song':'album';
+    if(/\/tracks\//.test(p)) return 'song';
+    if(/\/artists\//.test(p)) return 'artist';
+    if(/\/stations\//.test(p)) return 'station';
+    return '';
+  }
+  if(h==='music.apple.com'){
+    if(/\/album\//.test(p)) return q.get('i')?'song':'album';
+    if(/\/song\//.test(p)) return 'song';
+    if(/\/playlist\//.test(p)) return 'playlist';
+    if(/\/artist\//.test(p)) return 'artist';
+    if(/\/station\//.test(p)) return 'station';
+    return '';
+  }
+  if(/(^|\.)bbc\.co\.uk$/.test(h)&&/^\/sounds\/play\/live[:%]/.test(p)) return 'station';
+  return '';
+}
+// The link's own subjects, always with its Music or Podcasts.
+function tuneSubsFor(subs,kind){
+  const s=arr(subs).filter(Boolean), want=TUNES[kind].subject;
+  return s.some(x=>String(x).toLowerCase()===want.toLowerCase()) ? s : s.concat(want);
+}
+
+// In the box from MY Music or MY Podcasts: Type or where you are with it, and
+// genres, in place of Level and Subjects.
+function tuneBoxRows(kind,d,old){
+  const gs=old?tuneGenres(old):[];
+  const all=[...new Set(((LINK_PREFS.genres||{})[kind]||[]).concat(gs))];
+  const pick=(attr,list,on)=>`<span class="pickrow" id="${attr}">${list.map(x=>`<button type="button"
+    data-${attr}="${x.k}" aria-pressed="${on===x.k}">${x.one}</button>`).join('')}</span>`;
+  return (kind==='music'
+      ? `<p class="ulhead">Type</p>`+pick('lety',TUNE_TYPES,old?tuneType(old):tuneTypeFor(d.url))
+      : `<p class="ulhead">Where you are with it</p>`+pick('lest',POD_STATUS,old?podStatus(old):'interesting'))
+    +`<p class="ulhead">Genres <span>as many as fit</span></p>
+    <span class="pickrow" id="leGens">${all.map(g=>`<button type="button"
+      data-legen="${esc(g)}" aria-pressed="${gs.includes(g)}">${esc(g)}</button>`).join('')}</span>
+    <span class="ulrow"><input id="leNewGen" placeholder="A new genre" autocomplete="off">
+      <button type="button" id="leAddGen">Add</button></span>`;
+}
+function tuneBoxType(box,k){
+  box.querySelectorAll('[data-lety]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.lety===k)));
+}
+function wireTuneBox(box,kind){
+  const q=s=>box.querySelector(s);
+  // One Type at most, which can be taken off; a podcast is always somewhere.
+  ['lety','lest'].forEach(attr=>box.querySelectorAll('[data-'+attr+']').forEach(b=>b.onclick=()=>{
+    if(attr==='lety') box.dataset.typed='1';
+    const on=attr==='lest'||b.getAttribute('aria-pressed')!=='true';
+    box.querySelectorAll('[data-'+attr+']').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed',String(on));
+  }));
+  const tog=b=>b.onclick=()=>b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));
+  box.querySelectorAll('[data-legen]').forEach(tog);
+  q('#leAddGen').onclick=()=>{
+    const v=q('#leNewGen').value.trim();
+    if(!v) return;
+    const have=[...box.querySelectorAll('[data-legen]')].find(b=>b.dataset.legen.toLowerCase()===v.toLowerCase());
+    if(have){ have.setAttribute('aria-pressed','true'); q('#leNewGen').value=''; return; }
+    const b=document.createElement('button');
+    b.type='button'; b.dataset.legen=v; b.textContent=v; b.setAttribute('aria-pressed','true');
+    tog(b); q('#leGens').appendChild(b); q('#leNewGen').value='';
+  };
+  q('#leNewGen').onkeydown=ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); q('#leAddGen').click(); } };
+}
+function tuneBoxRead(box,kind){
+  const g=[...box.querySelectorAll('[data-legen][aria-pressed="true"]')].map(b=>b.dataset.legen);
+  if(kind==='music'){ const t=box.querySelector('[data-lety][aria-pressed="true"]'); return {ty:t?t.dataset.lety:'', g}; }
+  const s=box.querySelector('[data-lest][aria-pressed="true"]');
+  return {st:s?s.dataset.lest:'interesting', g};
+}
+
+// Saving your settings one at a time, the latest each time, so ticks made
+// quickly one after another can't land in the wrong order.
+let TUNE_SAVING=null, TUNE_DIRTY=false;
+function tuneSave(){
+  TUNE_DIRTY=true;
+  if(!TUNE_SAVING) TUNE_SAVING=(async()=>{
+    try{ while(TUNE_DIRTY){ TUNE_DIRTY=false; await saveTiles(); } }
+    finally{ TUNE_SAVING=null; }
+  })();
+  return TUNE_SAVING;
+}
+
+// Settings > URL Links: the genre lists.
+function tuneGenreRows(kind){
+  const list=(LINK_PREFS.genres||{})[kind]||[];
+  return `<div class="field"><dd style="color:var(--muted);font-size:15px">
+    The genres offered in ${kind==='music'?'MY Music':'MY Podcasts'}. Renaming or removing
+    one changes your own ${kind==='music'?'music':'podcasts'} to match.</dd></div>
+  ${list.map(g=>`<div class="setrow fieldrow">
+    <input data-gnname="${kind}:${esc(g)}" value="${esc(g)}" style="flex:1 1 150px">
+    <button class="x" data-gndrop="${kind}:${esc(g)}" aria-label="Remove">&times;</button></div>`).join('')}
+  <div class="setadd"><input id="gnNew-${kind}" placeholder="New genre">
+    <button class="btn primary" data-gnadd="${kind}">Add genre</button></div>`;
+}
+// A genre renamed (or taken away, to=null) on the list and on every one of that kind.
+function tuneRegenre(kind,from,to){
+  const g=LINK_PREFS.genres||{};
+  LINK_PREFS.genres={...g, [kind]:(g[kind]||[]).map(x=>x===from?to:x).filter(Boolean)};
+  const all={...(LINK_PREFS.tune||{})};
+  Object.keys(all).forEach(id=>{
+    const l=ULINKS.find(x=>String(x.id)===id);
+    if(!l||!tuneSubj(l,kind)||!arr(all[id].g).includes(from)) return;
+    all[id]={...all[id], g:[...new Set(arr(all[id].g).map(x=>x===from?to:x).filter(Boolean))]};
+  });
+  LINK_PREFS.tune=all;
+}
+
+/* ---------- A podcast's episodes (ML386) ----------
+   Asked for 23 Nov 2026. The list comes from the podcast's own public feed,
+   read straight from the phone: BBC podcasts' feeds sit at
+   podcasts.files.bbci.co.uk/<programme>.rss, and anything else is looked up
+   by name in Apple's public podcast directory. Both were checked on 23 Nov
+   2026 and let a web page read them. Podcasts only on Spotify have no feed.
+   What you have heard is ticked by hand, since the app cannot see what was
+   played in another app, and kept with your own settings as a short code for
+   each episode (LINK_PREFS.heard). A feed is kept in memory while the app is
+   open, never in the phone's storage, and fetched again with refresh. */
+let EP_CUR=null, EP_DATA=null;
+const EP_FEEDS=new Map();
+const EP_VIEW={show:'all', num:'', old:false, more:100};
+function epCode(s){
+  let h=0x811c9dc5; s=String(s);
+  for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193); }
+  return (h>>>0).toString(36);
+}
+const epHeard = id => new Set(arr((LINK_PREFS.heard||{})[id]));
+function epBbcPid(url){
+  const m=String(url||'').match(/bbc\.co\.uk\/(?:sounds\/(?:brand|series)|programmes)\/([a-z0-9]{8,})/i);
+  return m?m[1].toLowerCase():'';
+}
+const epSame = (a,b) => { const n=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); return n(a)===n(b); };
+// Apple's directory: [{f:feed, n:name, by:who}], or null when it could not be asked.
+async function epSearch(name){
+  try{
+    const r=await fetch('https://itunes.apple.com/search?media=podcast&entity=podcast&limit=6&term='
+      +encodeURIComponent(name));
+    if(!r.ok) return null;
+    const j=await r.json();
+    return arr(j&&j.results).filter(x=>x&&typeof x.feedUrl==='string'&&/^https?:\/\//i.test(x.feedUrl))
+      .map(x=>({f:x.feedUrl.replace(/^http:/i,'https:'), n:String(x.collectionName||''), by:String(x.artistName||'')}));
+  }catch(e){ console.error(e); return null; }
+}
+// Where this podcast's episodes are: {f, n, bbc, also}, {f:''} for none, or null.
+async function epFindFeed(l){
+  const t=tuneOf(l.id);
+  if(t.f) return {f:t.f, n:t.fn||''};
+  const pid=epBbcPid(l.url);
+  if(pid) return {f:'https://podcasts.files.bbci.co.uk/'+pid+'.rss', n:'', bbc:true};
+  if(/\.(rss|xml)(\?|$)|\/(feed|rss)\/?(\?|$)/i.test(l.url)) return {f:l.url.replace(/^http:/i,'https:'), n:''};
+  const name=tuneTitle(l), found=await epSearch(name);
+  if(!found) return null;
+  const best=found.find(x=>epSame(x.n,name))||found[0];
+  return best?{...best, also:found}:{f:''};
+}
+function epDur(s){
+  s=String(s||'').trim(); if(!s) return '';
+  const p=s.split(':').map(Number); if(p.some(x=>isNaN(x))) return '';
+  const secs=p.length===1?p[0]:p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2];
+  const m=Math.round(secs/60); return m>0?m+' min':'';
+}
+// The feed read and cut down to what is shown: oldest first, numbered that way
+// when the feed numbers none of them. {err} when it could not be read.
+async function epRead(f,force){
+  if(EP_FEEDS.has(f)&&!force) return EP_FEEDS.get(f);
+  let txt;
+  try{
+    const r=await fetch(f,{cache:force?'no-cache':'default'});
+    if(!r.ok) return {err:'missing'};
+    txt=await r.text();
+  }catch(e){ console.error(e); return {err:'blocked'}; }
+  const doc=new DOMParser().parseFromString(txt,'text/xml');
+  const ch=doc.getElementsByTagName('channel')[0];
+  if(!ch||doc.getElementsByTagName('parsererror').length) return {err:'notfeed'};
+  const get=(el,name)=>{ const x=el.getElementsByTagName(name)[0]; return x?x.textContent.trim():''; };
+  const eps=[...doc.getElementsByTagName('item')].map(it=>{
+    const enc=it.getElementsByTagName('enclosure')[0], a=enc?enc.getAttribute('url')||'':'';
+    const guid=get(it,'guid'), link=get(it,'link'), t=get(it,'title')||'(no title)';
+    const n=parseInt(get(it,'itunes:episode'),10), se=parseInt(get(it,'itunes:season'),10);
+    return {id:epCode(guid||a||link||t), t:t.slice(0,300), d:Date.parse(get(it,'pubDate'))||0,
+      n:n>0?n:null, s:se>0?se:null, guid, link, dur:epDur(get(it,'itunes:duration'))};
+  });
+  eps.sort((x,y)=>x.d-y.d);
+  if(!eps.some(e=>e.n)) eps.forEach((e,i)=>{ e.n=i+1; });
+  const out={eps, title:get(ch,'title')};
+  EP_FEEDS.set(f,out);
+  return out;
+}
+// A BBC episode opens at that episode in BBC Sounds; anything else opens the podcast.
+function epHref(l,e){
+  const pid=(String(e.guid).match(/^urn:bbc:podcast:([a-z0-9]+)$/i)
+    ||String(e.link).match(/bbc\.co\.uk\/programmes\/([a-z0-9]{8,})/i)||[])[1];
+  if(pid){ const u='https://www.bbc.co.uk/sounds/play/'+pid.toLowerCase();
+    return {href:linkHref({url:u, open_with:'sounds'}), url:u, own:true}; }
+  return {href:linkHref(l), url:l.url, own:false};
+}
+// Next up: the first not heard after the last one heard.
+function epNext(eps,heard){
+  let last=-1; eps.forEach((e,i)=>{ if(heard.has(e.id)) last=i; });
+  if(last<0) return {};
+  const next=eps.slice(last+1).find(e=>!heard.has(e.id));
+  return next?{next}:{caught:true};
+}
+
+async function openEps(id,force){
+  const l=ULINKS.find(x=>x.id===id); if(!l) return;
+  EP_CUR=id; EP_DATA=null; EP_VIEW.num=''; EP_VIEW.more=100;
+  showSheet('podEps'); lockBackground();
+  $('podEpsTitle').textContent=tuneTitle(l);
+  const body=$('podEpsBody');
+  body.innerHTML='<p class="empty">Fetching the episodes…</p>'; body.scrollTop=0;
+  const found=await epFindFeed(l);
+  if(EP_CUR!==id) return;
+  if(!found) return paintEpsNone(l,'Could not look for the episodes just now. Nothing has been lost: check your signal and press refresh at the top.');
+  if(!found.f) return paintEpsNone(l,'No list of episodes was found for this podcast. Podcasts that are only on Spotify don’t have one.');
+  const got=await epRead(found.f,force);
+  if(EP_CUR!==id) return;
+  if(got.err) return paintEpsNone(l, got.err==='blocked'
+    ? 'This podcast doesn’t let the app read its list of episodes. Some don’t.'
+    : found.bbc ? 'The BBC has no list of episodes for this programme.'
+    : 'The list of episodes could not be read.');
+  // Found by name: kept, so it isn't looked up every time.
+  if(!found.bbc&&tuneOf(id).f!==found.f){ setTune(id,{f:found.f, fn:found.n||got.title||''}); tuneSave(); }
+  EP_DATA={id, f:found.f, eps:got.eps, title:got.title||found.n||'', also:found.also||null};
+  paintEps();
+}
+function paintEpsNone(l,msg){
+  EP_DATA=null;
+  const app=linkApp(l.open_with), href=linkHref(l);
+  $('podEpsBody').innerHTML=`<div class="card epshead"><p>${esc(msg)}</p>
+    <button class="btn" data-epwrong>Look for it by name, or paste its feed</button>
+    <a class="btn primary" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
+      data-epopen>Open ${app.k?'in '+esc(app.label):'its page'}</a></div>`;
+}
+function epRow(e,l,heard){
+  const on=heard.has(e.id), go=epHref(l,e);
+  const when=e.d?new Date(e.d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
+  const num=e.n?(e.s?'Series '+e.s+', ':'')+'Ep '+e.n:'';
+  return `<div class="eprow${on?' heard':''}">
+    <button type="button" class="eptick" data-eptick="${esc(e.id)}" aria-pressed="${on}"
+      aria-label="${on?'Listened: tap to undo':'Tick as listened'}">${on?'&#10003;':''}</button>
+    <a class="epgo" href="${esc(go.href)}" ${go.href===go.url?'target="_blank" ':''}rel="noopener noreferrer"
+      data-epgo="${esc(e.id)}"><b>${esc(e.t)}</b><span class="epmeta">${
+        [num,when,e.dur].filter(Boolean).map(esc).join(' &middot; ')}</span></a>
+  </div>`;
+}
+function paintEps(){
+  const D=EP_DATA, body=$('podEpsBody'); if(!D||!body) return;
+  const l=ULINKS.find(x=>x.id===D.id); if(!l) return;
+  const y=body.scrollTop;
+  const heard=epHeard(D.id), eps=D.eps, done=eps.filter(e=>heard.has(e.id)).length;
+  const app=linkApp(l.open_with), href=linkHref(l), st=podStatus(l);
+  const own=eps.length&&epHref(l,eps[eps.length-1]).own, nx=epNext(eps,heard);
+  const shows=[['all','All'],['todo','Not listened'],['done','Listened']];
+  body.innerHTML=`
+    <div class="card epshead">
+      <p>${eps.length} episode${eps.length===1?'':'s'} &middot; ${done} listened${
+        D.title?' &middot; <b>'+esc(D.title)+'</b>':''}<button type="button" class="eplink"
+        data-epwrong>Not the right podcast?</button></p>
+      <span class="pickrow">${POD_STATUS.map(x=>`<button type="button" data-epst="${x.k}"
+        aria-pressed="${st===x.k}">${x.one}</button>`).join('')}</span>
+      <a class="btn primary" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
+        data-epopen>Open ${app.k?'in '+esc(app.label):'its page'}</a>
+      ${own?'':`<p class="epnote">An episode opens the podcast${app.k?' in '+esc(app.label):''}:
+        choose the episode there.</p>`}
+    </div>
+    ${nx.next?`<p class="dsec">Next up</p><div class="card">${epRow(nx.next,l,heard)}</div>`
+      :nx.caught?'<p class="epnote" style="margin:0 2px 14px">You have listened to every episode so far.</p>':''}
+    <div class="kindpick epshow">${shows.map(([k,t])=>`<button type="button" data-epshow="${k}"
+      aria-pressed="${EP_VIEW.show===k}">${t}</button>`).join('')}</div>
+    <div class="eptools"><button type="button" class="chip" data-eporder>${
+      EP_VIEW.old?'Oldest first':'Newest first'} &#8645;</button>
+      <input id="epNum" type="text" inputmode="numeric" autocomplete="off" placeholder="Episode number"
+        value="${esc(EP_VIEW.num)}" aria-label="Find an episode by its number"></div>
+    <div id="epList"></div>`;
+  paintEpList();
+  body.scrollTop=y;
+}
+// Only the list is drawn again while you type a number, so the box keeps the keyboard.
+function paintEpList(){
+  const D=EP_DATA, box=$('epList'); if(!D||!box) return;
+  const l=ULINKS.find(x=>x.id===D.id); if(!l) return;
+  const heard=epHeard(D.id), num=EP_VIEW.num.replace(/\D/g,'');
+  let rows=EP_VIEW.show==='todo'?D.eps.filter(e=>!heard.has(e.id))
+    :EP_VIEW.show==='done'?D.eps.filter(e=>heard.has(e.id)):D.eps.slice();
+  if(num) rows=rows.filter(e=>String(e.n)===num);
+  if(!EP_VIEW.old) rows.reverse();
+  const shown=rows.slice(0,EP_VIEW.more), left=rows.length-shown.length;
+  box.innerHTML=rows.length
+    ? `<div class="card">${shown.map(e=>epRow(e,l,heard)).join('')}</div>`
+      +(left?`<button type="button" class="btn epmore" data-epmore>Show ${Math.min(100,left)} more of ${left}</button>`:'')
+    : `<div class="card"><div class="field"><dd style="color:var(--muted)">${num
+        ? 'No episode '+esc(num)+(EP_VIEW.show==='all'?'':' among these')+'.'
+        : EP_VIEW.show==='todo'?'Nothing left to listen to.':'Nothing ticked yet.'}</dd></div></div>`;
+}
+// The first tick may be partway through: offer to tick the earlier ones too.
+function epAskBefore(n){
+  return new Promise(res=>{
+    const box=document.createElement('div');
+    box.className='daypick';
+    box.innerHTML=`<div class="inner">
+      <p class="dsec" style="padding-top:0">Heard the earlier ones?</p>
+      <p class="lsub">There ${n===1?'is 1 episode':'are '+n+' episodes'} before this one.</p>
+      <button class="menuitem" id="epAll">Tick ${n===1?'that one':'all '+n} as listened too &rsaquo;</button>
+      <button class="menuitem" id="epOne">Just this one &rsaquo;</button>
+      <div class="pfoot"><button id="epShut">Cancel</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); res(v); };
+    box.querySelector('#epAll').onclick=()=>done(true);
+    box.querySelector('#epOne').onclick=()=>done(false);
+    box.querySelector('#epShut').onclick=()=>done(null);
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+  });
+}
+async function epTick(eid){
+  const D=EP_DATA; if(!D) return;
+  const l=ULINKS.find(x=>x.id===D.id); if(!l) return;
+  const heard=epHeard(D.id);
+  if(heard.has(eid)) heard.delete(eid);
+  else {
+    const i=D.eps.findIndex(e=>e.id===eid); if(i<0) return;
+    const before=heard.size?[]:D.eps.slice(0,i);
+    let all=false;
+    if(before.length){ all=await epAskBefore(before.length); if(all===null) return; }
+    heard.add(eid); if(all) before.forEach(e=>heard.add(e.id));
+    // Interesting until the first one is heard; then it is Ongoing.
+    if(podStatus(l)==='interesting') setTune(D.id,{st:'ongoing'});
+  }
+  LINK_PREFS.heard={...(LINK_PREFS.heard||{}), [D.id]:[...heard]};
+  paintEps(); tuneSave();
+}
+// The wrong podcast found, or none: choose from Apple's directory, or paste a feed.
+async function epPick(){
+  const l=ULINKS.find(x=>x.id===EP_CUR); if(!l) return;
+  const id=l.id;
+  const box=document.createElement('div');
+  box.className='daypick lnked';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Which podcast is it?</p>
+    <div id="epFound"><p class="lsub">Looking&hellip;</p></div>
+    <p class="ulhead">Or paste the address of its feed</p>
+    <span class="ulrow"><input id="epFeed" type="url" inputmode="url" placeholder="https://" autocomplete="off">
+      <button type="button" id="epFeedGo">Use it</button></span>
+    <div class="pfoot lfoot"><button id="epPickShut">Cancel</button></div></div>`;
+  document.body.appendChild(box);
+  const q=s=>box.querySelector(s), close=()=>box.remove();
+  q('#epPickShut').onclick=close;
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  const use=async(f,n)=>{ close(); setTune(id,{f, fn:n||''}); tuneSave(); await openEps(id); };
+  q('#epFeedGo').onclick=()=>{
+    const u=findUrl(q('#epFeed').value);
+    if(!u){ toast('That does not look like a web address'); q('#epFeed').focus(); return; }
+    use(u.replace(/^http:/i,'https:'),'');
+  };
+  const found=(EP_DATA&&EP_DATA.id===id&&EP_DATA.also)||await epSearch(tuneTitle(l));
+  if(!box.isConnected) return;
+  q('#epFound').innerHTML=found&&found.length
+    ? found.map((x,i)=>`<button class="menuitem" data-epf="${i}">${esc(x.n)}${
+        x.by?' <span style="color:var(--muted);font-weight:400">('+esc(x.by)+')</span>':''} &rsaquo;</button>`).join('')
+    : `<p class="lsub">${found?'Nothing found under &ldquo;'+esc(tuneTitle(l))+'&rdquo;.'
+        :'Could not look just now. Check your signal.'}</p>`;
+  box.querySelectorAll('[data-epf]').forEach(b=>b.onclick=()=>{ const x=found[+b.dataset.epf]; use(x.f,x.n); });
+}
+
+$('podEpsBack').onclick=()=>{
+  $('podEps').classList.add('hidden'); EP_CUR=null; EP_DATA=null;
+  lockBackground(); renderTunes('pods');
+};
+$('podEpsBody').addEventListener('click',ev=>{
+  const t=ev.target.closest('[data-eptick]');
+  if(t){ epTick(t.dataset.eptick); return; }
+  if(ev.target.closest('[data-epgo]')) return;                       // the link opens it
+  if(ev.target.closest('[data-epopen]')){ if(EP_CUR) countLinkOpen(EP_CUR); return; }
+  const sh=ev.target.closest('[data-epshow]');
+  if(sh){ EP_VIEW.show=sh.dataset.epshow; EP_VIEW.more=100; paintEps(); return; }
+  if(ev.target.closest('[data-eporder]')){ EP_VIEW.old=!EP_VIEW.old; EP_VIEW.more=100; paintEps(); return; }
+  if(ev.target.closest('[data-epmore]')){ EP_VIEW.more+=100; paintEpList(); return; }
+  const s=ev.target.closest('[data-epst]');
+  if(s&&EP_CUR){ setTune(EP_CUR,{st:s.dataset.epst}); paintEps(); tuneSave(); return; }
+  if(ev.target.closest('[data-epwrong]')) epPick();
+});
+$('podEpsBody').addEventListener('input',ev=>{
+  if(ev.target.id==='epNum'){ EP_VIEW.num=ev.target.value; EP_VIEW.more=100; paintEpList(); }
+});
+$('podEpsBody').addEventListener('keydown',ev=>{
+  if(ev.target.id==='epNum'&&ev.key==='Enter'){ ev.preventDefault(); ev.target.blur(); }
 });
 
 $('linksBody').addEventListener('click',ev=>{
@@ -12007,6 +12546,32 @@ function wireLinkSettings(){
       toast('You already have that one'); return; }
     LINK_PREFS.subjects.push(v); save('Added');
   };
+  // MY Music and MY Podcasts genres (ML384, ML385): yours, like the subjects.
+  const gk=d=>{ const i=d.indexOf(':'); return [d.slice(0,i), d.slice(i+1)]; };
+  body.querySelectorAll('[data-gnname]').forEach(inp=>inp.onchange=async()=>{
+    const [kind,from]=gk(inp.dataset.gnname), to=inp.value.trim();
+    const list=(LINK_PREFS.genres||{})[kind]||[];
+    if(!to||to===from){ inp.value=from; return; }
+    if(list.some(g=>g!==from&&g.toLowerCase()===to.toLowerCase())){
+      toast('You already have that one'); inp.value=from; return; }
+    if(!ULINKS.length) await loadLinks();
+    tuneRegenre(kind,from,to); await save('Renamed');
+  });
+  body.querySelectorAll('[data-gndrop]').forEach(b=>b.onclick=async()=>{
+    const [kind,g]=gk(b.dataset.gndrop);
+    if(!ULINKS.length) await loadLinks();
+    const n=ULINKS.filter(l=>tuneSubj(l,kind)&&tuneGenres(l).includes(g)).length;
+    if(!confirm('Remove the genre "'+g+'"?'+(n?' It comes off '+n+' of your '
+      +(kind==='music'?'music':'podcasts')+'.':''))) return;
+    tuneRegenre(kind,g,null); await save('Removed');
+  });
+  body.querySelectorAll('[data-gnadd]').forEach(b=>b.onclick=()=>{
+    const kind=b.dataset.gnadd, inp=$('gnNew-'+kind), v=inp?inp.value.trim():'';
+    if(!v){ toast('Give it a name'); return; }
+    const list=(LINK_PREFS.genres||{})[kind]||[];
+    if(list.some(g=>g.toLowerCase()===v.toLowerCase())){ toast('You already have that one'); return; }
+    LINK_PREFS.genres={...(LINK_PREFS.genres||{}), [kind]:list.concat(v)}; save('Added');
+  });
 }
 
 /* ============================================================
@@ -13299,9 +13864,9 @@ function sharedIn(s){
     box.querySelector('#siRecipe').onclick=async()=>{ close(); await openRecipes(); readRecipe(s.url,s.title); };
     box.querySelector('#siLink').onclick=async()=>{ close(); await openLinks(); editLink(null,s); };
     box.querySelector('#siMusic').onclick=async()=>{ close(); await openTunes('music');
-      editLink(null,{...s, subjects:[TUNES.music.subject]}); };
+      editLink(null,{...s, subjects:[TUNES.music.subject]},'music'); };
     box.querySelector('#siPod').onclick=async()=>{ close(); await openTunes('pods');
-      editLink(null,{...s, subjects:[TUNES.pods.subject]}); };
+      editLink(null,{...s, subjects:[TUNES.pods.subject]},'pods'); };
   }
   box.querySelector('#siBook').onclick=()=>{ close(); sharedBook(s); };
   box.querySelector('#siShow').onclick=()=>{ close(); sharedShow(s); };
@@ -20042,7 +20607,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
   books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys'], sld:['sld','sldTheme'],
-  music:['music'], pods:['pods']};
+  music:['music'], pods:['pods','podEps']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -20172,9 +20737,11 @@ async function saveTiles(){
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, wxoff:WX_OFF, menuof:MENU_OF, links:LINK_PREFS,
               recipes:RCP_PREFS, notsame:NOT_SAME, notpair:NOT_PAIR, sldhide:SLD_HIDE,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
+  // Taken as saved straight away, so going Home while it is still on its way
+  // can't put back what was there before (found 23 Nov 2026 with ML386's ticks).
+  MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
   const {error}=await sb.from('profiles').update({home_tiles:blob}).eq('id',ME.id);
   if(error){ toast('Could not save the home screen'); console.error(error); return; }
-  MY_PROFILE={...(MY_PROFILE||{}), home_tiles:blob};
 }
 
 // One notice, once, so nobody has to be told by hand what changed.
@@ -20312,7 +20879,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.22.2';
+const APP_VERSION='2026.11.23.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -26968,7 +27535,7 @@ const AREA_SHUT={
   wish: ()=>{ if(DPH&&DPH.box==='wPics') dphCancel(); $('wish').classList.add('hidden'); },
   links:()=>$('links').classList.add('hidden'),
   music:()=>$('music').classList.add('hidden'),
-  pods: ()=>$('pods').classList.add('hidden'),
+  pods: ()=>{ EP_CUR=null; ['pods','podEps'].forEach(id=>$(id).classList.add('hidden')); },
   recipes:()=>{ if(COOK&&!shutCook()) return;
     ['recipes','recipe','recipeEd','ideas','weekMenu'].forEach(id=>$(id).classList.add('hidden')); },
   jig:  ()=>{ shutJigPlay(); $('jig').classList.add('hidden'); },
@@ -27014,7 +27581,7 @@ function areaItems(area){
   if(area==='links') return [
     it('Paste a link',            ()=>{ shutMenu(); pasteLink(); })];
   if(area==='music'||area==='pods') return [
-    it('Paste a link',            ()=>{ shutMenu(); pasteLink({subjects:[TUNES[area].subject]}); })];
+    it('Paste a link',            ()=>{ shutMenu(); pasteLink({subjects:[TUNES[area].subject]},area); })];
   if(area==='stuff') return [
     it('Add something',           ()=>{ shutMenu(); stfPickKind(); }),
     it('Change the lock password', ()=>{ shutMenu(); stfChangeLock(); })];

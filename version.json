@@ -1,6 +1,15 @@
 {
-  "version": "2026.11.23.3",
+  "version": "2026.11.24.1",
   "history": [
+    {
+      "version": "2026.11.24.1",
+      "changes": [
+        "A regular job now has a Done button on its own screen, so it can be ticked off there, not only on the list.",
+        "Each podcast's page in MY Podcasts now shows its picture at the top.",
+        "In Pounds, when someone fills a box, their card stays on your screen with that box lit up until the next player rolls.",
+        "Finished games are now split into Loxx and Pounds and grouped into matches, best of 3 or first to 5. Tap a match to see its games."
+      ]
+    },
     {
       "version": "2026.11.23.3",
       "changes": [

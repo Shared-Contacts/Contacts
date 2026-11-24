@@ -598,6 +598,9 @@ input[name="postcode"]{text-transform:uppercase}
 /* A podcast's episodes (ML386): a tick circle on the left, the episode itself
    to the right of it, so ticking never opens the episode by mistake. */
 .epshead{padding:12px 14px}
+.eptop{display:flex;gap:12px;align-items:flex-start}
+.eptop p{flex:1 1 auto;min-width:0}
+.eppic{flex:0 0 84px;width:84px;border-radius:8px;font-size:34px;margin-bottom:10px}
 .epshead p{margin:0 0 10px;color:var(--muted);font-size:15px;overflow-wrap:anywhere}
 .epshead .pickrow{margin:0 0 12px}
 .epshead .btn{margin-top:10px;text-decoration:none}
@@ -621,6 +624,7 @@ input[name="postcode"]{text-transform:uppercase}
 .btn{display:block;width:100%;padding:15px;border-radius:var(--radius);font-size:17px;font-weight:700;text-align:center}
 .btn.primary{background:var(--hull);color:#F2EFE4}
 .btn.danger{background:none;color:var(--red);border:1.5px solid var(--red);margin-top:12px}
+.btn.rtdonebtn{margin-top:4px}
 .btn:disabled{opacity:.5}
 /* OK beside an answer under Contacts you sent: only as wide as it needs, so
    the words beside it keep their room (ML342) */
@@ -950,6 +954,11 @@ body.vbtyping #verBar{display:none}
   display:flex;align-items:center;justify-content:center}
 .lklogo svg{width:38px;height:30px}
 .lkbtns{display:flex;gap:10px;padding:10px 0 0}
+.gmrule{margin:0 0 8px}
+.gmrule button{padding:9px 4px;font-size:14px}
+.gmmatch .gmchev{flex:0 0 auto;color:var(--hull);font-size:18px}
+.gmgames{background:#F7F6F1;border-bottom:1px solid #F0EEE7}
+.gmgames .pplrow{padding-left:26px}
 .lkgrow .lkpts{flex:0 0 auto;font-weight:800;font-size:18px;color:var(--hull);min-width:34px;text-align:right}
 #lkPlay{background:#EFEBDD;container-type:size}
 .lkstage{position:absolute;inset:0;display:flex;flex-direction:column;gap:1.5cqh;container-type:size;
@@ -1116,6 +1125,9 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .pdbox.pot.zero .pdv{color:var(--muted);font-weight:500}
 .pdbox.pick{background:#FFF3C4;box-shadow:inset 4px 0 0 var(--hull)}
 .pdbox.pick .pdv{color:var(--ink);font-style:normal;font-weight:800}
+.pdbox.just,.pdsum.just{background:#FFF3C4;box-shadow:inset 0 0 0 2px var(--brass)}
+.pdjust{margin:0 2px 8px;padding:8px 10px;border-radius:8px;background:#FFF3C4;color:var(--ink);font-size:15px;line-height:1.35}
+.pdjust .pdjd{white-space:nowrap;color:var(--muted)}
 .pdsum{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:34px;padding:0 10px;
   background:#F6F3EA;border-bottom:1px solid var(--rule);font-size:13.5px;color:var(--muted)}
 .pdsum:last-child{border-bottom:0}
@@ -6106,7 +6118,8 @@ function openHelp(where){
   the box finds an episode by its number; where the podcast gives no numbers they
   count from the oldest. The first time you tick one partway through, you are
   asked whether to tick the earlier ones too.</p>
-  <p>A BBC episode opens at that episode in BBC Sounds. A Spotify episode opens
+  <p>A podcast&rsquo;s page has its picture at the top, the same as its tile.
+  A BBC episode opens at that episode in BBC Sounds. A Spotify episode opens
   Spotify searching for it, where it is usually the top result. Other episodes
   open the podcast in its app, where you choose the episode. Podcasts only on Spotify have
   no public list of episodes. Some hosts, such as Acast, don&rsquo;t let the app read
@@ -6504,6 +6517,12 @@ function openHelp(where){
   <p><strong>Playing again:</strong> one of you taps <strong>Play again</strong>.
   Everyone else still looking at the scores is taken straight to the new game, with
   a message saying who started it, so nobody has to go back to Games.</p>
+  <p><strong>Results:</strong> under Games, finished games are kept apart, Loxx and
+  Pounds, and grouped into matches with the same players: <strong>Best of 3</strong>
+  (the first to win two) or <strong>First to 5</strong>, chosen with the buttons above
+  each list. A draw counts for nobody. A match still going on is open, its games
+  newest first; tap a finished one to see its games, with who won and the scores,
+  and tap a game to see the cards. Pounds on your own is listed by itself.</p>
 
   <h4 id="h-pounds">MY Games: Pounds</h4>
   <p><strong>Pounds</strong> is a five-dice game for 1 to 6 players: on your own,
@@ -6536,7 +6555,9 @@ function openHelp(where){
   of a kind you roll is <strong>100 more</strong>. And any five of a kind, once that
   box is filled, can go in any box you like: Full house and the runs score in full.</p>
   <p><strong>Watching:</strong> everyone sees the dice as they are rolled and kept,
-  and the card of whoever&rsquo;s turn it is. Tap a name at the top to look at
+  and the card of whoever&rsquo;s turn it is. When someone fills a box, their card
+  stays on everyone else&rsquo;s screen with that box picked out, and a line at the
+  top says what they put where, until the next player rolls. Tap a name at the top to look at
   someone else&rsquo;s card. The Games tile shows a number when it is your turn.</p>
   <p><strong>The end:</strong> after 13 turns each every box is filled, and the
   highest total wins. On your own, it tells you your best so far.
@@ -6545,6 +6566,8 @@ function openHelp(where){
   shows the same players and dice as last game, ticked, so you can change to real
   dice or the phone&rsquo;s before Next. Everyone else still looking at the scores
   is taken straight to the new game, with a message saying who started it.</p>
+  <p><strong>Results:</strong> finished games with others are grouped into matches,
+  best of 3 or first to 5, as Loxx&rsquo;s are (see Results under Loxx).</p>
 
   <h4 id="h-deceased">Those who have died</h4>
   <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
@@ -6946,7 +6969,9 @@ function openHelp(where){
   A heading with every job in it ticked moves down below the ones that still
   have something to do. A new job starts under <strong>ASAP</strong>, which puts it on the Today
   screen; tap the heading box and type another, or clear it for none. Tap a
-  job to open it: change the wording or heading, or add photos. To change the
+  job to open it: change the wording or heading, or add photos, and
+  <strong>Done</strong> ticks it off from there (<strong>Not done yet</strong>
+  unticks it). To change the
   order under a heading, hold a job still for a moment until it lifts, then slide
   it up or down and let go.</p>
   <p><strong>Photos.</strong> Appointments, to-dos and regular jobs can all
@@ -7808,7 +7833,8 @@ function dragJobs(body){
 
 /* ---------- one regular job, opened ----------
    Tapping a job on the Regular list opens it here: the wording, its heading
-   and any photos. Ticking and the ⋮ and × on the row work as before. */
+   and any photos. Ticking and the ⋮ and × on the row work as before. Done
+   (or Not done yet) does what the tick does, saving any changes too (ML396). */
 let EDIT_RT=null;
 function openRoutine(r){
   if(!r) return;
@@ -7822,12 +7848,16 @@ function openRoutine(r){
         .map(h=>`<option value="${esc(h)}">`).join('')}</datalist>
       <p class="coords">${r.done&&r.done_at?'Done '+esc(new Date(r.done_at)
         .toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))
-        :'Still to do.'} Tick it on the list to change that.</p>
+        :'Still to do.'}</p>
     </fieldset>
     <fieldset><legend>Photos</legend>${dphHtml('rtPics')}</fieldset>
+    <button type="button" class="btn primary rtdonebtn" id="rtDone">${r.done?'Not done yet':'Done'}</button>
     <button type="button" class="btn danger" id="rtDelete">Remove from the list</button>
   </form>`;
   dphStart('rtPics', r.photos);
+  $('rtDone').onclick=()=>saveRoutine(r.done?{done:false, done_at:null,
+      sort_order:Math.min(0,...ROUTINES.map(x=>x.sort_order))-1}
+    :{done:true, done_at:new Date().toISOString()});
   $('rtDelete').onclick=()=>deleteRoutine(r);
   showSheet('rtEd'); $('rtBody').scrollTop=0; lockBackground();
 }
@@ -7836,25 +7866,27 @@ function shutRoutine(){
   EDIT_RT=null; $('rtEd').classList.add('hidden'); lockBackground();
 }
 
-async function saveRoutine(){
+// tick: what Done or Not done yet changes as well, saved in the same go.
+async function saveRoutine(tick){
   const r=EDIT_RT; if(!r) return;
   const f=$('rtForm');
   const title=f.elements['title'].value.trim();
   if(!title){ toast('Give it a name'); return; }
   const heading=f.elements['heading'].value.trim()||null;
-  const d={title, heading};
+  const d={title, heading, ...(tick||{})};
   // Only sent when there is something to say, so a job still saves on a
   // database that has not had step 46 yet.
   const photos=dphNow();
   if(photos.length || arr(r.photos).length) d.photos=photos;
-  $('rtSave').disabled=true;
+  const btns=['rtSave','rtDone'].map(id=>$(id)).filter(Boolean);
+  btns.forEach(b=>{ b.disabled=true; });
   const {error}=await sb.from('routines').update(d).eq('id',r.id);
-  $('rtSave').disabled=false;
+  btns.forEach(b=>{ b.disabled=false; });
   if(error){ toast(dphStepMissing(d,error)||'Could not save'); console.error(error); return; }
   await dphSaved();
   rememberHeading(heading);
   shutRoutine();
-  await loadAll(); renderDiary(); toast('Saved');
+  await loadAll(); renderDiary(); toast(!tick?'Saved':tick.done?'Done':'Not done yet: back at the top');
 }
 
 async function deleteRoutine(r){
@@ -12006,6 +12038,9 @@ Object.keys(TUNES).forEach(k=>{
   body.addEventListener('error',ev=>{
     const im=ev.target; if(im&&im.dataset&&im.dataset.mupic) tuneBroke(im); },true);
 });
+// The podcast's own page has its picture too (ML397).
+if($('podEpsBody')) $('podEpsBody').addEventListener('error',ev=>{
+  const im=ev.target; if(im&&im.dataset&&im.dataset.mupic) tuneBroke(im); },true);
 
 /* ---------- Type, where you are with it, and genres (ML384, ML385) ----------
    Asked for 23 Nov 2026. Kept with your own settings (LINK_PREFS.tune, keyed
@@ -12323,10 +12358,17 @@ async function openEps(id,force){
   EP_DATA={id, f:found.f, eps:got.eps, title:got.title||found.n||'', also:found.also||null};
   paintEps();
 }
+// The podcast's picture, as on its tile in MY Podcasts, or its letter (ML397).
+function epPic(l){
+  const t=tuneTitle(l), p=tunePic(l), img=p&&p.i&&!TUNE_AGAIN.has(l.id)?p.i:'';
+  const letter=esc((t.match(/[A-Za-z0-9]/)||['?'])[0].toUpperCase());
+  return `<span class="mupic eppic" data-mul="${letter}">${img
+    ?`<img data-mupic="${l.id}" src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:letter}</span>`;
+}
 function paintEpsNone(l,msg){
   EP_DATA=null;
   const app=linkApp(l.open_with), href=linkHref(l);
-  $('podEpsBody').innerHTML=`<div class="card epshead"><p>${esc(msg)}</p>
+  $('podEpsBody').innerHTML=`<div class="card epshead"><div class="eptop">${epPic(l)}<p>${esc(msg)}</p></div>
     <button class="btn" data-epwrong>Look for it by name, or paste its feed</button>
     <a class="btn primary" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
       data-epopen>Open ${app.k?'in '+esc(app.label):'its page'}</a></div>`;
@@ -12354,9 +12396,9 @@ function paintEps(){
   const shows=[['all','All'],['todo','Not listened'],['done','Listened']];
   body.innerHTML=`
     <div class="card epshead">
-      <p>${eps.length} episode${eps.length===1?'':'s'} &middot; ${done} listened${
+      <div class="eptop">${epPic(l)}<p>${eps.length} episode${eps.length===1?'':'s'} &middot; ${done} listened${
         D.title?' &middot; <b>'+esc(D.title)+'</b>':''}<button type="button" class="eplink"
-        data-epwrong>Not the right podcast?</button></p>
+        data-epwrong>Not the right podcast?</button></p></div>
       <span class="pickrow">${POD_STATUS.map(x=>`<button type="button" data-epst="${x.k}"
         aria-pressed="${st===x.k}">${x.one}</button>`).join('')}</span>
       <a class="btn primary" href="${esc(href)}" ${href===l.url?'target="_blank" ':''}rel="noopener noreferrer"
@@ -15664,6 +15706,86 @@ function pdGameLine(g){
     <span class="lkpts">${pdTotals(pdSheet(me.sheet)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
+/* ---------- results as matches (ML399) ----------
+   Finished games, Loxx and Pounds apart, grouped into matches: the same
+   players, in the order the games were played, a match over once someone
+   has the wins it needs (2 for best of 3, 5 for first to 5; a draw is
+   nobody's). Worked out from the games, so it covers every game played, and
+   changing the rule regroups them. Pounds on your own is listed as before.
+   A match still going on is open; a finished one opens with a tap. */
+const GM_RULES={bo3:{need:2, name:'Best of 3'}, ft5:{need:5, name:'First to 5'}};
+let GM_MATCH={loxx:'bo3', pounds:'bo3'};
+const GM_OPEN=new Map();
+function gmMatchFrom(saved){
+  const m=saved&&typeof saved==='object'?saved:{};
+  return {loxx:GM_RULES[m.loxx]?m.loxx:'bo3', pounds:GM_RULES[m.pounds]?m.pounds:'bo3'};
+}
+const gmWhen = g => new Date(g.ended_at||g.updated_at||g.created_at).getTime();
+const gmDay = t => new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+// "8 Nov", "8 to 9 Nov", "28 Oct to 2 Nov", and the years only when they differ.
+function gmSpan(t0,t1){
+  const a=new Date(t0), z=new Date(t1), A=gmDay(t0), Z=gmDay(t1);
+  if(A===Z&&a.getFullYear()===z.getFullYear()) return Z;
+  if(a.getFullYear()!==z.getFullYear()) return A+' '+a.getFullYear()+' to '+Z+' '+z.getFullYear();
+  return (a.getMonth()===z.getMonth()?String(a.getDate()):A)+' to '+Z;
+}
+function gmWinner(g){
+  const r=pdIs(g)?pdResults(g):lkResults(g), tops=r.list.filter(x=>x.total===r.best);
+  return r.list.length>1&&tops.length===1?tops[0].id:null;
+}
+function gmMatches(games,rule){
+  const need=(GM_RULES[rule]||GM_RULES.bo3).need, sets=new Map(), out=[];
+  games.slice().sort((a,b)=>gmWhen(a)-gmWhen(b)||a.id-b.id).forEach(g=>{
+    const key=lkPlayers(g.id).map(p=>p.user_id).sort().join(',');
+    if(!sets.has(key)) sets.set(key,[]);
+    sets.get(key).push(g);
+  });
+  sets.forEach((list,key)=>{
+    let m=null;
+    list.forEach(g=>{
+      if(!m) m={key:rule+'|'+key+'|'+g.id, ids:key.split(','), games:[], wins:{}, won:null};
+      m.games.push(g);
+      const w=gmWinner(g); if(w) m.wins[w]=(m.wins[w]||0)+1;
+      if(w&&m.wins[w]>=need){ m.won=w; out.push(m); m=null; }
+    });
+    if(m) out.push(m);
+  });
+  return out.sort((a,b)=>gmWhen(b.games[b.games.length-1])-gmWhen(a.games[a.games.length-1]));
+}
+function gmMatchHtml(m,rule){
+  const name=u=>u===ME.id?'You':lkWho(u);
+  const others=lkAnd(m.ids.filter(u=>u!==ME.id).map(u=>lkWho(u)));
+  const tally=m.ids.map(u=>({u, n:m.wins[u]||0}))
+    .sort((a,b)=>b.n-a.n||(a.u===ME.id?-1:b.u===ME.id?1:0));
+  const list=tally.map(x=>esc(name(x.u))+' '+x.n).join(', ');
+  const sub=m.won
+    ? (m.won===ME.id?'You won':esc(lkWho(m.won))+' won')
+      +(m.ids.length===2?' '+m.wins[m.won]+'–'+tally.find(x=>x.u!==m.won).n:': '+list)
+    : 'Going on: '+(tally.every(x=>!x.n)?'no wins yet':list);
+  const span=gmSpan(gmWhen(m.games[0]), gmWhen(m.games[m.games.length-1]));
+  const n=m.games.length, open=GM_OPEN.has(m.key)?GM_OPEN.get(m.key):!m.won;
+  return `<button type="button" class="pplrow gmmatch" data-gmmatch="${esc(m.key)}" aria-expanded="${open}">
+      <span class="pplwho"><b>${esc(GM_RULES[rule].name)} with ${esc(others)}</b><small>${sub} · ${
+        esc(span)} · ${n} game${n===1?'':'s'}</small></span>
+      <span class="gmchev" aria-hidden="true">${open?'&#9662;':'&#9656;'}</span></button>
+    ${open?`<div class="gmgames">${m.games.slice().reverse().map(lkGameLine).join('')}</div>`:''}`;
+}
+function gmFinishedHtml(over){
+  const solo=over.filter(g=>pdIs(g)&&lkPlayers(g.id).length===1);
+  let h='';
+  [['loxx','Loxx',over.filter(g=>!pdIs(g))],
+   ['pounds','Pounds',over.filter(g=>pdIs(g)&&lkPlayers(g.id).length>1)]].forEach(([k,label,list])=>{
+    if(!list.length) return;
+    const rule=GM_RULES[GM_MATCH[k]]?GM_MATCH[k]:'bo3';
+    h+=`<p class="dsec">Finished: ${label}</p>
+      <div class="kindpick gmrule" role="group" aria-label="${label} matches">${Object.keys(GM_RULES).map(r=>
+        `<button type="button" data-gmrule="${k}:${r}" aria-pressed="${rule===r}">${GM_RULES[r].name}</button>`).join('')}</div>
+      <div class="card">${gmMatches(list,rule).map(m=>gmMatchHtml(m,rule)).join('')}</div>`;
+  });
+  if(solo.length) h+=`<p class="dsec">Finished: Pounds on your own</p><div class="card">${solo.map(lkGameLine).join('')}</div>`;
+  return h;
+}
+
 function renderGames(){
   const b=$('gamesBody'); if(!b) return;
   const mine=GAMES.filter(g=>lkMe(g.id));
@@ -15687,7 +15809,7 @@ function renderGames(){
     ${GAMES_FAILED?`<div class="card"><div class="field"><dd style="color:var(--red)">Could not
       fetch the games just now. Nothing is lost: try the refresh button.</dd></div></div>`:''}
     ${going.length?`<p class="dsec">Going on</p><div class="card">${going.map(lkGameLine).join('')}</div>`:''}
-    ${over.length?`<p class="dsec">Finished</p><div class="card">${over.map(lkGameLine).join('')}</div>`:''}
+    ${gmFinishedHtml(over)}
     ${GAMES_READY&&!GAMES_FAILED&&!mine.length?'<p class="empty">No games yet. New game starts one.</p>':''}`;
   $('lkNew').onclick=()=>lkNewGame();
   $('lkHow').onclick=()=>openHelp('games');
@@ -15695,6 +15817,12 @@ function renderGames(){
   $('pdHow').onclick=()=>openHelp('pounds');
   b.querySelectorAll('[data-lkgame]').forEach(x=>x.onclick=()=>{
     const id=Number(x.dataset.lkgame); if(pdIs(lkGame(id))) pdOpen(id); else lkOpen(id); });
+  const again=()=>{ const y=b.scrollTop; renderGames(); b.scrollTop=y; };
+  b.querySelectorAll('[data-gmrule]').forEach(x=>x.onclick=()=>{
+    const [k,r]=x.dataset.gmrule.split(':'); if(GM_MATCH[k]===r) return;
+    GM_MATCH={...GM_MATCH, [k]:r}; again(); saveTiles(); });
+  b.querySelectorAll('[data-gmmatch]').forEach(x=>x.onclick=()=>{
+    GM_OPEN.set(x.dataset.gmmatch, x.getAttribute('aria-expanded')!=='true'); again(); });
 }
 
 /* ---------- starting one ---------- */
@@ -16402,10 +16530,25 @@ const pdIs = g => !!g && g.kind==='pounds';
 const pdReal = g => !!(g&&g.dice&&g.dice.real===true);
 
 // A card as it was saved, tidied: known boxes only, each a whole number.
+// last: the box filled on that player's latest turn, its score, the dice and
+// the turn (ML398), so everyone else can see what went where.
 function pdSheet(raw){
   const s=raw&&typeof raw==='object'?raw:{}, b=s.box&&typeof s.box==='object'?s.box:{}, box={};
   PD_BOXES.forEach(x=>{ const n=parseInt(b[x.k],10); if(b[x.k]!=null&&isFinite(n)) box[x.k]=Math.max(0,n); });
-  return {box, extra:Math.max(0,parseInt(s.extra,10)||0)};
+  const l=s.last&&typeof s.last==='object'?s.last:null;
+  const last=l&&PD_BOXES.some(x=>x.k===l.k)&&Number.isInteger(l.at)
+    ? {k:l.k, v:Math.max(0,parseInt(l.v,10)||0), at:l.at, x:l.x?1:0,
+       d:(Array.isArray(l.d)?l.d:[]).map(n=>parseInt(n,10)).filter(n=>n>=1&&n<=6).slice(0,5)} : null;
+  return {box, extra:Math.max(0,parseInt(s.extra,10)||0), last};
+}
+// Whoever filled a box on the turn just gone, and which (ML398): the player
+// before whoever's turn it is now. Null on your own, or if their phone didn't say.
+function pdJust(g){
+  if(!g||g.status!=='playing') return null;
+  const ps=lkPlayers(g.id); if(ps.length<2) return null;
+  const p=ps.find(x=>x.seat===(g.turn-1+ps.length)%ps.length); if(!p) return null;
+  const l=pdSheet(p.sheet).last;
+  return l&&l.at===g.turn_no-1?{uid:p.user_id, ...l}:null;
 }
 const pdFilled = s => Object.keys(s.box).length;
 const pdFull = v => Array.isArray(v) && v.length===5 && v.every(n=>n>=1&&n<=6);
@@ -16602,7 +16745,9 @@ async function pdScore(){
   const d=pdMyDice(g), s=pdSheet(me.sheet), k=PD_PICK.k;
   if(s.box[k]!=null||!pdFull(d.v)){ PD_PICK=null; pdPaint(); return; }
   const extra=pdExtraDue(d.v,s);
-  const ns={box:{...s.box, [k]:pdPoints(k,d.v,s)}, extra:s.extra+(extra?1:0)};
+  const pts=pdPoints(k,d.v,s);
+  const ns={box:{...s.box, [k]:pts}, extra:s.extra+(extra?1:0),
+    last:{k, v:pts, d:d.v.slice(), at:g.turn_no, x:extra?1:0}};
   clearTimeout(PD_PUSHT); PD_PENDING=false;
   PD_BUSY=true; const was=me.sheet; me.sheet=ns; PD_PICK=null; pdPaint();
   const {data,error}=await sb.rpc('pounds_score',{g:g.id, at_turn:g.turn_no, s:ns});
@@ -16780,9 +16925,14 @@ function pdPaint(){
   const ps=lkPlayers(g.id), playing=g.status==='playing', roller=playing?lkRoller(g):null;
   const mine=playing&&roller===ME.id, real=pdReal(g);
   const d=playing?(mine?pdMyDice(g):pdDiceOf(g)):PD_BLANK(), full=pdFull(d.v);
-  // Whose card: whoever's turn it is, until you tap someone else's name.
+  // Whose card: whoever's turn it is, until you tap someone else's name. Just
+  // after someone else fills a box, their card stays, that box lit up, until
+  // the next player rolls (ML398).
+  const just=pdJust(g), keep=just&&just.uid!==ME.id&&!d.rolls?just.uid:null;
+  const turnCard=roller&&ps.some(p=>p.user_id===roller)?roller:ME.id;
   if(!PD_VIEW||PD_VIEW.id!==Number(g.id)||PD_VIEW.at!==g.turn_no||!ps.some(p=>p.user_id===PD_VIEW.uid))
-    PD_VIEW={id:Number(g.id), at:g.turn_no, uid:roller&&ps.some(p=>p.user_id===roller)?roller:ME.id};
+    PD_VIEW={id:Number(g.id), at:g.turn_no, uid:keep||turnCard, auto:true};
+  else if(PD_VIEW.auto&&!keep) PD_VIEW.uid=turnCard;
   const view=ps.find(p=>p.user_id===PD_VIEW.uid)||me, vs=pdSheet(view.sheet), vt=pdTotals(vs);
   const showPot=playing&&view.user_id===roller&&full&&d.rolls>0&&!PD_ROLLING;
   const pick=mine&&PD_PICK&&PD_PICK.id===Number(g.id)&&PD_PICK.at===g.turn_no?PD_PICK.k:null;
@@ -16813,8 +16963,8 @@ function pdPaint(){
 
   const box=x=>{
     const v=vs.box[x.k], filled=v!=null, pot=!filled&&showPot?pdPoints(x.k,d.v,vs):null;
-    const isPick=pick===x.k&&view.user_id===ME.id;
-    return `<button class="pdbox${filled?' done':''}${pot!=null?' pot':''}${pot===0?' zero':''}${isPick?' pick':''}"
+    const isPick=pick===x.k&&view.user_id===ME.id, isJust=just&&view.user_id===just.uid&&just.k===x.k;
+    return `<button class="pdbox${filled?' done':''}${pot!=null?' pot':''}${pot===0?' zero':''}${isPick?' pick':''}${isJust?' just':''}"
       data-pdbox="${x.k}" aria-label="${esc(x.name)}${filled?', '+v:pot!=null?', would score '+pot:', empty'}">
       <span class="pdlab">${esc(x.name)}</span><span class="pdv">${filled?v:pot!=null?pot:''}</span></button>`;
   };
@@ -16826,16 +16976,19 @@ function pdPaint(){
         <div class="pdsum"><span>Top six</span><b>${vt.upper}</b></div>
         <div class="pdsum"><span>Bonus${vt.bonus?'':' <small>'+toGo+' to go</small>'}</span><b>${vt.bonus||'–'}</b></div></div>
       <div class="pdcol">${PD_LOWER.map(box).join('')}
-        <div class="pdsum${potExtra?' pot':''}"><span>Extra fives${vs.extra?' ×'+vs.extra:''}</span><b>${
+        <div class="pdsum${potExtra?' pot':''}${just&&just.x&&view.user_id===just.uid?' just':''}"><span>Extra fives${vs.extra?' ×'+vs.extra:''}</span><b>${
           vt.extra||(potExtra?'+100':'–')}</b></div></div>
     </div>
     <div class="pdtotal"><span>${view.user_id===ME.id?'Your total':esc(lkWho(view.user_id))+'’s total'}</span><b>${vt.total}</b></div>`;
   const go=pick?(()=>{ const s=pdSheet(me.sheet), n=pdPoints(pick,d.v,s);
     return `<button class="pdgo" id="pdGo">Put ${n} in ${esc(pdName(pick))}${pdExtraDue(d.v,s)?', and 100 more':''}</button>`; })():'';
 
+  const justLine=just&&just.uid!==ME.id?`<div class="pdjust" role="status">${esc(lkWho(just.uid))} put
+    <b>${just.v}</b> in ${esc(pdName(just.k))}${just.x?', and 100 more for another five of a kind':''}${
+    just.d.length===5?' <span class="pdjd">('+just.d.join(' ')+')</span>':''}</div>`:'';
   b.innerHTML=`${playing?'':pdOverHtml(g)}
     ${chips}
-    ${playing?`<div class="pdstatus" id="pdStatus">${pdStatus(g,d)}</div>
+    ${playing?`${justLine}<div class="pdstatus" id="pdStatus">${pdStatus(g,d)}</div>
     <div class="pdtable${real?' real':''}"><div class="pddice">${dice}</div>${ctl}</div>`:''}
     ${card}
     ${playing?'<div class="pdends"><button class="lkstop" id="pdStop">Stop game</button></div>':''}
@@ -20775,6 +20928,7 @@ function loadTiles(){
   NOT_SAME = arr(saved&&saved.notsame).filter(x=>typeof x==='string');
   NOT_PAIR = arr(saved&&saved.notpair).filter(x=>typeof x==='string');
   SLD_HIDE = arr(saved&&saved.sldhide).filter(x=>typeof x==='string');
+  GM_MATCH = gmMatchFrom(saved&&saved.gmmatch);
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -20793,7 +20947,7 @@ function loadTiles(){
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, wxoff:WX_OFF, menuof:MENU_OF, links:LINK_PREFS,
-              recipes:RCP_PREFS, notsame:NOT_SAME, notpair:NOT_PAIR, sldhide:SLD_HIDE,
+              recipes:RCP_PREFS, notsame:NOT_SAME, notpair:NOT_PAIR, sldhide:SLD_HIDE, gmmatch:GM_MATCH,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   // Taken as saved straight away, so going Home while it is still on its way
   // can't put back what was there before (found 23 Nov 2026 with ML386's ticks).
@@ -20937,7 +21091,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.23.3';
+const APP_VERSION='2026.11.24.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -22858,7 +23012,7 @@ $('diaryAdd').onclick=()=>newItem(null,DIARY_VIEW==='month'?DIARY_DAY
 $('itCancel').onclick=()=>{dphCancel();$('itemEd').classList.add('hidden');lockBackground();};
 $('itSave').onclick=saveItem;
 $('rtCancel').onclick=()=>{dphCancel();shutRoutine();};
-$('rtSave').onclick=saveRoutine;
+$('rtSave').onclick=()=>saveRoutine();
 $('briefClose').onclick=shutBrief;
 $('inviteClose').onclick=()=>{ $('invite').classList.add('hidden'); lockBackground(); };
 $('loadBarGo').onclick=async()=>{

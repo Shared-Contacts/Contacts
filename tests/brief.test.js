@@ -278,9 +278,11 @@ const ok = (what, cond, extra='') => {
 
   const broken = await page.evaluate(async () => {
     const real = sb.from;
-    sb.from = table => table === 'contacts'
-      ? { select: () => Promise.resolve({ data:null, error:{ message:'no signal' } }) }
-      : real(table);
+    // Contacts are asked for a page at a time (since 2026.11.24.2), so the
+    // pretend failure answers however the request is put together.
+    const failing = () => { const q = { then: (f, r) => Promise.resolve({ data:null, error:{ message:'no signal' } }).then(f, r) };
+      ['select', 'not', 'order', 'range', 'eq', 'in', 'is'].forEach(m => { q[m] = () => q; }); return q; };
+    sb.from = table => table === 'contacts' ? failing() : real(table);
     await loadAll();
     sb.from = real;
     await new Promise(r => setTimeout(r, 200));

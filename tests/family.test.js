@@ -369,6 +369,13 @@ function zipOf(name, text, before = []) {
     && rins.filter(x => x.family && x.family.married).length === 1 && rins.find(x => x.family && x.family.married).family.married.pl === 'Leeds'
     && rins.find(x => x.family && x.family.married).family.married.d === '1875-01-01', JSON.stringify(rins));
   ok('  and each child to both parents', rins.filter(x => x.kind === 'Parent of').length === 4 && rins.some(x => x.kind === 'Parent of' && x.to_contact === 1));
+  // The server fills a key missing from some rows of a batch with nothing, and
+  // step 68's family box can't be nothing: on 24 Nov 2026 every batch of Barry's
+  // links was refused because parent links had no family box and couples did.
+  ok('  every row in each batch it saves has the same keys, the family box included', await ev(() =>
+    window.__writes.filter(x => x.op === 'insert' && Array.isArray(x.rows) && x.rows.length > 1).every(x => {
+      const k = r => Object.keys(r).filter(n => r[n] !== undefined).sort().join(',');
+      return x.rows.every(r => k(r) === k(x.rows[0])) && (x.table !== 'relationships' || x.rows.every(r => r.family && typeof r.family === 'object')); })));
   ok('  done, and says what it did', /Done\. 4 new people, 1 brought up to date, 6 new links/.test(await imp()), await imp());
 
   console.log('\nThe same tree again, newer, from Ancestry');
@@ -461,8 +468,8 @@ function zipOf(name, text, before = []) {
 
   console.log('\nThe version');
   const vj = require('../version.json');
-  const V = vj.history.find(h => h.version === '2026.11.24.3');
-  ok('2026.11.24.3 is in version.json, and the page is the newest', !!V && await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version);
+  const V = vj.history.find(h => h.version === '2026.11.24.4');
+  ok('2026.11.24.4 is in version.json, and the page is the newest', !!V && await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version);
   ok('  its lines for What\'s new are short enough', V && V.changes.length >= 1 && V.changes.every(x => x.length < 160));
 
   console.log('\nErrors: ' + (errors.length ? '\n' + errors.join('\n') : 'none'));

@@ -1,6 +1,12 @@
 {
-  "version": "2026.11.24.3",
+  "version": "2026.11.24.4",
   "history": [
+    {
+      "version": "2026.11.24.4",
+      "changes": [
+        "Bring in from Ancestry now saves the links between people as well. If your tree came in without them, run it again: the links go in and nobody is doubled up."
+      ]
+    },
     {
       "version": "2026.11.24.3",
       "changes": [

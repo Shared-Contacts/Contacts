@@ -20291,7 +20291,10 @@ async function famImpRun(){
   const I=FAM_IMP; if(!I) return;
   const say=t=>{ const p=$('famImpSay'); if(p) p.textContent=t; };
   $('famImpBody').innerHTML='<div class="card"><div class="setadd"><p id="famImpSay">Getting ready…</p><p class="coords">Keep this screen open until it is done.</p></div></div>';
-  const ids=new Map(), done={added:0,updated:0,kept:0,links:0,failed:0};
+  const ids=new Map(), done={added:0,updated:0,kept:0,links:0,failed:0,lost:0};
+  // Saved in batches: every row has the same keys, and anything left out takes the
+  // database's default, never nothing (a batch with one row short was refused whole).
+  const many={defaultToNull:false};
   const parKind=famKind('parent'), chiKind=famKind('child');
   if(!parKind&&!chiKind){ say('The Family Tree needs step 68 run in Supabase first.'); return; }
   const exact=(e,tree)=>e&&e.d&&(tree||(e.p==='day'&&!e.q))?e.d:null;
@@ -20302,7 +20305,7 @@ async function famImpRun(){
     const part=fresh.slice(i,i+100).map(o=>({created_by:ME.id, tree_only:true, ged_id:o.gid,
       first_name:o.first_name, given_names:o.given_names, last_name:o.last_name, sex:o.sex, former_names:o.former_names,
       birth_date:exact(o.fam.birth,true), death_date:exact(o.fam.death,true), family:{...o.fam, ged:famSnap(o)}}));
-    const {data,error}=await sb.from('contacts').insert(part).select('id,ged_id');
+    const {data,error}=await sb.from('contacts').insert(part,many).select('id,ged_id');
     if(error){ console.error(error); say(`Stopped after ${done.added} people: ${/tree_only|ged_id|family/i.test(error.message||'')
       ?'the Family Tree needs step 68 run in Supabase first.':'the server said no.'} Run it again to carry on; nobody is doubled up.`); return; }
     (data||[]).forEach(r=>ids.set(r.ged_id,r.id)); done.added+=part.length;
@@ -20353,15 +20356,15 @@ async function famImpRun(){
     }
     for(const ch of f.kids.map(idOf).filter(Boolean)) for(const p of [h,w].filter(Boolean)){
       if(p===ch||G.link(p,ch,'parent')) continue;
-      want.push(parKind?{from_contact:p,to_contact:ch,kind:parKind,pinned:false}:{from_contact:ch,to_contact:p,kind:chiKind,pinned:false});
+      want.push(parKind?{from_contact:p,to_contact:ch,kind:parKind,pinned:false,family:{}}:{from_contact:ch,to_contact:p,kind:chiKind,pinned:false,family:{}});
     }
   }
   const uniq=new Map(); want.forEach(r=>uniq.set(r.from_contact+'-'+r.to_contact+'-'+r.kind,r));
   const lk=[...uniq.values()];
   for(let i=0;i<lk.length;i+=200){
     say(`Linking the family together: ${Math.min(i+200,lk.length)} of ${lk.length}…`);
-    const {error}=await sb.from('relationships').insert(lk.slice(i,i+200));
-    if(error){ console.error(error); done.failed++; } else done.links+=Math.min(200,lk.length-i);
+    const part=lk.slice(i,i+200), {error}=await sb.from('relationships').insert(part,many);
+    if(error){ console.error(error); done.lost+=part.length; } else done.links+=part.length;
   }
   for(const x of marr){ const {error}=await sb.from('relationships').update({family:x.family}).eq('id',x.id); if(error) done.failed++; }
   await loadAll(); await famLoad(true);
@@ -20369,7 +20372,7 @@ async function famImpRun(){
   $('famImpBody').innerHTML=`<div class="card"><div class="setadd"><p><strong>Done.</strong></p>
     <p>${done.added} new ${done.added===1?'person':'people'}, ${done.updated} brought up to date, ${done.links} new link${done.links===1?'':'s'}.</p>
     ${done.kept?`<p class="coords">${done.kept} detail${done.kept===1?'':'s'} changed here since the last time were kept as you have them.</p>`:''}
-    ${done.failed?`<p class="coords">${done.failed} could not be saved. Run it again to try those again.</p>`:''}
+    ${done.failed||done.lost?`<p class="coords"><strong>${[done.failed?done.failed+' '+(done.failed===1?'change':'changes'):'',done.lost?done.lost+' '+(done.lost===1?'link':'links'):''].filter(Boolean).join(' and ')} could not be saved.</strong> Run it again to try those again; nobody is doubled up.</p>`:''}
     <button type="button" class="btn primary" id="famImpSee">See the tree</button></div></div>`;
   $('famImpSee').onclick=()=>{ $('famImp').classList.add('hidden'); lockBackground(); FAM_LIST=false; famRender(true); };
   famRender(true);
@@ -22179,7 +22182,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.24.3';
+const APP_VERSION='2026.11.24.4';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

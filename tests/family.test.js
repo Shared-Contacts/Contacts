@@ -82,14 +82,25 @@ ${extra.maryDied ? '1 DEAT\n2 DATE 3 JUN 1930\n2 PLAC York\n' : ''}1 FAMS @F1@
 1 CHIL @I100000000004@
 0 TRLR
 `;
-// A zip with the .ged inside, squeezed the way Ancestry's is.
-function zipOf(name, text) {
-  const data = Buffer.from(text, 'utf8'), comp = zlib.deflateRawSync(data), nm = Buffer.from(name);
-  const crc = (() => { let c, t = [], r = 0xFFFFFFFF; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
-    for (const b of data) r = t[(r ^ b) & 0xFF] ^ (r >>> 8); return (r ^ 0xFFFFFFFF) >>> 0; })();
-  const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(8, 8);
-  h.writeUInt32LE(crc, 14); h.writeUInt32LE(comp.length, 18); h.writeUInt32LE(data.length, 22); h.writeUInt16LE(nm.length, 26);
-  return Buffer.concat([h, nm, comp]);
+// A zip made the way Ancestry's is (checked on Barry's export, 24 Nov 2026):
+// squeezed, with the sizes left blank at the start of each file and given
+// after it and in the list at the end. Other files can come before the .ged.
+function zipOf(name, text, before = []) {
+  const crcOf = data => { let c, t = [], r = 0xFFFFFFFF; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    for (const b of data) r = t[(r ^ b) & 0xFF] ^ (r >>> 8); return (r ^ 0xFFFFFFFF) >>> 0; };
+  const parts = [], dir = []; let at = 0;
+  for (const [nmS, txt] of [...before, [name, text]]) {
+    const data = Buffer.from(txt, 'utf8'), comp = zlib.deflateRawSync(data), nm = Buffer.from(nmS), crc = crcOf(data);
+    const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(0x0808, 6); h.writeUInt16LE(8, 8);
+    h.writeUInt16LE(nm.length, 26);
+    const dd = Buffer.alloc(16); dd.writeUInt32LE(0x08074b50, 0); dd.writeUInt32LE(crc, 4); dd.writeUInt32LE(comp.length, 8); dd.writeUInt32LE(data.length, 12);
+    const c = Buffer.alloc(46); c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(0x0808, 8); c.writeUInt16LE(8, 10);
+    c.writeUInt32LE(crc, 16); c.writeUInt32LE(comp.length, 20); c.writeUInt32LE(data.length, 24); c.writeUInt16LE(nm.length, 28); c.writeUInt32LE(at, 42);
+    parts.push(h, nm, comp, dd); dir.push(c, nm); at += 30 + nm.length + comp.length + 16;
+  }
+  const cd = Buffer.concat(dir), e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0);
+  e.writeUInt16LE(dir.length / 2, 8); e.writeUInt16LE(dir.length / 2, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(at, 16);
+  return Buffer.concat([...parts, cd, e]);
 }
 
 (async () => {
@@ -325,7 +336,8 @@ function zipOf(name, text) {
   await seed();
   await ev(() => openFam()); await settle(400);
   await ev(() => openFamImport()); await settle(200);
-  await p.setInputFiles('#famImpFile', { name: 'Fake Family Tree.zip', mimeType: 'application/zip', buffer: zipOf('Fake Family Tree.ged', GED()) });
+  await p.setInputFiles('#famImpFile', { name: 'Fake Family Tree.zip', mimeType: 'application/zip',
+    buffer: zipOf('Fake Family Tree.ged', GED(), [['Read me.txt', 'Not the tree']]) });
   await settle(800);
   const imp = () => ev(() => $('famImpBody').textContent.replace(/\s+/g, ' '));
   ok('it reads the zip Ancestry gives you', /5 people and 2 families in the file/.test(await imp()), (await imp()).slice(0, 200));
@@ -352,8 +364,10 @@ function zipOf(name, text) {
   ok('Peter, already in your contacts: gets Ancestry\'s number, but his name and birthday are left alone', w && w.patch.ged_id === '100000000004'
     && !('first_name' in w.patch) && !('birth_date' in w.patch), JSON.stringify(w && w.patch));
   const rins = (await writes('insert', 'relationships')).flatMap(x => x.rows);
-  ok('links: John and Mary married in 1875 in Leeds, Tom and Ann partners', rins.filter(x => x.kind === 'Married to').length === 1
-    && rins.find(x => x.kind === 'Married to').family.married.pl === 'Leeds' && rins.filter(x => x.kind === 'Partner of').length === 1, JSON.stringify(rins));
+  ok('links: both couples married (as Ancestry has them), John and Mary in 1875 in Leeds, Tom and Ann with no wedding recorded',
+    rins.filter(x => x.kind === 'Married to').length === 2 && rins.filter(x => x.kind === 'Partner of').length === 0
+    && rins.filter(x => x.family && x.family.married).length === 1 && rins.find(x => x.family && x.family.married).family.married.pl === 'Leeds'
+    && rins.find(x => x.family && x.family.married).family.married.d === '1875-01-01', JSON.stringify(rins));
   ok('  and each child to both parents', rins.filter(x => x.kind === 'Parent of').length === 4 && rins.some(x => x.kind === 'Parent of' && x.to_contact === 1));
   ok('  done, and says what it did', /Done\. 4 new people, 1 brought up to date, 6 new links/.test(await imp()), await imp());
 
@@ -415,6 +429,26 @@ function zipOf(name, text) {
       && t('Deceased') === 'Date not known' && t('03/04/1901 9:15:00 P.M.') === '3 April 1901' && t('25/12/1900') === '25 December 1900'
       && t('12/25/1900') === '25 December 1900' && t('1.6.1890') === '1 June 1890' && t('31 Feb 1900') === 'bad' && t('Spring 1852') === 'bad'
       && t(famDateText(famParseDate('bet 1975 and 1976'))) === '1975 to 1976'; }));
+  ok('  German months, as in records from Germany', await ev(() => {
+    const t = x => { const d = famParseDate(x); return d ? (d.bad ? 'bad' : famDateText(d)) : ''; };
+    return t('5 Okt 1766') === '5 October 1766' && t('21 Dez 1848') === '21 December 1848' && t('3. März 1850') === '3 March 1850'
+      && t('Mrz 1850') === 'March 1850' && t('Mai 1850') === 'May 1850' && t('abt. 11 Dez 1796') === 'About 11 December 1796'; }));
+  ok('  and registration quarters: Jun Qrtr 1857 is April to June', await ev(() => {
+    const t = x => { const d = famParseDate(x); return d ? (d.bad ? 'bad' : famDateText(d)) : ''; };
+    return t('Jun Qrtr 1857') === 'April 1857 to June 1857' && t('Mar Qtr 1900') === 'January 1900 to March 1900'
+      && t('December Quarter 1871') === 'October 1871 to December 1871' && t('Q3 1890') === 'July 1890 to September 1890'
+      && famParseDate('Sep Qtr 1890').d === '1890-07-01' && famParseDate('Sep Qtr 1890').d2 === '1890-09-01' && t('Dec 173 1871') === 'bad'; }));
+  // The first time, the tree is empty: its own Bring in from Ancestry button, then
+  // Bring them in on the import screen (they once shared a name, so the second did nothing).
+  await ev(async () => { window.__rows.contacts = []; window.__rows.relationships = []; MY_PROFILE.my_contact_id = null;
+    try { localStorage.removeItem('fam-mid'); } catch (e) {} FAM_MID = null; await loadAll(); await famLoad(true); openFam(); }); await settle(300);
+  await p.click('#famEmptyImp'); await settle(200);
+  ok('an empty tree: its Bring in from Ancestry button opens the import', await visible('famImp'));
+  await p.setInputFiles('#famImpFile', { name: 'Fake Family Tree.zip', mimeType: 'application/zip', buffer: zipOf('Fake Family Tree.ged', GED()) });
+  await settle(800); await clear();
+  await p.click('#famImpBody #famImpGo'); await settle(1500);
+  ok('  and Bring them in brings them in', (await writes('insert', 'contacts')).flatMap(x => x.rows).length === 5 && /Done\./.test(await imp()), await imp());
+  await ev(() => { $('famImp').classList.add('hidden'); lockBackground(); MY_PROFILE.my_contact_id = 1; });
   ok('the menu has Add someone, Bring in from Ancestry and See all of the tree', await ev(() => {
     const l = areaItems('fam').map(x => x.label); return l.includes('Add someone') && l.includes('Bring in from Ancestry') && l.includes('See all of the tree'); }));
   const help = s => ev(t => document.documentElement.innerHTML.includes(t), s);
@@ -427,8 +461,8 @@ function zipOf(name, text) {
 
   console.log('\nThe version');
   const vj = require('../version.json');
-  const V = vj.history.find(h => h.version === '2026.11.24.2');
-  ok('2026.11.24.2 is in version.json, and the page is the newest', !!V && await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version);
+  const V = vj.history.find(h => h.version === '2026.11.24.3');
+  ok('2026.11.24.3 is in version.json, and the page is the newest', !!V && await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version);
   ok('  its lines for What\'s new are short enough', V && V.changes.length >= 1 && V.changes.every(x => x.length < 160));
 
   console.log('\nErrors: ' + (errors.length ? '\n' + errors.join('\n') : 'none'));

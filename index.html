@@ -1911,6 +1911,38 @@ label.rcping input{display:inline-block;width:22px;height:22px;margin:1px 0 0;fl
 .tmlkname{flex:1;min-width:0;font-size:16px;overflow-wrap:anywhere}
 input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--rule);border-radius:8px;background:#fff}
 #tmlKeysBody fieldset,#tmlEdBody fieldset{min-width:0}
+/* Family Tree (ML402) */
+#famEdBody fieldset{min-width:0}
+.famsw{margin:0 0 10px}
+.fammidline{margin:0 0 8px}
+.famlink{color:var(--hull);text-decoration:underline;padding:0;font:inherit;font-weight:700}
+.famview{position:relative;overflow:hidden;touch-action:none;height:calc(100vh - 240px);height:calc(100dvh - 240px);
+  min-height:300px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--paper);
+  user-select:none;-webkit-user-select:none}
+.famcanvas{position:absolute;left:0;top:0;transform-origin:0 0}
+.famlines{position:absolute;left:0;top:0;pointer-events:none}
+.famlines path{fill:none;stroke:var(--muted);stroke-width:1.5;opacity:.75}
+.famgen{position:absolute;width:100px;font-size:12px;line-height:1.2;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.fambox{position:absolute;width:150px;height:60px;padding:5px 8px 5px 10px;border-radius:8px;text-align:left;
+  background:var(--panel);border:1.5px solid var(--rule);border-left:5px solid var(--rule);
+  display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.fambox b{font-size:14px;line-height:1.2;color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fambox small{font-size:12px;line-height:1.3;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fambox.m{border-left-color:#3C6E8F}
+.fambox.f{border-left-color:#A0526B}
+.fambox.mid{border-color:var(--brass);border-width:2.5px;border-left-width:5px}
+.fambox.card::after{content:'';position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--hull)}
+.famrow{display:flex;gap:6px;align-items:center;margin:6px 0}
+.famrow input,.famrow select{flex:1 1 0;min-width:0;margin:0}
+.famrow .del{flex:0 0 auto}
+.famdq{display:block;font-size:13px;color:var(--muted)}
+.famdq.bad{color:var(--red)}
+.famsub{margin:12px 0 4px}
+.famchoose{margin:2px 0 6px}
+.famkin{padding:8px 0}
+.fampick{margin:0 0 10px;border:1.5px solid var(--brass)}
+.fammarr{display:block;margin:0 0 8px;font-size:14px;font-weight:400}
+.famask dd{margin:0}
 .tmlkn{flex:0 0 auto;color:var(--muted);font-size:14px}
 .tmlkdot{margin:0;display:flex;align-items:center;gap:4px;font-size:14px;flex:0 0 auto;color:var(--ink)}
 .tmlkdot input{display:inline-block;width:auto;margin:0;padding:0}
@@ -2198,6 +2230,25 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
   <button class="fab sheetfab" id="tmlAdd" aria-label="Add to your Timeline">+</button>
 </div>
 
+<div id="fam" class="sheet hidden">
+  <div class="sheetbar"><button class="bt" data-home="fam" aria-label="Home screen" title="Home screen"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.4 4.2 2.6 12l7.8 7.8 1.9-1.9-4.6-4.6H21v-2.6H7.7l4.6-4.6z"/></svg></button><button class="bt" id="famMenu" data-menu="fam" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="title">Family Tree</span><span class="bartools"><button class="bt" id="famOut" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21M7.5 10.5h6"/></svg></button><button class="bt" id="famIn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21M7.5 10.5h6M10.5 7.5v6"/></svg></button><button class="bt" data-barref="1" aria-label="Refresh Data and Images" title="Refresh Data and Images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5V9H15"/></svg></button></span></div>
+  <div class="sheetbody" id="famBody"></div>
+  <button class="fab sheetfab" id="famAdd" aria-label="Add someone to your family tree">+</button>
+</div>
+
+<div id="famPerson" class="sheet hidden">
+  <div class="sheetbar"><button id="famEdCancel">Cancel</button>
+    <span class="title" id="famEdTitle">New person</span><button id="famSave">Save</button></div>
+  <div class="sheetbody" id="famEdBody"></div>
+</div>
+
+<div id="famImp" class="sheet hidden">
+  <div class="sheetbar"><button id="famImpCancel">Close</button>
+    <span class="title">Bring in from Ancestry</span><span></span></div>
+  <div class="sheetbody" id="famImpBody"></div>
+</div>
+
 <div id="tmlEd" class="sheet hidden">
   <div class="sheetbar"><button id="tmlEdCancel">Cancel</button>
     <span class="title" id="tmlEdTitle">New</span><button id="tmlSave">Save</button></div>
@@ -2474,7 +2525,7 @@ const SHEET_IDS=['detail','editor','settings','menu','help','verSheet','brief','
   'logEd','where','wish','links','music','pods','podEps','recipes','recipe','recipeEd','ideas','cook','weekMenu',
   'shop','io','offers','chats','chat',
   'money','moneyEd','recon','moneyImp','pairs','reports','jig','jigPlay','games','lkPlay','pdPlay','stuff','stuffView','stuffEd',
-  'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys','sld','sldTheme'];
+  'books','bookView','bookEd','tv','tvShow','tvEd','tml','tmlEd','tmlKeys','sld','sldTheme','fam','famPerson','famImp'];
 function sheetsOpen(){
   return SHEET_IDS.some(id=>$(id)&&!$(id).classList.contains('hidden'));
 }
@@ -2611,8 +2662,10 @@ async function loadAll(){
     sb.from('groups').select('*').order('sort_order'),
     sb.from('statuses').select('*').order('sort_order'),
     sb.from('link_kinds').select('*').order('sort_order'),
-    sb.from('contacts').select('*, contact_groups(group_id)'),
-    sb.from('relationships').select('*'),
+    // Family tree only people and their links (step 68) stay out; a page of
+    // 1,000 at a time, as Supabase sends no more than that in one go.
+    famPaged(()=>sb.from('contacts').select('*, contact_groups(group_id)').not('tree_only','is',true)),
+    famPaged(()=>sb.from('relationships').select('*').not('tree_only','is',true)),
     sb.from('profiles').select('*'),
     sb.from('contact_shares').select('*'),
     sb.from('pet_types').select('*').order('sort_order'),
@@ -2634,7 +2687,7 @@ async function loadAll(){
       +'is all on the server, not on this phone.');
     return;
   }
-  GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=c.data||[];LINKS=l.data||[];
+  GROUPS=g.data||[];STATUSES=s.data||[];KINDS=k.data||[];CONTACTS=(c.data||[]).filter(x=>!x.tree_only);LINKS=(l.data||[]).filter(x=>!x.tree_only);
   USERS=(u.data||[]).filter(p=>p.id!==ME.id);SHARES=sh.data||[];
   USERS.sort((a,b)=>personName(a).localeCompare(personName(b),'en',{sensitivity:'base'}));
   // The owners, from step 56. Not there yet, or nobody in it: the old rule (isOwner).
@@ -3310,6 +3363,7 @@ async function refreshAll(){
   if(!$('tv').classList.contains('hidden')){ await loadShows(); renderShows();
     if(!$('tvShow').classList.contains('hidden')) renderShow(); }
   if(!$('tml').classList.contains('hidden')){ await loadTimeline(); renderTimeline(); }
+  if(!$('fam').classList.contains('hidden')){ await famLoad(true); famRender(); }
   if(!$('sld').classList.contains('hidden')){ SLD_BSKY.at=0; await loadSlides(); await sldSync(); renderSlides();
     if(!$('sldTheme').classList.contains('hidden')) renderSlideTheme(); }
   toast('Up to date');
@@ -3797,11 +3851,14 @@ async function openDetail(id, keepPlace){
       : '');
 
   const myLinks=linksFor(c.id);
+  // A link to someone in the family tree alone: their names come with the tree.
+  if(!FAM_ONLY&&!FAM_LOAD_FAILED&&myLinks.some(l=>!CONTACTS.some(x=>x.id===l.other)))
+    famLoad().then(ok=>{ if(ok&&CURRENT&&CURRENT.id===c.id&&!$('detail').classList.contains('hidden')) openDetail(c.id,true); });
   const links=myLinks.map(l=>{
-    const o=CONTACTS.find(x=>x.id===l.other);
+    const o=CONTACTS.find(x=>x.id===l.other)||famFind(l.other);
     return `<div class="linkrow">
       <span class="kind">${esc(l.label)}</span>
-      <button class="to" data-go="${l.other}">${esc(o?fullName(o):'(hidden)')}</button>
+      <button class="to" ${o&&o.tree_only?'data-famgo':'data-go'}="${l.other}">${esc(o?(o.tree_only?famName(o,true):fullName(o)):'(hidden)')}</button>
       ${l.owned?`<button class="del" data-del="${l.id}" aria-label="Remove link">&times;</button>`:''}
       <span class="tgs">
         <button class="tg" data-pin="${l.id}"  aria-pressed="${!!l.pinned}">Top of page</button>
@@ -3902,7 +3959,7 @@ async function openDetail(id, keepPlace){
     const {error}=await sb.from('relationships')
       .update({[field]:want}).eq('id',Number(btn.dataset.pin||btn.dataset.tile));
     if(error){toast('Could not change that');return;}
-    const {data}=await sb.from('relationships').select('*');LINKS=data||[];
+    LINKS=await famEverydayLinks();
     openDetail(CURRENT.id,true);
   };
   $('detBody').querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>flip(b,'pinned'));
@@ -4058,7 +4115,7 @@ async function addLink(other){
     from_contact:CURRENT.id, to_contact:other, kind,
     pinned: PIN_BY_DEFAULT.test(kind)});
   if(error){toast(error.code==='23505'?'That link already exists':'Could not add the link');return;}
-  const {data}=await sb.from('relationships').select('*');LINKS=data||[];
+  LINKS=await famEverydayLinks();
   toast('Link added');openDetail(CURRENT.id,true);
 }
 async function removeLink(id){
@@ -5599,7 +5656,7 @@ const SCREEN_ORDER=[['invite','settings'],['brief','home'],['chat','chats'],['ch
   ['wish','wish'],['cook','recipes'],['recipeEd','recipes'],['ideas','recipes'],['weekMenu','recipes'],['recipe','recipes'],
   ['recipes','recipes'],['links','links'],['music','music'],['podEps','pods'],['pods','pods'],['jigPlay','jig'],['jig','jig'],['pdPlay','games'],['lkPlay','games'],['games','games'],
   ['stuffEd','stuff'],['stuffView','stuff'],['stuff','stuff'],
-  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['sldTheme','sld'],['sld','sld'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
+  ['bookEd','books'],['bookView','books'],['books','books'],['tvEd','tv'],['tvShow','tv'],['tv','tv'],['famImp','fam'],['famPerson','fam'],['fam','fam'],['tmlKeys','tml'],['tmlEd','tml'],['tml','tml'],['sldTheme','sld'],['sld','sld'],['io','io'],['settings','settings'],['menu','menu'],['home','home']];
 function currentScreen(){
   // Today can sit open underneath whatever was tapped on it; then it is not
   // where you are.
@@ -5615,7 +5672,7 @@ const HELP_AT={contacts:'h-contacts', log:'h-log', diary:'h-diary', shop:'h-shop
   menu:'h-settings', home:'h-home', sharing:'h-sharing', chats:'h-messages',
   money:'h-money', recon:'h-recon', import:'h-import', pairs:'h-pairs', reports:'h-reports',
   brief:'h-brief', invite:'h-invite', jig:'h-jig', games:'h-games', pounds:'h-pounds', recipes:'h-recipes', stuff:'h-stuff',
-  books:'h-books', tv:'h-tv', tml:'h-tml', sld:'h-sld'};
+  books:'h-books', tv:'h-tv', tml:'h-tml', sld:'h-sld', fam:'h-fam'};
 // Which settings heading belongs to which screen.
 const SET_AT={contacts:'Contacts', log:'Daily Log', home:'Home screen',
   money:'Finances', links:'URL Links', music:'URL Links', pods:'URL Links', recipes:'Recipes'};
@@ -6307,6 +6364,30 @@ function openHelp(where){
   the colour of any country or kind, renames a kind, adds new ones, and puts them in
   order: hold one by its dots and slide it. Tick <em>Dots</em> for a kind that is mostly
   single days. Your Timeline is yours alone: nobody else can see it.</p>
+
+  <h4 id="h-fam">Family Tree</h4>
+  <p>Your ancestors and descendants as a tree. The person in the middle has their parents,
+  grandparents and so on in rows above, and their children and grandchildren below, with
+  partners side by side. Tap someone to put them in the middle; tap the one in the middle
+  to open them. Pinch, or use the magnifiers at the top, to zoom, and drag to move about.
+  <strong>People</strong> lists everyone, to find someone by name.</p>
+  <p>Each person has their names (maiden and other names too), when and where they were
+  born, christened, died and buried, the addresses they lived at, photos, PDFs and notes,
+  and their father, mother, partners and children. Brothers and sisters are worked out from
+  their parents. A date can be exact, just a month or a year, or <em>about</em>,
+  <em>before</em> or <em>after</em>: 12 Mar 1850, Mar 1850, 1850 or about 1850.</p>
+  <p>People in the tree are contacts. <strong>Family tree only</strong>, ticked for most of
+  them, keeps them out of Contacts, its searches and birthdays. Someone who is in your
+  contacts as well, a parent say, is the same card, with a small dot on their box in the
+  tree. When a contact dies, give them the date in Died as usual and they stay in the tree.</p>
+  <p><strong>Bring in from Ancestry</strong> (Menu) reads the file Ancestry exports (on
+  Ancestry: Trees, your tree, Tree settings, Export tree). It asks about anyone who looks
+  like a contact you already have, and lists any dates it can't read. Run it again with a
+  newer file and it brings in what has changed on Ancestry without doubling anyone up;
+  anything you have changed here since is kept, and photos, PDFs and contact details are
+  never taken off. Ancestry's file has no photos in it.</p>
+  <p>The tree is made from the connection types Parent of, Child of, Married to, Partner
+  of and Sibling of. Only you see your tree, for now.</p>
 
   <h4 id="h-sld">Slideshow</h4>
   <p><strong>Slideshow</strong> plays your photos full screen, at random or by date,
@@ -19294,6 +19375,994 @@ function tmlReadDate(f,name,what){
 }
 
 /* ---------- the screen ---------- */
+/* ---------- Family Tree (step 68, ML402, 24 Nov 2026) ----------
+   The people in the tree are contacts. Anyone ticked Family tree only (most
+   ancestors) is kept out of CONTACTS and LINKS, so the everyday list, its
+   searches, birthdays and Today never see them; this screen loads them
+   itself, 1,000 at a time. A date can be just a year or a month, or about,
+   before, after or between: family.birth = {d, p, q, d2, p2, pl}, and the
+   same for death, chr (christening) and burial. An everyday contact's
+   birth_date and death_date are only set from an exact day, so a year on
+   its own never makes a birthday. Ancestry's number for each person is
+   ged_id, and family.ged is what the last import wrote, so the next import
+   can tell Ancestry's changes from yours. */
+let FAM_ONLY=null, FAM_LINKS=[], FAM_LOAD_FAILED=false, FAM_EDIT=null, FAM_LIST=false, FAM_Q='';
+let FAM_FILES=null, FAM_PEND=null, FAM_MID=null, FAM_Z={s:1,x:0,y:0}, FAM_IMP=null, FAM_PICK=null;
+const FAM_EVENTS=[['birth','Born'],['chr','Christened'],['death','Died'],['burial','Buried']];
+const FAM_MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const FAM_MONTHS=['January','February','March','April','May','June','July','August','September',
+  'October','November','December'];
+const FAM_BOX={w:150,h:60,gx:14,gy:48};
+const FAM_UP=12, FAM_DOWN=8;
+
+// Every row, past Supabase's 1,000 at a time.
+async function famPaged(make){
+  const out=[];
+  for(let i=0;;i+=1000){
+    const {data,error}=await make().order('id').range(i,i+999);
+    if(error) return {data:null,error};
+    out.push(...(data||[]));
+    if(!data||data.length<1000) return {data:out,error:null};
+  }
+}
+async function famEverydayLinks(){
+  const r=await famPaged(()=>sb.from('relationships').select('*').not('tree_only','is',true));
+  return r.error?LINKS:r.data.filter(x=>!x.tree_only);
+}
+async function famLoad(force){
+  if(FAM_ONLY&&!force) return true;
+  const [c,l]=await Promise.all([
+    famPaged(()=>sb.from('contacts').select('*').eq('created_by',ME.id).eq('tree_only',true)),
+    famPaged(()=>sb.from('relationships').select('*').eq('tree_only',true))]);
+  if(c.error||l.error){ console.error(c.error||l.error); FAM_LOAD_FAILED=true; return false; }
+  FAM_LOAD_FAILED=false;
+  FAM_ONLY=c.data.filter(x=>x.tree_only); FAM_LINKS=l.data.filter(x=>x.tree_only);
+  return true;
+}
+const famFind = id => (FAM_ONLY&&FAM_ONLY.find(x=>x.id===id))||CONTACTS.find(x=>x.id===id)||null;
+const famRole = kind => { const k=KINDS.find(x=>x.name===kind); return (k&&k.tree_role)||null; };
+function famKind(role,married){
+  const ks=KINDS.filter(k=>k.tree_role===role);
+  return ((married!=null&&ks.find(k=>(married?/marri|spouse|wife|husband/i:/partner/i).test(k.name)))||ks[0]||{}).name||null;
+}
+
+/* ----- dates ----- */
+function famDay(s){
+  s=String(s||'').trim().toUpperCase().replace(/(\d)(ST|ND|RD|TH)\b/g,'$1'); let m;
+  const mon=w=>{ const i=FAM_MON.indexOf(String(w).slice(0,3)); return i<0?null:i+1; };
+  const ok=(y,mo,d)=>{
+    if(!(y>=1000&&y<=2100)) return null;
+    if(mo&&!(mo>=1&&mo<=12)) return null;
+    if(d){ const x=new Date(Date.UTC(y,mo-1,d)); if(x.getUTCMonth()!==mo-1||x.getUTCDate()!==d) return null; }
+    return {d:`${y}-${String(mo||1).padStart(2,'0')}-${String(d||1).padStart(2,'0')}`, p:d?'day':mo?'month':'year'};
+  };
+  if((m=s.match(/^(\d{4})$/))) return ok(+m[1]);
+  if((m=s.match(/^([A-Z]{3,})\.?\s+(\d{4})$/))&&mon(m[1])) return ok(+m[2],mon(m[1]));
+  if((m=s.match(/^(\d{1,2})\s+([A-Z]{3,})\.?\s+(\d{4})$/))&&mon(m[2])) return ok(+m[3],mon(m[2]),+m[1]);
+  if((m=s.match(/^([A-Z]{3,})\.?\s+(\d{1,2})\s+(\d{4})$/))&&mon(m[1])) return ok(+m[3],mon(m[1]),+m[2]);
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return ok(+m[1],+m[2],+m[3]);
+  if((m=s.match(/^(\d{4})-(\d{1,2})$/))) return ok(+m[1],+m[2]);
+  if((m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/))){
+    const a=+m[1], b=+m[2];
+    // Day first, as in the UK, unless that can't be right.
+    if(b>12&&a<=12) return ok(+m[3],a,b);
+    const r=ok(+m[3],b,a); return r&&(a<=12&&b<=12&&a!==b?{...r,guess:true}:r);
+  }
+  return null;
+}
+function famParseDate(raw){
+  const t=String(raw||'').trim(); if(!t) return null;
+  let s=t.toUpperCase().replace(/\s+\d{1,2}:\d{2}(:\d{2})?\s*([AP]\.?\s?M\.?)?$/,'').replace(/,/g,' ').replace(/\s+/g,' ').trim();
+  if(/^(UNKNOWN|UNK|NOT KNOWN|\?+)$/.test(s)) return null;
+  if(/^(DECEASED|DEAD|DIED|Y|DATE NOT KNOWN)$/.test(s)) return {dead:true};
+  let m, q=null;
+  if((m=s.match(/^(?:BET\.?|BETWEEN|FROM)\s+(.+?)\s+(?:AND|TO|-)\s+(.+)$/))||(m=s.match(/^(\d{4})\s*[-–]\s*(\d{4})$/))
+     ||(m=s.match(/^(.+?)\s+TO\s+(.+)$/))){
+    const a=famDay(m[1]), b=famDay(m[2]);
+    return a&&b ? {d:a.d,p:a.p,q:'between',d2:b.d,p2:b.p} : {bad:true,t};
+  }
+  if((m=s.match(/^(ABT|ABOUT|CIRCA|CA|C|EST|ESTIMATED|CAL|AROUND)\.?\s+(.+)$/))){ q='about'; s=m[2]; }
+  else if((m=s.match(/^(BEF|BEFORE)\.?\s+(.+)$/))){ q='before'; s=m[2]; }
+  else if((m=s.match(/^(AFT|AFTER)\.?\s+(.+)$/))){ q='after'; s=m[2]; }
+  const d=famDay(s);
+  if(!d) return {bad:true,t};
+  const out={d:d.d,p:d.p}; if(q) out.q=q; if(d.guess) out.guess=true;
+  return out;
+}
+function famOneDate(d,p){
+  if(!d) return '';
+  const [y,m,dd]=String(d).slice(0,10).split('-').map(Number);
+  return p==='year'?String(y):p==='month'?FAM_MONTHS[m-1]+' '+y:dd+' '+FAM_MONTHS[m-1]+' '+y;
+}
+function famDateText(e){
+  if(!e) return '';
+  if(!e.d) return e.dead?'Date not known':'';
+  const a=famOneDate(e.d,e.p);
+  if(e.q==='between') return a+' to '+famOneDate(e.d2,e.p2);
+  return ({about:'About ',before:'Before ',after:'After '}[e.q]||'')+a;
+}
+function famYear(e){
+  if(!e||!e.d) return '';
+  return ({about:'c.',between:'c.',before:'bef. ',after:'aft. '}[e.q]||'')+String(e.d).slice(0,4);
+}
+// One of a person's four events, whichever kind of contact they are.
+function famEv(c,k){
+  const e={...((c&&c.family&&c.family[k])||{})};
+  if(k==='birth'&&!e.d&&c&&c.birth_date){ e.d=String(c.birth_date).slice(0,10); e.p='day'; }
+  if(k==='death'&&!e.d&&c&&c.death_date){ e.d=String(c.death_date).slice(0,10); e.p='day'; }
+  return e;
+}
+function famYears(c){
+  const b=famYear(famEv(c,'birth')), de=famEv(c,'death'), d=famYear(de);
+  if(b&&d) return b+'–'+d;
+  if(b) return 'b. '+b+(de.dead?' · died':'');
+  if(d) return 'd. '+d;
+  return de.dead?'Died':'';
+}
+function famName(c,full){
+  if(!c) return '(not known)';
+  const sfx=(c.family&&c.family.suffix)||'';
+  return [c.first_name, full?c.given_names:'', c.last_name, sfx].filter(Boolean).join(' ')||'(no name)';
+}
+const famSort = (a,b) => String(a.last_name||'').localeCompare(String(b.last_name||''),'en',{sensitivity:'base'})
+  || String(a.first_name||'').localeCompare(String(b.first_name||''),'en',{sensitivity:'base'})
+  || String(famEv(a,'birth').d||'9999').localeCompare(String(famEv(b,'birth').d||'9999'));
+const famByBirth = (a,b) => String(famEv(a,'birth').d||'9999').localeCompare(String(famEv(b,'birth').d||'9999'))||a.id-b.id;
+
+/* ----- who is who to whom ----- */
+function famGraph(){
+  const P=new Map(); (FAM_ONLY||[]).forEach(c=>P.set(c.id,c));
+  CONTACTS.forEach(c=>{ if(c.created_by===ME.id&&(c.ged_id||(c.family&&Object.keys(c.family).length))) P.set(c.id,c); });
+  const meId=MY_PROFILE&&MY_PROFILE.my_contact_id, mine=meId&&CONTACTS.find(x=>x.id===meId);
+  if(mine) P.set(mine.id,mine);
+  const par=new Map(), kid=new Map(), mate=new Map(), sib=new Map(), link=new Map();
+  const add=(m,a,b)=>{ if(!m.has(a)) m.set(a,new Set()); m.get(a).add(b); };
+  [...LINKS,...FAM_LINKS].forEach(l=>{
+    const r=famRole(l.kind); if(!r) return;
+    let a=l.from_contact, b=l.to_contact;
+    for(const i of [a,b]) if(!P.has(i)){ const c=CONTACTS.find(x=>x.id===i); if(!c) return; P.set(i,c); }
+    if(r==='child') [a,b]=[b,a];
+    if(r==='parent'||r==='child'){ add(par,b,a); add(kid,a,b); }
+    else if(r==='partner'){ add(mate,a,b); add(mate,b,a); }
+    else { add(sib,a,b); add(sib,b,a); }
+    link.set(Math.min(a,b)+'-'+Math.max(a,b)+'-'+(r==='child'?'parent':r),l);
+  });
+  const get=(m,id)=>[...(m.get(id)||[])].filter(i=>P.has(i)&&i!==id);
+  const G={P,
+    parents:id=>get(par,id).sort((a,b)=>famSexRank(P.get(a))-famSexRank(P.get(b))||famByBirth(P.get(a),P.get(b))),
+    kids:id=>get(kid,id).map(i=>P.get(i)).sort(famByBirth).map(c=>c.id),
+    mates:id=>get(mate,id),
+    sibs:id=>{ const s=new Set(get(sib,id));
+      get(par,id).forEach(p=>get(kid,p).forEach(k=>{ if(k!==id) s.add(k); }));
+      return [...s].map(i=>P.get(i)).sort(famByBirth).map(c=>c.id); },
+    link:(a,b,r)=>link.get(Math.min(a,b)+'-'+Math.max(a,b)+'-'+r)||null};
+  return G;
+}
+const famSexRank = c => c&&c.sex==='M'?0:c&&c.sex==='F'?1:2;
+
+/* ----- laying the tree out: ancestors above, descendants below ----- */
+function famLayout(G,mid){
+  const W=FAM_BOX.w+FAM_BOX.gx, nodes=[], ups=[], downs=[], placed=new Set([mid]);
+  // Descendants first: each person with their partners side by side, their
+  // children under them, every branch as wide as it needs.
+  const seenW=new Map();
+  function width(id,depth,trail){
+    if(trail.has(id)) return 1;
+    const t=new Set(trail).add(id);
+    const ms=G.mates(id).filter(m=>!t.has(m)), ks=depth<FAM_DOWN?G.kids(id).filter(k=>!t.has(k)):[];
+    const w=Math.max(1+ms.length, ks.reduce((s,k)=>s+width(k,depth+1,t),0));
+    seenW.set(id+':'+depth,w); return w;
+  }
+  function down(id,row,depth,left,trail){
+    const t=new Set(trail).add(id);
+    const ms=G.mates(id).filter(m=>!t.has(m)&&!placed.has(m));
+    const ks=depth<FAM_DOWN?G.kids(id).filter(k=>!t.has(k)&&!placed.has(k)):[];
+    const ws=ks.map(k=>width(k,depth+1,t)), kw=ws.reduce((s,w)=>s+w,0);
+    const couple=1+ms.length, span=Math.max(couple,kw), cl=left+(span-couple)/2;
+    const x=(cl+0.5)*W; nodes.push({id,x,row}); placed.add(id);
+    ms.forEach((m,i)=>{ nodes.push({id:m,x:(cl+1.5+i)*W,row,mate:true}); placed.add(m); });
+    let at=left+(span-kw)/2; const xs=[];
+    ks.forEach((k,i)=>{ placed.add(k); xs.push(down(k,row+1,depth+1,at,t)); at+=ws[i]; });
+    if(xs.length) downs.push({from:ms.length?x+W/2:x, mate:ms.length>0, row, xs});
+    return x;
+  }
+  const midX=down(mid,0,0,0,new Set());
+  // Then ancestors: father's side on the left, mother's on the right.
+  let slot=0; const ax=[];
+  function up(id,row,depth){
+    const ps=depth<FAM_UP?G.parents(id).filter(p=>!placed.has(p)):[];
+    ps.forEach(p=>placed.add(p));
+    if(!ps.length) return (slot++ +0.5)*W;
+    const xs=ps.map(p=>{ const x=up(p,row-1,depth+1); ax.push({id:p,x,row:row-1}); return x; });
+    const x=(xs[0]+xs[xs.length-1])/2;
+    ups.push({id,x,row,xs});
+    return x;
+  }
+  const am=up(mid,0,0), shift=midX-am;
+  ax.forEach(n=>nodes.push({id:n.id,x:n.x+shift,row:n.row}));
+  ups.forEach(u=>{ u.x+=shift; u.xs=u.xs.map(x=>x+shift); });
+  // A person drawn under their child's partner as well as in their own
+  // place would be drawn twice; the first one stays.
+  const seen=new Set(), out=nodes.filter(n=>!seen.has(n.id)&&seen.add(n.id));
+  return {nodes:out, ups, downs};
+}
+function famGenName(row){
+  if(row===0) return '';
+  const n=Math.abs(row), up=row<0;
+  const base=up?['Parents','Grandparents','Great-grandparents']:['Children','Grandchildren','Great-grandchildren'];
+  return n<=3?base[n-1]:(n-2)+'× great-grand'+(up?'parents':'children');
+}
+function famTreeHtml(G){
+  const L=famLayout(G,FAM_MID), B=FAM_BOX, H=B.h+B.gy, pad=40, lab=110;
+  if(!L.nodes.length) return '';
+  const xs=L.nodes.map(n=>n.x), rows=L.nodes.map(n=>n.row);
+  const minX=Math.min(...xs)-B.w/2, maxX=Math.max(...xs)+B.w/2, minR=Math.min(...rows), maxR=Math.max(...rows);
+  const ox=pad+lab-minX, oy=pad-minR*H, w=maxX-minX+2*pad+lab, h=(maxR-minR)*H+B.h+2*pad;
+  const top=r=>oy+r*H, cx=x=>ox+x;
+  const lines=[];
+  L.ups.forEach(u=>{   // a child up to its parents
+    const mY=top(u.row)-B.gy/2, lo=Math.min(...u.xs), hi=Math.max(...u.xs);
+    lines.push(`M${cx(u.x)} ${top(u.row)}V${mY}`, `M${cx(lo)} ${mY}H${cx(hi)}`,
+      ...u.xs.map(x=>`M${cx(x)} ${mY}V${top(u.row-1)+B.h}`));
+  });
+  L.downs.forEach(d=>{   // a couple down to their children
+    const y0=top(d.row)+B.h, mY=top(d.row+1)-B.gy/2, lo=Math.min(d.from,...d.xs), hi=Math.max(d.from,...d.xs);
+    // From the join between partners, or the bottom of a lone parent's box.
+    lines.push(`M${cx(d.from)} ${d.mate?top(d.row)+B.h/2:y0}V${mY}`,
+      `M${cx(lo)} ${mY}H${cx(hi)}`, ...d.xs.map(x=>`M${cx(x)} ${mY}V${top(d.row+1)}`));
+  });
+  // Partners side by side, joined at the middle of their boxes.
+  L.nodes.filter(n=>n.mate).forEach(n=>lines.push(`M${cx(n.x)-B.w/2-B.gx} ${top(n.row)+B.h/2}H${cx(n.x)-B.w/2}`));
+  const labels=[]; for(let r=minR;r<=maxR;r++) if(r) labels.push(
+    `<div class="famgen" style="top:${top(r)+B.h/2-10}px;left:8px">${esc(famGenName(r))}</div>`);
+  const boxes=L.nodes.map(n=>{ const c=G.P.get(n.id); const yrs=famYears(c);
+    return `<button type="button" class="fambox ${c.sex==='M'?'m':c.sex==='F'?'f':''}${n.id===FAM_MID?' mid':''}${c.tree_only?'':' card'}"
+      data-famnode="${n.id}" style="left:${cx(n.x)-B.w/2}px;top:${top(n.row)}px"
+      aria-label="${esc(famName(c)+(yrs?', '+yrs:''))}${n.id===FAM_MID?', in the middle: tap to open':''}">
+      <b>${esc(famName(c))}</b>${yrs?`<small>${esc(yrs)}</small>`:''}</button>`; }).join('');
+  return `<div class="famcanvas" id="famCanvas" style="width:${w}px;height:${h}px">
+    <svg class="famlines" width="${w}" height="${h}" aria-hidden="true"><path d="${lines.join('')}"/></svg>
+    ${labels.join('')}${boxes}</div>`;
+}
+
+/* ----- the screen ----- */
+async function openFam(){
+  showSheet('fam'); lockBackground();
+  $('famBody').innerHTML='<p class="coords">Getting your family tree…</p>';
+  await famLoad(true);
+  famRender(true);
+}
+function famStartMid(G){
+  let want=null; try{ want=Number(localStorage.getItem('fam-mid'))||null; }catch(e){}
+  if(want&&G.P.has(want)) return want;
+  const me=MY_PROFILE&&MY_PROFILE.my_contact_id; if(me&&G.P.has(me)) return me;
+  const all=[...G.P.values()]; if(!all.length) return null;
+  // Otherwise whoever has the most family around them.
+  return all.map(c=>({c,n:G.parents(c.id).length+G.kids(c.id).length+G.mates(c.id).length}))
+    .sort((a,b)=>b.n-a.n||famByBirth(a.c,b.c))[0].c.id;
+}
+function famRender(fresh){
+  const body=$('famBody'); if(!body) return;
+  if(FAM_LOAD_FAILED||!FAM_ONLY){
+    body.innerHTML=`<div class="card"><div class="field"><dd>Could not reach your family tree just
+      now. Nothing is lost &mdash; it is all on the server, not on this phone. Try the refresh
+      button at the top in a minute.</dd></div></div>`;
+    $('famIn').disabled=$('famOut').disabled=true; return;
+  }
+  const G=famGraph();
+  if(!FAM_MID||!G.P.has(FAM_MID)) FAM_MID=famStartMid(G);
+  const n=G.P.size, mid=FAM_MID&&G.P.get(FAM_MID);
+  $('famIn').disabled=$('famOut').disabled=FAM_LIST||!n;
+  if(!n){
+    body.innerHTML=`<div class="card"><div class="field"><dd>Nobody in your family tree yet.
+      Press <strong>+</strong> to add the first person, or bring your tree in from Ancestry.</dd></div></div>
+      <div class="setadd"><button type="button" class="btn primary" id="famImpGo">Bring in from Ancestry</button></div>`;
+    $('famImpGo').onclick=openFamImport; return;
+  }
+  const sw=`<div class="kindpick famsw"><button type="button" data-famsw="tree" aria-pressed="${!FAM_LIST}">Tree</button>
+    <button type="button" data-famsw="list" aria-pressed="${FAM_LIST}">People (${n})</button></div>`;
+  if(FAM_LIST){
+    const q=FAM_Q.trim().toLowerCase();
+    const list=[...G.P.values()].filter(c=>!q||[famName(c,true),...arr(c.former_names).map(x=>x.value),
+      famEv(c,'birth').pl].join(' ').toLowerCase().includes(q)).sort(famSort);
+    body.innerHTML=`${sw}<input type="search" id="famQ" placeholder="Find someone" value="${esc(FAM_Q)}" autocomplete="off">
+      <p class="dsec">${list.length===n?n+' people':list.length+' of '+n}</p>
+      <div class="card">${list.map(c=>{ const pl=famEv(c,'birth').pl;
+        return `<button type="button" class="pplrow" data-famopen="${c.id}"><span class="pplwho">
+          <b>${esc(famName(c,true))}</b><small>${esc([famYears(c),pl].filter(Boolean).join(' · '))||'&nbsp;'}</small></span></button>`; }).join('')
+        ||'<div class="field"><dd>Nobody by that name.</dd></div>'}</div>`;
+    const qb=$('famQ'); qb.oninput=()=>{ const at=qb.selectionStart; FAM_Q=qb.value; famRender();
+      const nb=$('famQ'); nb.focus(); try{ nb.setSelectionRange(at,at); }catch(e){} };
+  } else {
+    body.innerHTML=`${sw}<p class="coords fammidline">In the middle: <button type="button" class="famlink" data-famopen="${FAM_MID}">${esc(famName(mid,true))}</button>.
+      Tap someone to put them in the middle, or the one in the middle to open them. Pinch, or use the
+      magnifiers, to zoom; drag to move about.</p>
+      <div class="famview" id="famView">${famTreeHtml(G)}</div>`;
+    famWireView();
+    if(fresh) FAM_Z.s=1;
+    famCentreOn(FAM_MID);
+  }
+}
+function famApplyZ(){ const c=$('famCanvas'); if(c) c.style.transform=`translate(${FAM_Z.x}px,${FAM_Z.y}px) scale(${FAM_Z.s})`; }
+function famCentreOn(id){
+  const v=$('famView'), b=v&&v.querySelector(`[data-famnode="${id}"]`); if(!b) return;
+  const bx=b.offsetLeft+b.offsetWidth/2, by=b.offsetTop+b.offsetHeight/2;
+  FAM_Z.x=v.clientWidth/2-bx*FAM_Z.s; FAM_Z.y=v.clientHeight/2-by*FAM_Z.s; famApplyZ();
+}
+function famZoom(f,px,py){
+  const v=$('famView'); if(!v) return;
+  if(px==null){ px=v.clientWidth/2; py=v.clientHeight/2; }
+  const s=Math.min(2.5,Math.max(0.12,FAM_Z.s*f)), k=s/FAM_Z.s;
+  FAM_Z.x=px-(px-FAM_Z.x)*k; FAM_Z.y=py-(py-FAM_Z.y)*k; FAM_Z.s=s; famApplyZ();
+}
+function famFit(){
+  const v=$('famView'), c=$('famCanvas'); if(!v||!c) return;
+  FAM_Z.s=Math.max(0.12,Math.min(1.2,v.clientWidth/c.offsetWidth,v.clientHeight/c.offsetHeight)*0.96);
+  FAM_Z.x=(v.clientWidth-c.offsetWidth*FAM_Z.s)/2; FAM_Z.y=(v.clientHeight-c.offsetHeight*FAM_Z.s)/2; famApplyZ();
+}
+function famWireView(){
+  const v=$('famView'); if(!v) return;
+  const pts=new Map(); let start=null, moved=0;
+  v.addEventListener('pointerdown',e=>{
+    try{ v.setPointerCapture(e.pointerId); }catch(x){}
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1){ moved=0; start={node:e.target.closest('[data-famnode]')}; } else start=null;
+  });
+  v.addEventListener('pointermove',e=>{
+    const p=pts.get(e.pointerId); if(!p) return;
+    if(pts.size===1){
+      FAM_Z.x+=e.clientX-p.x; FAM_Z.y+=e.clientY-p.y;
+      moved+=Math.abs(e.clientX-p.x)+Math.abs(e.clientY-p.y); famApplyZ();
+      pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); return;
+    }
+    const [a,b]=[...pts.values()], d0=Math.hypot(a.x-b.x,a.y-b.y);
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const [a2,b2]=[...pts.values()], d1=Math.hypot(a2.x-b2.x,a2.y-b2.y), r=v.getBoundingClientRect();
+    if(d0>0) famZoom(d1/d0,(a2.x+b2.x)/2-r.left,(a2.y+b2.y)/2-r.top);
+    moved=99;
+  });
+  const up=e=>{
+    const had=pts.delete(e.pointerId);
+    if(had&&!pts.size&&start&&start.node&&moved<8) famTap(Number(start.node.dataset.famnode));
+    if(!pts.size) start=null;
+  };
+  v.addEventListener('pointerup',up);
+  v.addEventListener('pointercancel',e=>{ pts.delete(e.pointerId); start=null; });
+  v.addEventListener('wheel',e=>{ e.preventDefault(); const r=v.getBoundingClientRect();
+    famZoom(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top); },{passive:false});
+  // Enter or Space on a box, from a keyboard
+  v.addEventListener('click',e=>{ if(e.detail!==0) return;
+    const n=e.target.closest('[data-famnode]'); if(n) famTap(Number(n.dataset.famnode)); });
+}
+function famTap(id){
+  if(id===FAM_MID){ openFamPerson(id); return; }
+  famSetMid(id);
+}
+function famSetMid(id){
+  FAM_MID=id; try{ localStorage.setItem('fam-mid',String(id)); }catch(e){}
+  FAM_LIST=false; famRender();
+}
+$('famBody').addEventListener('click',e=>{
+  const s=e.target.closest('[data-famsw]');
+  if(s){ FAM_LIST=s.dataset.famsw==='list'; famRender(!FAM_LIST); if(FAM_LIST) $('famBody').scrollTop=0; return; }
+  const o=e.target.closest('[data-famopen]');
+  if(o) openFamPerson(Number(o.dataset.famopen));
+});
+$('famIn').onclick=()=>famZoom(1.25);
+$('famOut').onclick=()=>famZoom(1/1.25);
+$('famAdd').onclick=()=>openFamPerson(null);
+
+/* ----- one person ----- */
+function famDateBox(name,label,e){
+  return `<label>${label}<input name="${name}_on" value="${esc(famDateText(e))}" autocomplete="off"
+    placeholder="12 Mar 1850, Mar 1850, 1850 or about 1850" data-famdate="1"><small class="famdq"></small></label>`;
+}
+function famRowsHtml(list,kind){
+  return list.map((x,i)=>kind==='name'
+    ? `<div class="famrow" data-famrow="${i}"><select name="fn_label_${i}">${LAB.former_names.map(l=>
+        `<option${l===(x.label||'Previously')?' selected':''}>${esc(l)}</option>`).join('')}</select>
+       <input name="fn_value_${i}" value="${esc(x.value||'')}" placeholder="The name" autocomplete="off">
+       <button type="button" class="del" data-famrowx="name:${i}" aria-label="Take this name off">&times;</button></div>`
+    : `<div class="famrow" data-famrow="${i}"><input name="home_on_${i}" value="${esc(famDateText(x))}" placeholder="When, e.g. 1881"
+        data-famdate="1" autocomplete="off"><input name="home_pl_${i}" value="${esc(x.pl||'')}" placeholder="Where" autocomplete="off">
+       <button type="button" class="del" data-famrowx="home:${i}" aria-label="Take this address off">&times;</button></div>`).join('');
+}
+function openFamPerson(id){
+  const c=id?famFind(id):null;
+  if(id&&!c){ toast('Could not find them'); return; }
+  FAM_EDIT={id:c?c.id:null, names:arr(c&&c.former_names).map(x=>({...x})),
+    homes:arr(c&&c.family&&c.family.homes).map(x=>({...x}))};
+  const tree=c?!!c.tree_only:true, mine=!c||c.created_by===ME.id;
+  $('famEdTitle').textContent=c?famName(c):'New person';
+  const ev=k=>famEv(c,k);
+  $('famEdBody').innerHTML=`<form id="famForm" onsubmit="return false">
+    <fieldset><legend>Name</legend>
+      <label>First name<input name="first" value="${esc(c&&c.first_name||'')}" autocomplete="off"></label>
+      <label>Middle names<input name="middle" value="${esc(c&&c.given_names||'')}" autocomplete="off"></label>
+      <label>Last name<input name="last" value="${esc(c&&c.last_name||(FAM_PEND&&FAM_PEND.last)||'')}" autocomplete="off"></label>
+      <p class="coords" style="margin:6px 0 2px">Maiden or other names</p><div id="famNames"></div>
+      <button type="button" class="btn" id="famNameAdd">Add a name</button>
+      <div class="checks" style="margin-top:10px">${[['M','Male'],['F','Female'],['','Not known']].map(([v,l])=>
+        `<label><input type="radio" name="sex" value="${v}" ${((c&&c.sex)||(FAM_PEND&&FAM_PEND.sex)||'')===v?'checked':''}> ${l}</label>`).join('')}</div>
+    </fieldset>
+    ${FAM_EVENTS.map(([k,l])=>`<fieldset><legend>${l}</legend>${famDateBox(k,'Date',ev(k))}
+      <label>Where<input name="${k}_pl" value="${esc(ev(k).pl||'')}" autocomplete="off"
+        placeholder="${k==='burial'?'e.g. St Mary\'s, Whitby':'e.g. Leeds, Yorkshire, England'}"></label></fieldset>`).join('')}
+    <fieldset><legend>Addresses lived at</legend><div id="famHomes"></div>
+      <button type="button" class="btn" id="famHomeAdd">Add an address</button></fieldset>
+    ${c?`<fieldset><legend>Family</legend><div id="famKin"></div></fieldset>`
+       :`<p class="coords">Save first, then you can add their mother, father, partners and children.</p>`}
+    ${tree?`<fieldset><legend>Photos</legend>${dphHtml('famPics')}</fieldset>`
+      :`<fieldset><legend>Photos</legend><p class="coords" style="margin:0">Their photos are on their contact page.</p>
+        <button type="button" class="btn" id="famToCard">Open their contact page</button></fieldset>`}
+    <fieldset><legend>Documents (PDF)</legend><div id="famPdfs"></div>
+      <div class="rcppicbtns"><label class="btn">Add a PDF<input type="file" id="famPdfAdd"
+        accept="application/pdf,.pdf" multiple></label></div></fieldset>
+    <fieldset><legend>Notes</legend><label>Notes<textarea name="notes" rows="3">${esc(c&&c.notes||'')}</textarea></label></fieldset>
+    <fieldset><legend>Contacts</legend><div class="checks" style="margin-top:0">
+      <label><input type="checkbox" name="tree_only" ${tree?'checked':''} ${mine?'':'disabled'}> Family tree only</label></div>
+      <p class="coords">Ticked, they stay out of Contacts, its searches and birthdays. Untick it
+      for someone you keep in touch with, and they join your contacts.</p></fieldset>
+    ${c?`<button type="button" class="btn" id="famMidBtn">Put them in the middle of the tree</button>`:''}
+    ${c&&tree&&mine?'<button type="button" class="btn danger" id="famDelete">Take them out of the tree</button>':''}
+  </form>`;
+  famPaintRows();
+  if(c) famPaintKin();
+  if(tree) dphStart('famPics', c&&c.photos, 'fam', 68);
+  FAM_FILES={list:arr(c&&c.family&&c.family.files).filter(x=>x&&x.path).map(x=>({path:x.path,name:x.name})), fresh:[], gone:[]};
+  famPaintPdfs();
+  const f=$('famForm');
+  f.addEventListener('input',e=>{ if(e.target.matches('[data-famdate]')) famDateHint(e.target); });
+  f.querySelectorAll('[data-famdate]').forEach(famDateHint);
+  $('famNameAdd').onclick=()=>{ famKeepRows(); FAM_EDIT.names.push({label:'Maiden',value:''}); famPaintRows();
+    const b=f.elements['fn_value_'+(FAM_EDIT.names.length-1)]; if(b) b.focus(); };
+  $('famHomeAdd').onclick=()=>{ famKeepRows(); FAM_EDIT.homes.push({}); famPaintRows();
+    const b=f.elements['home_on_'+(FAM_EDIT.homes.length-1)]; if(b) b.focus(); };
+  $('famPdfAdd').onchange=ev2=>{ const fs=[...ev2.target.files]; ev2.target.value=''; famAddPdfs(fs); };
+  if($('famToCard')) $('famToCard').onclick=()=>{ famShut(); openDetail(c.id); };
+  if($('famMidBtn')) $('famMidBtn').onclick=()=>{ famShut(); famSetMid(c.id); };
+  if($('famDelete')) $('famDelete').onclick=()=>famDelete(c);
+  showSheet('famPerson'); $('famEdBody').scrollTop=0; lockBackground();
+}
+function famDateHint(inp){
+  const s=inp.parentNode.querySelector('.famdq'); if(!s) return;
+  const d=famParseDate(inp.value);
+  s.textContent=!inp.value.trim()||!d?'':d.bad?"Can't read that date yet":famDateText(d)===inp.value.trim()?'':famDateText(d)+(d.guess?' (day first)':'');
+  s.classList.toggle('bad',!!(d&&d.bad));
+}
+// What has been typed into the name and address rows, before they are drawn again.
+function famKeepRows(){
+  const f=$('famForm'); if(!f||!FAM_EDIT) return;
+  FAM_EDIT.names=FAM_EDIT.names.map((x,i)=>({...x, label:f.elements['fn_label_'+i].value, value:f.elements['fn_value_'+i].value}));
+  FAM_EDIT.homes=FAM_EDIT.homes.map((x,i)=>({...x, _on:f.elements['home_on_'+i].value, pl:f.elements['home_pl_'+i].value}));
+}
+function famPaintRows(){
+  $('famNames').innerHTML=famRowsHtml(FAM_EDIT.names,'name');
+  $('famHomes').innerHTML=famRowsHtml(FAM_EDIT.homes,'home');
+  const f=$('famForm');
+  FAM_EDIT.homes.forEach((x,i)=>{ if(x._on!=null) f.elements['home_on_'+i].value=x._on; });
+  f.querySelectorAll('#famHomes [data-famdate]').forEach(famDateHint);
+}
+$('famEdBody').addEventListener('click',e=>{
+  const x=e.target.closest('[data-famrowx]');
+  if(x){ famKeepRows(); const [k,i]=x.dataset.famrowx.split(':');
+    (k==='name'?FAM_EDIT.names:FAM_EDIT.homes).splice(Number(i),1); famPaintRows(); return; }
+  const o=e.target.closest('[data-famkin]');
+  if(o){ famOpenOther(Number(o.dataset.famkin)); return; }
+  const u=e.target.closest('[data-famunlink]');
+  if(u){ famUnlink(Number(u.dataset.famunlink)); return; }
+  const a=e.target.closest('[data-famset]');
+  if(a){ famPickOpen(a.dataset.famset); return; }
+  const m=e.target.closest('[data-fammarr]');
+  if(m){ famMarried(Number(m.dataset.fammarr)); return; }
+  const pk=e.target.closest('[data-fampick]');
+  if(pk){ famPickChose(pk.dataset.fampick); return; }
+});
+dphWire($('famEdBody'));
+
+function famPaintKin(){
+  const box=$('famKin'); if(!box||!FAM_EDIT||!FAM_EDIT.id) return;
+  const G=famGraph(), id=FAM_EDIT.id, P=G.P;
+  const who=(o,r)=>{ const c=P.get(o), l=G.link(id,o,r);
+    return `<div class="item famkin"><button type="button" class="mid" data-famkin="${o}"><span class="t">${esc(famName(c,true))}</span>
+      <span class="w">${esc(famYears(c))}</span></button>
+      ${l?`<button type="button" class="del" data-famunlink="${l.id}" aria-label="Take this link off">&times;</button>`:''}</div>`; };
+  const ps=G.parents(id), dad=ps.find(p=>P.get(p).sex==='M'), mum=ps.find(p=>P.get(p).sex==='F'),
+    other=ps.filter(p=>p!==dad&&p!==mum);
+  const slot=(label,o,role)=>`<p class="dsec famsub">${label}</p>${o?who(o,'parent')
+    :`<button type="button" class="btn famchoose" data-famset="${role}">Choose ${label.toLowerCase()}…</button>`}`;
+  const mates=G.mates(id).map(o=>{ const l=G.link(id,o,'partner'), mr=l&&l.family&&l.family.married;
+    const say=mr?[famDateText(mr),mr.pl].filter(Boolean).join(', '):'';
+    return who(o,'partner')+(l?`<button type="button" class="famlink fammarr" data-fammarr="${l.id}">${say?'Married '+esc(say):'Add when and where they married'}</button>`:''); }).join('');
+  box.innerHTML=slot('Father',dad,'father')+slot('Mother',mum,'mother')
+    +(other.length?`<p class="dsec famsub">Parents</p>${other.map(o=>who(o,'parent')).join('')}`:'')
+    +`<p class="dsec famsub">Partners</p>${mates||''}<button type="button" class="btn famchoose" data-famset="partner">Add a partner…</button>`
+    +`<p class="dsec famsub">Children</p>${G.kids(id).map(o=>who(o,'parent')).join('')}<button type="button" class="btn famchoose" data-famset="child">Add a child…</button>`
+    +(G.sibs(id).length?`<p class="dsec famsub">Brothers and sisters</p>${G.sibs(id).map(o=>`<div class="item famkin"><button type="button" class="mid" data-famkin="${o}">
+      <span class="t">${esc(famName(P.get(o),true))}</span><span class="w">${esc(famYears(P.get(o)))}</span></button></div>`).join('')}
+      <p class="coords" style="margin:2px 0 0">Worked out from their parents.</p>`:'');
+}
+async function famOpenOther(id){
+  if(!(await famLeave())) return;
+  openFamPerson(id);
+}
+// Moving to someone else keeps what was typed here, if anything was.
+async function famLeave(){
+  if(famChanged()){ if(!(await famSave(true))) return false; }
+  else famCancel();
+  return true;
+}
+function famChanged(){
+  const f=$('famForm'); if(!f||!FAM_EDIT) return false;
+  const c=FAM_EDIT.id?famFind(FAM_EDIT.id):null;
+  const now=famFormRow(f,c,true);
+  if(!now||now.bad) return true;
+  const was={first_name:c.first_name||null, given_names:c.given_names||null, last_name:c.last_name||null,
+    sex:c.sex||null, notes:c.notes||null, tree_only:!!c.tree_only};
+  return ['first_name','given_names','last_name','sex','notes','tree_only'].some(k=>(now.row[k]??null)!==(was[k]??null))
+    || JSON.stringify(famStrip(now.row.family))!==JSON.stringify(famStrip(c.family||{}))
+    || JSON.stringify(now.row.former_names)!==JSON.stringify(arr(c.former_names))
+    || (DPH&&(DPH.fresh.length||DPH.gone.length)) || (FAM_FILES&&(FAM_FILES.fresh.length||FAM_FILES.gone.length));
+}
+const famStrip = f => { const o={...f}; delete o.ged; delete o.files; return o; };
+// The row the form describes, or {bad:'what to tell them'}.
+function famFormRow(f,c,quiet){
+  const v=n=>String((f.elements[n]&&f.elements[n].value)||'').trim();
+  const row={first_name:v('first')||null, given_names:v('middle')||null, last_name:v('last')||null,
+    sex:(f.querySelector('input[name="sex"]:checked')||{}).value||null, notes:v('notes')||null,
+    tree_only:f.elements.tree_only.checked};
+  const fam={...((c&&c.family)||{})};
+  for(const [k,l] of FAM_EVENTS){
+    const raw=v(k+'_on'), pl=v(k+'_pl'), d=famParseDate(raw);
+    if(d&&d.bad) return {bad:`Can't read the date for ${l}. Try 12 Mar 1850, Mar 1850, 1850 or about 1850.`};
+    const e={}; if(d){ ['d','p','q','d2','p2'].forEach(x=>{ if(d[x]) e[x]=d[x]; }); if(d.dead) e.dead=true; }
+    if(pl) e.pl=pl;
+    if(Object.keys(e).length) fam[k]=e; else delete fam[k];
+  }
+  if(!quiet) famKeepRows();
+  const homes=[];
+  for(const [i,x] of FAM_EDIT.homes.entries()){
+    const raw=String(f.elements['home_on_'+i].value||'').trim(), pl=String(f.elements['home_pl_'+i].value||'').trim();
+    const d=famParseDate(raw);
+    if(d&&d.bad) return {bad:`Can't read the date of the address ${pl||(i+1)}.`};
+    const e={}; if(d&&d.d){ ['d','p','q','d2','p2'].forEach(y=>{ if(d[y]) e[y]=d[y]; }); }
+    if(pl) e.pl=pl; if(Object.keys(e).length) homes.push(e);
+  }
+  homes.sort((a,b)=>String(a.d||'9999').localeCompare(String(b.d||'9999')));
+  if(homes.length) fam.homes=homes; else delete fam.homes;
+  row.former_names=FAM_EDIT.names.map((x,i)=>({label:f.elements['fn_label_'+i].value,
+    value:String(f.elements['fn_value_'+i].value||'').trim()})).filter(x=>x.value);
+  // An exact day is a birthday; a year or "about" stays in the family box
+  // unless they are in the tree alone.
+  const exact=e=>e&&e.d&&(row.tree_only||(e.p==='day'&&!e.q))?e.d:null;
+  row.birth_date=exact(fam.birth); row.death_date=exact(fam.death);
+  row.family=fam;
+  return {row};
+}
+async function famSave(stay){
+  const f=$('famForm'); if(!f||!FAM_EDIT) return false;
+  const c=FAM_EDIT.id?famFind(FAM_EDIT.id):null;
+  const r=famFormRow(f,c);
+  if(r.bad){ toast(r.bad); return false; }
+  const row=r.row;
+  if(!row.first_name&&!row.last_name){ toast('Give them a name'); return false; }
+  if(DPH&&DPH.box==='famPics') row.photos=dphNow();
+  row.family.files=FAM_FILES?FAM_FILES.list.map(x=>({path:x.path,name:x.name})):arr(row.family.files);
+  if(!row.family.files.length) delete row.family.files;
+  if(c&&c.created_by!==ME.id) delete row.tree_only;
+  $('famSave').disabled=true;
+  let id=c&&c.id, err=null;
+  if(c){ ({error:err}=await sb.from('contacts').update(row).eq('id',c.id)); }
+  else { const {data,error}=await sb.from('contacts').insert({...row, created_by:ME.id}).select().single();
+    err=error; id=data&&data.id; }
+  $('famSave').disabled=false;
+  if(err){ toast(/tree_only|family|sex/i.test(err.message||'')?'Could not save: the Family Tree needs step 68 run in Supabase first':'Could not save');
+    console.error(err); return false; }
+  await dphSaved();
+  const was=FAM_FILES; FAM_FILES=null;
+  if(was&&was.gone.length) await sb.storage.from('photos').remove(was.gone);
+  const pend=!c&&FAM_PEND; FAM_PEND=null;
+  if(pend) await famLinkMake(pend.role,pend.other,id,true);
+  if(row.tree_only===false&&c&&c.tree_only) toast('Saved, and in your contacts now');
+  else toast(pend?'Saved and linked':'Saved');
+  await loadAll(); await famLoad(true);
+  if(!stay){ famShut(); }
+  if(!c&&!stay&&!pend){ openFamPerson(id); }
+  else if(pend&&!stay){ openFamPerson(pend.other); }
+  famRender();
+  return true;
+}
+function famShut(){
+  if(!$('famPerson').classList.contains('hidden')){ $('famPerson').classList.add('hidden'); lockBackground(); }
+  FAM_EDIT=null; FAM_PICK=null;
+}
+function famCancel(){
+  if(DPH&&DPH.box==='famPics') dphCancel();
+  famCancelPdfs(); FAM_PEND=null; famShut();
+}
+$('famEdCancel').onclick=famCancel;
+$('famSave').onclick=()=>famSave(false);
+
+async function famDelete(c){
+  if(!confirm(`Take ${famName(c)} out of the family tree? Their links to the rest of the family go too, and so do their photos and PDFs. This can't be undone.`)) return;
+  const {error}=await sb.from('contacts').delete().eq('id',c.id);
+  if(error){ toast('Could not take them out'); console.error(error); return; }
+  const files=[...arr(c.photos).map(p=>p&&p.path),...arr(c.family&&c.family.files).map(x=>x&&x.path)].filter(p=>dphMine(p,'fam'));
+  if(files.length) await sb.storage.from('photos').remove(files);
+  if(DPH&&DPH.box==='famPics') await dphCancel();
+  await famCancelPdfs(); famShut();
+  if(FAM_MID===c.id) FAM_MID=null;
+  await loadAll(); await famLoad(true); famRender(); toast('Taken out of the tree');
+}
+
+/* ----- PDFs, as My Stuff keeps them, in fam/<you>/ ----- */
+function famPaintPdfs(){
+  const box=$('famPdfs'); if(!box||!FAM_FILES) return;
+  box.innerHTML=FAM_FILES.list.length?FAM_FILES.list.map((x,i)=>`<div class="item" style="padding:6px 0">
+      <button type="button" class="mid" data-fampdfopen="${i}" style="text-align:left"><span class="t">&#128196; ${esc(x.name||'Document')}</span></button>
+      <button type="button" class="del" data-fampdfx="${i}" aria-label="Remove this PDF">&times;</button></div>`).join('')
+    :'<span class="coords" style="margin:0">None yet.</span>';
+  box.querySelectorAll('[data-fampdfopen]').forEach(b=>b.onclick=()=>stfOpenPdf(FAM_FILES.list[Number(b.dataset.fampdfopen)]));
+  box.querySelectorAll('[data-fampdfx]').forEach(b=>b.onclick=()=>famDropPdf(Number(b.dataset.fampdfx)));
+}
+async function famAddPdfs(files){
+  const into=FAM_FILES; if(!into) return;
+  for(const file of files){
+    if(!/pdf$/i.test(file.type||'')&&!/\.pdf$/i.test(file.name||'')){ toast('Only PDFs here; pictures go under Photos'); continue; }
+    if(file.size>STF_PDF_MAX){ toast(file.name+' is over 20 MB'); continue; }
+    toast('Adding '+file.name+'…');
+    const path=`fam/${ME.id}/${crypto.randomUUID()}.pdf`;
+    const {error}=await sb.storage.from('photos').upload(path,file,{contentType:'application/pdf',upsert:false});
+    if(error){ toast('Could not upload '+file.name); console.error(error); continue; }
+    if(FAM_FILES!==into){ await sb.storage.from('photos').remove([path]); return; }
+    into.fresh.push(path); into.list.push({path,name:String(file.name||'Document').replace(/\.pdf$/i,'')});
+  }
+  famPaintPdfs();
+}
+async function famDropPdf(i){
+  const x=FAM_FILES&&FAM_FILES.list.splice(i,1)[0]; if(!x) return;
+  if(FAM_FILES.fresh.includes(x.path)){ FAM_FILES.fresh=FAM_FILES.fresh.filter(q=>q!==x.path); await sb.storage.from('photos').remove([x.path]); }
+  else if(dphMine(x.path,'fam')) FAM_FILES.gone.push(x.path);
+  famPaintPdfs();
+}
+async function famCancelPdfs(){
+  const was=FAM_FILES; FAM_FILES=null;
+  if(was&&was.fresh.length) await sb.storage.from('photos').remove(was.fresh);
+}
+
+/* ----- linking people ----- */
+const FAM_ROLE_SAY={father:'their father',mother:'their mother',partner:'a partner',child:'a child'};
+function famPickOpen(role){
+  const box=$('famKin'); if(!box||!FAM_EDIT) return;
+  FAM_PICK={role,q:''};
+  box.insertAdjacentHTML('afterbegin',`<div class="card fampick" id="famPick"><div class="setadd">
+    <p class="coords" style="margin:0">Who is ${esc(FAM_ROLE_SAY[role])}?</p>
+    <input type="search" id="famPickQ" placeholder="Start typing their name" autocomplete="off">
+    <div id="famPickList"></div>
+    <div class="rcppicbtns"><button type="button" class="btn" data-fampick="new">Someone new</button>
+      <button type="button" class="btn" data-fampick="cancel">Cancel</button></div></div></div>`);
+  const q=$('famPickQ'); q.oninput=()=>{ FAM_PICK.q=q.value; famPickPaint(); }; q.focus();
+  famPickPaint(); $('famPick').scrollIntoView({block:'nearest'});
+}
+function famPickPaint(){
+  const list=$('famPickList'); if(!list||!FAM_PICK) return;
+  const q=FAM_PICK.q.trim().toLowerCase();
+  if(!q){ list.innerHTML=''; return; }
+  const seen=new Set(), all=[...(FAM_ONLY||[]),...CONTACTS.filter(c=>!c.is_organisation)].filter(c=>c.id!==FAM_EDIT.id&&!seen.has(c.id)&&seen.add(c.id));
+  const hits=all.filter(c=>[famName(c,true),...arr(c.former_names).map(x=>x.value)].join(' ').toLowerCase().includes(q))
+    .sort(famSort).slice(0,12);
+  list.innerHTML=hits.map(c=>`<button type="button" class="pplrow" data-fampick="${c.id}"><span class="pplwho">
+    <b>${esc(famName(c,true))}</b><small>${esc([famYears(c),c.tree_only?'':'In Contacts'].filter(Boolean).join(' · '))||'&nbsp;'}</small></span></button>`).join('')
+    ||'<p class="coords" style="margin:4px 0">Nobody by that name yet: press Someone new.</p>';
+}
+async function famPickChose(v){
+  const pick=FAM_PICK; FAM_PICK=null;
+  const box=$('famPick'); if(box) box.remove();
+  if(!pick||v==='cancel'||!FAM_EDIT) return;
+  const me=FAM_EDIT.id;
+  if(v==='new'){
+    const c=famFind(me);
+    if(!(await famLeave())) return;
+    FAM_PEND={role:pick.role, other:me, last:pick.role==='partner'?'':(c&&c.last_name)||'',
+      sex:pick.role==='father'?'M':pick.role==='mother'?'F':''};
+    openFamPerson(null); return;
+  }
+  await famLinkMake(pick.role,me,Number(v));
+  await loadAll(); await famLoad(true); famPaintKin(); famRender();
+}
+// "role" is what the other person is to "me": father, mother, partner or child.
+// Made the right way round for whichever connection types the tree has.
+async function famLinkMake(role,me,other,quiet){
+  const par=famKind('parent'), chi=famKind('child'), mat=famKind('partner',true)||famKind('partner');
+  let row;
+  if(role==='partner'){ if(!mat){ toast('No connection type for partners: see Settings › Connection types'); return false; }
+    row={from_contact:me,to_contact:other,kind:mat}; }
+  else {
+    const [p,k]=role==='child'?[me,other]:[other,me];
+    if(par) row={from_contact:p,to_contact:k,kind:par};
+    else if(chi) row={from_contact:k,to_contact:p,kind:chi};
+    else { toast('No connection type for parents: see Settings › Connection types'); return false; }
+  }
+  row.pinned=PIN_BY_DEFAULT.test(row.kind);
+  const {error}=await sb.from('relationships').insert(row);
+  if(error){ toast(error.code==='23505'?'They are already linked':'Could not link them'); console.error(error); return false; }
+  // A father is a man and a mother a woman, if nobody has said otherwise.
+  const o=famFind(other);
+  if(o&&!o.sex&&(role==='father'||role==='mother')&&o.created_by===ME.id)
+    await sb.from('contacts').update({sex:role==='father'?'M':'F'}).eq('id',other);
+  if(!quiet) toast('Linked');
+  return true;
+}
+async function famUnlink(linkId){
+  const l=[...LINKS,...FAM_LINKS].find(x=>x.id===linkId); if(!l) return;
+  const a=famFind(l.from_contact), b=famFind(l.to_contact);
+  if(!confirm(`Take off the link between ${famName(a)} and ${famName(b)}? Neither of them is deleted.`)) return;
+  const {error}=await sb.from('relationships').delete().eq('id',linkId);
+  if(error){ toast('Could not take it off'); console.error(error); return; }
+  await loadAll(); await famLoad(true); famPaintKin(); famRender(); toast('Link taken off');
+}
+async function famMarried(linkId){
+  const l=[...LINKS,...FAM_LINKS].find(x=>x.id===linkId); if(!l) return;
+  const was=(l.family&&l.family.married)||{};
+  const d=prompt('When did they marry? For example 12 Mar 1902, 1902 or about 1902. Leave it empty if not known.',famDateText(was));
+  if(d===null) return;
+  const pd=famParseDate(d);
+  if(pd&&pd.bad){ toast("Can't read that date"); return; }
+  const pl=prompt('Where did they marry? Leave it empty if not known.',was.pl||'');
+  if(pl===null) return;
+  const m={}; if(pd&&pd.d) ['d','p','q','d2','p2'].forEach(x=>{ if(pd[x]) m[x]=pd[x]; });
+  if(pl.trim()) m.pl=pl.trim();
+  const family={...(l.family||{})}; if(Object.keys(m).length) family.married=m; else delete family.married;
+  const {error}=await sb.from('relationships').update({family}).eq('id',linkId);
+  if(error){ toast('Could not save that'); console.error(error); return; }
+  await loadAll(); await famLoad(true); famPaintKin(); toast('Saved');
+}
+
+/* ----- bringing a tree in from Ancestry (a GEDCOM file, or the zip it comes in) ----- */
+async function famReadFile(file){
+  const buf=new Uint8Array(await file.arrayBuffer());
+  if(buf[0]===0x50&&buf[1]===0x4B){   // a zip: find the .ged inside and open it
+    const dv=new DataView(buf.buffer);
+    for(let i=0;i+30<buf.length;){
+      if(dv.getUint32(i,true)!==0x04034b50) break;
+      const method=dv.getUint16(i+8,true), csize=dv.getUint32(i+18,true), nlen=dv.getUint16(i+26,true), xlen=dv.getUint16(i+28,true);
+      const name=new TextDecoder().decode(buf.subarray(i+30,i+30+nlen)), at=i+30+nlen+xlen;
+      if(/\.ged$/i.test(name)){
+        const data=buf.subarray(at,at+csize);
+        if(method===0) return new TextDecoder('utf-8').decode(data);
+        if(method===8&&typeof DecompressionStream==='function'){
+          const out=await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+          return new TextDecoder('utf-8').decode(out);
+        }
+        throw new Error('zip');
+      }
+      i=at+csize;
+    }
+    throw new Error('noged');
+  }
+  return new TextDecoder('utf-8').decode(buf);
+}
+function famGedParse(text){
+  const recs=[], stack=[];
+  for(const raw of String(text).replace(/^\uFEFF/,'').split(/\r\n|\r|\n/)){
+    const m=raw.match(/^\s*(\d+)\s+(?:(@[^@\s]+@)\s+)?(\S+)(?:\s(.*))?$/); if(!m) continue;
+    const lv=+m[1], node={tag:m[3], val:m[4]||'', ptr:m[2]||null, kids:[]};
+    if(node.tag==='CONC'||node.tag==='CONT'){ const p=stack[lv-1]; if(p) p.val+=(node.tag==='CONT'?'\n':'')+node.val; continue; }
+    if(lv===0){ recs.push(node); stack.length=0; stack[0]=node; continue; }
+    const parent=stack[lv-1]; if(!parent) continue;
+    parent.kids.push(node); stack[lv]=node; stack.length=lv+1;
+  }
+  const kid=(n,t)=>n&&n.kids.find(k=>k.tag===t), all=(n,t)=>n?n.kids.filter(k=>k.tag===t):[],
+    val=(n,t)=>{ const k=kid(n,t); return k?k.val.trim():''; };
+  const people=new Map(), fams=[];
+  for(const r of recs){
+    if(r.tag==='INDI'&&r.ptr){
+      const names=all(r,'NAME').map(n=>{ const full=n.val||'';
+        const sur=(val(n,'SURN')||(full.match(/\/([^/]*)\//)||[])[1]||'').trim();
+        const giv=(val(n,'GIVN')||full.replace(/\/[^/]*\//,' ').trim()).replace(/\s+/g,' ').trim();
+        return {giv,sur,sfx:val(n,'NSFX')}; }).filter(n=>n.giv||n.sur);
+      const ev=(...ts)=>{ for(const t of ts){ const e=kid(r,t); if(e) return {date:val(e,'DATE'),pl:val(e,'PLAC')||val(e,'ADDR'),y:e.val.trim()}; } return null; };
+      people.set(r.ptr,{gid:r.ptr.replace(/@/g,'').replace(/^I/,''), names, sex:val(r,'SEX'),
+        birth:ev('BIRT'), chr:ev('CHR','BAPM','CHRA'), death:ev('DEAT'), burial:ev('BURI','CREM'),
+        homes:all(r,'RESI').map(e=>({date:val(e,'DATE'),pl:val(e,'PLAC')||val(e,'ADDR')}))});
+    } else if(r.tag==='FAM'){
+      const mr=kid(r,'MARR');
+      fams.push({h:val(r,'HUSB'), w:val(r,'WIFE'), kids:all(r,'CHIL').map(k=>k.val.trim()),
+        married:!!mr, marr:mr?{date:val(mr,'DATE'),pl:val(mr,'PLAC')}:null});
+    }
+  }
+  return {people,fams};
+}
+// One person from the file, as the app keeps them, with anything it could not read.
+function famFromGed(g){
+  const n=g.names[0]||{giv:'',sur:'',sfx:''}, gw=n.giv.split(/\s+/).filter(Boolean);
+  const o={first_name:gw[0]||null, given_names:gw.slice(1).join(' ')||null, last_name:n.sur||null,
+    sex:/^[MF]$/.test(g.sex)?g.sex:null,
+    former_names:g.names.slice(1).map(x=>({label:'Also known as',value:[x.giv,x.sur].filter(Boolean).join(' ')})).filter(x=>x.value),
+    fam:{}, bad:[], guess:[]};
+  if(n.sfx) o.fam.suffix=n.sfx;
+  const one=(e,k)=>{ const d=famParseDate(e.date), x={};
+    if(d&&d.bad) o.bad.push({k,t:e.date});
+    else if(d){ ['d','p','q','d2','p2'].forEach(y=>{ if(d[y]) x[y]=d[y]; }); if(d.dead) x.dead=true; if(d.guess) o.guess.push({k,t:e.date}); }
+    if(e.pl) x.pl=e.pl; return x; };
+  for(const [k] of FAM_EVENTS){ const e=g[k]; if(!e) continue;
+    const x=one(e,k); if(k==='death') x.dead=true;
+    if(Object.keys(x).length) o.fam[k]=x; }
+  const homes=g.homes.map(h=>one(h,'home')).filter(x=>x.pl||x.d)
+    .sort((a,b)=>String(a.d||'9999').localeCompare(String(b.d||'9999')));
+  if(homes.length) o.fam.homes=homes;
+  return o;
+}
+const famNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[^a-z]/g,'');
+const famSnap = o => ({first_name:o.first_name, given_names:o.given_names, last_name:o.last_name, sex:o.sex,
+  former_names:o.former_names, ...Object.fromEntries(['birth','chr','death','burial','homes','suffix'].map(k=>[k,o.fam[k]??null]))});
+const famSame = (a,b) => JSON.stringify(a??null)===JSON.stringify(b??null);
+
+function openFamImport(){
+  FAM_IMP=null; showSheet('famImp'); lockBackground();
+  $('famImpBody').innerHTML=`<div class="card"><div class="setadd">
+    <p>Choose the file you exported from Ancestry. It can be the <strong>.zip</strong> Ancestry gives
+    you, or the <strong>.ged</strong> file inside it.</p>
+    <label class="btn primary">Choose the file<input type="file" id="famImpFile" accept=".ged,.zip,application/zip"></label>
+    <p class="coords">Nothing is saved until you say so. Run it again with a newer file from
+    Ancestry and it brings in what has changed there, without doubling anyone up; photos,
+    PDFs and contact details added here are never taken off.</p>
+    <p class="coords">To get the file: on Ancestry, <strong>Trees</strong>, your tree,
+    <strong>Tree settings</strong>, <strong>Export tree</strong>, then download it.</p></div></div>`;
+  $('famImpFile').onchange=async e=>{ const file=e.target.files[0]; e.target.value=''; if(file) await famImpRead(file); };
+}
+async function famImpRead(file){
+  $('famImpBody').innerHTML='<p class="coords">Reading the file…</p>';
+  let text;
+  try{ text=await famReadFile(file); }
+  catch(e){ console.error(e); $('famImpBody').innerHTML=`<div class="card"><div class="field"><dd>${e.message==='noged'
+    ?'There is no .ged file in that zip.':"Couldn't open that file. If it is a zip, open it on the computer and choose the .ged file inside."}</dd></div></div>`; return; }
+  const {people,fams}=famGedParse(text);
+  if(!people.size){ $('famImpBody').innerHTML='<div class="card"><div class="field"><dd>No people found in that file. Is it the one from Ancestry?</dd></div></div>'; return; }
+  if(!(await famLoad(true))){ toast('Could not reach your family tree just now'); return; }
+  const mine=[...FAM_ONLY,...CONTACTS.filter(c=>c.created_by===ME.id)];
+  const byGid=new Map(mine.filter(c=>c.ged_id).map(c=>[c.ged_id,c]));
+  const free=mine.filter(c=>!c.ged_id&&!c.is_organisation), used=new Set();
+  const rows=[], bad=[], guess=[];
+  for(const [ptr,g] of people){
+    const o=famFromGed(g); o.ptr=ptr; o.gid=g.gid;
+    o.bad.forEach(b=>bad.push({who:famName(o),...b})); o.guess.forEach(b=>guess.push({who:famName(o),...b}));
+    const have=byGid.get(g.gid);
+    if(have){ o.have=have; used.add(have.id); rows.push(o); continue; }
+    // Someone already here by hand, or in Contacts: same first and last name, born the same year.
+    const y=o.fam.birth&&o.fam.birth.d&&String(o.fam.birth.d).slice(0,4);
+    const cands=free.filter(c=>!used.has(c.id)&&famNorm(c.first_name)===famNorm(o.first_name)&&o.first_name
+      &&[c.last_name,...arr(c.former_names).map(x=>x.value)].some(l=>famNorm(l)===famNorm(o.last_name)))
+      .map(c=>({c,y:String(famEv(c,'birth').d||'').slice(0,4)})).filter(x=>!x.y||!y||x.y===y);
+    if(cands.length){ const best=cands.find(x=>x.y&&x.y===y)||cands[0];
+      o.cand=best.c; o.same=!!(best.y&&y&&best.y===y); used.add(best.c.id); }
+    rows.push(o);
+  }
+  const gids=new Set([...people.values()].map(g=>g.gid));
+  const gone=mine.filter(c=>c.ged_id&&!gids.has(c.ged_id));
+  FAM_IMP={rows,fams,people,bad,guess,gone};
+  famImpPaint();
+}
+function famImpPaint(){
+  const I=FAM_IMP; if(!I) return;
+  const fresh=I.rows.filter(o=>!o.have&&!(o.cand&&o.same)), upd=I.rows.filter(o=>o.have), asks=I.rows.filter(o=>o.cand);
+  $('famImpBody').innerHTML=`<div class="card"><div class="setadd">
+    <p><strong>${I.people.size} people</strong> and <strong>${I.fams.length} families</strong> in the file.</p>
+    <p>${fresh.length} new to bring in${upd.length?`; ${upd.length} already here, brought up to date`:''}.</p>
+    ${I.gone.length?`<p class="coords">${I.gone.length} brought in before ${I.gone.length===1?'is':'are'} no longer in Ancestry's file. They are left as they are.</p>`:''}
+    <button type="button" class="btn primary" id="famImpGo">Bring them in</button></div></div>
+    ${asks.length?`<p class="dsec">Already in your contacts or tree? (${asks.length})</p>
+      <p class="coords">The same name, and born the same year where both are known. Choose
+      <strong>Same person</strong> and Ancestry's details fill in what's missing on them; nothing they
+      already have is changed.</p>
+      <div class="card">${asks.map((o,i)=>`<div class="field famask"><dd><b>${esc(famName(o,true))}</b>
+        ${esc(famYear(o.fam.birth)?'born '+famYear(o.fam.birth):'')} in the file, and <b>${esc(famName(o.cand,true))}</b>
+        ${esc(famYear(famEv(o.cand,'birth'))?'born '+famYear(famEv(o.cand,'birth')):'')}
+        ${o.cand.tree_only?'in your tree':'in your contacts'}.</dd>
+        <div class="kindpick" style="margin:6px 0 0"><button type="button" data-famsame="${I.rows.indexOf(o)}:1" aria-pressed="${o.same}">Same person</button>
+          <button type="button" data-famsame="${I.rows.indexOf(o)}:0" aria-pressed="${!o.same}">Not the same</button></div></div>`).join('')}</div>`:''}
+    ${I.bad.length?`<details class="card logsec"><summary>${I.bad.length} date${I.bad.length===1?'':'s'} it can't read, left out</summary>
+      <div class="setadd">${I.bad.map(b=>`<p class="coords" style="margin:2px 0">${esc(b.who)}: ${esc(FAM_EVENTS.find(x=>x[0]===b.k)?.[1]||'Address')} "${esc(b.t)}"</p>`).join('')}
+      <p class="coords">Put them right on Ancestry, or on the person here afterwards.</p></div></details>`:''}
+    ${I.guess.length?`<details class="card logsec"><summary>${I.guess.length} date${I.guess.length===1?'':'s'} read day first</summary>
+      <div class="setadd">${I.guess.map(b=>`<p class="coords" style="margin:2px 0">${esc(b.who)}: "${esc(b.t)}"</p>`).join('')}
+      <p class="coords">Written like 03/04/1901, so read as 3 April, as in the UK. Check any that look wrong.</p></div></details>`:''}`;
+  $('famImpGo').onclick=famImpRun;
+  $('famImpBody').querySelectorAll('[data-famsame]').forEach(b=>b.onclick=()=>{
+    const [i,s]=b.dataset.famsame.split(':'); I.rows[Number(i)].same=s==='1'; famImpPaint(); });
+}
+async function famImpRun(){
+  const I=FAM_IMP; if(!I) return;
+  const say=t=>{ const p=$('famImpSay'); if(p) p.textContent=t; };
+  $('famImpBody').innerHTML='<div class="card"><div class="setadd"><p id="famImpSay">Getting ready…</p><p class="coords">Keep this screen open until it is done.</p></div></div>';
+  const ids=new Map(), done={added:0,updated:0,kept:0,links:0,failed:0};
+  const parKind=famKind('parent'), chiKind=famKind('child');
+  if(!parKind&&!chiKind){ say('The Family Tree needs step 68 run in Supabase first.'); return; }
+  const exact=(e,tree)=>e&&e.d&&(tree||(e.p==='day'&&!e.q))?e.d:null;
+  // 1. New people, 100 at a time
+  const fresh=I.rows.filter(o=>!o.have&&!(o.cand&&o.same));
+  for(let i=0;i<fresh.length;i+=100){
+    say(`Bringing in people: ${Math.min(i+100,fresh.length)} of ${fresh.length}…`);
+    const part=fresh.slice(i,i+100).map(o=>({created_by:ME.id, tree_only:true, ged_id:o.gid,
+      first_name:o.first_name, given_names:o.given_names, last_name:o.last_name, sex:o.sex, former_names:o.former_names,
+      birth_date:exact(o.fam.birth,true), death_date:exact(o.fam.death,true), family:{...o.fam, ged:famSnap(o)}}));
+    const {data,error}=await sb.from('contacts').insert(part).select('id,ged_id');
+    if(error){ console.error(error); say(`Stopped after ${done.added} people: ${/tree_only|ged_id|family/i.test(error.message||'')
+      ?'the Family Tree needs step 68 run in Supabase first.':'the server said no.'} Run it again to carry on; nobody is doubled up.`); return; }
+    (data||[]).forEach(r=>ids.set(r.ged_id,r.id)); done.added+=part.length;
+  }
+  // 2. People already here: Ancestry's changes, unless you have changed that bit here since
+  const upd=I.rows.filter(o=>o.have||(o.cand&&o.same));
+  const jobs=upd.map(o=>{
+    const c=o.have||o.cand, tree=!!c.tree_only, snap=famSnap(o), was=(c.family&&c.family.ged)||null;
+    ids.set(o.gid,c.id);
+    const patch={}, fam={...(c.family||{})};
+    const take=(k,cur,set)=>{ // whether Ancestry's value goes in
+      if(famSame(cur,snap[k])) return;
+      if(!tree||!was){ if(cur==null||(Array.isArray(cur)&&!cur.length)) set(snap[k]); else if(!famSame(cur,snap[k])) done.kept++; return; }
+      if(famSame(cur,was[k])) set(snap[k]); else done.kept++;
+    };
+    if(tree&&was){ ['first_name','given_names','last_name'].forEach(k=>take(k,c[k]??null,v=>patch[k]=v)); }
+    take('sex',c.sex??null,v=>patch.sex=v);
+    if(tree&&was) take('former_names',arr(c.former_names),v=>patch.former_names=v||[]);
+    ['birth','chr','death','burial','homes','suffix'].forEach(k=>take(k,fam[k]??null,v=>{ if(v==null) delete fam[k]; else fam[k]=v; }));
+    fam.ged=snap;
+    const bd=exact(fam.birth,tree), dd=exact(fam.death,tree);
+    if(tree){ if((c.birth_date||null)!==bd) patch.birth_date=bd; if((c.death_date||null)!==dd) patch.death_date=dd; }
+    else { if(!c.birth_date&&bd) patch.birth_date=bd; if(!c.death_date&&dd) patch.death_date=dd; }
+    patch.family=fam; if(!c.ged_id) patch.ged_id=o.gid;
+    const changed=Object.keys(patch).some(k=>k!=='family')||!famSame(famStrip(fam),famStrip(c.family||{}))||!famSame(was,snap);
+    return changed?{id:c.id,patch}:null;
+  }).filter(Boolean);
+  for(let i=0;i<jobs.length;i+=6){
+    say(`Bringing people up to date: ${Math.min(i+6,jobs.length)} of ${jobs.length}…`);
+    const rs=await Promise.all(jobs.slice(i,i+6).map(j=>sb.from('contacts').update(j.patch).eq('id',j.id)));
+    rs.forEach(r=>{ if(r.error){ console.error(r.error); done.failed++; } else done.updated++; });
+  }
+  // 3. Links: parents to children, and partners
+  await loadAll(); await famLoad(true);
+  const G=famGraph(), want=[], marr=[];
+  const idOf=ptr=>{ const g=I.people.get(ptr); return g&&ids.get(g.gid); };
+  for(const f of I.fams){
+    const h=idOf(f.h), w=idOf(f.w), m=f.marr&&famParseDate(f.marr.date), mr={};
+    if(m&&m.d) ['d','p','q','d2','p2'].forEach(x=>{ if(m[x]) mr[x]=m[x]; });
+    if(f.marr&&f.marr.pl) mr.pl=f.marr.pl;
+    if(h&&w&&h!==w){
+      const l=G.link(h,w,'partner');
+      if(!l){ const k=famKind('partner',f.married); if(k) want.push({from_contact:h,to_contact:w,kind:k,pinned:PIN_BY_DEFAULT.test(k),
+        family:Object.keys(mr).length?{married:mr}:{}}); }
+      else if(Object.keys(mr).length&&!(l.family&&l.family.married)) marr.push({id:l.id,family:{...(l.family||{}),married:mr}});
+    }
+    for(const ch of f.kids.map(idOf).filter(Boolean)) for(const p of [h,w].filter(Boolean)){
+      if(p===ch||G.link(p,ch,'parent')) continue;
+      want.push(parKind?{from_contact:p,to_contact:ch,kind:parKind,pinned:false}:{from_contact:ch,to_contact:p,kind:chiKind,pinned:false});
+    }
+  }
+  const uniq=new Map(); want.forEach(r=>uniq.set(r.from_contact+'-'+r.to_contact+'-'+r.kind,r));
+  const lk=[...uniq.values()];
+  for(let i=0;i<lk.length;i+=200){
+    say(`Linking the family together: ${Math.min(i+200,lk.length)} of ${lk.length}…`);
+    const {error}=await sb.from('relationships').insert(lk.slice(i,i+200));
+    if(error){ console.error(error); done.failed++; } else done.links+=Math.min(200,lk.length-i);
+  }
+  for(const x of marr){ const {error}=await sb.from('relationships').update({family:x.family}).eq('id',x.id); if(error) done.failed++; }
+  await loadAll(); await famLoad(true);
+  FAM_IMP=null;
+  $('famImpBody').innerHTML=`<div class="card"><div class="setadd"><p><strong>Done.</strong></p>
+    <p>${done.added} new ${done.added===1?'person':'people'}, ${done.updated} brought up to date, ${done.links} new link${done.links===1?'':'s'}.</p>
+    ${done.kept?`<p class="coords">${done.kept} detail${done.kept===1?'':'s'} changed here since the last time were kept as you have them.</p>`:''}
+    ${done.failed?`<p class="coords">${done.failed} could not be saved. Run it again to try those again.</p>`:''}
+    <button type="button" class="btn primary" id="famImpSee">See the tree</button></div></div>`;
+  $('famImpSee').onclick=()=>{ $('famImp').classList.add('hidden'); lockBackground(); FAM_LIST=false; famRender(true); };
+  famRender(true);
+}
+$('famImpCancel').onclick=()=>{ FAM_IMP=null; $('famImp').classList.add('hidden'); lockBackground(); };
+
+$('detBody').addEventListener('click',e=>{
+  const b=e.target.closest('[data-famgo]'); if(!b) return;
+  e.preventDefault(); e.stopPropagation(); openFamPerson(Number(b.dataset.famgo));
+},true);
+
 async function openTimeline(){
   showSheet('tml'); lockBackground();
   if(!TML_LOADED) $('tmlBody').innerHTML='<p class="empty">Fetching your Timeline…</p>';
@@ -20782,6 +21851,7 @@ const TILE_DEST={
   music:   {label:'Music',      go:()=>openTunes('music')},
   pods:    {label:'Podcasts',   go:()=>openTunes('pods')},
   tml:     {label:'Timeline',   go:openTimeline},
+  fam:     {label:'Family Tree', go:openFam},
   sld:     {label:'Slideshow',  go:openSlides},
   alarm:   {label:'Alarm',      go:()=>toast('Coming soon')}
 };
@@ -20793,10 +21863,10 @@ const TILE_DEFAULT_COLOUR={contacts:'#2F4858', log:'#1D4A3A', diary:'#6B3F2A',
   shop:'#4A5340', where:'#3C4E6B', settings:'#4A4A48',
   io:'#5A4B2F', pick:'#6B3030', menu:'#3A4A3C', money:'#55406B', alarm:'#6B3030',
   offers:'#2E5E63', chats:'#3F5A46', recipes:'#5B3A52', jig:'#5A4B2F', links:'#3C4E6B',
-  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52', sld:'#6B3F2A',
+  stuff:'#3A4A3C', games:'#6B3030', books:'#2E5E63', tv:'#3C4E6B', tml:'#5B3A52', sld:'#6B3F2A', fam:'#5A4B2F',
   music:'#6B3030', pods:'#4A5340'};
 const TILE_DEFAULTS=['contacts','log','diary','shop','where','chats','offers',
-  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','sld','music','pods','settings'];
+  'money','recipes','alarm','jig','games','links','stuff','books','tv','tml','sld','music','pods','fam','settings'];
 
 let TILES=[], ARRANGING=false;
 
@@ -20818,7 +21888,7 @@ const TILE_SKIN={contacts:['app'], log:['log','logEd'], diary:['diary','itemEd',
   settings:['settings'], pick:['app'], jig:['jig','jigPlay'], games:['games','lkPlay','pdPlay'],
   recipes:['recipes','recipe','recipeEd','ideas','cook','weekMenu'], stuff:['stuff','stuffView','stuffEd'],
   books:['books','bookView','bookEd'], tv:['tv','tvShow','tvEd'], tml:['tml','tmlEd','tmlKeys'], sld:['sld','sldTheme'],
-  music:['music'], pods:['pods','podEps']};
+  music:['music'], pods:['pods','podEps'], fam:['fam','famPerson','famImp']};
 function applySkins(){
   Object.values(TILE_SKIN).flat().forEach(id=>{
     const el=$(id); if(!el) return;
@@ -21091,7 +22161,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.24.1';
+const APP_VERSION='2026.11.24.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -27727,6 +28797,7 @@ const AREAS={
   music:   {title:'MY Music',     set:'URL Links', help:'music'},
   pods:    {title:'MY Podcasts',  set:'URL Links', help:'pods'},
   tml:     {title:'Timeline',     set:null,        help:'tml'},
+  fam:     {title:'Family Tree',  set:null,        help:'fam'},
   sld:     {title:'Slideshow',    set:null,        help:'sld'},
   where:   {title:'Where we are', set:null,        help:'where'},
   chats:   {title:'Messages',     set:null,        help:'chats'},
@@ -27763,13 +28834,16 @@ const AREA_SHUT={
               ['tv','tvShow','tvEd'].forEach(id=>$(id).classList.add('hidden')); },
   tml:  ()=>{ TML_EDIT=null; document.querySelectorAll('#tmlAddBox,#tmlViewBox,#tmlColBox').forEach(x=>x.remove());
               ['tml','tmlEd','tmlKeys'].forEach(id=>$(id).classList.add('hidden')); },
+  fam:  ()=>{ if(!$('famPerson').classList.contains('hidden')){ if(DPH&&DPH.box==='famPics') dphCancel(); famCancelPdfs(); }
+              FAM_EDIT=null; FAM_PICK=null; FAM_PEND=null; FAM_IMP=null;
+              ['fam','famPerson','famImp'].forEach(id=>$(id).classList.add('hidden')); },
   sld:  ()=>{ sldStop(); SLD_CUR=null; ['sld','sldTheme'].forEach(id=>$(id).classList.add('hidden')); },
   chats:()=>$('chats').classList.add('hidden'),
   home: ()=>{}
 };
 const AREA_OPEN={
   contacts:()=>hideHome(), money:openMoney, log:openLog, diary:openDiary,
-  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, music:()=>openTunes('music'), pods:()=>openTunes('pods'), tml:openTimeline, sld:openSlides, where:openWhere, chats:openChats, home:showHome
+  shop:openShop, wish:openWish, links:openLinks, recipes:openRecipes, jig:openJig, games:openGames, stuff:openStuff, books:openBooks, tv:openShows, music:()=>openTunes('music'), pods:()=>openTunes('pods'), tml:openTimeline, sld:openSlides, fam:openFam, where:openWhere, chats:openChats, home:showHome
 };
 
 // What you can do in each one. Everything else — settings, help, fetching
@@ -27806,6 +28880,13 @@ function areaItems(area){
     it('Find a TV series',        ()=>{ shutMenu(); tvAskName('series'); }),
     ...(bkCanScan()?[it('Scan a DVD or Blu-ray', ()=>{ shutMenu(); tvScan(tvByBarcode); })]:[]),
     it('Fill one in yourself',    ()=>{ shutMenu(); openShowEd(null); })];
+  if(area==='fam') return [
+    it('Add someone',             ()=>{ shutMenu(); openFamPerson(null); }),
+    it('Bring in from Ancestry',  ()=>{ shutMenu(); openFamImport(); }),
+    it('See all of the tree',     ()=>{ shutMenu(); FAM_LIST=false; famRender(); famFit(); }),
+    it('Put me in the middle',    ()=>{ shutMenu(); const me=MY_PROFILE&&MY_PROFILE.my_contact_id;
+      if(me) famSetMid(me); else toast('First choose which contact is you, in Settings'); }),
+    it('The list of people',      ()=>{ shutMenu(); FAM_LIST=true; famRender(); })];
   if(area==='tml') return [
     it('Add where you lived',     ()=>{ shutMenu(); tmlEdit(null,'place'); }),
     it('Add a holiday',           ()=>{ shutMenu(); tmlEdit(null,'holiday'); }),

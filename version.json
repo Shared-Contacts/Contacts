@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.24.1",
+  "version": "2026.11.24.2",
   "history": [
+    {
+      "version": "2026.11.24.2",
+      "changes": [
+        "New: Family Tree. Add your ancestors and family with names, dates, places, addresses, photos and PDFs, and see them as a tree you can zoom into.",
+        "Bring your tree in from Ancestry with the file it exports, and again later with a newer one: changes come in and nobody is doubled up.",
+        "People only in the tree stay out of Contacts and birthdays. A contact can be in the tree too, and stays in it when they die."
+      ]
+    },
     {
       "version": "2026.11.24.1",
       "changes": [

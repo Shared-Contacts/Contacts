@@ -19390,6 +19390,8 @@ let FAM_ONLY=null, FAM_LINKS=[], FAM_LOAD_FAILED=false, FAM_EDIT=null, FAM_LIST=
 let FAM_FILES=null, FAM_PEND=null, FAM_MID=null, FAM_Z={s:1,x:0,y:0}, FAM_IMP=null, FAM_PICK=null;
 const FAM_EVENTS=[['birth','Born'],['chr','Christened'],['death','Died'],['burial','Buried']];
 const FAM_MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+// German months, for records from Germany: Mär or Mrz, Mai, Okt, Dez (and Jän from Austria).
+const FAM_MON_DE={'JÄN':1,'MÄR':3,'MRZ':3,'MAE':3,'MAI':5,'OKT':10,'DEZ':12};
 const FAM_MONTHS=['January','February','March','April','May','June','July','August','September',
   'October','November','December'];
 const FAM_BOX={w:150,h:60,gx:14,gy:48};
@@ -19429,7 +19431,7 @@ function famKind(role,married){
 /* ----- dates ----- */
 function famDay(s){
   s=String(s||'').trim().toUpperCase().replace(/(\d)(ST|ND|RD|TH)\b/g,'$1'); let m;
-  const mon=w=>{ const i=FAM_MON.indexOf(String(w).slice(0,3)); return i<0?null:i+1; };
+  const mon=w=>{ const k=String(w).slice(0,3), i=FAM_MON.indexOf(k); return i<0?(FAM_MON_DE[k]||null):i+1; };
   const ok=(y,mo,d)=>{
     if(!(y>=1000&&y<=2100)) return null;
     if(mo&&!(mo>=1&&mo<=12)) return null;
@@ -19437,9 +19439,9 @@ function famDay(s){
     return {d:`${y}-${String(mo||1).padStart(2,'0')}-${String(d||1).padStart(2,'0')}`, p:d?'day':mo?'month':'year'};
   };
   if((m=s.match(/^(\d{4})$/))) return ok(+m[1]);
-  if((m=s.match(/^([A-Z]{3,})\.?\s+(\d{4})$/))&&mon(m[1])) return ok(+m[2],mon(m[1]));
-  if((m=s.match(/^(\d{1,2})\s+([A-Z]{3,})\.?\s+(\d{4})$/))&&mon(m[2])) return ok(+m[3],mon(m[2]),+m[1]);
-  if((m=s.match(/^([A-Z]{3,})\.?\s+(\d{1,2})\s+(\d{4})$/))&&mon(m[1])) return ok(+m[3],mon(m[1]),+m[2]);
+  if((m=s.match(/^([A-ZÄ]{3,})\.?\s+(\d{4})$/))&&mon(m[1])) return ok(+m[2],mon(m[1]));
+  if((m=s.match(/^(\d{1,2})\.?\s+([A-ZÄ]{3,})\.?\s+(\d{4})$/))&&mon(m[2])) return ok(+m[3],mon(m[2]),+m[1]);
+  if((m=s.match(/^([A-ZÄ]{3,})\.?\s+(\d{1,2})\s+(\d{4})$/))&&mon(m[1])) return ok(+m[3],mon(m[1]),+m[2]);
   if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return ok(+m[1],+m[2],+m[3]);
   if((m=s.match(/^(\d{4})-(\d{1,2})$/))) return ok(+m[1],+m[2]);
   if((m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/))){
@@ -19464,6 +19466,12 @@ function famParseDate(raw){
   if((m=s.match(/^(ABT|ABOUT|CIRCA|CA|C|EST|ESTIMATED|CAL|AROUND)\.?\s+(.+)$/))){ q='about'; s=m[2]; }
   else if((m=s.match(/^(BEF|BEFORE)\.?\s+(.+)$/))){ q='before'; s=m[2]; }
   else if((m=s.match(/^(AFT|AFTER)\.?\s+(.+)$/))){ q='after'; s=m[2]; }
+  // A registration quarter, as the GRO index gives them: "Jun Qtr 1857" is April to June.
+  if((m=s.match(/^([A-Z]{3})[A-Z]*\.?\s+(?:QRTR|QTR|QTER|QUARTER|Q)\.?\s+(\d{4})$/))||(m=s.match(/^(Q[1-4])\s+(\d{4})$/))){
+    const i=/^Q\d$/.test(m[1])?Number(m[1][1])*3-2:FAM_MON.indexOf(m[1])>=0?Math.floor(FAM_MON.indexOf(m[1])/3)*3+1:0;
+    const a=i&&famDay(FAM_MON[i-1]+' '+m[2]), b=i&&famDay(FAM_MON[i+1]+' '+m[2]);
+    return a&&b ? {d:a.d,p:'month',q:'between',d2:b.d,p2:'month'} : {bad:true,t};
+  }
   const d=famDay(s);
   if(!d) return {bad:true,t};
   const out={d:d.d,p:d.p}; if(q) out.q=q; if(d.guess) out.guess=true;
@@ -19656,8 +19664,8 @@ function famRender(fresh){
   if(!n){
     body.innerHTML=`<div class="card"><div class="field"><dd>Nobody in your family tree yet.
       Press <strong>+</strong> to add the first person, or bring your tree in from Ancestry.</dd></div></div>
-      <div class="setadd"><button type="button" class="btn primary" id="famImpGo">Bring in from Ancestry</button></div>`;
-    $('famImpGo').onclick=openFamImport; return;
+      <div class="setadd"><button type="button" class="btn primary" id="famEmptyImp">Bring in from Ancestry</button></div>`;
+    $('famEmptyImp').onclick=openFamImport; return;
   }
   const sw=`<div class="kindpick famsw"><button type="button" data-famsw="tree" aria-pressed="${!FAM_LIST}">Tree</button>
     <button type="button" data-famsw="list" aria-pressed="${FAM_LIST}">People (${n})</button></div>`;
@@ -20122,12 +20130,21 @@ async function famMarried(linkId){
 async function famReadFile(file){
   const buf=new Uint8Array(await file.arrayBuffer());
   if(buf[0]===0x50&&buf[1]===0x4B){   // a zip: find the .ged inside and open it
-    const dv=new DataView(buf.buffer);
-    for(let i=0;i+30<buf.length;){
-      if(dv.getUint32(i,true)!==0x04034b50) break;
-      const method=dv.getUint16(i+8,true), csize=dv.getUint32(i+18,true), nlen=dv.getUint16(i+26,true), xlen=dv.getUint16(i+28,true);
-      const name=new TextDecoder().decode(buf.subarray(i+30,i+30+nlen)), at=i+30+nlen+xlen;
-      if(/\.ged$/i.test(name)){
+    // Sizes come from the zip's list of files at its end: Ancestry's zip, like
+    // many, leaves them blank at the start of each file.
+    const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
+    let e=-1;
+    for(let i=buf.length-22;i>=Math.max(0,buf.length-65557);i--) if(dv.getUint32(i,true)===0x06054b50){ e=i; break; }
+    if(e<0) throw new Error('zip');
+    const n=dv.getUint16(e+10,true);
+    for(let k=0,p=dv.getUint32(e+16,true);k<n&&p+46<=buf.length;k++){
+      if(dv.getUint32(p,true)!==0x02014b50) break;
+      const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true), nlen=dv.getUint16(p+28,true),
+        off=dv.getUint32(p+42,true), name=new TextDecoder().decode(buf.subarray(p+46,p+46+nlen));
+      p+=46+nlen+dv.getUint16(p+30,true)+dv.getUint16(p+32,true);
+      if(/\.ged$/i.test(name)&&!/(^|\/)__MACOSX\//.test(name)){
+        if(dv.getUint32(off,true)!==0x04034b50) throw new Error('zip');
+        const at=off+30+dv.getUint16(off+26,true)+dv.getUint16(off+28,true);
         const data=buf.subarray(at,at+csize);
         if(method===0) return new TextDecoder('utf-8').decode(data);
         if(method===8&&typeof DecompressionStream==='function'){
@@ -20136,7 +20153,6 @@ async function famReadFile(file){
         }
         throw new Error('zip');
       }
-      i=at+csize;
     }
     throw new Error('noged');
   }
@@ -20329,7 +20345,9 @@ async function famImpRun(){
     if(f.marr&&f.marr.pl) mr.pl=f.marr.pl;
     if(h&&w&&h!==w){
       const l=G.link(h,w,'partner');
-      if(!l){ const k=famKind('partner',f.married); if(k) want.push({from_contact:h,to_contact:w,kind:k,pinned:PIN_BY_DEFAULT.test(k),
+      // Every couple in Ancestry's file is husband and wife there, wedding recorded
+      // or not (Barry, 24 Nov 2026), so they all come in as married.
+      if(!l){ const k=famKind('partner',true); if(k) want.push({from_contact:h,to_contact:w,kind:k,pinned:PIN_BY_DEFAULT.test(k),
         family:Object.keys(mr).length?{married:mr}:{}}); }
       else if(Object.keys(mr).length&&!(l.family&&l.family.married)) marr.push({id:l.id,family:{...(l.family||{}),married:mr}});
     }
@@ -22161,7 +22179,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.24.2';
+const APP_VERSION='2026.11.24.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

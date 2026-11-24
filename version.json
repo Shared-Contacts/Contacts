@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.24.2",
+  "version": "2026.11.24.3",
   "history": [
+    {
+      "version": "2026.11.24.3",
+      "changes": [
+        "The Family Tree now opens the zip Ancestry exports, and Bring them in works the first time, when the tree is still empty.",
+        "Dates with German months (Okt, Dez, Mai) and registration quarters (Jun Qtr 1857) are now read, and every couple from Ancestry comes in as married."
+      ]
+    },
     {
       "version": "2026.11.24.2",
       "changes": [

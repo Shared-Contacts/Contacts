@@ -75,7 +75,12 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     pdTotals({ box: { u6: 30, u5: 25, u4: 20, fh: 25, five: 50 }, extra: 2 }).total === 75 + 35 + 75 + 200));
   ok('a card tidies itself: only real boxes, whole numbers', await ev(() => {
     const s = pdSheet({ box: { u1: '3', fh: 25, bogus: 9, ss: null }, extra: '2' });
-    return JSON.stringify(s) === JSON.stringify({ box: { u1: 3, fh: 25 }, extra: 2 }); }));
+    return JSON.stringify(s) === JSON.stringify({ box: { u1: 3, fh: 25 }, extra: 2, last: null }); }));
+  ok('  and the box filled last is kept, tidied, or dropped if it makes no sense (ML398)', await ev(() => {
+    const a = pdSheet({ box: { fh: 25 }, last: { k: 'fh', v: '25', d: [3, 3, '3', 5, 9, 5], at: 4, x: 0 } }).last;
+    return JSON.stringify(a) === JSON.stringify({ k: 'fh', v: 25, at: 4, x: 0, d: [3, 3, 3, 5, 5] })
+      && pdSheet({ box: {}, last: { k: 'bogus', v: 1, at: 2 } }).last === null
+      && pdSheet({ box: {}, last: { k: 'fh', v: 25, at: 'x' } }).last === null; }));
   ok('the phone’s dice are fair: 1 to 6, each about a sixth of the time', await ev(() => {
     const c = [0, 0, 0, 0, 0, 0, 0]; for (let i = 0; i < 6000; i++) c[pdRand()]++;
     return c[0] === 0 && c.slice(1).every(n => n > 850 && n < 1150); }));
@@ -158,8 +163,10 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   await clear();
   await p.click('#pdGo'); await settle(400);
   const sc1 = await rpcs('pounds_score');
-  ok('Put scores it: one box, sent with the turn it was for', sc1.length === 1 && sc1[0].at_turn === 1
-    && JSON.stringify(sc1[0].s) === JSON.stringify({ box: { five: 50 }, extra: 0 }));
+  ok('Put scores it: one box, sent with the turn it was for, and which box it was', sc1.length === 1 && sc1[0].at_turn === 1
+    && JSON.stringify({ box: sc1[0].s.box, extra: sc1[0].s.extra }) === JSON.stringify({ box: { five: 50 }, extra: 0 })
+    && sc1[0].s.last && sc1[0].s.last.k === 'five' && sc1[0].s.last.v === 50 && sc1[0].s.last.at === 1
+    && sc1[0].s.last.x === 0 && sc1[0].s.last.d.length === 5, JSON.stringify(sc1[0] && sc1[0].s));
   ok('  on your own the next turn is yours: round 2, the dice clear', /^Roll the dice\. Round 2 of 13$/.test(await status())
     && await ev(() => document.querySelectorAll('.pddie.blank').length === 5 && !document.querySelector('.pddie.held')));
   ok('  the card has its 50 and the total says so', JSON.stringify(await box('five')) === JSON.stringify({ cls: 'pdbox done', v: '50' })
@@ -177,8 +184,10 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   ok('  the button says so too', await ev(() => $('pdGo').textContent.trim() === 'Put 40 in Long run, and 100 more'));
   await clearToasts(); await clear();
   await p.click('#pdGo'); await settle(400);
-  ok('  it scores 40 and 100 more', JSON.stringify((await rpcs('pounds_score'))[0].s) === JSON.stringify({ box: { five: 50, ls: 40 }, extra: 1 })
-    && /Another five of a kind: 100 more/.test(await toasts()));
+  const sc40 = (await rpcs('pounds_score'))[0].s;
+  ok('  it scores 40 and 100 more', JSON.stringify({ box: sc40.box, extra: sc40.extra }) === JSON.stringify({ box: { five: 50, ls: 40 }, extra: 1 })
+    && sc40.last.k === 'ls' && sc40.last.v === 40 && sc40.last.x === 1
+    && /Another five of a kind: 100 more/.test(await toasts()), JSON.stringify(sc40));
   ok('  the total is 190', await ev(() => pdTotals(pdSheet(lkMe(PD_CUR).sheet)).total === 190
     && /Extra fives ×1\s*100/.test(document.querySelectorAll('.pdcol')[1].textContent)));
 
@@ -344,7 +353,9 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
   await type([4, 4]);
   ok('  five fours', (await box('five')).v === '50');
   await p.click('[data-pdbox="five"]'); await p.click('#pdGo'); await settle(400);
-  ok('it scores like the phone’s dice, and the next turn starts empty', JSON.stringify(await mine()) === JSON.stringify({ box: { five: 50 }, extra: 0 })
+  const real5 = await mine();
+  ok('it scores like the phone’s dice, and the next turn starts empty', JSON.stringify({ box: real5.box, extra: real5.extra }) === JSON.stringify({ box: { five: 50 }, extra: 0 })
+    && JSON.stringify(real5.last.d) === '[4,4,4,4,4]'
     && await ev(() => document.querySelectorAll('.pddie.blank').length === 5) && /Round 2 of 13/.test(await status()));
   await ev(id => { window.__rows.games.find(g => g.id === id).status = 'ended'; window.__rows.games.find(g => g.id === id).end_reason = 'Stopped'; }, R);
   await ev(async () => { await pdReload(PD_CUR); pdPaint(); }); await settle(150);

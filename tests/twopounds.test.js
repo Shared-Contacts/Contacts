@@ -4,7 +4,8 @@
 // Every change one phone makes reaches the other as Supabase's live link
 // would. Covers the dice being watched as they are rolled and kept, turns
 // passing, the database refusing what it should, the end of a game, real
-// dice typed in, and Stop game.
+// dice typed in, and Stop game. And (ML398, 24 Nov 2026) each phone seeing
+// what the other just put where, kept in the card by the real pounds_score.
 //
 // Needs @electric-sql/pglite (npm install @electric-sql/pglite@0.2.17).
 // Without it this suite says it was skipped, rather than failing.
@@ -152,17 +153,30 @@ const ok = (w, c, e = '') => { if (c) { pass++; console.log('  ✓ ' + w); } els
   ok('  his phone says it is Sandra’s turn, round 1, with her card showing', /^Sandra’s turn\. Waiting for them to roll\. Round 1 of 13$/.test(await status(B))
     && await B.evaluate(() => /Sandra’s card/.test(document.querySelector('.pdcardhd').textContent)));
   ok('  the dice are cleared for her', await shown(S) === 'Die 1: not rolled / Die 2: not rolled / Die 3: not rolled / Die 4: not rolled / Die 5: not rolled');
+  const line = p => p.evaluate(() => { const e = document.querySelector('.pdjust'); return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; });
+  ok('  Sandra sees what he put where: his card stays, Full house lit up, and a line says so (ML398)', await S.evaluate(() =>
+    /Barry’s card/.test(document.querySelector('.pdcardhd').textContent)
+    && document.querySelector('[data-pdbox="fh"]').classList.contains('just')) && await line(S) === 'Barry put 25 in Full house (3 3 5 5 5)', await line(S));
+  ok('  Barry’s own phone has no line about himself', await line(B) === '');
   ok('  and her Games tile counts it now', await S.evaluate(() => lkWaitingCount() === 1) && await B.evaluate(() => lkWaitingCount() === 0));
 
   await nextDice(S, [2, 3, 4, 5, 6]);
   await S.click('#pdRoll'); await both();
   ok('Sandra rolls a long run; Barry sees it', await shown(B) === 'Die 1: 2 / Die 2: 3 / Die 3: 4 / Die 4: 5 / Die 5: 6');
+  ok('  once she has rolled, her own card is back, the line about Barry still there', await S.evaluate(() =>
+    /Your card/.test(document.querySelector('.pdcardhd').textContent)) && /^Barry put 25 in Full house/.test(await line(S)));
   const change = await B.evaluate(g => sb.rpc('pounds_score', { g, at_turn: 2, s: { box: { fh: 30 }, extra: 0 } }), G);
   ok('the database won’t let Barry change his Full house on her turn', !!change.error && /not your turn/i.test(change.error.message));
   await clearToasts(B);
   await score(S, 'ls');
   ok('she puts 40 in Long run: back to Barry, round 2', /Your turn/.test(await toasts(B)) && /Round 2 of 13/.test(await status(B))
     && /Sandra 40/.test(await chips(B)), await status(B) + ' / ' + await chips(B));
+  ok('  Barry sees her 40, lit up on her card, until he rolls', await B.evaluate(() =>
+    /Sandra’s card/.test(document.querySelector('.pdcardhd').textContent)
+    && document.querySelector('[data-pdbox="ls"]').classList.contains('just')) && await line(B) === 'Sandra put 40 in Long run (2 3 4 5 6)', await line(B));
+  const kept = (await db.query(`select sheet->'last' as l from game_players where game_id = ${G} and user_id = '${U.sandra}'`)).rows[0].l;
+  ok('  the real database kept which box it was, beside her card', kept && kept.k === 'ls' && kept.v === 40 && kept.at === 2
+    && JSON.stringify(kept.d) === '[2,3,4,5,6]', JSON.stringify(kept));
   const twice = await B.evaluate(g => sb.rpc('pounds_score', { g, at_turn: 3, s: { box: { fh: 25, ch: 20, k3: 20 }, extra: 0 } }), G);
   ok('the database holds a turn to one box', !!twice.error && /One box a turn/.test(twice.error.message));
   const redo = await B.evaluate(g => sb.rpc('pounds_score', { g, at_turn: 3, s: { box: { fh: 0, ch: 20 }, extra: 0 } }), G);

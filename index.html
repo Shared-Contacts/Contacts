@@ -1920,6 +1920,11 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
 /* Family Tree (ML402) */
 #famEdBody fieldset{min-width:0}
 .famsw{margin:0 0 10px}
+.famof{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.famof button{flex:1 1 120px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--rule);font-weight:600}
+.famof button[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:#fff}
+.famtheirs{margin:0 2px 8px}
+.famwed{margin:0 0 6px 14px}
 .fammidline{margin:0 0 8px}
 .famlink{color:var(--hull);text-decoration:underline;padding:0;font:inherit;font-weight:700}
 .famview{position:relative;overflow:hidden;touch-action:none;height:calc(100vh - 240px);height:calc(100dvh - 240px);
@@ -3369,7 +3374,7 @@ async function refreshAll(){
   if(!$('tv').classList.contains('hidden')){ await loadShows(); renderShows();
     if(!$('tvShow').classList.contains('hidden')) renderShow(); }
   if(!$('tml').classList.contains('hidden')){ await loadTimeline(); renderTimeline(); }
-  if(!$('fam').classList.contains('hidden')){ await famLoad(true); famRender(); }
+  if(!$('fam').classList.contains('hidden')) await famRefresh();
   if(!$('sld').classList.contains('hidden')){ SLD_BSKY.at=0; await loadSlides(); await sldSync(); renderSlides();
     if(!$('sldTheme').classList.contains('hidden')) renderSlideTheme(); }
   toast('Up to date');
@@ -3861,7 +3866,7 @@ async function openDetail(id, keepPlace){
   if(!FAM_ONLY&&!FAM_LOAD_FAILED&&myLinks.some(l=>!CONTACTS.some(x=>x.id===l.other)))
     famLoad().then(ok=>{ if(ok&&CURRENT&&CURRENT.id===c.id&&!$('detail').classList.contains('hidden')) openDetail(c.id,true); });
   const links=myLinks.map(l=>{
-    const o=CONTACTS.find(x=>x.id===l.other)||famFind(l.other);
+    const o=CONTACTS.find(x=>x.id===l.other)||famFindOwn(l.other);
     return `<div class="linkrow">
       <span class="kind">${esc(l.label)}</span>
       <button class="to" ${o&&o.tree_only?'data-famgo':'data-go'}="${l.other}">${esc(o?(o.tree_only?famName(o,true):fullName(o)):'(hidden)')}</button>
@@ -6395,7 +6400,17 @@ function openHelp(where){
   anything you have changed here since is kept, and photos, PDFs and contact details are
   never taken off. Ancestry's file has no photos in it.</p>
   <p>The tree is made from the connection types Parent of, Child of, Married to, Partner
-  of and Sibling of. Only you see your tree, for now.</p>
+  of and Sibling of.</p>
+  <p><strong>Sharing your tree.</strong> Only you see your tree until you share it:
+  <strong>Who can see your tree</strong> (Menu) lists everyone who signs in to the app;
+  tick someone and they can look at the whole of it, photos and PDFs too, and the whole
+  card of anyone in it who is also one of your contacts. Only you can change it. Untick
+  them and they can&rsquo;t see it any more. A contact someone else shared with you
+  stays out of it, unless they shared that contact with this person as well.</p>
+  <p>When someone has shared their tree with you, the top of the Family Tree has a button
+  for each tree: <strong>Yours</strong> and theirs. In theirs you can move about, open
+  anyone and put them in the middle, but not add or change anything. The app opens on the
+  tree you looked at last.</p>
 
   <h4 id="h-sld">Slideshow</h4>
   <p><strong>Slideshow</strong> plays your photos full screen, at random or by date,
@@ -19550,6 +19565,10 @@ function tmlReadDate(f,name,what){
    can tell Ancestry's changes from yours. */
 let FAM_ONLY=null, FAM_LINKS=[], FAM_LOAD_FAILED=false, FAM_EDIT=null, FAM_LIST=false, FAM_Q='';
 let FAM_FILES=null, FAM_PEND=null, FAM_MID=null, FAM_Z={s:1,x:0,y:0}, FAM_IMP=null, FAM_PICK=null;
+// Sharing the tree (ML406, step 70): whose tree is on screen (null for your
+// own), the shares naming you or made by you, and the tree shared with you,
+// as the database handed it over. Someone else's tree is only ever looked at.
+let FAM_OF=null, FAM_SHARES=[], FAM_SHARE_WHY='', FAM_THEIRS=null;
 const FAM_EVENTS=[['birth','Born'],['chr','Christened'],['death','Died'],['burial','Buried']];
 const FAM_MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 // German months, for records from Germany: Mär or Mrz, Mai, Okt, Dez (and Jän from Austria).
@@ -19575,15 +19594,92 @@ async function famEverydayLinks(){
 }
 async function famLoad(force){
   if(FAM_ONLY&&!force) return true;
-  const [c,l]=await Promise.all([
+  const [c,l,s]=await Promise.all([
     famPaged(()=>sb.from('contacts').select('*').eq('created_by',ME.id).eq('tree_only',true)),
-    famPaged(()=>sb.from('relationships').select('*').eq('tree_only',true))]);
+    famPaged(()=>sb.from('relationships').select('*').eq('tree_only',true)),
+    sb.from('tree_shares').select('*')]);
+  famSharesFrom(s);
   if(c.error||l.error){ console.error(c.error||l.error); FAM_LOAD_FAILED=true; return false; }
   FAM_LOAD_FAILED=false;
   FAM_ONLY=c.data.filter(x=>x.tree_only); FAM_LINKS=l.data.filter(x=>x.tree_only);
   return true;
 }
-const famFind = id => (FAM_ONLY&&FAM_ONLY.find(x=>x.id===id))||CONTACTS.find(x=>x.id===id)||null;
+// Before step 70 there is no sharing, and the tree works as it did.
+function famSharesFrom(s){
+  if(s&&s.error){ FAM_SHARES=[];
+    FAM_SHARE_WHY=/tree_shares|relation|does not exist|schema cache|PGRST205|42P01/i.test((s.error.message||'')+' '+(s.error.code||''))?'notset':'error';
+    if(FAM_SHARE_WHY==='error') console.error(s.error); return; }
+  FAM_SHARE_WHY=''; FAM_SHARES=(s&&s.data)||[];
+}
+// The trees shared with you, and the one on screen if it isn't yours.
+const famOwners = () => [...new Set(FAM_SHARES.filter(x=>x.viewer_id===ME.id&&x.owner_id!==ME.id).map(x=>x.owner_id))];
+const famTheirs = () => (FAM_OF&&FAM_THEIRS&&FAM_THEIRS.owner===FAM_OF)?FAM_THEIRS:null;
+const famWhose = o => { const u=USERS.find(x=>x.id===o); return u?personName(u):'Someone'; };
+async function famLoadTheirs(o){
+  const {data,error}=await sb.rpc('family_tree',{o});
+  if(error||!data){ if(error) console.error(error);
+    FAM_THEIRS={owner:o, failed:/not shared/i.test((error&&error.message)||'')?'gone':'error', people:[], links:[]}; return false; }
+  FAM_THEIRS={owner:o, people:arr(data.people), links:arr(data.links), mid:data.mid||null};
+  return true;
+}
+// Which tree to open with: the one you looked at last, while you still can;
+// otherwise yours, unless yours is empty and someone has shared theirs.
+function famChooseOf(){
+  const ofs=famOwners(); let want=null;
+  try{ want=localStorage.getItem('fam-of'); }catch(e){}
+  if(want!==null) FAM_OF=want&&ofs.includes(want)?want:null;
+  else { FAM_OF=null; if(ofs.length&&famGraph().P.size<2) FAM_OF=ofs[0]; }
+  if(FAM_OF!==(FAM_THEIRS&&FAM_THEIRS.owner)) FAM_MID=null;
+}
+async function famSwitch(o){
+  FAM_OF=o||null; FAM_MID=null; FAM_LIST=false; FAM_Q='';
+  try{ localStorage.setItem('fam-of',FAM_OF||''); }catch(e){}
+  if(FAM_OF){ $('famBody').innerHTML=`<p class="coords">Getting ${esc(famWhose(FAM_OF))}&rsquo;s family tree…</p>`;
+    await famLoadTheirs(FAM_OF); }
+  famRender(true);
+}
+async function famRefresh(){
+  await famLoad(true);
+  if(FAM_OF&&!famOwners().includes(FAM_OF)){ FAM_OF=null; FAM_MID=null; }
+  if(FAM_OF) await famLoadTheirs(FAM_OF);
+  famRender();
+}
+// Who can see your tree (ML406): tick someone and they can look at all of
+// it, photos and PDFs too. Only you can change it.
+function famShareBox(){
+  if(FAM_SHARE_WHY==='notset'){ toast('Sharing the tree needs step 70 run in Supabase first'); return; }
+  if(!USERS.length){ toast('Nobody else has an account yet'); return; }
+  const shared=FAM_SHARES.filter(x=>x.owner_id===ME.id).map(x=>x.viewer_id);
+  const box=document.createElement('div');
+  box.className='daypick pplbox'; box.id='famShare';
+  box.innerHTML=`<div class="inner">
+    <p class="dsec" style="padding-top:0">Who can see your tree</p>
+    <p class="coords" style="margin:0 0 6px">Tick someone and they can look at your whole tree: everyone in
+      it, their photos and PDFs, and the whole card of anyone who is also in your contacts. Only you can change it.</p>
+    <div class="checks ppl">${USERS.map(u=>`<label><input type="checkbox" data-famshare="${esc(u.id)}"
+      ${shared.includes(u.id)?'checked':''}> ${pplWho(u)}</label>`).join('')}</div>
+    <div class="pfoot"><button id="famShareDone" class="go">Done</button></div></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=ev=>{ if(ev.target===box) close(); };
+  box.querySelector('#famShareDone').onclick=close;
+  box.querySelectorAll('[data-famshare]').forEach(c=>c.onchange=async()=>{
+    const who=c.dataset.famshare, on=c.checked; c.disabled=true;
+    let {error}=on
+      ? await sb.from('tree_shares').insert({owner_id:ME.id, viewer_id:who})
+      : await sb.from('tree_shares').delete().eq('owner_id',ME.id).eq('viewer_id',who);
+    if(error&&on&&String(error.code)==='23505') error=null;   // already shared, from another phone
+    c.disabled=false;
+    if(error){ console.error(error); c.checked=!on;
+      toast(/tree_shares|relation|does not exist|schema cache/i.test(error.message||'')
+        ?'Sharing the tree needs step 70 run in Supabase first':'Could not change who sees it'); return; }
+    FAM_SHARES=FAM_SHARES.filter(x=>!(x.owner_id===ME.id&&x.viewer_id===who));
+    if(on) FAM_SHARES.push({owner_id:ME.id, viewer_id:who});
+    toast(on?famWhose(who)+' can see your tree now':famWhose(who)+' no longer sees your tree');
+  });
+}
+const famFindOwn = id => (FAM_ONLY&&FAM_ONLY.find(x=>x.id===id))||CONTACTS.find(x=>x.id===id)||null;
+const famFind = id => { const T=famTheirs(); return T?(T.people.find(x=>x.id===id)||null):famFindOwn(id); };
 const famRole = kind => { const k=KINDS.find(x=>x.name===kind); return (k&&k.tree_role)||null; };
 function famKind(role,married){
   const ks=KINDS.filter(k=>k.tree_role===role);
@@ -19701,16 +19797,21 @@ const famByBirth = (a,b) => String(famEv(a,'birth').d||'9999').localeCompare(Str
 
 /* ----- who is who to whom ----- */
 function famGraph(){
-  const P=new Map(); (FAM_ONLY||[]).forEach(c=>P.set(c.id,c));
-  CONTACTS.forEach(c=>{ if(c.created_by===ME.id&&(c.ged_id||(c.family&&Object.keys(c.family).length))) P.set(c.id,c); });
-  const meId=MY_PROFILE&&MY_PROFILE.my_contact_id, mine=meId&&CONTACTS.find(x=>x.id===meId);
-  if(mine) P.set(mine.id,mine);
+  // Someone else's tree comes whole from the database: its people and links only.
+  const T=famTheirs(), P=new Map(), pool=T?[]:CONTACTS;
+  if(T) T.people.forEach(c=>P.set(c.id,c));
+  else {
+    (FAM_ONLY||[]).forEach(c=>P.set(c.id,c));
+    CONTACTS.forEach(c=>{ if(c.created_by===ME.id&&(c.ged_id||(c.family&&Object.keys(c.family).length))) P.set(c.id,c); });
+    const meId=MY_PROFILE&&MY_PROFILE.my_contact_id, mine=meId&&CONTACTS.find(x=>x.id===meId);
+    if(mine) P.set(mine.id,mine);
+  }
   const par=new Map(), kid=new Map(), mate=new Map(), sib=new Map(), link=new Map();
   const add=(m,a,b)=>{ if(!m.has(a)) m.set(a,new Set()); m.get(a).add(b); };
-  [...LINKS,...FAM_LINKS].forEach(l=>{
+  (T?T.links:[...LINKS,...FAM_LINKS]).forEach(l=>{
     const r=famRole(l.kind); if(!r) return;
     let a=l.from_contact, b=l.to_contact;
-    for(const i of [a,b]) if(!P.has(i)){ const c=CONTACTS.find(x=>x.id===i); if(!c) return; P.set(i,c); }
+    for(const i of [a,b]) if(!P.has(i)){ const c=pool.find(x=>x.id===i); if(!c) return; P.set(i,c); }
     if(r==='child') [a,b]=[b,a];
     if(r==='parent'||r==='child'){ add(par,b,a); add(kid,a,b); }
     else if(r==='partner'){ add(mate,a,b); add(mate,b,a); }
@@ -19820,12 +19921,17 @@ async function openFam(){
   showSheet('fam'); lockBackground();
   $('famBody').innerHTML='<p class="coords">Getting your family tree…</p>';
   await famLoad(true);
+  famChooseOf();
+  if(FAM_OF) await famLoadTheirs(FAM_OF);
   famRender(true);
 }
+// Who was in the middle is kept for each tree.
+const famMidKey = () => FAM_OF?'fam-mid:'+FAM_OF:'fam-mid';
 function famStartMid(G){
-  let want=null; try{ want=Number(localStorage.getItem('fam-mid'))||null; }catch(e){}
+  let want=null; try{ want=Number(localStorage.getItem(famMidKey()))||null; }catch(e){}
   if(want&&G.P.has(want)) return want;
-  const me=MY_PROFILE&&MY_PROFILE.my_contact_id; if(me&&G.P.has(me)) return me;
+  const T=famTheirs();
+  const me=T?T.mid:MY_PROFILE&&MY_PROFILE.my_contact_id; if(me&&G.P.has(me)) return me;
   const all=[...G.P.values()]; if(!all.length) return null;
   // Otherwise whoever has the most family around them.
   return all.map(c=>({c,n:G.parents(c.id).length+G.kids(c.id).length+G.mates(c.id).length}))
@@ -19833,10 +19939,18 @@ function famStartMid(G){
 }
 function famRender(fresh){
   const body=$('famBody'); if(!body) return;
-  if(FAM_LOAD_FAILED||!FAM_ONLY){
-    body.innerHTML=`<div class="card"><div class="field"><dd>Could not reach your family tree just
+  // Whose tree: yours, or one shared with you (ML406).
+  const ofs=famOwners(), T=FAM_OF&&FAM_THEIRS&&FAM_THEIRS.owner===FAM_OF?FAM_THEIRS:null, whose=FAM_OF?famWhose(FAM_OF):'';
+  const who=ofs.length?`<div class="famof" role="group" aria-label="Whose family tree">
+    <button type="button" data-famof="" aria-pressed="${!FAM_OF}">Yours</button>${ofs.map(o=>
+    `<button type="button" data-famof="${esc(o)}" aria-pressed="${FAM_OF===o}">${esc(famWhose(o))}&rsquo;s</button>`).join('')}</div>`:'';
+  $('famAdd').style.display=FAM_OF?'none':'';
+  if(FAM_OF?(!T||T.failed):(FAM_LOAD_FAILED||!FAM_ONLY)){
+    body.innerHTML=who+(T&&T.failed==='gone'
+      ?`<div class="card"><div class="field"><dd>${esc(whose)} no longer shares their family tree with you.</dd></div></div>`
+      :`<div class="card"><div class="field"><dd>Could not reach ${FAM_OF?esc(whose)+'&rsquo;s':'your'} family tree just
       now. Nothing is lost &mdash; it is all on the server, not on this phone. Try the refresh
-      button at the top in a minute.</dd></div></div>`;
+      button at the top in a minute.</dd></div></div>`);
     $('famIn').disabled=$('famOut').disabled=true; return;
   }
   const G=famGraph();
@@ -19844,12 +19958,14 @@ function famRender(fresh){
   const n=G.P.size, mid=FAM_MID&&G.P.get(FAM_MID);
   $('famIn').disabled=$('famOut').disabled=FAM_LIST||!n;
   if(!n){
-    body.innerHTML=`<div class="card"><div class="field"><dd>Nobody in your family tree yet.
+    body.innerHTML=who+(FAM_OF?`<div class="card"><div class="field"><dd>Nobody in ${esc(whose)}&rsquo;s family tree yet.</dd></div></div>`
+      :`<div class="card"><div class="field"><dd>Nobody in your family tree yet.
       Press <strong>+</strong> to add the first person, or bring your tree in from Ancestry.</dd></div></div>
-      <div class="setadd"><button type="button" class="btn primary" id="famEmptyImp">Bring in from Ancestry</button></div>`;
-    $('famEmptyImp').onclick=openFamImport; return;
+      <div class="setadd"><button type="button" class="btn primary" id="famEmptyImp">Bring in from Ancestry</button></div>`);
+    if($('famEmptyImp')) $('famEmptyImp').onclick=openFamImport; return;
   }
-  const sw=`<div class="kindpick famsw"><button type="button" data-famsw="tree" aria-pressed="${!FAM_LIST}">Tree</button>
+  const sw=`${who}${FAM_OF?`<p class="coords famtheirs">${esc(whose)}&rsquo;s tree, shared with you to look at.</p>`:''}
+    <div class="kindpick famsw"><button type="button" data-famsw="tree" aria-pressed="${!FAM_LIST}">Tree</button>
     <button type="button" data-famsw="list" aria-pressed="${FAM_LIST}">People (${n})</button></div>`;
   if(FAM_LIST){
     const q=FAM_Q.trim().toLowerCase();
@@ -19929,10 +20045,12 @@ function famTap(id){
   famSetMid(id);
 }
 function famSetMid(id){
-  FAM_MID=id; try{ localStorage.setItem('fam-mid',String(id)); }catch(e){}
+  FAM_MID=id; try{ localStorage.setItem(famMidKey(),String(id)); }catch(e){}
   FAM_LIST=false; famRender();
 }
 $('famBody').addEventListener('click',e=>{
+  const w=e.target.closest('[data-famof]');
+  if(w){ const o=w.dataset.famof||null; if(o!==FAM_OF) famSwitch(o); return; }
   const s=e.target.closest('[data-famsw]');
   if(s){ FAM_LIST=s.dataset.famsw==='list'; famRender(!FAM_LIST); if(FAM_LIST) $('famBody').scrollTop=0; return; }
   const o=e.target.closest('[data-famopen]');
@@ -19958,8 +20076,11 @@ function famRowsHtml(list,kind){
        <button type="button" class="del" data-famrowx="home:${i}" aria-label="Take this address off">&times;</button></div>`).join('');
 }
 function openFamPerson(id){
+  // Someone else's tree is only looked at.
+  if(FAM_OF){ if(id) famViewPerson(id); else toast('Only '+famWhose(FAM_OF)+' can add to their tree'); return; }
   const c=id?famFind(id):null;
   if(id&&!c){ toast('Could not find them'); return; }
+  $('famSave').style.visibility=''; $('famEdCancel').textContent='Cancel';
   FAM_EDIT={id:c?c.id:null, names:arr(c&&c.former_names).map(x=>({...x})),
     homes:arr(c&&c.family&&c.family.homes).map(x=>({...x}))};
   const tree=c?!!c.tree_only:true, mine=!c||c.created_by===ME.id;
@@ -20013,6 +20134,60 @@ function openFamPerson(id){
   if($('famMidBtn')) $('famMidBtn').onclick=()=>{ famShut(); famSetMid(c.id); };
   if($('famDelete')) $('famDelete').onclick=()=>famDelete(c);
   showSheet('famPerson'); $('famEdBody').scrollTop=0; lockBackground();
+}
+// One person in a tree shared with you, to look at only (ML406). Someone who
+// is also one of the owner's contacts shows their whole card.
+async function famViewPerson(id){
+  const c=famFind(id); if(!c){ toast('Could not find them'); return; }
+  if(DPH&&DPH.box==='famPics') dphCancel();
+  FAM_EDIT={id:c.id, view:true, names:[], homes:[]}; FAM_FILES=null; FAM_PEND=null; FAM_PICK=null;
+  const G=famGraph(), P=G.P;
+  const R=(l,h)=>h?`<div class="field"><dt>${esc(l)}</dt><dd>${h}</dd></div>`:'';
+  const join=e=>[famDateText(e),e&&e.pl].filter(Boolean).join(', ');
+  const box=(legend,html)=>html?`<fieldset><legend>${legend}</legend>${html}</fieldset>`:'';
+  const names=R('Name',esc(famName(c,true,true)))+R('Also known as',esc(c.nickname))
+    +arr(c.former_names).filter(x=>x&&x.value).map(x=>R(x.label||'Previously',esc(x.value))).join('');
+  const events=FAM_EVENTS.map(([k,l])=>R(l,esc(join(famEv(c,k))))).join('');
+  const homes=arr(c.family&&c.family.homes).map(h=>`<div class="field"><dd>${esc([famDateText(h),h.pl].filter(Boolean).join(': '))}</dd></div>`).join('');
+  const kin=o=>`<div class="item famkin"><button type="button" class="mid" data-famkin="${o}"><span class="t">${esc(famName(P.get(o),true))}</span>
+    <span class="w">${esc(famYears(P.get(o)))}</span></button></div>`;
+  const grp=(label,ids,after)=>ids.length?`<p class="dsec famsub">${label}</p>${ids.map(o=>kin(o)+(after?after(o):'')).join('')}`:'';
+  const ps=G.parents(c.id), dad=ps.find(p=>P.get(p).sex==='M'), mum=ps.find(p=>P.get(p).sex==='F');
+  const wed=o=>{ const l=G.link(c.id,o,'partner'), mr=l&&l.family&&l.family.married, say=mr?join(mr):'';
+    return say?`<p class="coords famwed">Married ${esc(say)}</p>`:''; };
+  const family=grp('Father',dad?[dad]:[])+grp('Mother',mum?[mum]:[])+grp('Parents',ps.filter(p=>p!==dad&&p!==mum))
+    +grp('Partners',G.mates(c.id),wed)+grp('Children',G.kids(c.id))+grp('Brothers and sisters',G.sibs(c.id));
+  const web=v=>/^https?:/i.test(v)?v:'https://'+v, a=(u,t)=>`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`;
+  const ways=(list,dflt,fmt)=>arr(list).filter(e=>e&&e.value).map(e=>R(e.label||dflt,fmt(e))).join('');
+  const card=c.tree_only?'':ways(c.phones,'Phone',e=>`<a href="tel:${esc(tidyNum(e.value))}">${esc(e.value)}</a>`)
+    +ways(c.emails,'Email',e=>`<a href="mailto:${esc(String(e.value).trim())}">${esc(e.value)}</a>`)
+    +ways(c.websites,'Website',e=>a(web(e.value),e.value))
+    +ways(c.socials,'Social',e=>{ const u=socialUrl(e.label,e.value); return u?a(u,e.value):esc(e.value); })
+    +R('Address',[c.address,c.address_2,c.town,c.county,c.postcode&&String(c.postcode).toUpperCase(),c.country].filter(Boolean).map(esc).join('<br>'))
+    +R('Company',esc(c.company))+R('Job title',esc(c.job_title))+R('Boat name',esc(c.boat_name));
+  const shots=[...new Set([c.avatar_path,...arr(c.photos).map(p=>p&&p.path)].filter(Boolean))];
+  const files=arr(c.family&&c.family.files).filter(x=>x&&x.path);
+  $('famEdTitle').textContent=famName(c);
+  $('famSave').style.visibility='hidden'; $('famEdCancel').textContent='Close';
+  $('famEdBody').innerHTML=`<div class="famlook">
+    <p class="coords">In ${esc(famWhose(FAM_OF))}&rsquo;s tree, to look at. Only they can change it.</p>
+    ${box('Name',names)}${box('Born and died',events)}${box('Addresses lived at',homes)}
+    ${box('Family',family)}${box('Contact details',card)}
+    ${shots.length?box('Photos','<div id="famLookPics"><span class="coords">Getting the photos…</span></div>'):''}
+    ${box('Documents (PDF)',files.map((x,i)=>`<div class="item" style="padding:6px 0"><button type="button" class="mid" data-famlookpdf="${i}"
+      style="text-align:left"><span class="t">&#128196; ${esc(x.name||'Document')}</span></button></div>`).join(''))}
+    ${box('Notes',c.notes?`<div class="field"><dd>${esc(c.notes).replace(/\n/g,'<br>')}</dd></div>`:'')}
+    <button type="button" class="btn" id="famMidBtn">Put them in the middle of the tree</button></div>`;
+  $('famEdBody').querySelectorAll('[data-famlookpdf]').forEach(b=>b.onclick=()=>stfOpenPdf(files[Number(b.dataset.famlookpdf)]));
+  $('famMidBtn').onclick=()=>{ famShut(); famSetMid(c.id); };
+  showSheet('famPerson'); $('famEdBody').scrollTop=0; lockBackground();
+  if(!shots.length) return;
+  await signPaths(shots);
+  const pics=$('famLookPics'); if(!pics||!FAM_EDIT||FAM_EDIT.id!==c.id) return;
+  const ok=shots.filter(p=>SIGNED[p]);
+  pics.innerHTML=ok.length?`<div class="gallery">${ok.map(p=>`<figure><img src="${esc(SIGNED[p])}" alt="" data-big="${esc(p)}" loading="lazy"></figure>`).join('')}</div>`
+    :'<span class="coords">Could not get the photos just now.</span>';
+  pics.querySelectorAll('[data-big]').forEach(img=>img.onclick=()=>lightbox(SIGNED[img.dataset.big]));
 }
 function famDateHint(inp){
   const s=inp.parentNode.querySelector('.famdq'); if(!s) return;
@@ -20569,7 +20744,10 @@ $('famImpCancel').onclick=()=>{ FAM_IMP=null; $('famImp').classList.add('hidden'
 
 $('detBody').addEventListener('click',e=>{
   const b=e.target.closest('[data-famgo]'); if(!b) return;
-  e.preventDefault(); e.stopPropagation(); openFamPerson(Number(b.dataset.famgo));
+  e.preventDefault(); e.stopPropagation();
+  // Someone on your own card is in your own tree, whichever tree you looked at last.
+  if(FAM_OF){ FAM_OF=null; FAM_MID=null; if(!$('fam').classList.contains('hidden')) famRender(); }
+  openFamPerson(Number(b.dataset.famgo));
 },true);
 
 async function openTimeline(){
@@ -22369,7 +22547,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.25.2';
+const APP_VERSION='2026.11.25.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
@@ -23581,6 +23759,11 @@ union all select 'show_reviews',         count(*), coalesce(jsonb_agg(t), '[]') 
 -- Timeline
 union all select 'timeline',             count(*), coalesce(jsonb_agg(t), '[]') from timeline t
 union all select 'timeline_keys',        count(*), coalesce(jsonb_agg(t), '[]') from timeline_keys t
+-- Slideshows
+union all select 'slideshows',           count(*), coalesce(jsonb_agg(t), '[]') from slideshows t
+union all select 'slideshow_photos',     count(*), coalesce(jsonb_agg(t), '[]') from slideshow_photos t
+-- Family Tree: who can see whose tree
+union all select 'tree_shares',          count(*), coalesce(jsonb_agg(t), '[]') from tree_shares t
 -- Messages
 union all select 'chats',                count(*), coalesce(jsonb_agg(t), '[]') from chats t
 union all select 'chat_members',         count(*), coalesce(jsonb_agg(t), '[]') from chat_members t
@@ -29088,8 +29271,13 @@ function areaItems(area){
     it('Find a TV series',        ()=>{ shutMenu(); tvAskName('series'); }),
     ...(bkCanScan()?[it('Scan a DVD or Blu-ray', ()=>{ shutMenu(); tvScan(tvByBarcode); })]:[]),
     it('Fill one in yourself',    ()=>{ shutMenu(); openShowEd(null); })];
+  if(area==='fam'&&FAM_OF) return [
+    it('See all of the tree',     ()=>{ shutMenu(); FAM_LIST=false; famRender(); famFit(); }),
+    it('The list of people',      ()=>{ shutMenu(); FAM_LIST=true; famRender(); }),
+    it('Back to your own tree',   ()=>{ shutMenu(); famSwitch(null); })];
   if(area==='fam') return [
     it('Add someone',             ()=>{ shutMenu(); openFamPerson(null); }),
+    it('Who can see your tree',   ()=>{ shutMenu(); famShareBox(); }),
     it('Bring in from Ancestry',  ()=>{ shutMenu(); openFamImport(); }),
     it('See all of the tree',     ()=>{ shutMenu(); FAM_LIST=false; famRender(); famFit(); }),
     it('Put me in the middle',    ()=>{ shutMenu(); const me=MY_PROFILE&&MY_PROFILE.my_contact_id;

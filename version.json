@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.25.2",
+  "version": "2026.11.25.3",
   "history": [
+    {
+      "version": "2026.11.25.3",
+      "changes": [
+        "Family Tree: share your tree. Who can see your tree (Menu) lets you tick who else can look at it, photos and PDFs too. Only you can change it.",
+        "When someone shares their tree with you, Yours and theirs buttons at the top switch between the trees. Theirs is to look at, not change."
+      ]
+    },
     {
       "version": "2026.11.25.2",
       "changes": [

@@ -217,14 +217,26 @@ function zipOf(name, text, before = []) {
   ok('tapping her again opens her', await visible('famPerson') && await ev(() => $('famEdTitle').textContent === 'Edith Jones'));
   await ev(() => famCancel()); await settle(200);
   await p.click('[data-famsw="list"]'); await settle(200);
-  ok('People lists all 6 in the tree, by last name', await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',')
-    === 'Martha Brown,Ann Fake,Peter Fake,Sue Fake,Albert Jones,Edith Jones') && /6 people/.test(await ev(() => document.querySelector('#famBody .dsec').textContent)),
+  ok('People lists all 6 in the tree, by surname, Ann by her maiden name', await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',')
+    === 'Martha Brown,Peter Fake,Sue Fake,Albert Jones,Ann Jones,Edith Jones') && /6 people/.test(await ev(() => document.querySelector('#famBody .dsec').textContent)),
     await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',')));
   ok('  Bob, a friend with no family links, is not in it', await ev(() => !/Bob Pal/.test($('famBody').textContent)));
   await p.fill('#famQ', 'jones'); await settle(200);
-  ok('  and finds by name, maiden names too', await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',') === 'Ann Fake,Albert Jones,Edith Jones'),
+  ok('  and finds by name, maiden names too', await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',') === 'Albert Jones,Ann Jones,Edith Jones'),
     await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',')));
+  await p.fill('#famQ', 'ann fake'); await settle(200);
+  ok('  and by the name she has in Contacts', await ev(() => [...document.querySelectorAll('#famBody .pplrow b')].map(x => x.textContent).join(',') === 'Ann Jones'));
   await ev(() => { FAM_Q = ''; FAM_LIST = false; famRender(true); });
+  // Women go by the surname they were born with in the tree (Barry, 25 Nov 2026).
+  ok('Ann, Ann Fake in Contacts, is Ann Jones in the tree, her maiden name', await ev(() =>
+    document.querySelector('[data-famnode="2"] b').textContent === 'Ann Jones' && fullName(CONTACTS.find(c => c.id === 2)).includes('Fake')
+    && CONTACTS.find(c => c.id === 2).last_name === 'Fake'));
+  ok('  a woman matched to Ancestry with no maiden name given goes by Ancestry\'s surname; a man never does', await ev(() =>
+    famSurname({ sex: 'F', tree_only: false, last_name: 'Fake', family: { ged: { last_name: 'Smith' } } }) === 'Smith'
+    && famSurname({ sex: 'M', tree_only: false, last_name: 'Fake', family: { ged: { last_name: 'Smith' } } }) === 'Fake'
+    && famSurname({ sex: 'F', tree_only: false, last_name: 'Fake', family: {} }) === 'Fake'
+    && famSurname({ sex: 'F', first_name: 'Ann', last_name: 'Fake', former_names: [{ label: 'Maiden', value: 'Ann Jones' }] }) === 'Jones'
+    && famSurname({ sex: 'F', first_name: 'Ann', last_name: 'Fake', former_names: [{ label: 'Previously', value: 'Brown' }] }) === 'Fake'));
 
   // ---------------------------------------------------------------
   console.log('\nA person, with part dates');
@@ -233,7 +245,7 @@ function zipOf(name, text, before = []) {
   ok('Edith opens with "About 1900" and Hull', await val('birth_on') === 'About 1900' && await val('birth_pl') === 'Hull');
   ok('  her mother, husband and daughter, and Add buttons', await ev(() => {
     const t = $('famKin').textContent.replace(/\s+/g, ' ');
-    return /Father\s*Choose father/.test(t) && /Mother\s*Martha Brown/.test(t) && /Partners\s*Albert Jones/.test(t) && /Children\s*Ann Fake/.test(t)
+    return /Father\s*Choose father/.test(t) && /Mother\s*Martha Brown/.test(t) && /Partners\s*Albert Jones/.test(t) && /Children\s*Ann Jones/.test(t)
       && /Add a partner/.test(t) && /Add a child/.test(t); }),
     await ev(() => $('famKin').textContent.replace(/\s+/g, ' ')));
   ok('  a photo strip (she\'s family only) and PDFs', await ev(() => !!$('famPics') && !!$('famPdfs') && !$('famToCard')));
@@ -301,7 +313,7 @@ function zipOf(name, text, before = []) {
   const ins = (await writes('insert', 'contacts'))[0], lk = (await writes('insert', 'relationships'))[0];
   ok('  saved as family only, then linked as her child', ins && ins.rows.tree_only === true && ins.rows.created_by === 'me' && ins.rows.birth_date === '1925-01-01'
     && lk && lk.rows.from_contact === 10 && lk.rows.kind === 'Parent of', JSON.stringify({ ins: ins && ins.rows, lk: lk && lk.rows }));
-  ok('  and back on Edith', await ev(() => $('famEdTitle').textContent === 'Edith Jones'));
+  ok('  and back on Edith, now Edith Brown in the tree (her maiden name, given above)', await ev(() => $('famEdTitle').textContent === 'Edith Brown'));
   answers.push('12 Jun 1922', 'Hull Minster');
   await clear();
   await p.click('[data-fammarr="105"]'); await settle(400);
@@ -397,6 +409,11 @@ function zipOf(name, text, before = []) {
     window.__rows.relationships.forEach(r => { if (r.id >= 900) {
       const a = window.__rows.contacts.find(c => c.id === r.from_contact), b = window.__rows.contacts.find(c => c.id === r.to_contact);
       r.tree_only = !!(a && b && a.tree_only && b.tree_only); } });
+    // The database hands each box back with its parts reordered (shortest
+    // name first, then a to z), as Postgres's jsonb does.
+    const jsonb = v => Array.isArray(v) ? v.map(jsonb) : v && typeof v === 'object'
+      ? Object.fromEntries(Object.keys(v).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0)).map(k => [k, jsonb(v[k])])) : v;
+    window.__rows.contacts.forEach(c => { if (c.family) c.family = jsonb(c.family); if (c.former_names) c.former_names = jsonb(c.former_names); });
     // Changed here since: John's birthplace.
     const j = window.__rows.contacts.find(x => x.first_name === 'John'); j.family.birth.pl = 'Headingley, Leeds';
   });
@@ -468,8 +485,8 @@ function zipOf(name, text, before = []) {
 
   console.log('\nThe version');
   const vj = require('../version.json');
-  const V = vj.history.find(h => h.version === '2026.11.24.4');
-  ok('2026.11.24.4 is in version.json, and the page is the newest', !!V && await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version);
+  const V = vj.history.find(h => h.version === '2026.11.25.1');
+  ok('2026.11.25.1 is in version.json, and the page is the newest', !!V && await ev(() => APP_VERSION) === vj.version && vj.history[0].version === vj.version);
   ok('  its lines for What\'s new are short enough', V && V.changes.length >= 1 && V.changes.every(x => x.length < 160));
 
   console.log('\nErrors: ' + (errors.length ? '\n' + errors.join('\n') : 'none'));

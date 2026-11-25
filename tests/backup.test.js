@@ -94,10 +94,14 @@ const ok = (what, cond, extra='') => {
   // the two Books tables, books and book_reviews (step 61), and the two
   // TV/Movies tables, shows and show_reviews (step 63), and the two Timeline
   // tables, timeline and timeline_keys (step 65), and the two Birthday
-  // messages tables, bday_wordings and bday_sends (step 66), matching
-  // backup.sql. One row per table, so a missing table shows up here.
-  ok('all 57 tables are in it', one.split('union all').length - 1 === 56,
+  // messages tables, bday_wordings and bday_sends (step 66), and the two
+  // Slideshow tables, slideshows and slideshow_photos (step 67, missing here
+  // until 25 Nov 2026), and tree_shares for sharing the Family Tree (step
+  // 70), matching backup.sql. One row per table, so a missing table shows up here.
+  ok('all 60 tables are in it', one.split('union all').length - 1 === 59,
      String(one.split('union all').length - 1) + ' union alls');
+  ok('and the slideshows, and who can see whose family tree', /from slideshows t\b/.test(one)
+     && /from slideshow_photos t\b/.test(one) && /from tree_shares t\b/.test(one));
   ok('it ends at the photographs',
      /bucket_id = 'photos';$/.test(one.trim()), one.trim().slice(-50));
   ok('and the cashbook is in it', /transactions/.test(one) && /bank_files/.test(one));

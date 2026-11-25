@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.24.4",
+  "version": "2026.11.25.1",
   "history": [
+    {
+      "version": "2026.11.25.1",
+      "changes": [
+        "In the Family Tree, women now go by the surname they were born with, as on Ancestry: their Maiden name, or Ancestry's. Contacts keeps the name they use now.",
+        "Running Bring in from Ancestry again no longer saves everyone over when nothing has changed, and People finds someone from any of the words you type."
+      ]
+    },
     {
       "version": "2026.11.24.4",
       "changes": [

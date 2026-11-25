@@ -6379,7 +6379,9 @@ function openHelp(where){
   <p>People in the tree are contacts. <strong>Family tree only</strong>, ticked for most of
   them, keeps them out of Contacts, its searches and birthdays. Someone who is in your
   contacts as well, a parent say, is the same card, with a small dot on their box in the
-  tree. When a contact dies, give them the date in Died as usual and they stay in the tree.</p>
+  tree. When a contact dies, give them the date in Died as usual and they stay in the tree.
+  In the tree, women go by the surname they were born with, as on Ancestry: the Maiden name
+  on their contact, or Ancestry's surname for them. Contacts keeps the name they use now.</p>
   <p><strong>Bring in from Ancestry</strong> (Menu) reads the file Ancestry exports (on
   Ancestry: Trees, your tree, Tree settings, Export tree). It asks about anyone who looks
   like a contact you already have, and lists any dates it can't read. Run it again with a
@@ -19507,12 +19509,32 @@ function famYears(c){
   if(d) return 'd. '+d;
   return de.dead?'Died':'';
 }
-function famName(c,full){
+// In the tree, women go by the surname they were born with, as Ancestry has
+// them (Barry, 25 Nov 2026): a Maiden name on the contact if there is one,
+// otherwise, for a woman matched to Ancestry, Ancestry's surname. Contacts
+// itself keeps the name she uses now. own: the name as it is in Contacts.
+function famSurname(c){
+  if(!c) return '';
+  const m=arr(c.former_names).find(x=>/^maiden/i.test(String(x.label||''))&&String(x.value||'').trim());
+  if(m){
+    let v=String(m.value).trim();
+    for(const lead of [c.first_name,c.given_names]){ const w=String(lead||'').trim();
+      if(w&&v.toLowerCase().startsWith(w.toLowerCase()+' ')) v=v.slice(w.length).trim(); }
+    return v;
+  }
+  const g=c.family&&c.family.ged;
+  if(c.sex==='F'&&!c.tree_only&&g&&g.last_name) return g.last_name;
+  return c.last_name||'';
+}
+// Every word typed is somewhere in their names (or place of birth).
+const famHas = (bits,q) => { const hay=bits.filter(Boolean).join(' ').toLowerCase();
+  return String(q||'').toLowerCase().split(/\s+/).filter(Boolean).every(w=>hay.includes(w)); };
+function famName(c,full,own){
   if(!c) return '(not known)';
   const sfx=(c.family&&c.family.suffix)||'';
-  return [c.first_name, full?c.given_names:'', c.last_name, sfx].filter(Boolean).join(' ')||'(no name)';
+  return [c.first_name, full?c.given_names:'', own?c.last_name:famSurname(c), sfx].filter(Boolean).join(' ')||'(no name)';
 }
-const famSort = (a,b) => String(a.last_name||'').localeCompare(String(b.last_name||''),'en',{sensitivity:'base'})
+const famSort = (a,b) => famSurname(a).localeCompare(famSurname(b),'en',{sensitivity:'base'})
   || String(a.first_name||'').localeCompare(String(b.first_name||''),'en',{sensitivity:'base'})
   || String(famEv(a,'birth').d||'9999').localeCompare(String(famEv(b,'birth').d||'9999'));
 const famByBirth = (a,b) => String(famEv(a,'birth').d||'9999').localeCompare(String(famEv(b,'birth').d||'9999'))||a.id-b.id;
@@ -19671,8 +19693,8 @@ function famRender(fresh){
     <button type="button" data-famsw="list" aria-pressed="${FAM_LIST}">People (${n})</button></div>`;
   if(FAM_LIST){
     const q=FAM_Q.trim().toLowerCase();
-    const list=[...G.P.values()].filter(c=>!q||[famName(c,true),...arr(c.former_names).map(x=>x.value),
-      famEv(c,'birth').pl].join(' ').toLowerCase().includes(q)).sort(famSort);
+    const list=[...G.P.values()].filter(c=>!q||famHas([famName(c,true),c.last_name,...arr(c.former_names).map(x=>x.value),
+      famEv(c,'birth').pl],q)).sort(famSort);
     body.innerHTML=`${sw}<input type="search" id="famQ" placeholder="Find someone" value="${esc(FAM_Q)}" autocomplete="off">
       <p class="dsec">${list.length===n?n+' people':list.length+' of '+n}</p>
       <div class="card">${list.map(c=>{ const pl=famEv(c,'birth').pl;
@@ -20057,7 +20079,7 @@ function famPickPaint(){
   const q=FAM_PICK.q.trim().toLowerCase();
   if(!q){ list.innerHTML=''; return; }
   const seen=new Set(), all=[...(FAM_ONLY||[]),...CONTACTS.filter(c=>!c.is_organisation)].filter(c=>c.id!==FAM_EDIT.id&&!seen.has(c.id)&&seen.add(c.id));
-  const hits=all.filter(c=>[famName(c,true),...arr(c.former_names).map(x=>x.value)].join(' ').toLowerCase().includes(q))
+  const hits=all.filter(c=>famHas([famName(c,true),c.last_name,...arr(c.former_names).map(x=>x.value)],q))
     .sort(famSort).slice(0,12);
   list.innerHTML=hits.map(c=>`<button type="button" class="pplrow" data-fampick="${c.id}"><span class="pplwho">
     <b>${esc(famName(c,true))}</b><small>${esc([famYears(c),c.tree_only?'':'In Contacts'].filter(Boolean).join(' · '))||'&nbsp;'}</small></span></button>`).join('')
@@ -20212,7 +20234,13 @@ function famFromGed(g){
 const famNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[^a-z]/g,'');
 const famSnap = o => ({first_name:o.first_name, given_names:o.given_names, last_name:o.last_name, sex:o.sex,
   former_names:o.former_names, ...Object.fromEntries(['birth','chr','death','burial','homes','suffix'].map(k=>[k,o.fam[k]??null]))});
-const famSame = (a,b) => JSON.stringify(a??null)===JSON.stringify(b??null);
+// The same details, whatever order their parts are in: the database hands a
+// saved box back with its parts reordered, so a plain comparison saw every
+// person as changed and saved them all again on each run (24 Nov 2026).
+const famKey = v => v==null ? 'null' : Array.isArray(v) ? '['+v.map(famKey).join(',')+']'
+  : typeof v==='object' ? '{'+Object.keys(v).filter(k=>v[k]!=null).sort().map(k=>JSON.stringify(k)+':'+famKey(v[k])).join(',')+'}'
+  : JSON.stringify(v);
+const famSame = (a,b) => famKey(a)===famKey(b);
 
 function openFamImport(){
   FAM_IMP=null; showSheet('famImp'); lockBackground();
@@ -20272,7 +20300,7 @@ function famImpPaint(){
       <strong>Same person</strong> and Ancestry's details fill in what's missing on them; nothing they
       already have is changed.</p>
       <div class="card">${asks.map((o,i)=>`<div class="field famask"><dd><b>${esc(famName(o,true))}</b>
-        ${esc(famYear(o.fam.birth)?'born '+famYear(o.fam.birth):'')} in the file, and <b>${esc(famName(o.cand,true))}</b>
+        ${esc(famYear(o.fam.birth)?'born '+famYear(o.fam.birth):'')} in the file, and <b>${esc(famName(o.cand,true,true))}</b>
         ${esc(famYear(famEv(o.cand,'birth'))?'born '+famYear(famEv(o.cand,'birth')):'')}
         ${o.cand.tree_only?'in your tree':'in your contacts'}.</dd>
         <div class="kindpick" style="margin:6px 0 0"><button type="button" data-famsame="${I.rows.indexOf(o)}:1" aria-pressed="${o.same}">Same person</button>
@@ -22182,7 +22210,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.24.4';
+const APP_VERSION='2026.11.25.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

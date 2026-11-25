@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.25.1",
+  "version": "2026.11.25.2",
   "history": [
+    {
+      "version": "2026.11.25.2",
+      "changes": [
+        "Games are now played as matches: Best of 3, 5 or 7, chosen at New game, or Continue with unfinished game. The end of a match says who won it.",
+        "Under Games, a match not finished has a gold dot and a Next game button to carry it on.",
+        "Loxx: the white dice now come first. If both your marks on your own roll are in one row, the second must be the white and a colour."
+      ]
+    },
     {
       "version": "2026.11.25.1",
       "changes": [

@@ -954,8 +954,14 @@ body.vbtyping #verBar{display:none}
   display:flex;align-items:center;justify-content:center}
 .lklogo svg{width:38px;height:30px}
 .lkbtns{display:flex;gap:10px;padding:10px 0 0}
-.gmrule{margin:0 0 8px}
-.gmrule button{padding:9px 4px;font-size:14px}
+/* Matches (ML411): one not finished has a gold dot, a pale gold row and Next game */
+.pplrow.gmnot{background:#FFF6D6}
+.gmdot{flex:0 0 auto;width:12px;height:12px;border-radius:50%;background:#E0B21B;margin-right:-2px}
+.gmnext{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px 10px 26px;border-bottom:1px solid #F0EEE7}
+.gmnext small{color:var(--muted);font-size:14px}
+.gmwin{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:#FFE7A0;color:#3A2C00;font-size:16px;line-height:1.35}
+.gmwin b{font-size:19px}
+.gmline{margin:0 0 10px;font-weight:700}
 .gmmatch .gmchev{flex:0 0 auto;color:var(--hull);font-size:18px}
 .gmgames{background:#F7F6F1;border-bottom:1px solid #F0EEE7}
 .gmgames .pplrow{padding-left:26px}
@@ -6536,8 +6542,9 @@ function openHelp(where){
   itself round, so turn the phone to the left to read it.</p>
   <p><strong>Starting:</strong> one of you starts the game: Games &rsaquo;
   <strong>New game</strong>, leave <strong>Real dice</strong> ticked or untick it,
-  tick who is playing, then choose who rolls first (with real dice, everyone rolls
-  one die: the first 6 starts). The game appears on the others&rsquo;
+  tick who is playing, choose how many games (see Matches, below), then choose who
+  rolls first (with real dice, everyone rolls one die: the first 6 starts). The game
+  appears on the others&rsquo;
   phones under Games &rsaquo; Going on (the Games tile shows a number), and they
   tap it to play. They don&rsquo;t start one of their own: that would make two
   games, each waiting for the other. New game asks first if you already have a
@@ -6545,6 +6552,10 @@ function openHelp(where){
   <p><strong>Each roll:</strong> whoever is rolling throws all six dice. Everyone
   may mark the total of the two white dice, in any one row. The roller may also
   add one white die to one coloured die and mark that in the row of that colour.
+  The white dice come first, then the white and a colour: if both the roller&rsquo;s
+  marks are in the same row, the second must be the white and a colour. With the
+  phone&rsquo;s dice it can tell; with real dice it asks whether your first mark was
+  the white dice total, and if it wasn&rsquo;t, it won&rsquo;t take the second.
   Then everyone taps <strong>Done</strong>. It says Done &#10003; until all of you have,
   and then the dice pass on. If someone has wandered off, the roller can tap
   <strong>Carry on without them</strong>, beside Stop game.</p>
@@ -6597,15 +6608,23 @@ function openHelp(where){
   than the last, up to 78 for 12. Penalties take 5 each. The scores add themselves
   up along the bottom, and the highest wins. <strong>Stop game</strong> ends one
   early for everyone, keeping the scores.</p>
-  <p><strong>Playing again:</strong> one of you taps <strong>Play again</strong>.
+  <p><strong>Matches:</strong> games with the same players are played as a match:
+  <strong>Best of 3</strong>, <strong>5</strong> or <strong>7</strong>, chosen at New
+  game. The first to win 2, 3 or 4 games wins the match; a draw counts for nobody.
+  If a match with the same players isn&rsquo;t finished, New game offers
+  <strong>Continue with unfinished game</strong> at the top. At the end of each game
+  the box says how the match stands, with <strong>Next game</strong>; when someone
+  has won it, it says who won the match and asks if you want to play again.</p>
+  <p><strong>Playing again:</strong> one of you taps <strong>Next game</strong> (the
+  same players and dice, straight to who goes first) or <strong>Play again</strong>.
   Everyone else still looking at the scores is taken straight to the new game, with
   a message saying who started it, so nobody has to go back to Games.</p>
   <p><strong>Results:</strong> under Games, finished games are kept apart, Loxx and
-  Pounds, and grouped into matches with the same players: <strong>Best of 3</strong>
-  (the first to win two) or <strong>First to 5</strong>, chosen with the buttons above
-  each list. A draw counts for nobody. A match still going on is open, its games
-  newest first; tap a finished one to see its games, with who won and the scores,
-  and tap a game to see the cards. Pounds on your own is listed by itself.</p>
+  Pounds, in their matches, the newest first. A match not finished has a gold dot
+  and a pale gold row, and stays open, with <strong>Next game</strong> to carry it
+  on. Tap a finished one to see its games, with who won and the scores, and tap a
+  game to see the cards. Games from before matches are grouped as best of 3. Pounds
+  on your own is listed by itself.</p>
 
   <h4 id="h-pounds">MY Games: Pounds</h4>
   <p><strong>Pounds</strong> is a five-dice game for 1 to 6 players: on your own,
@@ -6613,8 +6632,8 @@ function openHelp(where){
   real dice on the table and type in what they show: tick <strong>Real dice</strong>,
   at the top, when you start the game.</p>
   <p><strong>Starting:</strong> Games &rsaquo; <strong>New game</strong> under
-  Pounds. Tick who is playing (nobody, for a game on your own), then choose who goes
-  first. As with Loxx, only one of you starts it: it appears on the others&rsquo;
+  Pounds. Tick who is playing (nobody, for a game on your own), choose how many
+  games, as for Loxx (see Matches under Loxx), then choose who goes first. As with Loxx, only one of you starts it: it appears on the others&rsquo;
   phones under Games &rsaquo; Going on.</p>
   <p><strong>Your turn:</strong> tap <strong>Roll the dice</strong>. You can roll up
   to three times. Between rolls, tap any dice you want to keep (they lift up and say
@@ -6645,12 +6664,13 @@ function openHelp(where){
   <p><strong>The end:</strong> after 13 turns each every box is filled, and the
   highest total wins. On your own, it tells you your best so far.
   <strong>Stop game</strong> ends one early for everyone, keeping the scores.</p>
-  <p><strong>Playing again:</strong> one of you taps <strong>Play again</strong>. It
-  shows the same players and dice as last game, ticked, so you can change to real
-  dice or the phone&rsquo;s before Next. Everyone else still looking at the scores
+  <p><strong>Playing again:</strong> one of you taps <strong>Next game</strong> in a
+  match not finished, or <strong>Play again</strong>, which shows the same players and
+  dice as last game, ticked, so you can change to real dice or the phone&rsquo;s
+  before Next. Everyone else still looking at the scores
   is taken straight to the new game, with a message saying who started it.</p>
-  <p><strong>Results:</strong> finished games with others are grouped into matches,
-  best of 3 or first to 5, as Loxx&rsquo;s are (see Results under Loxx).</p>
+  <p><strong>Results:</strong> games with others are played as matches, best of 3,
+  5 or 7, as Loxx&rsquo;s are (see Matches and Results under Loxx).</p>
 
   <h4 id="h-deceased">Those who have died</h4>
   <p>Anyone with a date in <em>Died</em>, or whose relationship status is set to
@@ -15763,6 +15783,7 @@ function lkGameLine(g){
       ? (done?'Your roll · waiting for the others':'<b>Your roll</b>')
       : (done?esc(lkWho(r))+' is rolling · you have finished with it'
              :'<b>'+esc(lkWho(r))+' is rolling</b> · the white dice are yours too');
+    sub+=gmGameNo(g);
   } else {
     const res=lkResults(g);
     sub=esc(res.line)+' · '+esc(new Date(g.ended_at||g.created_at)
@@ -15779,7 +15800,7 @@ function pdGameLine(g){
   if(g.status==='playing'){
     const r=lkRoller(g), rp=ps.find(p=>p.user_id===r);
     const round=' · round '+Math.min(13,(rp?pdFilled(pdSheet(rp.sheet)):0)+1)+' of 13';
-    sub=(r===ME.id?(ps.length>1?'<b>Your turn</b>':'Your turn'):'<b>'+esc(lkWho(r))+'’s turn</b>')+round;
+    sub=(r===ME.id?(ps.length>1?'<b>Your turn</b>':'Your turn'):'<b>'+esc(lkWho(r))+'’s turn</b>')+round+gmGameNo(g);
   } else {
     sub=esc(pdResults(g).line)+' · '+esc(new Date(g.ended_at||g.created_at)
       .toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
@@ -15789,19 +15810,24 @@ function pdGameLine(g){
     <span class="lkpts">${pdTotals(pdSheet(me.sheet)).total}</span><span aria-hidden="true">&rsaquo;</span></button>`;
 }
 
-/* ---------- results as matches (ML399) ----------
-   Finished games, Loxx and Pounds apart, grouped into matches: the same
-   players, in the order the games were played, a match over once someone
-   has the wins it needs (2 for best of 3, 5 for first to 5; a draw is
-   nobody's). Worked out from the games, so it covers every game played, and
-   changing the rule regroups them. Pounds on your own is listed as before.
-   A match still going on is open; a finished one opens with a tap. */
-const GM_RULES={bo3:{need:2, name:'Best of 3'}, ft5:{need:5, name:'First to 5'}};
-let GM_MATCH={loxx:'bo3', pounds:'bo3'};
+/* ---------- matches (ML399, ML411) ----------
+   A match is a run of games with the same players, Loxx and Pounds apart:
+   best of 3, 5 or 7, chosen when its first game starts (ML411). The first
+   to win 2, 3 or 4 of its games wins it; a draw is nobody's. Since step 69
+   each game says which match it is in (games.match: of, and first, the
+   match's first game). Games from before have none: they are grouped as
+   best of 3, the same players in the order played, worked out from the
+   games as before (ML399), and one of those not finished can be carried on
+   all the same. A match not finished is picked out with a gold dot, open,
+   with Next game; a finished one opens with a tap. Pounds on your own is
+   listed as before. */
+const GM_OF=[3,5,7];
+const gmNeed = of => Math.floor(of/2)+1;
 const GM_OPEN=new Map();
-function gmMatchFrom(saved){
-  const m=saved&&typeof saved==='object'?saved:{};
-  return {loxx:GM_RULES[m.loxx]?m.loxx:'bo3', pounds:GM_RULES[m.pounds]?m.pounds:'bo3'};
+// The match a game says it is in (step 69), or null.
+function gmTagOf(g){
+  const m=g&&g.match, of=m&&Number(m.of);
+  return GM_OF.includes(of)?{of, first:Number(m.first)||Number(g.id)}:null;
 }
 const gmWhen = g => new Date(g.ended_at||g.updated_at||g.created_at).getTime();
 const gmDay = t => new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
@@ -15816,57 +15842,156 @@ function gmWinner(g){
   const r=pdIs(g)?pdResults(g):lkResults(g), tops=r.list.filter(x=>x.total===r.best);
   return r.list.length>1&&tops.length===1?tops[0].id:null;
 }
-function gmMatches(games,rule){
-  const need=(GM_RULES[rule]||GM_RULES.bo3).need, sets=new Map(), out=[];
-  games.slice().sort((a,b)=>gmWhen(a)-gmWhen(b)||a.id-b.id).forEach(g=>{
-    const key=lkPlayers(g.id).map(p=>p.user_id).sort().join(',');
-    if(!sets.has(key)) sets.set(key,[]);
-    sets.get(key).push(g);
+const gmKey = g => lkPlayers(g.id).map(p=>p.user_id).sort().join(',');
+// Every match of Loxx (pd false) or of Pounds with others (pd true), the
+// newest first. Each: id (its first game), of, need, ids (the players),
+// games (in order), wins, won (who, or null), live (a game going on in
+// it), and after: how it stood after each game.
+function gmMatches(pd){
+  const mine=GAMES.filter(g=>lkMe(g.id)&&pdIs(g)===!!pd&&lkPlayers(g.id).length>1);
+  const by=new Map(), out=[];
+  const start=(id,of,key)=>{ const m={id:Number(id), of, need:gmNeed(of), key, ids:key.split(','),
+    games:[], wins:{}, won:null, live:null, after:new Map()}; by.set(m.id,m); out.push(m); return m; };
+  const count=(m,g)=>{
+    m.games.push(g);
+    if(g.status==='playing'){ m.live=g; return; }
+    const was=m.won, w=gmWinner(g);
+    if(w&&!was){ m.wins[w]=(m.wins[w]||0)+1; if(m.wins[w]>=m.need) m.won=w; }
+    m.after.set(Number(g.id),{wins:{...m.wins}, won:m.won, here:!was&&!!m.won});
+  };
+  // From before step 69: best of 3, worked out from the games.
+  const sets=new Map();
+  mine.filter(g=>!gmTagOf(g)&&g.status!=='playing').sort((a,b)=>gmWhen(a)-gmWhen(b)||a.id-b.id).forEach(g=>{
+    const k=gmKey(g); if(!sets.has(k)) sets.set(k,[]); sets.get(k).push(g); });
+  sets.forEach((list,k)=>{ let m=null;
+    list.forEach(g=>{ if(!m) m=start(g.id,3,k); count(m,g); if(m.won) m=null; }); });
+  // Since: each game in the match it says, in the order they were started.
+  mine.filter(g=>gmTagOf(g)).sort((a,b)=>Number(a.id)-Number(b.id)).forEach(g=>{
+    const t=gmTagOf(g), k=gmKey(g);
+    let m=by.get(t.first);
+    if(!m||m.key!==k) m=start(m?g.id:t.first,t.of,k);
+    count(m,g);
   });
-  sets.forEach((list,key)=>{
-    let m=null;
-    list.forEach(g=>{
-      if(!m) m={key:rule+'|'+key+'|'+g.id, ids:key.split(','), games:[], wins:{}, won:null};
-      m.games.push(g);
-      const w=gmWinner(g); if(w) m.wins[w]=(m.wins[w]||0)+1;
-      if(w&&m.wins[w]>=need){ m.won=w; out.push(m); m=null; }
-    });
-    if(m) out.push(m);
-  });
-  return out.sort((a,b)=>gmWhen(b.games[b.games.length-1])-gmWhen(a.games[a.games.length-1]));
+  const last=m=>gmWhen(m.games[m.games.length-1]);
+  return out.sort((a,b)=>last(b)-last(a));
 }
-function gmMatchHtml(m,rule){
-  const name=u=>u===ME.id?'You':lkWho(u);
+const gmMatchOf = g => g?gmMatches(pdIs(g)).find(m=>m.games.some(x=>Number(x.id)===Number(g.id)))||null:null;
+// On a game going on in a match: " · best of 5, game 2".
+function gmGameNo(g){
+  const m=gmTagOf(g)&&gmMatchOf(g); if(!m) return '';
+  return ' · best of '+m.of+', game '+(m.games.findIndex(x=>Number(x.id)===Number(g.id))+1);
+}
+// Everyone's wins, the most first, you first among equals.
+const gmTally = (m,wins) => m.ids.map(u=>({u, n:wins[u]||0}))
+  .sort((a,b)=>b.n-a.n||(a.u===ME.id?-1:b.u===ME.id?1:0));
+const gmList = (m,wins) => gmTally(m,wins).map(x=>(x.u===ME.id?'You':lkWho(x.u))+' '+x.n).join(', ');
+// "3 games to 1" with two of you, or everyone's wins with more.
+function gmScore(m,wins,won){
+  if(m.ids.length!==2) return gmList(m,wins);
+  const a=wins[won]||0, b=gmTally(m,wins).find(x=>x.u!==won).n;
+  return a+' game'+(a===1?'':'s')+' to '+b;
+}
+function gmMatchHtml(m){
   const others=lkAnd(m.ids.filter(u=>u!==ME.id).map(u=>lkWho(u)));
-  const tally=m.ids.map(u=>({u, n:m.wins[u]||0}))
-    .sort((a,b)=>b.n-a.n||(a.u===ME.id?-1:b.u===ME.id?1:0));
-  const list=tally.map(x=>esc(name(x.u))+' '+x.n).join(', ');
+  const tally=gmTally(m,m.wins), list=esc(gmList(m,m.wins));
   const sub=m.won
     ? (m.won===ME.id?'You won':esc(lkWho(m.won))+' won')
       +(m.ids.length===2?' '+m.wins[m.won]+'–'+tally.find(x=>x.u!==m.won).n:': '+list)
-    : 'Going on: '+(tally.every(x=>!x.n)?'no wins yet':list);
+    : (m.live?'Game going on: ':'Not finished: ')+(tally.every(x=>!x.n)?'no wins yet':list);
+  const done=m.games.filter(g=>g.status!=='playing'), n=done.length;
   const span=gmSpan(gmWhen(m.games[0]), gmWhen(m.games[m.games.length-1]));
-  const n=m.games.length, open=GM_OPEN.has(m.key)?GM_OPEN.get(m.key):!m.won;
-  return `<button type="button" class="pplrow gmmatch" data-gmmatch="${esc(m.key)}" aria-expanded="${open}">
-      <span class="pplwho"><b>${esc(GM_RULES[rule].name)} with ${esc(others)}</b><small>${sub} · ${
-        esc(span)} · ${n} game${n===1?'':'s'}</small></span>
+  const k=String(m.id), open=GM_OPEN.has(k)?GM_OPEN.get(k):!m.won, pd=pdIs(m.games[0]);
+  return `<button type="button" class="pplrow gmmatch${m.won?'':' gmnot'}" data-gmmatch="${esc(k)}" aria-expanded="${open}">
+      ${m.won?'':'<span class="gmdot" aria-hidden="true"></span>'}<span class="pplwho"><b>Best of ${m.of} with ${esc(others)}</b><small>${sub} · ${esc(span)} · ${n} game${n===1?'':'s'}</small></span>
       <span class="gmchev" aria-hidden="true">${open?'&#9662;':'&#9656;'}</span></button>
-    ${open?`<div class="gmgames">${m.games.slice().reverse().map(lkGameLine).join('')}</div>`:''}`;
+    ${open?`<div class="gmgames">${m.won?'':`<div class="gmnext"><button type="button" class="btn primary" data-gmnext="${esc(k)}"
+        data-pd="${pd?1:0}">${m.live?'Back to the game':'Next game'}</button><small>The first to win ${m.need} games wins</small></div>`}${
+      done.slice().reverse().map(lkGameLine).join('')}</div>`:''}`;
 }
 function gmFinishedHtml(over){
   const solo=over.filter(g=>pdIs(g)&&lkPlayers(g.id).length===1);
   let h='';
-  [['loxx','Loxx',over.filter(g=>!pdIs(g))],
-   ['pounds','Pounds',over.filter(g=>pdIs(g)&&lkPlayers(g.id).length>1)]].forEach(([k,label,list])=>{
+  [[false,'Loxx'],[true,'Pounds']].forEach(([pd,label])=>{
+    const list=gmMatches(pd).filter(m=>m.games.some(g=>g.status!=='playing'));
     if(!list.length) return;
-    const rule=GM_RULES[GM_MATCH[k]]?GM_MATCH[k]:'bo3';
-    h+=`<p class="dsec">Finished: ${label}</p>
-      <div class="kindpick gmrule" role="group" aria-label="${label} matches">${Object.keys(GM_RULES).map(r=>
-        `<button type="button" data-gmrule="${k}:${r}" aria-pressed="${rule===r}">${GM_RULES[r].name}</button>`).join('')}</div>
-      <div class="card">${gmMatches(list,rule).map(m=>gmMatchHtml(m,rule)).join('')}</div>`;
+    h+=`<p class="dsec">Finished: ${label}</p><div class="card">${list.map(gmMatchHtml).join('')}</div>`;
   });
   if(solo.length) h+=`<p class="dsec">Finished: Pounds on your own</p><div class="card">${solo.map(lkGameLine).join('')}</div>`;
   return h;
+}
+// What the end-of-game box says about its match: win (the winner, when
+// this game won it), line (how it stands, or which game this was), and
+// next (the match, when this is its newest game and it isn't won yet).
+// Only for a game started in a match: one from before step 69 ends as before.
+function gmOverInfo(g){
+  const m=gmTagOf(g)&&gmMatchOf(g), a=m&&m.after.get(Number(g.id));
+  if(!a) return {win:'', line:'', next:null};
+  const newest=Number(m.games[m.games.length-1].id)===Number(g.id);
+  if(a.here) return {next:null,
+    win:`<p class="gmwin" role="status"><span aria-hidden="true">&#127942;</span> <b>${a.won===ME.id?'You win the match!'
+      :esc(lkWho(a.won))+' wins the match!'}</b> Best of ${m.of}, ${esc(gmScore(m,a.wins,a.won))}.</p>`,
+    line:'<p class="gmline">Play again?</p>'};
+  if(!a.won&&newest) return {win:'', next:m,
+    line:`<p class="gmline">Best of ${m.of}, the first to ${m.need} wins: ${esc(gmList(m,a.wins))}.</p>`};
+  const k=m.games.findIndex(x=>Number(x.id)===Number(g.id))+1;
+  return {win:'', next:null, line:`<p class="gmline">Game ${k} of a best of ${m.of}.</p>`};
+}
+// Step 69 run? Games fetched since have a match. With no games to look at,
+// the database is asked (a game that doesn't exist, which it refuses).
+let GM_69=false;
+async function gmReady(){
+  if(GM_69) return true;
+  if(GAMES.length) return GM_69=GAMES.some(g=>g&&('match' in g));
+  const {error}=await sb.rpc('set_match',{g:0, m:{of:3}});
+  const m=((error&&error.message)||'')+((error&&error.code)||'');
+  return GM_69=!(error&&/PGRST202|schema cache|Could not find the function/i.test(m));
+}
+async function gmSetMatch(id,m){
+  const t={of:m.of, first:Number(m.first)||Number(id)};
+  const {error}=await sb.rpc('set_match',{g:Number(id), m:t});
+  if(error){ console.error(error); toast('Could not note the match for this game: check your signal'); return false; }
+  const g=lkGame(id); if(g) g.match=t;
+  return true;
+}
+// How many games? (ML411) A new match, best of 3, 5 or 7, or the newest
+// match with these players not finished, carried on. Resolves {of, first}
+// to carry one on, {of} for a new one, false for none (step 69 not run),
+// or null for Cancel.
+async function gmPickMatch(players,pd){
+  if(!await gmReady()) return false;
+  const key=players.slice().sort().join(',');
+  const open=gmMatches(pd).find(m=>!m.won&&!m.live&&m.key===key);
+  const others=lkAnd(players.filter(u=>u!==ME.id).map(u=>lkWho(u)));
+  return new Promise(resolve=>{
+    const box=document.createElement('div');
+    box.className='daypick'; box.id='gmPick';
+    box.innerHTML=`<div class="inner">
+      ${open?`<p class="dsec" style="padding-top:0">Not finished yet</p>
+      <button class="pplrow gmnot" id="gmCont"><span class="gmdot" aria-hidden="true"></span><span class="pplwho">
+        <b>Continue with unfinished game</b><small>Best of ${open.of} with ${esc(others)}: ${esc(gmList(open,open.wins))}</small></span>
+        <span aria-hidden="true">&rsaquo;</span></button>
+      <p class="dsec">Or a new match</p>`:`<p class="dsec" style="padding-top:0">How many games?</p>
+      <p class="coords" style="margin:0 0 10px">The first to win most of them wins the match. A draw counts for nobody.</p>`}
+      ${GM_OF.map(n=>`<button class="pplrow" data-gmof="${n}"><span class="pplwho"><b>Best of ${n}</b>
+        <small>The first to win ${gmNeed(n)} games</small></span><span aria-hidden="true">&rsaquo;</span></button>`).join('')}
+      <div class="pfoot" style="margin-top:8px"><button id="gmpCancel">Cancel</button></div></div>`;
+    document.body.appendChild(box);
+    const done=v=>{ box.remove(); resolve(v); };
+    box.onclick=ev=>{ if(ev.target===box) done(null); };
+    box.querySelector('#gmpCancel').onclick=()=>done(null);
+    const c=box.querySelector('#gmCont'); if(c) c.onclick=()=>done({of:open.of, first:open.id});
+    box.querySelectorAll('[data-gmof]').forEach(b=>b.onclick=()=>done({of:Number(b.dataset.gmof)}));
+  });
+}
+// Next game in a match, from Games or the end of a game: the same players
+// and dice, straight to who goes first. Back to the game, if one is going on.
+async function gmNext(id,pd){
+  const m=gmMatches(pd).find(x=>x.id===Number(id)); if(!m) return;
+  if(m.live){ const gid=Number(m.live.id);
+    if(pd){ if(PD_CUR!=null) pdShut(); pdOpen(gid); } else { if(LK_CUR!=null) lkShut(); lkOpen(gid); }
+    return; }
+  const last=m.games[m.games.length-1], others=m.ids.filter(u=>u!==ME.id), next={of:m.of, first:m.id};
+  if(pd) pdNewGame(others, pdReal(last), next); else lkNewGame(others, lkReal(last), next);
 }
 
 function renderGames(){
@@ -15901,11 +16026,9 @@ function renderGames(){
   b.querySelectorAll('[data-lkgame]').forEach(x=>x.onclick=()=>{
     const id=Number(x.dataset.lkgame); if(pdIs(lkGame(id))) pdOpen(id); else lkOpen(id); });
   const again=()=>{ const y=b.scrollTop; renderGames(); b.scrollTop=y; };
-  b.querySelectorAll('[data-gmrule]').forEach(x=>x.onclick=()=>{
-    const [k,r]=x.dataset.gmrule.split(':'); if(GM_MATCH[k]===r) return;
-    GM_MATCH={...GM_MATCH, [k]:r}; again(); saveTiles(); });
   b.querySelectorAll('[data-gmmatch]').forEach(x=>x.onclick=()=>{
     GM_OPEN.set(x.dataset.gmmatch, x.getAttribute('aria-expanded')!=='true'); again(); });
+  b.querySelectorAll('[data-gmnext]').forEach(x=>x.onclick=()=>gmNext(Number(x.dataset.gmnext), x.dataset.pd==='1'));
 }
 
 /* ---------- starting one ---------- */
@@ -15995,10 +16118,14 @@ function lkAlready(g){
     box.querySelector('#lkaNew').onclick=()=>done('new');
   });
 }
-async function lkNewGame(same,realWas){
+// next (ML411): the match to carry on ({of, first}), with the same players
+// (same) and dice: no asking who is playing, or how many games.
+async function lkNewGame(same,realWas,next){
   if(!GAMES_READY){ toast('Loxx needs step 57 run in Supabase first'); return; }
   if(!USERS.length){ toast('Nobody else has an account yet'); return; }
-  const pick=await lkPickPlayers(same!=null?{who:same, real:realWas!==false}:null); if(!pick) return;
+  const pick=next&&same?{who:same, real:realWas!==false}
+    :await lkPickPlayers(same!=null?{who:same, real:realWas!==false}:null);
+  if(!pick) return;
   const players=[ME.id].concat(pick.who.filter(x=>x!==ME.id));
   // One game, started by one of you (ML239). Each starting their own left
   // both phones waiting, each for the other, in two different games.
@@ -16008,6 +16135,8 @@ async function lkNewGame(same,realWas){
     const v=await lkAlready(dup); if(!v) return;
     if(v==='open'){ if(LK_CUR!=null) lkShut(); lkOpen(Number(dup.id)); return; }
   }
+  const match=next?(await gmReady()&&next):await gmPickMatch(players,false);
+  if(match===null) return;
   const first=await lkPickFirst(players,pick.real?null:{title:'Who rolls first?',
     note:'The phone rolls the dice, so pick anyone. They then go round in this order.'});
   if(first==null) return;
@@ -16022,6 +16151,7 @@ async function lkNewGame(same,realWas){
     return;
   }
   const id=Number(data);
+  if(match) await gmSetMatch(id,match);
   await lkReload(id);
   lkOpen(id);
 }
@@ -16247,6 +16377,7 @@ function lkPaint(){
       :'Five marks, then the '+(r.up?12:2)+', closes the '+r.name.toLowerCase()+' lock'); });
   const again=$('lkAgain');
   if(again) again.onclick=()=>lkNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id),real);
+  const nx=$('lkNext'); if(nx) nx.onclick=()=>gmNext(Number(nx.dataset.gm),false);
   const clr=$('lkClear');
   if(clr) clr.onclick=()=>lkClearAway(g.id);
   const ob=$('lkOverBack'); if(ob) ob.onclick=lkBackToList;
@@ -16254,14 +16385,15 @@ function lkPaint(){
 }
 
 function lkOverHtml(g){
-  const res=lkResults(g);
+  const res=lkResults(g), mt=gmOverInfo(g);
   return `<div class="lkover" role="dialog" aria-label="Final scores">
-    <h3>${esc(res.line)}</h3>
+    ${mt.win}<h3>${esc(res.line)}</h3>
     <p class="coords">${esc(g.end_reason==='Stopped'?'The game was stopped.':
       g.end_reason==='Four penalties'?'Someone took a fourth penalty.':'Two locks were closed.')}</p>
     <ol class="lkres">${res.list.map(x=>`<li class="${x.total===res.best?'win':''}">${
       esc(x.who)}<b>${x.total}</b></li>`).join('')}</ol>
-    <div class="lkoverbtns"><button class="lkdone" id="lkAgain">Play again</button>
+    ${mt.line}<div class="lkoverbtns">${mt.next?`<button class="lkdone" id="lkNext" data-gm="${mt.next.id}">Next game</button>`
+      :'<button class="lkdone" id="lkAgain">Play again</button>'}
       <button class="lkback" id="lkOverBack">Back to games</button>
       ${g.created_by===ME.id?'<button class="lkback" id="lkClear">Clear it away</button>':''}</div></div>`;
 }
@@ -16362,6 +16494,25 @@ async function lkTap(c,n){
   const why=lkWhyNot(g,s,r,n);
   if(why){ toast(why); return; }
   const order=lkNums(r), last=order.indexOf(n)===order.length-1, name=r.name.toLowerCase();
+  // The white dice first, then a white and a colour (ML412). It only shows
+  // when both your marks on your own roll are in one row: the first has to
+  // have been the white dice total. Plain from the phone's dice; with real
+  // dice, it asks. In two rows the order makes no difference to the sheet.
+  const t1=lkMyRoll(g)?lkTurnMarks(s,g):[];
+  if(t1.length===1&&t1[0][0]===c){
+    const f=t1[0][1], v=lkDice(g);
+    if(v){
+      if(f!==v[0]+v[1]){ toast('The white dice come first: the '+name+' '+f+' was a white and '+name
+        +', so no more '+name+' on this roll. Undo last move takes it back'); return; }
+    } else {
+      const before=lkSnap(g.id);
+      const yes=await lkAsk('Was the '+name+' '+f+' the white dice total? The white dice come first, then a white and a colour.',
+        'Yes, the white dice','No, white and '+name,{away:null});
+      if(yes===null) return;
+      if(lkSnap(g.id)!==before){ toast('The game moved on while you were deciding: have another look'); return; }
+      if(!yes){ toast('Then no more '+name+' on this roll: a white and a colour comes after the white dice. Undo last move takes the '+f+' back'); return; }
+    }
+  }
   const closing=last&&marked.length>=5;
   if(closing){ if(!await lkFresh(g)) return; g=lkGame(g.id); }
   // Only one player gets the lock and its bonus (ML240): the roller first,
@@ -16937,9 +17088,12 @@ function pdPickPlayers(was){
     };
   });
 }
-async function pdNewGame(same,realWas){
+// next (ML411): the match to carry on, as lkNewGame's.
+async function pdNewGame(same,realWas,next){
   if(!GAMES_READY){ toast('Pounds needs steps 57 and 60 run in Supabase first'); return; }
-  const pick=await pdPickPlayers(same!=null?{who:same, real:!!realWas}:null); if(!pick) return;
+  const pick=next&&same&&same.length?{who:same, real:!!realWas}
+    :await pdPickPlayers(same!=null?{who:same, real:!!realWas}:null);
+  if(!pick) return;
   const players=[ME.id].concat(pick.who.filter(x=>x!==ME.id));
   await lkReload();
   const dup=lkSameGame(players,'pounds');
@@ -16947,6 +17101,9 @@ async function pdNewGame(same,realWas){
     const v=await lkAlready(dup); if(!v) return;
     if(v==='open'){ if(PD_CUR!=null) pdShut(); pdOpen(Number(dup.id)); return; }
   }
+  // A match is for a game with others; on your own there is none.
+  const match=players.length<2?false:next?(await gmReady()&&next):await gmPickMatch(players,true);
+  if(match===null) return;
   let first=0;
   if(players.length>1){
     first=await lkPickFirst(players,{title:'Who goes first?',
@@ -16956,6 +17113,7 @@ async function pdNewGame(same,realWas){
   const {data,error}=await sb.rpc('new_pounds',{players, first_seat:first, real_dice:!!pick.real});
   if(error){ console.error(error); toast(pdErr(error,'Could not start the game')); return; }
   const id=Number(data);
+  if(match) await gmSetMatch(id,match);
   await lkReload(id);
   if(PD_CUR!=null) pdShut();
   pdOpen(id);
@@ -16980,7 +17138,7 @@ function pdStatus(g,d){
   return you+'Roll '+d.rolls+' of 3. Tap any dice to keep them and roll again, or tap a box to score.'+at;
 }
 function pdOverHtml(g){
-  const res=pdResults(g), solo=res.list.length===1;
+  const res=pdResults(g), solo=res.list.length===1, mt=gmOverInfo(g);
   let more=g.end_reason==='Stopped'?'The game was stopped.':'Every box is filled.';
   if(solo&&g.end_reason!=='Stopped'){
     const b=pdBestSolo(g.id);
@@ -16989,10 +17147,11 @@ function pdOverHtml(g){
       :' Your best on your own is '+b+'.';
   }
   return `<div class="card pdover" role="status">
-    <h3>${esc(res.line)}</h3><p class="coords">${esc(more)}</p>
+    ${mt.win}<h3>${esc(res.line)}</h3><p class="coords">${esc(more)}</p>
     ${solo?'':`<ol class="lkres">${res.list.map(x=>`<li class="${x.total===res.best?'win':''}">${
       esc(x.who)}<b>${x.total}</b></li>`).join('')}</ol>`}
-    <div class="lkoverbtns"><button class="btn primary" id="pdPlayAgain">Play again</button>
+    ${mt.line}<div class="lkoverbtns">${mt.next?`<button class="btn primary" id="pdNext" data-gm="${mt.next.id}">Next game</button>`
+      :'<button class="btn primary" id="pdPlayAgain">Play again</button>'}
       <button class="btn" id="pdOverBack">Back to games</button>
       ${g.created_by===ME.id?'<button class="btn" id="pdClear">Clear it away</button>':''}</div></div>`;
 }
@@ -17086,6 +17245,7 @@ function pdPaint(){
   on('pdRoll',pdRoll); on('pdAgain',pdAgain); on('pdGo',pdScore); on('pdStop',pdStop);
   on('pdOverBack',pdBackToList); on('pdClear',()=>pdClearAway(g.id));
   on('pdPlayAgain',()=>pdNewGame(ps.map(p=>p.user_id).filter(x=>x!==ME.id),real));
+  on('pdNext',()=>gmNext(Number($('pdNext').dataset.gm),true));
   // Someone else has just rolled: their dice tumble here too.
   if(playing&&!mine&&!real&&!PD_ROLLING){
     const seen=PD_SEEN&&PD_SEEN.id===Number(g.id)&&PD_SEEN.at===g.turn_no?PD_SEEN.rolls:null;
@@ -22047,7 +22207,6 @@ function loadTiles(){
   NOT_SAME = arr(saved&&saved.notsame).filter(x=>typeof x==='string');
   NOT_PAIR = arr(saved&&saved.notpair).filter(x=>typeof x==='string');
   SLD_HIDE = arr(saved&&saved.sldhide).filter(x=>typeof x==='string');
-  GM_MATCH = gmMatchFrom(saved&&saved.gmmatch);
   applyHomeBg();
   if(!list||!list.length){ TILES=defaultTiles(); return; }
   TILES=list.filter(t=>t&&TILE_DEST[t.dest]).map(t=>({
@@ -22066,7 +22225,7 @@ function loadTiles(){
 async function saveTiles(){
   const blob={tiles:TILES, hidden:TILES_HIDDEN, bg:HOME_BG, brief:BRIEF_ON, hidegone:HIDE_GONE,
               backup:BACKUP_DONE, bsky:BSKY_OWN, bskyoff:BSKY_OFF, wxoff:WX_OFF, menuof:MENU_OF, links:LINK_PREFS,
-              recipes:RCP_PREFS, notsame:NOT_SAME, notpair:NOT_PAIR, sldhide:SLD_HIDE, gmmatch:GM_MATCH,
+              recipes:RCP_PREFS, notsame:NOT_SAME, notpair:NOT_PAIR, sldhide:SLD_HIDE,
               tax:String(TAX_START.m+1).padStart(2,'0')+'-'+String(TAX_START.d).padStart(2,'0')};
   // Taken as saved straight away, so going Home while it is still on its way
   // can't put back what was there before (found 23 Nov 2026 with ML386's ticks).
@@ -22210,7 +22369,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.25.1';
+const APP_VERSION='2026.11.25.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

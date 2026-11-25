@@ -212,9 +212,13 @@ const ROOT = path.join(__dirname, '..');
   ok('  Cancel leaves it unmarked', !/\bon\b/.test(await cell('red', 12)) && (await rpcs('close_row')).length === 0);
   await tap('red', 6);
   answer = false; asked.length = 0;
+  // Red 6 and then red 12 on your own roll (ML412, 25 Nov 2026): first, was the
+  // 6 the white dice total? Yes, here, so the 12 can be the white and red.
+  await ev(() => { window.__lkNext = [true]; });
   await tap('red', 12);
-  ok('five marks: the 12 asks first, saying it closes red for everyone', asked.length === 1 && /close the red lock/.test(asked[0]) && /Nobody can mark red/.test(asked[0])
-    && /Undo last move opens it again, until you tap Done/.test(asked[0]), asked.join(' | '));
+  ok('five marks: after asking whether the 6 was the white dice, the 12 asks, saying it closes red for everyone', asked.length === 2
+    && /^Was the red 6 the white dice total\?/.test(asked[0]) && /close the red lock/.test(asked[1]) && /Nobody can mark red/.test(asked[1])
+    && /Undo last move opens it again, until you tap Done/.test(asked[1]), asked.join(' | '));
   ok('  Cancel leaves it open', !/\bon\b/.test(await cell('red', 12)) && (await rpcs('close_row')).length === 0);
   answer = true; await clear();
   await tap('red', 12);

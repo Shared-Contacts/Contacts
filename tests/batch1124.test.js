@@ -9,6 +9,9 @@
 //   ML399  Finished games: Loxx and Pounds apart, grouped into matches (best
 //          of 3 or first to 5), worked out from the games played; a match
 //          still going on is open, a finished one opens with a tap.
+//          (25 Nov 2026, ML411: matches are now chosen when they start, best
+//          of 3, 5 or 7, and First to 5 has gone. Games from before then,
+//          like these, are still grouped as best of 3: see batch1125.)
 // lkfake.js stands in for the games' functions; window.__who plays the others.
 const { chromium } = require('playwright');
 const path = require('path');
@@ -200,7 +203,7 @@ const FEED = `<?xml version="1.0"?><rss><channel><title>Pretend Pod</title>
     game(721, 'pounds', 8, { me: pd(120) });
     game(731, 'lockkeeper', 8, { me: lx(0), sandra: lx(1) });
     game(732, 'lockkeeper', 9, { me: lx(0), sandra: lx(2) });
-    GM_MATCH = { loxx: 'bo3', pounds: 'bo3' }; GM_OPEN.clear();
+    GM_OPEN.clear();
     await openGames();
   });
   await settle(600);
@@ -217,11 +220,11 @@ const FEED = `<?xml version="1.0"?><rss><channel><title>Pretend Pod</title>
     && m[0].s === 'You won 2–0 · 8 to 9 Nov · 2 games' && !m[0].open, JSON.stringify(m[0]));
   ok('Pounds, newest first: the three of us, then Sandra\'s match still going on, then the one I won', m.length === 4
     && /^Best of 3 with (Sandra and Someone Else|Someone Else and Sandra)$/.test(m[1].t) && m[1].s === 'Someone Else won: Someone Else 2, You 0, Sandra 0 · 6 to 7 Nov · 2 games'
-    && m[2].t === 'Best of 3 with Sandra' && m[2].s === 'Going on: Sandra 1, You 0 · 5 Nov · 1 game'
+    && m[2].t === 'Best of 3 with Sandra' && m[2].s === 'Not finished: Sandra 1, You 0 · 5 Nov · 1 game'
     && m[3].s === 'You won 2–1 · 1 to 4 Nov · 4 games', JSON.stringify(m));
   ok('  a draw counts for nobody: four games for 2–1', m[3] && /4 games/.test(m[3].s));
   ok('the match going on is open, its game showing; the finished ones are folded', m[2].open && !m[3].open && !m[1].open
-    && JSON.stringify(await rowsIn('bo3|me,sandra|705')) === '[705]' && !(await ev(() => !!document.querySelector('[data-lkgame="701"]'))));
+    && JSON.stringify(await rowsIn('705')) === '[705]' && !(await ev(() => !!document.querySelector('[data-lkgame="701"]'))));
   ok('Pounds on your own is listed by itself, as before', await ev(() => {
     const s = [...document.querySelectorAll('#gamesBody .dsec')].pop(); const c = s.nextElementSibling;
     return !!c.querySelector('[data-lkgame="721"]') && /Pounds on your own/.test(c.textContent) && !c.querySelector('[data-gmmatch]'); }));
@@ -229,35 +232,25 @@ const FEED = `<?xml version="1.0"?><rss><channel><title>Pretend Pod</title>
     const live = GAMES.find(g => g.status === 'playing'); const s = document.querySelector('#gamesBody .dsec');
     return !!live && !!s.nextElementSibling.querySelector(`[data-lkgame="${live.id}"]`)
       && [...document.querySelectorAll('.gmgames [data-lkgame]')].every(x => Number(x.dataset.lkgame) !== live.id); }));
-  await p.click('[data-gmmatch="bo3|me,sandra|701"]'); await settle(200);
-  ok('tapping the finished match opens it: its games, newest first, each with who won and the scores', JSON.stringify(await rowsIn('bo3|me,sandra|701')) === '[704,703,702,701]'
+  await p.click('[data-gmmatch="701"]'); await settle(200);
+  ok('tapping the finished match opens it: its games, newest first, each with who won and the scores', JSON.stringify(await rowsIn('701')) === '[704,703,702,701]'
     && await ev(() => { const t = [...document.querySelectorAll('.gmgames [data-lkgame]')].map(x => x.textContent.replace(/\s+/g, ' '));
       return t.some(x => /You won, 25 to 5/.test(x)) && t.some(x => /A draw on 15/.test(x)) && t.some(x => /Sandra won, 20 to 10/.test(x)); }),
-    JSON.stringify(await rowsIn('bo3|me,sandra|701')));
+    JSON.stringify(await rowsIn('701')));
   ok('  marked open', (await matches())[3].open);
   await p.click('[data-lkgame="702"]'); await settle(500);
   ok('  tapping a game opens it, with the cards', await ev(() => PD_CUR === 702 && !$('pdPlay').classList.contains('hidden')));
   await ev(() => pdBackToList()); await settle(400);
   ok('  back on Games, the match is still open', (await matches())[3].open);
-  await p.click('[data-gmmatch="bo3|me,sandra|701"]'); await settle(200);
-  ok('  and tapping it again folds it', !(await matches())[3].open && JSON.stringify(await rowsIn('bo3|me,sandra|701')) === '[]');
-  await clear();
-  await p.click('[data-gmrule="pounds:ft5"]'); await settle(400);
-  m = await matches();
-  ok('First to 5 for Pounds: Sandra\'s five games are one match, still going on, 2 each', m[2] && m[2].t === 'First to 5 with Sandra'
-    && m[2].s === 'Going on: You 2, Sandra 2 · 1 to 5 Nov · 5 games' && m[2].open
-    && JSON.stringify(await rowsIn('ft5|me,sandra|701')) === '[705,704,703,702,701]', JSON.stringify(m));
-  ok('  Loxx keeps its own: still best of 3', m[0].t === 'Best of 3 with Sandra'
-    && await ev(() => document.querySelector('[data-gmrule="loxx:bo3"]').getAttribute('aria-pressed') === 'true'
-      && document.querySelector('[data-gmrule="pounds:ft5"]').getAttribute('aria-pressed') === 'true'));
-  w = await ev(() => window.__writes.filter(x => x.op === 'update' && x.table === 'profiles').pop() || null);
-  ok('  the choice is saved with your settings, for every phone', w && w.patch.home_tiles && w.patch.home_tiles.gmmatch
-    && w.patch.home_tiles.gmmatch.pounds === 'ft5' && w.patch.home_tiles.gmmatch.loxx === 'bo3', JSON.stringify(w && w.patch.home_tiles && w.patch.home_tiles.gmmatch));
-  ok('  and read back, anything odd taken as best of 3', await ev(() => {
-    const was = MY_PROFILE.home_tiles; MY_PROFILE = { ...MY_PROFILE, home_tiles: { ...(was || {}), gmmatch: { loxx: 'ft5', pounds: 'bogus' } } };
-    loadTiles(); const got = JSON.stringify(GM_MATCH);
-    MY_PROFILE = { ...MY_PROFILE, home_tiles: { ...(was || {}), gmmatch: { loxx: 'bo3', pounds: 'ft5' } } }; loadTiles();
-    return got === JSON.stringify({ loxx: 'ft5', pounds: 'bo3' }); }));
+  await p.click('[data-gmmatch="701"]'); await settle(200);
+  ok('  and tapping it again folds it', !(await matches())[3].open && JSON.stringify(await rowsIn('701')) === '[]');
+  ok('no Best of 3 / First to 5 buttons any more: how long a match is, is chosen when it starts (ML411)',
+    !(await ev(() => !!document.querySelector('[data-gmrule]'))));
+  ok('  the match not finished has a gold dot and Next game; the finished ones have neither',
+    await ev(() => { const r = [...document.querySelectorAll('[data-gmmatch]')];
+      return r.filter(x => x.classList.contains('gmnot')).map(x => x.dataset.gmmatch).join() === '705'
+        && !!r.find(x => x.dataset.gmmatch === '705').querySelector('.gmdot')
+        && document.querySelectorAll('[data-gmnext]').length === 1 && document.querySelector('[data-gmnext]').dataset.gmnext === '705'; }));
   ok('nothing spills off the side at 320 wide', await (async () => {
     await p.setViewportSize({ width: 320, height: 700 }); await settle(200);
     const r = await ev(() => { const b = $('gamesBody'); return b.scrollWidth <= b.clientWidth + 1; });
@@ -269,7 +262,7 @@ const FEED = `<?xml version="1.0"?><rss><channel><title>Pretend Pod</title>
       && gmSpan(t('2026-10-28T10:00:00Z'), t('2026-11-02T10:00:00Z')) === '28 Oct to 2 Nov'
       && gmSpan(t('2026-12-28T10:00:00Z'), t('2027-01-02T10:00:00Z')) === '28 Dec 2026 to 2 Jan 2027'; }));
   ok('the help explains matches', await help('<strong>Results:</strong> under Games, finished games are kept apart')
-    && await help('best of 3 or first to 5, as Loxx(&rsquo;|’)s are'));
+    && await help('as Loxx(&rsquo;|’)s are [(]see Matches and Results under Loxx[)]'));
 
   // ---------------------------------------------------------------
   console.log('\nThe version');

@@ -1,5 +1,6 @@
 // A stand-in for step 57's functions (and step 58's reopen_row), for the tests: the same rules, kept in
-// window.__rows. window.__who says who is asking (the page itself is 'me').
+// window.__rows. window.__who says who is asking (the page itself is 'me'). Step 69's matches
+// (set_match, and a match on every new game) only once a suite sets window.__step69.
 window.__lkFake = function(){
   window.__rows.games = window.__rows.games || [];
   window.__rows.game_players = window.__rows.game_players || [];
@@ -16,9 +17,27 @@ window.__lkFake = function(){
       if (ps.length < 2 || ps.length > 5) return bad('Lock Keeper is for 2 to 5 players');
       const id = ++next;
       G().push({ id, kind: 'lockkeeper', created_by: who(), created_at: new Date().toISOString(), status: 'playing',
-        turn: Math.max(0, Math.min(a.first_seat || 0, ps.length - 1)), turn_no: 1, closed: {}, ended_at: null, end_reason: null });
+        turn: Math.max(0, Math.min(a.first_seat || 0, ps.length - 1)), turn_no: 1, closed: {}, ended_at: null, end_reason: null,
+        ...(window.__step69 ? { match: {} } : {}) });
       ps.forEach((u, i) => P().push({ game_id: id, user_id: u, seat: i, sheet: {}, done_turn: 0 }));
       return { data: id, error: null };
+    },
+    // Matches (step 69): the same rules as set_match.
+    set_match(a){
+      if (!window.__step69) return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.set_match(g, m) in the schema cache' } };
+      const g = gm(a.g);
+      if (!g || g.created_by !== who()) return bad('Only whoever started a game can say which match it is in');
+      const m = a.m || {};
+      if (![3, 5, 7].includes(m.of)) return bad('A match is best of 3, 5 or 7');
+      const first = m.first == null ? g.id : m.first, cur = g.match || {};
+      if (cur.of === m.of && cur.first === first) return { data: null, error: null };
+      if (Object.keys(cur).length) return bad('This game is already part of a match');
+      if (first !== g.id) {
+        const f = gm(first), ids = id => P().filter(p => p.game_id === id).map(p => p.user_id).sort().join(',');
+        if (!f || first > g.id || f.kind !== g.kind || ids(first) !== ids(g.id)) return bad('That match is not between the same players');
+        if (f.match && Object.keys(f.match).length && (f.match.first !== first || f.match.of !== m.of)) return bad('That is not the start of a best of ' + m.of);
+      }
+      g.match = { of: m.of, first }; return { data: null, error: null };
     },
     // Loxx with the phone's dice (step 62): the same rules as its functions.
     new_loxx(a){
@@ -94,7 +113,7 @@ window.__lkFake = function(){
       const id = ++next;
       G().push({ id, kind: 'pounds', created_by: who(), created_at: new Date().toISOString(), status: 'playing',
         turn: Math.max(0, Math.min(a.first_seat || 0, ps.length - 1)), turn_no: 1, closed: {}, ended_at: null, end_reason: null,
-        dice: { real: !!a.real_dice } });
+        dice: { real: !!a.real_dice }, ...(window.__step69 ? { match: {} } : {}) });
       ps.forEach((u, i) => P().push({ game_id: id, user_id: u, seat: i, sheet: {}, done_turn: 0 }));
       return { data: id, error: null };
     },

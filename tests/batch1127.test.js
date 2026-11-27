@@ -4,9 +4,10 @@
 //          sliding it. Partners newest at the top, oldest at the bottom (by
 //          wedding date until moved); children and brothers and sisters
 //          oldest first (by birth date until moved). Brothers and sisters
-//          include the person themselves, greyed. In the tree the oldest
-//          partner sits next to them, and each child hangs from the partner
-//          they are a child of. The order is kept in family.order on each
+//          include the person themselves, greyed. In the tree each child
+//          hangs from the partner they are a child of; since 2026.11.27.2
+//          (ML424) the current partner is on the right and earlier ones on
+//          the left, with the rest of that in batch1127b.test.js. The order is kept in family.order on each
 //          person; moving children keeps the other parent's list in step, and
 //          moving brothers and sisters changes their parents' order.
 //   ML420  Wishlist: Done and Not doing ideas fold to one line each until
@@ -105,10 +106,10 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
       ds: ds.map(d => ({ from: d.from, xs: d.xs, lane: d.lane, lanes: d.lanes })) }; });
   await ev(() => famSetMid(1)); await settle(300);
   let t = await lay();
-  ok('the oldest partner (Jane) sits next to him, Kate further out', t.jane === t.me + t.W && t.kate === t.me + 2 * t.W, JSON.stringify(t));
-  ok('Jane\'s children hang from the join between Peter and Jane', t.ds.length === 2 && t.ds[0].from === t.me + t.W / 2
+  ok('Kate, the current partner, on his right; Jane, the earlier one, on his left (ML424)', t.kate === t.me + t.W && t.jane === t.me - t.W, JSON.stringify(t));
+  ok('Jane\'s children hang from the join between Jane and Peter', t.ds.length === 2 && t.ds[0].from === t.me - t.W / 2
     && t.ds[0].xs.join() === [t.amy, t.cal].join(), JSON.stringify(t.ds));
-  ok('  Kate\'s from the join between Jane and Kate', t.ds[1] && t.ds[1].from === t.me + 1.5 * t.W && t.ds[1].xs.join() === [t.ben].join());
+  ok('  Kate\'s from the join between Peter and Kate', t.ds[1] && t.ds[1].from === t.me + t.W / 2 && t.ds[1].xs.join() === [t.ben].join());
   ok('  Jane\'s children to the left of Kate\'s, oldest first', t.amy < t.cal && t.cal < t.ben);
   ok('  and the two lines at different heights, so they don\'t run into each other', await ev(() => {
     const d = document.querySelector('.famlines path').getAttribute('d');
@@ -130,8 +131,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     return w && Object.keys(w.patch).join() === 'family'; }));
   ok('  and says so', /Order saved/.test(await toasts()));
   t = await lay();
-  ok('  so in the tree Kate, now at the bottom, sits next to him', t.kate === t.me + t.W && t.jane === t.me + 2 * t.W, JSON.stringify(t));
-  ok('  and Jane\'s children still hang from her', t.ds.find(d => d.xs.includes(t.amy)).from === t.me + 1.5 * t.W);
+  ok('  so in the tree Jane, now the current one, is on his right and Kate on his left', t.jane === t.me + t.W && t.kate === t.me - t.W, JSON.stringify(t));
+  ok('  and Jane\'s children still hang from her', t.ds.find(d => d.xs.includes(t.amy)).from === t.me + t.W / 2);
   ok('the tap that ends the move opened nobody', await ev(() => $('famEdTitle').textContent === 'Peter Test'));
 
   console.log('\nMoving children');
@@ -209,7 +210,9 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
       { id: 14, created_by: 'me', app: 'contacts', status: 'done', title: 'Alarm: snooze', notes: null, created_at: '2026-11-20T09:00:00Z' },
       { id: 15, created_by: 'sandra', app: 'contacts', status: 'no', title: 'Diary: colours', notes: 'Pink', created_at: '2026-10-20T09:00:00Z' },
       { id: 16, created_by: 'me', app: 'contacts', status: 'doing', title: 'Wishlist: search', notes: 'Find ideas', created_at: '2026-11-26T09:00:00Z' }];
-    WISH_Q = '';
+    // Since 2026.11.27.2 the whole of Done and Not doing starts folded away
+    // (ML423, in batch1127b.test.js); these checks are of the ideas inside, so open.
+    WISH_Q = ''; WISH_SHUT.clear();
   });
   const ids = sec => ev(s => { const c = document.querySelector(`#wishLists .wcard.w-${s}`); if (!c) return null;
     return [...c.children].map(r => r.dataset.wopen || (r.querySelector('[data-wset]') || {}).dataset?.wset?.split(':')[0]).join(','); }, sec);

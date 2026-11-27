@@ -100,8 +100,8 @@ const seed = () => {
   const pressed = () => ev(() => [...document.querySelectorAll('[data-leapp][aria-pressed="true"]')].map(b => b.dataset.leapp));
   await ev(() => editLink(null, { url:'https://www.youtube.com/watch?v=new' })); await settle();
   ok('Open with is in the box', await p.isVisible('#leApps'));
-  ok('the choices, with Firefox, the music apps (ML380) and no Chrome', await ev(() => [...document.querySelectorAll('[data-leapp]')].map(b => b.textContent).join('|'))
-     === 'Phone decides|Firefox|YouTube app|Barclays app|Spotify|BBC Sounds|BBC iPlayer|YouTube Music|Amazon Music');
+  ok('the choices, with Firefox, the music apps (ML380), LBC and Global Player (ML425) and no Chrome', await ev(() => [...document.querySelectorAll('[data-leapp]')].map(b => b.textContent).join('|'))
+     === 'Phone decides|Firefox|YouTube app|Barclays app|Spotify|BBC Sounds|BBC iPlayer|YouTube Music|Amazon Music|LBC|Global Player');
   ok('a YouTube page starts on the YouTube app', JSON.stringify(await pressed()) === '["youtube"]', JSON.stringify(await pressed()));
   await p.fill('#leUrl', 'https://www.barclays.co.uk/'); await settle(100);
   ok('changing the address changes the guess', JSON.stringify(await pressed()) === '["barclays"]', JSON.stringify(await pressed()));

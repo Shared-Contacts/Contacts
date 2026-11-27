@@ -30,6 +30,8 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
     window.__rows.wishes = [w(1, 'Recipes: bigger photos', '20'), w(2, 'Diary:', '25'),
       w(3, 'contacts: merge doubles', '22'), w(4, 'Diary:', '05'), w(5, 'Bank import', '28'),
       w(6, 'Zebra', '01', 'done'), w(7, 'Apple', '30', 'done')];
+    // The whole of Done starts folded away since ML423 (2026.11.27.2): open it.
+    WISH_SHUT.clear();
   });
   await ev(() => openWish()); await settle(600);
   // Done ideas are folded to one line since ML420 (27 Nov 2026), so read those rows too.

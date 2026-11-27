@@ -1,6 +1,13 @@
 {
-  "version": "2026.11.27.2",
+  "version": "2026.11.27.3",
   "history": [
+    {
+      "version": "2026.11.27.3",
+      "changes": [
+        "MY Shopping: a microphone beside What is needed? Say \"milk, bread and eggs\" and each comes up on its own line to check, then Add these puts them on the list.",
+        "MY Podcasts: a Global Player link shared from LBC now opens in the Global Player app (the app needs to be on the phone)."
+      ]
+    },
     {
       "version": "2026.11.27.2",
       "changes": [

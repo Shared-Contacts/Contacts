@@ -1184,6 +1184,23 @@ body:has(#lkPlay:not(.hidden)) #verBar{display:none}
 .setadd{padding:12px 14px}
 .setadd input,.setadd select#sAisle{width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;
   background:#fff;margin-bottom:8px}
+/* Say it instead of typing it: the microphone beside What is needed? (ML429) */
+.sayrow{display:flex;gap:8px;align-items:flex-start}
+.sayrow input{flex:1;min-width:0}
+.saymic{flex:0 0 46px;width:46px;height:46px;border-radius:50%;border:1.5px solid var(--rule);
+  background:#fff;color:var(--hull);display:flex;align-items:center;justify-content:center;padding:0}
+.saymic svg{width:22px;height:22px}
+.saymic[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff;animation:saypulse 1.4s infinite}
+@keyframes saypulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--red) 45%,transparent)}50%{box-shadow:0 0 0 8px transparent}}
+@media (prefers-reduced-motion:reduce){.saymic[aria-pressed="true"]{animation:none}}
+.sayheard{border:1.5px solid var(--rule);border-radius:8px;padding:10px 12px 4px;margin-bottom:8px;background:var(--paper)}
+.sayheard .sayq{color:var(--muted);font-size:15px;margin:0 0 8px}
+.sayitem{display:flex;gap:6px;align-items:flex-start}
+.sayitem input{flex:1;min-width:0}
+.sayitem .sayx{flex:0 0 40px;height:44px;font-size:24px;color:var(--muted);background:none}
+.saybtns{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
+.saybtns .btn{flex:1 1 100%;padding:12px}
+.saybtns .btn:not(.primary){flex:1 1 0;border:1.5px solid var(--rule)}
 
 .signin{max-width:380px;margin:0 auto;padding:56px 24px}
 .signin h2{font-size:24px;margin:0 0 6px}
@@ -6080,6 +6097,16 @@ function openHelp(where){
   them add to yours and tick things off it. Lists shared with you appear as extra
   buttons along the top, so you can put something on Sandra's list for her next
   shop without it landing on yours.</p>
+  <p><strong>Say it.</strong> Tap the microphone beside <em>What is needed?</em>
+  and say what you need, such as &ldquo;milk, bread and eggs&rdquo;. Each thing
+  comes up on its own line to check: put right any word it got wrong, or tap
+  &times; to leave one out, then tap <strong>Add these</strong>. <em>Say more</em>
+  listens again. Tap the microphone while it is red to stop it listening.
+  Nothing goes on twice, anything in the trolley goes back on the list, and each
+  thing goes in its usual aisle if it has been in one before. If it splits
+  something that goes together, put it right on one line and take the other out.
+  It needs a signal, and the first time the phone asks if the app may use the
+  microphone.</p>
   <p>Ticked items drop into the trolley at the bottom until you clear it.</p>
   <p>Tap something on the list to change the wording or how many, or to add a
   photo &mdash; the packet you are after, say &mdash; with <em>Camera</em> or
@@ -11642,12 +11669,19 @@ function putLinkWhere(id,w){
   if(w) all[id]=w; else delete all[id];
   LINK_PREFS.where=all; return true;
 }
+/* A Global Player share link (share-lbc.globalplayer.com/podcasts/42L26D/, from
+   LBC) only passes on to the same page on www.globalplayer.com, so the app is
+   handed that one, the address its app is sure to know (ML428, 27 Nov 2026).
+   Without the app on the phone the page opens inside MY Life, as on
+   27 Nov 2026 before Barry installed it. */
 function linkHref(l){
   const a=linkApp(l.open_with);
-  const m=String(l.url||'').match(/^(https?):\/\/([^#]*)$/i);
+  let u=String(l.url||'');
+  if(a.k==='globalplayer') u=u.replace(/^(https?:\/\/)share-[a-z0-9-]+\.globalplayer\.com\//i,'$1www.globalplayer.com/');
+  const m=u.match(/^(https?):\/\/([^#]*)$/i);
   if(!a.pkg||!ON_ANDROID||!m) return l.url;
   return 'intent://'+m[2]+'#Intent;scheme='+m[1].toLowerCase()+';package='+a.pkg
-    +';S.browser_fallback_url='+encodeURIComponent(a.store||l.url)+';end';
+    +';S.browser_fallback_url='+encodeURIComponent(a.store||u)+';end';
 }
 const linkMine = l => l.created_by===ME.id;
 const linkSharedWith = id => ULINK_SHARES.filter(s=>s.link_id===id).map(s=>s.viewer_id);
@@ -15089,6 +15123,7 @@ async function loadShopping(){
 }
 
 async function openShop(){
+  sayStop(true);
   await loadShopping(); renderShop();
   showSheet('shop'); $('shopBody').scrollTop=0; lockBackground();
 }
@@ -15152,6 +15187,143 @@ async function saveAisles(aisles){
   await loadShopping(); renderShop(); return true;
 }
 
+/* ---------- say it (asked for 27 Nov 2026, ML429) ----------
+   The microphone beside What is needed? listens once, in British English,
+   and splits what it heard into things at each comma, "and", "then", "also"
+   or "plus": "milk, bread and eggs" is three. They come up one to a line to
+   check and put right before Add these puts them on the list, each in the
+   aisle it went in last time. It is the phone's own speech to text (Google's
+   on an Android phone, so it needs a signal); where there is none, as in
+   Firefox, there is no microphone. Things like "salt and vinegar" are kept
+   together. */
+const SAY={items:[], live:'', rec:null, err:'', heard:false};
+const SAY_MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>';
+const sayApi = () => window.SpeechRecognition||window.webkitSpeechRecognition||null;
+const SAY_PAIRS=['salt and vinegar','cheese and onion','fish and chips','bread and butter',
+  'macaroni and cheese','mac and cheese','sweet and sour','steak and kidney','fruit and nut',
+  'cookies and cream','ham and cheese','bangers and mash','pie and mash','salt and pepper crisps'];
+function sayItems(text){
+  let t=String(text||'');
+  SAY_PAIRS.forEach(p=>{ const [a,b]=p.split(' and ');
+    t=t.replace(new RegExp('\\b('+a+')\\s+and\\s+('+b+')\\b','gi'),'$1\u0001$2'); });
+  const seen=new Set();
+  return t.replace(/\b(comma|full stop)\b/gi,',')
+    .split(/[,.;:!?\n]+|\b(?:and|then|also|plus)\b/i)
+    .map(s=>s.replace(/\u0001/g,' and ').replace(/\s+/g,' ').trim()
+      .replace(/^(?:(?:please|ok|okay|right|um|erm|er|uh|add|put|get|some|a|an|the)\s+)+/i,'')
+      .replace(/\s+please$/i,'')
+      .replace(/\s+(?:to|on|onto)\s+(?:the|my|our)\s+(?:shopping\s+)?list$/i,'').trim())
+    .filter(s=>{ const k=s.toLowerCase(); if(!s||seen.has(k)) return false; seen.add(k); return true; })
+    .map(s=>s.charAt(0).toUpperCase()+s.slice(1));
+}
+function sayWhy(e){
+  return e==='not-allowed'||e==='service-not-allowed'
+      ? 'The app isn’t allowed to use the microphone. Allow it in the phone’s settings for the app, then try again.'
+    : e==='no-speech' ? 'Nothing heard. Tap the microphone and say what is needed.'
+    : e==='audio-capture' ? 'No microphone was found.'
+    : e==='network' ? 'Speech needs a signal to be turned into words. Try again when you have one.'
+    : e==='language-not-supported' ? 'This phone can’t turn English speech into words.'
+    : 'The microphone stopped. Tap it to try again.';
+}
+// Stop listening; all also forgets what was heard (Cancel, or opening Shopping).
+function sayStop(all){
+  const r=SAY.rec; SAY.rec=null;
+  if(r){ r.onresult=r.onerror=r.onend=null; try{ r.abort(); }catch(e){} }
+  SAY.live=''; SAY.err='';
+  if(all) SAY.items=[];
+  sayPaint();
+}
+function sayStart(){
+  const R=sayApi(); if(!R) return;
+  if(SAY.rec){ try{ SAY.rec.stop(); }catch(e){ sayStop(); } return; }   // a second tap: done
+  let r;
+  try{ r=new R(); }catch(e){ console.error(e); toast('The microphone could not start'); return; }
+  SAY.rec=r; SAY.live=''; SAY.err=''; SAY.heard=false;
+  const used=new Set();
+  r.lang='en-GB'; r.interimResults=true; r.continuous=false; r.maxAlternatives=1;
+  r.onresult=ev=>{
+    let live='';
+    for(let i=0;i<ev.results.length;i++){
+      const res=ev.results[i], t=res[0]?res[0].transcript:'';
+      if(!res.isFinal){ live+=' '+t; continue; }
+      if(used.has(i)) continue;
+      used.add(i); SAY.heard=true;
+      const had=new Set(SAY.items.map(s=>s.toLowerCase()));
+      SAY.items=SAY.items.concat(sayItems(t).filter(s=>!had.has(s.toLowerCase())));
+    }
+    SAY.live=live.trim(); sayPaint();
+  };
+  r.onerror=ev=>{ SAY.err=ev.error||'x'; };
+  r.onend=()=>{
+    if(SAY.rec!==r) return;
+    const e=SAY.err; SAY.rec=null; SAY.live=''; SAY.err='';
+    if(e&&e!=='aborted') toast(sayWhy(e));
+    else if(!SAY.heard) toast(sayWhy('no-speech'));
+    sayPaint();
+  };
+  try{ r.start(); }catch(e){ console.error(e); SAY.rec=null; toast('The microphone could not start'); return; }
+  sayPaint();
+}
+function sayPaint(){
+  const box=$('sHeard'); if(!box) return;
+  const mic=$('sSay'), on=!!SAY.rec, n=SAY.items.length;
+  if(mic){ mic.setAttribute('aria-pressed',String(on));
+    mic.setAttribute('aria-label',on?'Stop listening':'Say what is needed');
+    mic.title=on?'Stop listening':'Say what is needed'; }
+  // While it listens, or there is a list to check, that is the way to add.
+  ['sQty','sAisle','sAdd'].forEach(id=>{ const e=$(id); if(e) e.style.display=on||n?'none':''; });
+  if(!on&&!n){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="sayheard">
+    <p class="sayq" aria-live="polite">${on
+      ? 'Listening&hellip; '+(SAY.live?'<b>'+esc(SAY.live)+'</b>'
+        :n?'say what else is needed':'say what is needed, such as &ldquo;milk, bread and eggs&rdquo;')
+      : 'Check them, then add them. Put right any word it got wrong.'}</p>
+    ${SAY.items.map((s,i)=>`<div class="sayitem"><input data-sayi="${i}" value="${esc(s)}"
+      aria-label="Thing ${i+1}"><button type="button" class="sayx" data-sayx="${i}"
+      aria-label="Leave ${esc(s)} out">&times;</button></div>`).join('')}
+    ${on||!n?'':`<div class="saybtns">
+      <button type="button" class="btn primary" id="sayAdd">Add ${n===1?'it':'these '+n}</button>
+      <button type="button" class="btn" id="sayMore">Say more</button>
+      <button type="button" class="btn" id="sayCancel">Cancel</button></div>`}</div>`;
+  box.querySelectorAll('[data-sayi]').forEach(i=>i.oninput=()=>{ SAY.items[Number(i.dataset.sayi)]=i.value; });
+  box.querySelectorAll('[data-sayx]').forEach(b=>b.onclick=()=>{
+    SAY.items.splice(Number(b.dataset.sayx),1); sayPaint(); });
+  const g=$('sayAdd'); if(g) g.onclick=sayAdd;
+  const m=$('sayMore'); if(m) m.onclick=sayStart;
+  const c=$('sayCancel'); if(c) c.onclick=()=>sayStop(true);
+}
+// As a recipe does it: not twice, back out of the trolley, in its usual aisle.
+async function sayAdd(){
+  const lid=CUR_LIST, names=SAY.items.map(s=>String(s).trim()).filter(Boolean);
+  if(!lid) return;
+  if(!names.length){ sayStop(true); return; }
+  const on=SHOP.filter(x=>x.list_id===lid);
+  let added=0, back=0, had=0, failed=0;
+  let order=Math.max(100,...on.map(x=>x.sort_order||0));
+  const done=new Set();
+  for(const n of names){
+    const k=n.toLowerCase(); if(done.has(k)) continue; done.add(k);
+    const same=on.find(y=>String(y.name).trim().toLowerCase()===k);
+    if(same&&!same.got){ had++; continue; }
+    if(same){
+      const {error}=await sb.from('shopping').update({got:false,got_at:null}).eq('id',same.id);
+      if(error){ failed++; console.error(error); } else back++;
+      continue;
+    }
+    const d={created_by:ME.id, list_id:lid, name:n.charAt(0).toUpperCase()+n.slice(1), qty:null, sort_order:++order};
+    const aisle=aisleFor(lid,n);
+    if(aisle) d.aisle=aisle;
+    const {error}=await sb.from('shopping').insert(d);
+    if(error){ failed++; console.error(error); } else added++;
+  }
+  if(failed){ toast('Some could not be added. Try again.'); await loadShopping(); renderShop(); return; }
+  sayStop(true);
+  await loadShopping(); renderShop();
+  const said=[added?added+' added':'', back?back+' put back on':'',
+    had?had+' already on it':''].filter(Boolean).join(', ');
+  toast(((LISTS.find(l=>l.id===lid)||{}).name||'Shopping')+': '+(said||'nothing to add'));
+}
+
 function renderShop(){
   const list=LISTS.find(x=>x.id===CUR_LIST);
   const mine=list&&list.owner_id===ME.id;
@@ -15206,7 +15378,10 @@ function renderShop(){
   }else toGet=todo.map(row).join('');
 
   html+=`<div class="card"><h3>Add to ${esc(list.name)}</h3><div class="setadd">
-      <input id="sName" placeholder="What is needed?">
+      ${sayApi()?`<div class="sayrow"><input id="sName" placeholder="What is needed?">
+        <button type="button" class="saymic" id="sSay" aria-pressed="false" aria-label="Say what is needed"
+          title="Say what is needed">${SAY_MIC}</button></div><div id="sHeard"></div>`
+        :'<input id="sName" placeholder="What is needed?">'}
       <input id="sQty" placeholder="How much or how many (optional)">
       ${aisles.length?aisleSelect('sAisle',aisles,''):''}
       <button class="btn primary" id="sAdd">Add it</button>
@@ -15307,6 +15482,8 @@ function renderShop(){
     await rememberAisle(CUR_LIST, n, aisle);
     await loadShopping(); renderShop();
   };
+  const say=$('sSay');
+  if(say){ say.onclick=sayStart; sayPaint(); }
   // Typing something that has been here before picks its aisle for you.
   if($('sAisle')) $('sName').addEventListener('input',()=>{
     const a=aisleFor(CUR_LIST, $('sName').value);
@@ -22774,7 +22951,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.27.2';
+const APP_VERSION='2026.11.27.3';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

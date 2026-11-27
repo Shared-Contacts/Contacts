@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.27.1",
+  "version": "2026.11.27.2",
   "history": [
+    {
+      "version": "2026.11.27.2",
+      "changes": [
+        "Wishlist: tap the Done or Not doing heading to fold the whole list away, or open it again. Both start folded, and the phone remembers.",
+        "Family Tree: the current partner sits on the right and the earlier ones on the left, the oldest furthest out.",
+        "MY Podcasts and URL Links: LBC and Global Player, where LBC's podcasts are, added to Open with."
+      ]
+    },
     {
       "version": "2026.11.27.1",
       "changes": [

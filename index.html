@@ -658,6 +658,12 @@ input[name="postcode"]{text-transform:uppercase}
 .wfold .accfold{display:flex;align-items:center;justify-content:center;pointer-events:none}
 .wunfold{transform:rotate(180deg)}
 .wfind{margin-bottom:14px}
+.wsec .wcount{float:right;font-weight:400;text-transform:none;letter-spacing:0}
+/* And the whole of Done and Not doing folds away by its heading (ML423) */
+.wshut{display:block;width:100%;text-align:left}
+.wshut::before{content:'\25B8';display:inline-block;margin-right:7px;transition:transform .15s}
+.wshut[aria-expanded="true"]::before{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.wshut::before{transition:none}}
 
 /* Jigsaws: the pictures two to a row, then the puzzle itself filling the screen */
 .jiggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 16px}
@@ -6127,7 +6133,9 @@ function openHelp(where){
   description or who it&rsquo;s from.</p>
   <p>Ideas under <strong>Done</strong> and <strong>Not doing</strong> show just one
   line each, so the list stays short: tap one to open it out, and the &#9662; folds
-  it away again.</p>
+  it away again. Tap the <strong>Done</strong> or <strong>Not doing</strong> heading
+  to fold the whole list away, or to open it again. They start folded away, the phone
+  remembers how you left them, and a search opens them so nothing it finds is hidden.</p>
   <p><strong>Copy idea</strong> puts both on the clipboard, the Tile/Area on the
   first line and the description underneath, ready to paste into Claude as a
   to-do. <strong>Share idea</strong> sends the words and the idea's photos
@@ -6161,7 +6169,8 @@ function openHelp(where){
   <strong>Firefox</strong>, the <strong>YouTube app</strong>, the
   <strong>Barclays app</strong>, a music or podcast app (<strong>Spotify</strong>,
   <strong>BBC Sounds</strong>, <strong>BBC iPlayer</strong>, <strong>YouTube
-  Music</strong> or <strong>Amazon Music</strong>), or <strong>Phone
+  Music</strong>, <strong>Amazon Music</strong>, <strong>LBC</strong> or
+  <strong>Global Player</strong>, where LBC&rsquo;s podcasts are), or <strong>Phone
   decides</strong>, the ordinary way. It is filled in for you when you add a link:
   a page from one of those gets its own app, and everything else gets Phone
   decides. If the phone does
@@ -6409,8 +6418,9 @@ function openHelp(where){
   <em>before</em> or <em>after</em>: 12 Mar 1850, Mar 1850, 1850 or about 1850.</p>
   <p><strong>Putting them in order.</strong> Partners, children and brothers and sisters
   can be moved: hold a name (or the &#10303; beside it) and slide it. Partners go newest
-  at the top and oldest at the bottom; in the tree the oldest sits next to them, and each
-  child hangs from the partner they are a child of. Children and brothers and sisters go
+  at the top and oldest at the bottom. In the tree the current partner, the top one, sits
+  on their right and the earlier ones on their left, the oldest furthest out, so the row
+  reads oldest to newest; each child hangs from the partner they are a child of. Children and brothers and sisters go
   oldest first, by their birth dates until you move them. Brothers and sisters include the
   person themselves, greyed, so you can see where they come; moving them changes their
   parents&rsquo; order of children, and anyone the tree is shared with sees the same order.</p>
@@ -11329,6 +11339,12 @@ const wishMatch=(w,q)=>{ const hay=[w.title,w.notes,whoWrote(w.created_by)].filt
 // Settings: tap one to open it out, and its ▾ folds it away again. They
 // start folded each time the Wishlist opens.
 const WISH_FOLD=['done','no'], WISH_OPEN=new Set();
+// The whole of Done and Not doing folds away too, by tapping its heading
+// (ML423). Each is remembered on this phone, and both start folded away.
+// A search opens them, so nothing it finds is hidden.
+const WISH_SHUT=new Set(WISH_FOLD);
+try{ const s=JSON.parse(localStorage.getItem('wish-shut'));
+  if(Array.isArray(s)){ WISH_SHUT.clear(); s.filter(k=>WISH_FOLD.includes(k)).forEach(k=>WISH_SHUT.add(k)); } }catch(e){}
 
 function renderWish(){
   $('wishBody').innerHTML=`<div class="kindpick">
@@ -11400,10 +11416,14 @@ function paintWishLists(){
   WISH_STATUS.forEach(([key,label])=>{
     const rows=byStatus[key]||[];
     if(!rows.length) return;
-    const fold=WISH_FOLD.includes(key);
-    html+=`<p class="dsec wsec w-${key}">${label} <span style="float:right;font-weight:400;
-      text-transform:none;letter-spacing:0">${rows.length}</span></p>
-      <div class="card wcard w-${key}">`;
+    const fold=WISH_FOLD.includes(key), hunt=!!WISH_Q.trim(), count=`<span class="wcount">${rows.length}</span>`;
+    if(fold&&!hunt){
+      const shut=WISH_SHUT.has(key);
+      html+=`<button type="button" class="dsec wsec wshut w-${key}" data-wsec="${key}"
+        aria-expanded="${!shut}">${label} ${count}</button>`;
+      if(shut) return;
+    } else html+=`<p class="dsec wsec w-${key}">${label} ${count}</p>`;
+    html+=`<div class="card wcard w-${key}">`;
     rows.forEach(w=>{
       const mineW = w.created_by===ME.id;
       if(fold&&!WISH_OPEN.has(w.id)){
@@ -11455,6 +11475,10 @@ function paintWishLists(){
     r.onkeydown=ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); r.click(); } }; });
   box.querySelectorAll('[data-wfold]').forEach(b=>b.onclick=()=>{
     WISH_OPEN.delete(Number(b.dataset.wfold)); paintWishLists(); });
+  box.querySelectorAll('[data-wsec]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.wsec; if(WISH_SHUT.has(k)) WISH_SHUT.delete(k); else WISH_SHUT.add(k);
+    try{ localStorage.setItem('wish-shut',JSON.stringify([...WISH_SHUT])); }catch(e){}
+    paintWishLists(); });
   box.querySelectorAll('img[data-wpic]').forEach(i=>i.onclick=()=>
     lightbox(SIGNED[i.dataset.wpic]));
   box.querySelectorAll('[data-wpcopy]').forEach(b=>b.onclick=()=>
@@ -11564,7 +11588,11 @@ function levelName(id){
    installed (ML86).
    The music and podcast apps came with MY Music and MY Podcasts (ML380).
    BBC Sounds and BBC iPlayer share bbc.co.uk with the rest of the BBC, so
-   only their own part of it (paths) gets the app. */
+   only their own part of it (paths) gets the app.
+   LBC and Global Player were added on 27 Nov 2026 (ML425). LBC's podcasts are
+   on Global Player (globalplayer.com/podcast/...), the app from the same
+   company; lbc.co.uk links go to the LBC app. Both app names were checked on
+   the Play Store that day. */
 const LINK_APPS=[
   {k:'',         label:'Phone decides'},
   {k:'firefox',  label:'Firefox',      pkg:'org.mozilla.firefox',
@@ -11582,7 +11610,11 @@ const LINK_APPS=[
   {k:'ytmusic',  label:'YouTube Music', pkg:'com.google.android.apps.youtube.music',
    hosts:/^music\.youtube\.com$/i},
   {k:'amazonmusic', label:'Amazon Music', pkg:'com.amazon.mp3',
-   hosts:/^music\.amazon\.[a-z.]+$/i}];
+   hosts:/^music\.amazon\.[a-z.]+$/i},
+  {k:'lbc',      label:'LBC',          pkg:'com.thisisglobal.player.lbc',
+   hosts:/(^|\.)lbc\.co\.uk$/i},
+  {k:'globalplayer', label:'Global Player', pkg:'com.global.player',
+   hosts:/(^|\.)globalplayer\.com$/i}];
 const linkApp = k => LINK_APPS.find(a=>a.k===(k||''))||LINK_APPS[0];
 // The guess for a new link: the site's own app if it has one, else Phone decides.
 // The last that fits wins, so music.youtube.com is YouTube Music, not YouTube.
@@ -12068,7 +12100,7 @@ const tunesOpen = () => Object.keys(TUNES).filter(k=>$(TUNES[k].sheet)&&!$(TUNES
 const tuneSubj = (l,k) => arr(l.subjects).some(x=>String(x).toLowerCase()===TUNES[k].subject.toLowerCase());
 // A title nobody typed is only the site's name; the page's own name is better.
 const tuneBare = l => !l.title||l.title===l.url||l.title===linkHost(l.url)
-  ||/^(spotify|bbc sounds|bbc iplayer|youtube music|amazon music)$/i.test(String(l.title).trim());
+  ||/^(spotify|bbc sounds|bbc iplayer|youtube music|amazon music|lbc|global player)$/i.test(String(l.title).trim());
 const tunePic = l => { const p=(LINK_PREFS.pics||{})[l.id]; return p&&p.u===l.url?p:null; };
 function tuneTitle(l){
   const p=tunePic(l);
@@ -12170,6 +12202,8 @@ function tuneTidy(t){
   return String(t||'').replace(/\s+/g,' ').trim()
     .replace(/^BBC Sounds\s*[-–|:]\s*/i,'')
     .replace(/\s*[-–|]\s*(Available Episodes|BBC Sounds|BBC iPlayer)\s*$/i,'')
+    // Global Player's own: "Full Disclosure with James O'Brien - Podcast | Global Player".
+    .replace(/\s*[-–|]\s*(Podcast\s*[-–|]\s*)?(Global Player|LBC)\s*$/i,'')
     .slice(0,200);
 }
 // {i:picture, t:name}, or null when it could not be asked (not kept, so tried again).
@@ -19938,8 +19972,6 @@ function famGraph(){
     // The newest relationship at the top, the oldest at the bottom (by the
     // wedding date where there is one), unless put in order by hand.
     mates:id=>famInOrder(get(mate,id),famOrd(P.get(id),'mates'),wed(id),true),
-    // In the tree the oldest relationship sits next to them, later ones further out.
-    treeMates:id=>G.mates(id).reverse(),
     // In their parents' order (the father's first), with half brothers and
     // sisters and any linked as a brother or sister going in by birth date.
     // self: with the person themselves in their place among them.
@@ -19970,22 +20002,29 @@ function famLayout(G,mid){
   }
   function down(id,row,depth,left,trail){
     const t=new Set(trail).add(id);
-    const ms=G.treeMates(id).filter(m=>!t.has(m)&&!placed.has(m));
+    // The current partner (the top of their Partners list) on the right, and
+    // the earlier ones on the left, the oldest furthest out (ML424), so the
+    // row reads oldest to newest. ms is in that order, left to right.
+    const all=G.mates(id).filter(m=>!t.has(m)&&!placed.has(m));
+    const ms=all.slice(1).reverse().concat(all.slice(0,1)), nl=ms.length-1;
     // Each child under the partner they are a child of (ML419), in order under
-    // each couple; any whose other parent isn't beside them, under the first.
+    // each couple; any whose other parent isn't beside them, under the oldest.
     const lane=k=>{ if(ms.length<2) return 0; const j=ms.findIndex(m=>G.parents(k).includes(m)); return j<0?0:j; };
     const ks=(depth<FAM_DOWN?G.kids(id).filter(k=>!t.has(k)&&!placed.has(k)):[])
       .map((k,i)=>({k,i,j:lane(k)})).sort((a,b)=>a.j-b.j||a.i-b.i);
     const ws=ks.map(o=>width(o.k,depth+1,t)), kw=ws.reduce((s,w)=>s+w,0);
     const couple=1+ms.length, span=Math.max(couple,kw), cl=left+(span-couple)/2;
-    const x=(cl+0.5)*W; nodes.push({id,x,row}); placed.add(id);
-    ms.forEach((m,i)=>{ nodes.push({id:m,x:(cl+1.5+i)*W,row,mate:true}); placed.add(m); });
+    const me=Math.max(0,nl), x=(cl+me+0.5)*W; nodes.push({id,x,row}); placed.add(id);
+    ms.forEach((m,j)=>{ const l=j<nl; nodes.push({id:m,x:(cl+(l?j:j+1)+0.5)*W,row,mate:true,left:l}); placed.add(m); });
     let at=left+(span-kw)/2; const lanes=new Map();
     ks.forEach((o,i)=>{ placed.add(o.k); const kx=down(o.k,row+1,depth+1,at,t); at+=ws[i];
       if(!lanes.has(o.j)) lanes.set(o.j,[]); lanes.get(o.j).push(kx); });
-    // From the join just before that partner, or a lone parent's own box.
-    [...lanes].forEach(([j,xs],n)=>downs.push({from:ms.length?x+W/2+j*W:x, mate:ms.length>0, row, xs,
-      lane:n, lanes:lanes.size}));
+    // From the join between that partner and the person's side of them, or a
+    // lone parent's own box. The current partner's line sits lowest, then the
+    // earlier ones, each further out a little higher.
+    const rank=j=>j<nl?nl-j:0, order=[...lanes.keys()].sort((a,b)=>rank(a)-rank(b));
+    [...lanes].forEach(([j,xs])=>downs.push({from:ms.length?(cl+j+1)*W:x, mate:ms.length>0, row, xs,
+      lane:order.indexOf(j), lanes:lanes.size}));
     return x;
   }
   const midX=down(mid,0,0,0,new Set());
@@ -20037,8 +20076,10 @@ function famTreeHtml(G){
     lines.push(`M${cx(d.from)} ${d.mate?top(d.row)+B.h/2:y0}V${mY}`,
       `M${cx(lo)} ${mY}H${cx(hi)}`, ...d.xs.map(x=>`M${cx(x)} ${mY}V${top(d.row+1)}`));
   });
-  // Partners side by side, joined at the middle of their boxes.
-  L.nodes.filter(n=>n.mate).forEach(n=>lines.push(`M${cx(n.x)-B.w/2-B.gx} ${top(n.row)+B.h/2}H${cx(n.x)-B.w/2}`));
+  // Partners side by side, joined at the middle of their boxes: on the
+  // partner's left, or on the right of one drawn on the left (ML424).
+  L.nodes.filter(n=>n.mate).forEach(n=>{ const e=n.left?cx(n.x)+B.w/2:cx(n.x)-B.w/2-B.gx;
+    lines.push(`M${e} ${top(n.row)+B.h/2}H${e+B.gx}`); });
   const labels=[]; for(let r=minR;r<=maxR;r++) if(r) labels.push(
     `<div class="famgen" style="top:${top(r)+B.h/2-10}px;left:8px">${esc(famGenName(r))}</div>`);
   const boxes=L.nodes.map(n=>{ const c=G.P.get(n.id); const yrs=famYears(c);
@@ -22733,7 +22774,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.27.1';
+const APP_VERSION='2026.11.27.2';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){

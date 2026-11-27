@@ -32,8 +32,9 @@ const quiet = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|
       w(6, 'Zebra', '01', 'done'), w(7, 'Apple', '30', 'done')];
   });
   await ev(() => openWish()); await settle(600);
+  // Done ideas are folded to one line since ML420 (27 Nov 2026), so read those rows too.
   const order = await ev(() => [...document.querySelectorAll('.wcard')].map(c =>
-    [...c.querySelectorAll('[data-wdel]')].map(b => +b.dataset.wdel)));
+    [...c.querySelectorAll('[data-wdel],[data-wopen]')].map(b => +(b.dataset.wdel || b.dataset.wopen))));
   ok('ideas A to Z, capitals or not, and the two "Diary:" oldest first',
     JSON.stringify(order[0]) === '[5,3,4,2,1]', JSON.stringify(order));
   ok('each heading (Idea, Done) sorted on its own', JSON.stringify(order[1]) === '[7,6]', JSON.stringify(order));

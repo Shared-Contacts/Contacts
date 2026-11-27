@@ -322,7 +322,10 @@ function zipOf(name, text, before = []) {
   await clear();
   await p.click('[data-famunlink="104"]'); await settle(400);
   ok('taking a link off asks, then takes off only the link', (await writes('delete', 'relationships')).length === 1 && (await writes('delete', 'contacts')).length === 0);
-  ok('  brothers and sisters are worked out from parents', await ev(() => { famCancel(); openFamPerson(1); return /Brothers and sisters Sue Fake/.test($('famKin').textContent.replace(/\s+/g, ' ')); }));
+  // Since ML419 (27 Nov 2026) the list has the person themselves in it too, greyed, oldest first.
+  ok('  brothers and sisters are worked out from parents, with the person themselves in their place', await ev(() => { famCancel(); openFamPerson(1);
+    return /Brothers and sisters/.test($('famKin').textContent) && [...$('famKin').querySelectorAll('[data-hm^="fsib:1:"]')].map(r => r.dataset.hm.split(':')[2]).join(',') === '1,3'
+      && /This person/.test($('famKin').querySelector('.famme').textContent); }));
   await ev(() => famCancel());
 
   // ---------------------------------------------------------------

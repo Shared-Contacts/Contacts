@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.25.3",
+  "version": "2026.11.27.1",
   "history": [
+    {
+      "version": "2026.11.27.1",
+      "changes": [
+        "Family Tree: hold a name and slide it to put partners, children and brothers and sisters in order. Partners newest at the top, children oldest first.",
+        "In the tree the oldest partner sits next to them, and each child hangs from the partner they are a child of.",
+        "Wishlist: Done and Not doing ideas show one line each until tapped, and a search box, with Tile/Area, Newest or Oldest order."
+      ]
+    },
     {
       "version": "2026.11.25.3",
       "changes": [

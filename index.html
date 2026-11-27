@@ -651,6 +651,13 @@ input[name="postcode"]{text-transform:uppercase}
 .wcard.w-doing {background:#EAF4F8; border-color:#BFDCE6}
 .wcard.w-done  {background:#E4EDE7; border-color:#BCD2C2}
 .wcard.w-no    {background:#F4F4F5; opacity:.75}
+/* Done and Not doing fold to one line each until tapped (ML420) */
+.wfold{cursor:pointer;padding-top:9px;padding-bottom:9px;align-items:center}
+.wfold .wone{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:16px}
+.wfold .wsnip{font-weight:400}
+.wfold .accfold{display:flex;align-items:center;justify-content:center;pointer-events:none}
+.wunfold{transform:rotate(180deg)}
+.wfind{margin-bottom:14px}
 
 /* Jigsaws: the pictures two to a row, then the puzzle itself filling the screen */
 .jiggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 16px}
@@ -1951,6 +1958,13 @@ input.tmlkname{width:0;flex:1 1 auto;padding:9px 10px;border:1.5px solid var(--r
 .famsub{margin:12px 0 4px}
 .famchoose{margin:2px 0 6px}
 .famkin{padding:8px 0}
+/* Partners, children and brothers and sisters, put in order by holding (ML419) */
+.fammove .famkin{align-items:center;gap:8px}
+.fammove .famkin .grip{padding:4px 2px}
+.fammove div.mid{cursor:pointer}
+.fammove.lifted{padding:0 8px}
+.famme .t{color:var(--muted)}
+.famhint{margin:2px 0 6px}
 .fampick{margin:0 0 10px;border:1.5px solid var(--brass)}
 .fammarr{display:block;margin:0 0 8px;font-size:14px;font-weight:400}
 .famask dd{margin:0}
@@ -6107,7 +6121,13 @@ function openHelp(where){
   <p>An idea has two boxes: <strong>Tile/Area</strong>, the part of the app it
   is about (Finances, Jigsaws, Loxx), and <strong>Description of
   idea/change</strong>. Ideas sort by Tile/Area, so the ones for the same part
-  sit together.</p>
+  sit together; <strong>Newest</strong> or <strong>Oldest</strong>, under the search
+  box, puts them in the order they were added instead, and the phone remembers which.
+  The search box finds ideas with every word you type in the Tile/Area, the
+  description or who it&rsquo;s from.</p>
+  <p>Ideas under <strong>Done</strong> and <strong>Not doing</strong> show just one
+  line each, so the list stays short: tap one to open it out, and the &#9662; folds
+  it away again.</p>
   <p><strong>Copy idea</strong> puts both on the clipboard, the Tile/Area on the
   first line and the description underneath, ready to paste into Claude as a
   to-do. <strong>Share idea</strong> sends the words and the idea's photos
@@ -6387,6 +6407,13 @@ function openHelp(where){
   and their father, mother, partners and children. Brothers and sisters are worked out from
   their parents. A date can be exact, just a month or a year, or <em>about</em>,
   <em>before</em> or <em>after</em>: 12 Mar 1850, Mar 1850, 1850 or about 1850.</p>
+  <p><strong>Putting them in order.</strong> Partners, children and brothers and sisters
+  can be moved: hold a name (or the &#10303; beside it) and slide it. Partners go newest
+  at the top and oldest at the bottom; in the tree the oldest sits next to them, and each
+  child hangs from the partner they are a child of. Children and brothers and sisters go
+  oldest first, by their birth dates until you move them. Brothers and sisters include the
+  person themselves, greyed, so you can see where they come; moving them changes their
+  parents&rsquo; order of children, and anyone the tree is shared with sees the same order.</p>
   <p>People in the tree are contacts. <strong>Family tree only</strong>, ticked for most of
   them, keeps them out of Contacts, its searches and birthdays. Someone who is in your
   contacts as well, a parent say, is the same card, with a small dot on their box in the
@@ -11147,6 +11174,8 @@ function editPerson(id, fill){
 
 /* ---------- wishlist ---------- */
 async function openWish(){
+  // Opened afresh: Done and Not doing folded, and no search left over (ML420).
+  WISH_OPEN.clear(); WISH_Q='';
   await loadLists(); renderWish();
   showSheet('wish'); $('wishBody').scrollTop=0; lockBackground();
 }
@@ -11286,13 +11315,23 @@ function editWish(id){
 const wishOrder=(a,b)=>
   String(a.title||'').localeCompare(String(b.title||''),'en-GB',{sensitivity:'base',numeric:true})
   || String(a.created_at||'').localeCompare(String(b.created_at||''));
+// Or the newest or oldest put in first (ML420, 27 Nov 2026). The choice is
+// remembered on this phone; the search is just while the Wishlist is open.
+const WISH_SORTS=[['az','Tile/Area'],['new','Newest'],['old','Oldest']];
+let WISH_SORT='az', WISH_Q='';
+try{ const s=localStorage.getItem('wish-sort'); if(WISH_SORTS.some(x=>x[0]===s)) WISH_SORT=s; }catch(e){}
+const wishByDate=(a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||''))||a.id-b.id;
+const wishSorter=()=>WISH_SORT==='new'?(a,b)=>wishByDate(b,a):WISH_SORT==='old'?wishByDate:wishOrder;
+// Every word typed is somewhere in the Tile/Area, the description or who it's from.
+const wishMatch=(w,q)=>{ const hay=[w.title,w.notes,whoWrote(w.created_by)].filter(Boolean).join(' ').toLowerCase();
+  return String(q||'').toLowerCase().split(/\s+/).filter(Boolean).every(x=>hay.includes(x)); };
+// Done and Not doing fold down to one line each, like the accounts in
+// Settings: tap one to open it out, and its ▾ folds it away again. They
+// start folded each time the Wishlist opens.
+const WISH_FOLD=['done','no'], WISH_OPEN=new Set();
 
 function renderWish(){
-  const live=WISHES.filter(w=>w.app===WISH_APP).sort(wishOrder);
-  const byStatus={};
-  live.forEach(w=>{ (byStatus[w.status]=byStatus[w.status]||[]).push(w); });
-
-  let html=`<div class="kindpick">
+  $('wishBody').innerHTML=`<div class="kindpick">
       <button data-wapp="contacts" aria-pressed="true">Ideas for this app</button>
     </div>
     <div class="card"><h3>Add an idea</h3><div class="setadd">
@@ -11301,54 +11340,25 @@ function renderWish(){
         style="width:100%;padding:11px 12px;border:1.5px solid var(--rule);border-radius:8px;margin-bottom:8px"></textarea>
       <div class="wpics"><p class="coords">Photos or screenshots (optional)</p>${dphHtml('wPics')}</div>
       <button class="btn primary" id="wAdd">Add it</button>
-    </div></div>`;
-
-  WISH_STATUS.forEach(([key,label])=>{
-    const rows=byStatus[key]||[];
-    if(!rows.length) return;
-    html+=`<p class="dsec wsec w-${key}">${label} <span style="float:right;font-weight:400;
-      text-transform:none;letter-spacing:0">${rows.length}</span></p>
-      <div class="card wcard w-${key}">`;
-    rows.forEach(w=>{
-      const mineW = w.created_by===ME.id;
-      html+=`<div class="item" style="align-items:flex-start">
-        <span class="mid">
-          <span class="t" style="${key==='done'||key==='no'?'color:var(--muted)':''}">${esc(w.title)}${
-            mineW?` <button class="addmore" data-wedit="${w.id}"
-              style="padding:0 0 0 6px;font-size:15px" aria-label="Change this">&#9998;</button>`:''}</span>
-          ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
-          ${arr(w.photos).length?`<span class="rcpthumbs">${arr(w.photos).map(p=>`<span class="wpic"><img
-            src="${esc(SIGNED[p.path]||'')}" alt="Photo" data-wpic="${esc(p.path)}">${canCopyPhoto()
-            ?`<button type="button" class="wpcopy" data-wpcopy="${esc(p.path)}"
-            aria-label="Copy this photo">Copy</button>`:''}</span>`).join('')}</span>`:''}
-          ${wishCopyBtns('data-wcopy="'+w.id+'" data-wfield')}
-          <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
-            ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
-          <span class="pickrow" style="margin-top:8px">
-            ${WISH_STATUS.map(([k,l])=>`<button type="button" data-wset="${w.id}:${k}"
-              aria-pressed="${w.status===k}" style="padding:5px 11px;font-size:14px">${l}</button>`).join('')}
-          </span>
-        </span>
-        ${w.created_by===ME.id?`<button class="del" data-wdel="${w.id}" aria-label="Remove">&times;</button>`:''}
-      </div>`;
-    });
-    html+='</div>';
-  });
-
-  if(!live.length)
-    html+=`<div class="card"><div class="field"><dd>No ideas yet for this one.</dd></div></div>`;
-
-  $('wishBody').innerHTML=html;
+    </div></div>
+    <div class="card msearch wfind"><div class="mqrow">
+      <input id="wQ" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="Search the ideas" value="${esc(WISH_Q)}" aria-label="Search the ideas"></div>
+      <div class="kindpick">${WISH_SORTS.map(([k,t])=>`<button type="button" data-wsort="${k}"
+        aria-pressed="${WISH_SORT===k}">${t}</button>`).join('')}</div></div>
+    <div id="wishLists"></div>`;
   // The new idea's photos carry on through a redraw (moving another idea
   // along, say) until it is added or the Wishlist is left.
   if(DPH&&DPH.box==='wPics') dphPaint(); else dphStart('wPics', [], 'wsh', 47);
-  const pics=live.flatMap(w=>arr(w.photos).map(p=>p.path)).filter(p=>!SIGNED[p]);
-  if(pics.length) signPaths(pics).then(()=>{
-    $('wishBody').querySelectorAll('img[data-wpic]').forEach(i=>{
-      if(!i.getAttribute('src')) i.src=SIGNED[i.dataset.wpic]||''; });
-  });
   $('wishBody').querySelectorAll('[data-wapp]').forEach(b=>b.onclick=()=>{
     WISH_APP=b.dataset.wapp; renderWish(); });
+  // Searching and sorting redraw just the lists, so a half-typed idea stays.
+  $('wQ').addEventListener('input',()=>{ WISH_Q=$('wQ').value; paintWishLists(); });
+  $('wishBody').querySelectorAll('[data-wsort]').forEach(b=>b.onclick=()=>{
+    WISH_SORT=b.dataset.wsort;
+    try{ localStorage.setItem('wish-sort',WISH_SORT); }catch(e){}
+    $('wishBody').querySelectorAll('[data-wsort]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    paintWishLists(); });
   // The keyboard covers the bottom half of the phone, and Add it with it.
   // While typing in either box, keep the button just above the keyboard.
   const wishKeep=()=>{
@@ -11375,31 +11385,105 @@ function renderWish(){
     await dphSaved();
     await loadLists(); renderWish(); toast('Added');
   };
-  $('wishBody').querySelectorAll('img[data-wpic]').forEach(i=>i.onclick=()=>
+  paintWishLists();
+}
+
+// The ideas under their headings, as found by the search and in the order chosen.
+function paintWishLists(){
+  const box=$('wishLists'); if(!box) return;
+  const all=WISHES.filter(w=>w.app===WISH_APP);
+  const live=all.filter(w=>wishMatch(w,WISH_Q)).sort(wishSorter());
+  const byStatus={};
+  live.forEach(w=>{ (byStatus[w.status]=byStatus[w.status]||[]).push(w); });
+
+  let html='';
+  WISH_STATUS.forEach(([key,label])=>{
+    const rows=byStatus[key]||[];
+    if(!rows.length) return;
+    const fold=WISH_FOLD.includes(key);
+    html+=`<p class="dsec wsec w-${key}">${label} <span style="float:right;font-weight:400;
+      text-transform:none;letter-spacing:0">${rows.length}</span></p>
+      <div class="card wcard w-${key}">`;
+    rows.forEach(w=>{
+      const mineW = w.created_by===ME.id;
+      if(fold&&!WISH_OPEN.has(w.id)){
+        html+=`<div class="item wfold" data-wopen="${w.id}" role="button" tabindex="0" aria-expanded="false">
+          <span class="mid"><span class="t wone">${esc(w.title)}${w.notes?`<span class="wsnip"> &middot; ${esc(w.notes)}</span>`:''}</span></span>
+          <span class="accfold" aria-hidden="true">&#9662;</span></div>`;
+        return;
+      }
+      html+=`<div class="item" style="align-items:flex-start">
+        <span class="mid">
+          <span class="t" style="${key==='done'||key==='no'?'color:var(--muted)':''}">${esc(w.title)}${
+            mineW?` <button class="addmore" data-wedit="${w.id}"
+              style="padding:0 0 0 6px;font-size:15px" aria-label="Change this">&#9998;</button>`:''}</span>
+          ${w.notes?`<span class="w">${esc(w.notes)}</span>`:''}
+          ${arr(w.photos).length?`<span class="rcpthumbs">${arr(w.photos).map(p=>`<span class="wpic"><img
+            src="${esc(SIGNED[p.path]||'')}" alt="Photo" data-wpic="${esc(p.path)}">${canCopyPhoto()
+            ?`<button type="button" class="wpcopy" data-wpcopy="${esc(p.path)}"
+            aria-label="Copy this photo">Copy</button>`:''}</span>`).join('')}</span>`:''}
+          ${wishCopyBtns('data-wcopy="'+w.id+'" data-wfield')}
+          <span class="w">from ${esc(whoWrote(w.created_by))} &middot;
+            ${esc(new Date(w.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</span>
+          <span class="pickrow" style="margin-top:8px">
+            ${WISH_STATUS.map(([k,l])=>`<button type="button" data-wset="${w.id}:${k}"
+              aria-pressed="${w.status===k}" style="padding:5px 11px;font-size:14px">${l}</button>`).join('')}
+          </span>
+        </span>
+        ${fold?`<button type="button" class="accfold wunfold" data-wfold="${w.id}" aria-expanded="true"
+          aria-label="Fold it away">&#9662;</button>`:''}
+        ${w.created_by===ME.id?`<button class="del" data-wdel="${w.id}" aria-label="Remove">&times;</button>`:''}
+      </div>`;
+    });
+    html+='</div>';
+  });
+
+  if(!all.length)
+    html+=`<div class="card"><div class="field"><dd>No ideas yet for this one.</dd></div></div>`;
+  else if(!live.length)
+    html+=`<div class="card"><div class="field"><dd>No ideas with &ldquo;${esc(WISH_Q.trim())}&rdquo; in them.</dd></div></div>`;
+
+  box.innerHTML=html;
+  const pics=live.filter(w=>!WISH_FOLD.includes(w.status)||WISH_OPEN.has(w.id))
+    .flatMap(w=>arr(w.photos).map(p=>p.path)).filter(p=>!SIGNED[p]);
+  if(pics.length) signPaths(pics).then(()=>{
+    box.querySelectorAll('img[data-wpic]').forEach(i=>{
+      if(!i.getAttribute('src')) i.src=SIGNED[i.dataset.wpic]||''; });
+  });
+  box.querySelectorAll('[data-wopen]').forEach(r=>{
+    r.onclick=()=>{ WISH_OPEN.add(Number(r.dataset.wopen)); paintWishLists(); };
+    r.onkeydown=ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); r.click(); } }; });
+  box.querySelectorAll('[data-wfold]').forEach(b=>b.onclick=()=>{
+    WISH_OPEN.delete(Number(b.dataset.wfold)); paintWishLists(); });
+  box.querySelectorAll('img[data-wpic]').forEach(i=>i.onclick=()=>
     lightbox(SIGNED[i.dataset.wpic]));
-  $('wishBody').querySelectorAll('[data-wpcopy]').forEach(b=>b.onclick=()=>
+  box.querySelectorAll('[data-wpcopy]').forEach(b=>b.onclick=()=>
     copyPhoto(b.dataset.wpcopy));
-  $('wishBody').querySelectorAll('[data-wcopy]').forEach(b=>b.onclick=()=>{
+  box.querySelectorAll('[data-wcopy]').forEach(b=>b.onclick=()=>{
     const w=WISHES.find(x=>x.id===Number(b.dataset.wcopy));
     if(!w) return;
     if(b.dataset.wfield==='s') shareIdea(w.title,w.notes,arr(w.photos).map(p=>p.path),b);
     else copyField(wishCopyText(w.title,w.notes));
   });
-  $('wishBody').querySelectorAll('[data-wedit]').forEach(b=>b.onclick=()=>
+  box.querySelectorAll('[data-wedit]').forEach(b=>b.onclick=()=>
     editWish(Number(b.dataset.wedit)));
-  $('wishBody').querySelectorAll('[data-wset]').forEach(b=>b.onclick=async()=>{
+  // Moving an idea along, or removing one, redraws just the lists, so a
+  // half-typed new idea stays where it is.
+  box.querySelectorAll('[data-wset]').forEach(b=>b.onclick=async()=>{
     const [id,st]=b.dataset.wset.split(':');
     const {error}=await sb.from('wishes').update({status:st}).eq('id',Number(id));
     if(error){ toast('Could not change that'); return; }
-    await loadLists(); renderWish();
+    // Moved into Done or Not doing, it folds away with the rest.
+    WISH_OPEN.delete(Number(id));
+    await loadLists(); paintWishLists();
   });
-  $('wishBody').querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
+  box.querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
     if(!confirm('Remove your idea?')) return;
     const w=WISHES.find(x=>x.id===Number(b.dataset.wdel));
     const {error}=await sb.from('wishes').delete().eq('id',Number(b.dataset.wdel));
     if(error){ toast('Could not remove it'); return; }
     await dphForget(w,'wsh');
-    await loadLists(); renderWish();
+    await loadLists(); paintWishLists();
   });
 }
 
@@ -19794,6 +19878,32 @@ const famSort = (a,b) => famSurname(a).localeCompare(famSurname(b),'en',{sensiti
   || String(a.first_name||'').localeCompare(String(b.first_name||''),'en',{sensitivity:'base'})
   || String(famEv(a,'birth').d||'9999').localeCompare(String(famEv(b,'birth').d||'9999'));
 const famByBirth = (a,b) => String(famEv(a,'birth').d||'9999').localeCompare(String(famEv(b,'birth').d||'9999'))||a.id-b.id;
+// Partners, children and brothers and sisters can be put in order by holding
+// and sliding (Barry, 27 Nov 2026, ML419). The order is kept in the person's
+// family details, family.order.mates / .kids / .sibs, so a re-import from
+// Ancestry leaves it alone and anyone the tree is shared with sees it too.
+const famOrd = (c,k) => [...new Set(arr(c&&c.family&&c.family.order&&c.family.order[k]).map(Number))];
+// ids in the saved order; anyone not in it yet goes in by date (when(id)),
+// before the first one dated after them (late: before the first dated before
+// them), or else just after the last one with a date, so anyone undated stays
+// at the end. Someone undated themselves goes at the very end.
+function famInOrder(ids,saved,when,late){
+  const key=i=>String(when(i)||''), first=(a,b)=>late?a>b:a<b;
+  const have=new Set(ids), out=saved.filter(i=>have.has(i)), placed=new Set(out);
+  ids.filter(i=>!placed.has(i))
+    .sort((a,b)=>{ const x=key(a), y=key(b); return (!x)-(!y)||(x===y?0:first(x,y)?-1:1)||a-b; })
+    .forEach(i=>{ const d=key(i); let at=out.length;
+      if(d){ const n=out.findIndex(o=>{ const e=key(o); return e&&first(d,e); });
+        if(n>=0) at=n; else { at=0; out.forEach((o,k)=>{ if(key(o)) at=k+1; }); } }
+      out.splice(at,0,i); });
+  return out;
+}
+// Two orders made one: those only in b go in after the one before them in b.
+function famMerge(a,b){
+  const out=a.slice(); let at=-1;
+  b.forEach(i=>{ const k=out.indexOf(i); if(k>=0){ at=k; return; } out.splice(++at,0,i); });
+  return out;
+}
 
 /* ----- who is who to whom ----- */
 function famGraph(){
@@ -19819,13 +19929,27 @@ function famGraph(){
     link.set(Math.min(a,b)+'-'+Math.max(a,b)+'-'+(r==='child'?'parent':r),l);
   });
   const get=(m,id)=>[...(m.get(id)||[])].filter(i=>P.has(i)&&i!==id);
+  const born=i=>famEv(P.get(i),'birth').d, wed=a=>b=>{
+    const l=link.get(Math.min(a,b)+'-'+Math.max(a,b)+'-partner'), m=l&&l.family&&l.family.married; return m&&m.d; };
   const G={P,
     parents:id=>get(par,id).sort((a,b)=>famSexRank(P.get(a))-famSexRank(P.get(b))||famByBirth(P.get(a),P.get(b))),
-    kids:id=>get(kid,id).map(i=>P.get(i)).sort(famByBirth).map(c=>c.id),
-    mates:id=>get(mate,id),
-    sibs:id=>{ const s=new Set(get(sib,id));
-      get(par,id).forEach(p=>get(kid,p).forEach(k=>{ if(k!==id) s.add(k); }));
-      return [...s].map(i=>P.get(i)).sort(famByBirth).map(c=>c.id); },
+    // Oldest to youngest, unless put in order by hand.
+    kids:id=>famInOrder(get(kid,id),famOrd(P.get(id),'kids'),born),
+    // The newest relationship at the top, the oldest at the bottom (by the
+    // wedding date where there is one), unless put in order by hand.
+    mates:id=>famInOrder(get(mate,id),famOrd(P.get(id),'mates'),wed(id),true),
+    // In the tree the oldest relationship sits next to them, later ones further out.
+    treeMates:id=>G.mates(id).reverse(),
+    // In their parents' order (the father's first), with half brothers and
+    // sisters and any linked as a brother or sister going in by birth date.
+    // self: with the person themselves in their place among them.
+    sibs:(id,self)=>{ const ps=G.parents(id);
+      let base=ps.length?G.kids(ps[0]):famOrd(P.get(id),'sibs');
+      // A mother's own order, when she has one, places her other children too.
+      ps.slice(1).forEach(p=>{ if(famOrd(P.get(p),'kids').length) base=famMerge(base,G.kids(p)); });
+      const all=new Set([...base,...ps.slice(1).flatMap(p=>G.kids(p)),...get(sib,id),id]);
+      const out=famInOrder([...all],base,born);
+      return self?out:out.filter(i=>i!==id); },
     link:(a,b,r)=>link.get(Math.min(a,b)+'-'+Math.max(a,b)+'-'+r)||null};
   return G;
 }
@@ -19846,15 +19970,22 @@ function famLayout(G,mid){
   }
   function down(id,row,depth,left,trail){
     const t=new Set(trail).add(id);
-    const ms=G.mates(id).filter(m=>!t.has(m)&&!placed.has(m));
-    const ks=depth<FAM_DOWN?G.kids(id).filter(k=>!t.has(k)&&!placed.has(k)):[];
-    const ws=ks.map(k=>width(k,depth+1,t)), kw=ws.reduce((s,w)=>s+w,0);
+    const ms=G.treeMates(id).filter(m=>!t.has(m)&&!placed.has(m));
+    // Each child under the partner they are a child of (ML419), in order under
+    // each couple; any whose other parent isn't beside them, under the first.
+    const lane=k=>{ if(ms.length<2) return 0; const j=ms.findIndex(m=>G.parents(k).includes(m)); return j<0?0:j; };
+    const ks=(depth<FAM_DOWN?G.kids(id).filter(k=>!t.has(k)&&!placed.has(k)):[])
+      .map((k,i)=>({k,i,j:lane(k)})).sort((a,b)=>a.j-b.j||a.i-b.i);
+    const ws=ks.map(o=>width(o.k,depth+1,t)), kw=ws.reduce((s,w)=>s+w,0);
     const couple=1+ms.length, span=Math.max(couple,kw), cl=left+(span-couple)/2;
     const x=(cl+0.5)*W; nodes.push({id,x,row}); placed.add(id);
     ms.forEach((m,i)=>{ nodes.push({id:m,x:(cl+1.5+i)*W,row,mate:true}); placed.add(m); });
-    let at=left+(span-kw)/2; const xs=[];
-    ks.forEach((k,i)=>{ placed.add(k); xs.push(down(k,row+1,depth+1,at,t)); at+=ws[i]; });
-    if(xs.length) downs.push({from:ms.length?x+W/2:x, mate:ms.length>0, row, xs});
+    let at=left+(span-kw)/2; const lanes=new Map();
+    ks.forEach((o,i)=>{ placed.add(o.k); const kx=down(o.k,row+1,depth+1,at,t); at+=ws[i];
+      if(!lanes.has(o.j)) lanes.set(o.j,[]); lanes.get(o.j).push(kx); });
+    // From the join just before that partner, or a lone parent's own box.
+    [...lanes].forEach(([j,xs],n)=>downs.push({from:ms.length?x+W/2+j*W:x, mate:ms.length>0, row, xs,
+      lane:n, lanes:lanes.size}));
     return x;
   }
   const midX=down(mid,0,0,0,new Set());
@@ -19897,7 +20028,11 @@ function famTreeHtml(G){
       ...u.xs.map(x=>`M${cx(x)} ${mY}V${top(u.row-1)+B.h}`));
   });
   L.downs.forEach(d=>{   // a couple down to their children
-    const y0=top(d.row)+B.h, mY=top(d.row+1)-B.gy/2, lo=Math.min(d.from,...d.xs), hi=Math.max(d.from,...d.xs);
+    // With children by more than one partner, each couple further out has its
+    // line a little higher, so it stops short of the lines of the ones before.
+    const n=(d.lanes||1)-1, y0=top(d.row)+B.h;
+    const mY=top(d.row+1)-B.gy/2+(n/2-(d.lane||0))*Math.min(10,(B.gy-12)/Math.max(1,n));
+    const lo=Math.min(d.from,...d.xs), hi=Math.max(d.from,...d.xs);
     // From the join between partners, or the bottom of a lone parent's box.
     lines.push(`M${cx(d.from)} ${d.mate?top(d.row)+B.h/2:y0}V${mY}`,
       `M${cx(lo)} ${mY}H${cx(hi)}`, ...d.xs.map(x=>`M${cx(x)} ${mY}V${top(d.row+1)}`));
@@ -20208,6 +20343,9 @@ function famPaintRows(){
   FAM_EDIT.homes.forEach((x,i)=>{ if(x._on!=null) f.elements['home_on_'+i].value=x._on; });
   f.querySelectorAll('#famHomes [data-famdate]').forEach(famDateHint);
 }
+// A name that can be moved isn't a button, so Enter opens it on a keyboard.
+$('famEdBody').addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches('div[data-famkin]')){ e.preventDefault(); e.target.click(); } });
 $('famEdBody').addEventListener('click',e=>{
   const x=e.target.closest('[data-famrowx]');
   if(x){ famKeepRows(); const [k,i]=x.dataset.famrowx.split(':');
@@ -20228,25 +20366,73 @@ dphWire($('famEdBody'));
 function famPaintKin(){
   const box=$('famKin'); if(!box||!FAM_EDIT||!FAM_EDIT.id) return;
   const G=famGraph(), id=FAM_EDIT.id, P=G.P;
-  const who=(o,r)=>{ const c=P.get(o), l=G.link(id,o,r);
-    return `<div class="item famkin"><button type="button" class="mid" data-famkin="${o}"><span class="t">${esc(famName(c,true))}</span>
-      <span class="w">${esc(famYears(c))}</span></button>
-      ${l?`<button type="button" class="del" data-famunlink="${l.id}" aria-label="Take this link off">&times;</button>`:''}</div>`; };
+  // list: in a list of two or more, hold a name (or the dots beside it) and
+  // slide it to put them in order (ML419). The name is then not a button, so
+  // holding it can lift the row; a quick tap still opens them.
+  const who=(o,r,list,after)=>{ const c=P.get(o), l=r&&G.link(id,o,r), tag=list?'div':'button';
+    const row=`<div class="item famkin">${list?'<span class="grip" aria-hidden="true">&#10303;</span>':''}
+      <${tag} ${list?'role="button" tabindex="0"':'type="button"'} class="mid" data-famkin="${o}"><span class="t">${esc(famName(c,true))}</span>
+      <span class="w">${esc(famYears(c))}</span></${tag}>
+      ${l?`<button type="button" class="del" data-famunlink="${l.id}" aria-label="Take this link off">&times;</button>`:''}</div>${after||''}`;
+    return list?`<div class="fammove" data-hm="${list}:${o}">${row}</div>`:row; };
+  const many=(ids,name)=>ids.length>1?name+':'+id:'';
+  const hint=(ids,say)=>ids.length>1?`<p class="coords famhint">${say} Hold a name and slide it to change the order.</p>`:'';
+  const mateIds=G.mates(id), kidIds=G.kids(id), sibIds=G.sibs(id,true);
+  // Among their brothers and sisters, the person themselves, so it can be seen
+  // (and set) where they come.
+  const self=c=>`<div class="fammove" data-hm="fsib:${id}:${id}"><div class="item famkin famme">
+    <span class="grip" aria-hidden="true">&#10303;</span><div class="mid"><span class="t">${esc(famName(c,true))}</span>
+    <span class="w">This person${famYears(c)?' &middot; '+esc(famYears(c)):''}</span></div></div></div>`;
   const ps=G.parents(id), dad=ps.find(p=>P.get(p).sex==='M'), mum=ps.find(p=>P.get(p).sex==='F'),
     other=ps.filter(p=>p!==dad&&p!==mum);
   const slot=(label,o,role)=>`<p class="dsec famsub">${label}</p>${o?who(o,'parent')
     :`<button type="button" class="btn famchoose" data-famset="${role}">Choose ${label.toLowerCase()}…</button>`}`;
-  const mates=G.mates(id).map(o=>{ const l=G.link(id,o,'partner'), mr=l&&l.family&&l.family.married;
+  // The wedding line goes with its partner when they are moved.
+  const mates=mateIds.map(o=>{ const l=G.link(id,o,'partner'), mr=l&&l.family&&l.family.married;
     const say=mr?[famDateText(mr),mr.pl].filter(Boolean).join(', '):'';
-    return who(o,'partner')+(l?`<button type="button" class="famlink fammarr" data-fammarr="${l.id}">${say?'Married '+esc(say):'Add when and where they married'}</button>`:''); }).join('');
+    return who(o,'partner',many(mateIds,'fmate'),l?`<button type="button" class="famlink fammarr" data-fammarr="${l.id}">${say?'Married '+esc(say):'Add when and where they married'}</button>`:''); }).join('');
   box.innerHTML=slot('Father',dad,'father')+slot('Mother',mum,'mother')
     +(other.length?`<p class="dsec famsub">Parents</p>${other.map(o=>who(o,'parent')).join('')}`:'')
-    +`<p class="dsec famsub">Partners</p>${mates||''}<button type="button" class="btn famchoose" data-famset="partner">Add a partner…</button>`
-    +`<p class="dsec famsub">Children</p>${G.kids(id).map(o=>who(o,'parent')).join('')}<button type="button" class="btn famchoose" data-famset="child">Add a child…</button>`
-    +(G.sibs(id).length?`<p class="dsec famsub">Brothers and sisters</p>${G.sibs(id).map(o=>`<div class="item famkin"><button type="button" class="mid" data-famkin="${o}">
-      <span class="t">${esc(famName(P.get(o),true))}</span><span class="w">${esc(famYears(P.get(o)))}</span></button></div>`).join('')}
-      <p class="coords" style="margin:2px 0 0">Worked out from their parents.</p>`:'');
+    +`<p class="dsec famsub">Partners</p>${mates||''}${hint(mateIds,'Newest at the top, oldest at the bottom.')}<button type="button" class="btn famchoose" data-famset="partner">Add a partner…</button>`
+    +`<p class="dsec famsub">Children</p>${kidIds.map(o=>who(o,'parent',many(kidIds,'fkid'))).join('')}${hint(kidIds,'Oldest first.')}<button type="button" class="btn famchoose" data-famset="child">Add a child…</button>`
+    +(sibIds.length>1?`<p class="dsec famsub">Brothers and sisters</p>${sibIds.map(o=>o===id?self(P.get(o)):who(o,null,'fsib:'+id)).join('')}
+      <p class="coords famhint">Worked out from their parents. Oldest first. Hold a name and slide it to change the order.</p>`:'');
+  holdMove(box);
 }
+// An order put in by hand (ML419) goes into each person's family details:
+// here first, so the screen keeps up, then online, one save per person.
+// sets: [person, 'mates' | 'kids' | 'sibs', ids in order]. Only your own
+// people can be changed; a contact someone else shared with you keeps its order.
+async function famOrderSave(sets){
+  const fam=new Map();
+  sets.forEach(([pid,k,ids])=>{ const c=famFindOwn(Number(pid)); if(!c||c.created_by!==ME.id) return;
+    const f=fam.get(c)||{...(c.family||{})}; f.order={...(f.order||{}), [k]:ids.map(Number)}; fam.set(c,f); });
+  if(!fam.size) return;
+  fam.forEach((f,c)=>{ c.family=f; });
+  famPaintKin(); famRender();
+  const res=await Promise.all([...fam].map(([c,f])=>sb.from('contacts').update({family:f}).eq('id',c.id)));
+  const bad=res.find(r=>r.error);
+  if(bad){ console.error(bad.error); toast('Could not save the new order');
+    await loadAll(); await famLoad(true); famPaintKin(); famRender(); return; }
+  toast('Order saved');
+}
+HM_SAVE.fmate=(keys,list)=>famOrderSave([[list.split(':')[1],'mates',keys]]);
+// Their children; the other parent's list follows, keeping any children of
+// their own by someone else where they were.
+HM_SAVE.fkid=(keys,list)=>{
+  const pid=Number(list.split(':')[1]), G=famGraph(), sets=[[pid,'kids',keys]];
+  new Set(keys.flatMap(k=>G.parents(Number(k))).filter(q=>q!==pid)).forEach(q=>{
+    const cur=G.kids(q).map(String); sets.push([q,'kids',hmRefill(cur,keys.filter(k=>cur.includes(k)))]); });
+  return famOrderSave(sets);
+};
+// Brothers and sisters are their parents' children, so it is the parents'
+// order that changes. With no parents in the tree, each of them keeps it.
+HM_SAVE.fsib=(keys,list)=>{
+  const pid=Number(list.split(':')[1]), G=famGraph(), ps=G.parents(pid);
+  if(ps.length) return famOrderSave(ps.map(q=>{ const cur=G.kids(q).map(String);
+    return [q,'kids',hmRefill(cur,keys.filter(k=>cur.includes(k)))]; }));
+  return famOrderSave(keys.map(k=>[k,'sibs',keys]));
+};
 async function famOpenOther(id){
   if(!(await famLeave())) return;
   openFamPerson(id);
@@ -22547,7 +22733,7 @@ function jotHtml(){
    version this phone showed appear once on the home screen, and Menu >
    What's new has the whole list. Browser storage only remembers which
    version this phone last showed the changes for. */
-const APP_VERSION='2026.11.25.3';
+const APP_VERSION='2026.11.27.1';
 let VER={info:null, at:0, later:0};
 const verParts = v => String(v||'').split('.').map(n=>parseInt(n,10)||0);
 function verCmp(a,b){
